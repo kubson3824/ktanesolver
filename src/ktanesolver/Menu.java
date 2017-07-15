@@ -23,7 +23,7 @@ public class Menu extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jButton1 = new javax.swing.JButton();
+        bWires = new javax.swing.JButton();
         tfSerial = new javax.swing.JTextField();
         tfAABat = new javax.swing.JTextField();
         tfDBat = new javax.swing.JTextField();
@@ -54,13 +54,14 @@ public class Menu extends javax.swing.JFrame {
         jLabel13 = new javax.swing.JLabel();
         jLabel14 = new javax.swing.JLabel();
         bKeypads = new javax.swing.JButton();
+        bSimonSays = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jButton1.setText("Wires");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        bWires.setText("Wires");
+        bWires.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                bWiresActionPerformed(evt);
             }
         });
 
@@ -150,6 +151,13 @@ public class Menu extends javax.swing.JFrame {
             }
         });
 
+        bSimonSays.setText("Simon Says");
+        bSimonSays.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                bSimonSaysActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -171,10 +179,12 @@ public class Menu extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 218, Short.MAX_VALUE)
+                        .addGap(0, 125, Short.MAX_VALUE)
+                        .addComponent(bSimonSays)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(bKeypads)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1)
+                        .addComponent(bWires)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(bButton))
                     .addGroup(layout.createSequentialGroup()
@@ -265,20 +275,21 @@ public class Menu extends javax.swing.JFrame {
                     .addComponent(jLabel11))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
+                    .addComponent(bWires)
                     .addComponent(bButton)
-                    .addComponent(bKeypads))
+                    .addComponent(bKeypads)
+                    .addComponent(bSimonSays))
                 .addGap(18, 18, 18))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void bWiresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bWiresActionPerformed
         serial= tfSerial.getText().toCharArray();
         Wires fWires = new Wires(this,serial);
         fWires.setVisible(true);
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_bWiresActionPerformed
 
     private void tfLitIndActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfLitIndActionPerformed
         // TODO add your handling code here:
@@ -311,6 +322,12 @@ public class Menu extends javax.swing.JFrame {
     private void tfUnlitIndFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_tfUnlitIndFocusLost
         tfUnlitInd.setText(tfUnlitInd.getText().toUpperCase());
     }//GEN-LAST:event_tfUnlitIndFocusLost
+
+    private void bSimonSaysActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bSimonSaysActionPerformed
+        serial= tfSerial.getText().toCharArray();
+        SimonSays fSimon = new SimonSays(serial);
+        fSimon.setVisible(true);
+    }//GEN-LAST:event_bSimonSaysActionPerformed
 
     /**
      * @param args the command line arguments
@@ -350,7 +367,8 @@ public class Menu extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bButton;
     private javax.swing.JButton bKeypads;
-    private javax.swing.JButton jButton1;
+    private javax.swing.JButton bSimonSays;
+    private javax.swing.JButton bWires;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
