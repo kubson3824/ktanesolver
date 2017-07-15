@@ -42,11 +42,11 @@ public class Button extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        tfColour = new javax.swing.JTextField();
-        tfText = new javax.swing.JTextField();
         bAccept = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
+        cbColour = new javax.swing.JComboBox<>();
+        cbText = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Button");
@@ -62,49 +62,50 @@ public class Button extends javax.swing.JFrame {
 
         jLabel2.setText("Text");
 
+        cbColour.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Red", "White", "Blue", "Yellow" }));
+
+        cbText.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Detonate", "Hold", "Press", "Abort" }));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel2)
-                        .addGap(18, 18, 18)
-                        .addComponent(tfText))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(tfColour, javax.swing.GroupLayout.DEFAULT_SIZE, 94, Short.MAX_VALUE)))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel1)
+                    .addComponent(jLabel2))
                 .addGap(18, 18, 18)
-                .addComponent(bAccept))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(cbText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
+                        .addComponent(bAccept))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(cbColour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(tfColour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel1))
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel2)
-                            .addComponent(tfText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap())
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(5, 5, 5)
-                        .addComponent(bAccept)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                    .addComponent(jLabel1)
+                    .addComponent(cbColour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(cbText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(bAccept))
+                .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void bAcceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAcceptActionPerformed
-        colour=tfColour.getText().toLowerCase();
-        text=tfText.getText().toLowerCase();
+        colour=cbColour.getSelectedItem().toString().toLowerCase();
+        text=cbText.getSelectedItem().toString().toLowerCase();
         
         if(colour.matches("blue")&&text.matches("abort"))
             holding();
@@ -137,23 +138,8 @@ public class Button extends javax.swing.JFrame {
     }
 
     public void holding() throws HeadlessException {
-        String stripColour=JOptionPane.showInputDialog("Type the colour of the strip");
-        stripColour=stripColour.toLowerCase();
-        if(stripColour.matches("blue")){
-            JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 4 in it");
-        }
-        else{
-            if(stripColour.matches("white")){
-                JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 1 in it");
-            }
-            else{
-                if(stripColour.matches("yellow")){
-                    JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 5 in it");
-                }
-                else
-                    JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 1 in it");
-            }
-        }
+        ButtonStrip tempStrip = new ButtonStrip();
+        tempStrip.setVisible(true);
     }
 
     /**
@@ -193,9 +179,9 @@ public class Button extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bAccept;
+    private javax.swing.JComboBox<String> cbColour;
+    private javax.swing.JComboBox<String> cbText;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JTextField tfColour;
-    private javax.swing.JTextField tfText;
     // End of variables declaration//GEN-END:variables
 }

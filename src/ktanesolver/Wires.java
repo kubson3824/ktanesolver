@@ -14,9 +14,9 @@ import javax.swing.JOptionPane;
 public class Wires extends javax.swing.JFrame {
     Menu menu;
     int redC, blueC, yellowC, whiteC, blackC;
-    String[] input;
+    String[] input, wires;
     char[] serial;
-    int digit;
+    int digit, wireC;
     public Wires(Menu m,char[] s) {
         menu=m;
         serial=s;
@@ -105,9 +105,18 @@ public class Wires extends javax.swing.JFrame {
     private void initComponents() {
 
         bAccept = new javax.swing.JButton();
-        tfWires = new javax.swing.JTextField();
-        jLabel1 = new javax.swing.JLabel();
-        bMenu = new javax.swing.JButton();
+        cbFirst = new javax.swing.JComboBox<>();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        cbSecond = new javax.swing.JComboBox<>();
+        cbThird = new javax.swing.JComboBox<>();
+        cbFourth = new javax.swing.JComboBox<>();
+        cbFifth = new javax.swing.JComboBox<>();
+        cbSixth = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Wires");
@@ -119,49 +128,123 @@ public class Wires extends javax.swing.JFrame {
             }
         });
 
-        jLabel1.setText("Type in the colors of the wires from top to bottom with spaces in between");
+        cbFirst.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Blue", "Red", "Black", "Yellow", "White", "-" }));
+        cbFirst.setSelectedIndex(5);
 
-        bMenu.setText("Menu");
-        bMenu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bMenuActionPerformed(evt);
-            }
-        });
+        jLabel2.setText("1st wire");
+
+        jLabel3.setText("2nd wire");
+
+        jLabel4.setText("3rd wire");
+
+        jLabel5.setText("4th wire");
+
+        jLabel6.setText("5th wire");
+
+        jLabel7.setText("6th wire");
+
+        cbSecond.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Blue", "Red", "Black", "Yellow", "White", "-" }));
+        cbSecond.setSelectedIndex(5);
+
+        cbThird.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Blue", "Red", "Black", "Yellow", "White", "-" }));
+        cbThird.setSelectedIndex(5);
+
+        cbFourth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Blue", "Red", "Black", "Yellow", "White", "-" }));
+        cbFourth.setSelectedIndex(5);
+
+        cbFifth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Blue", "Red", "Black", "Yellow", "White", "-" }));
+        cbFifth.setSelectedIndex(5);
+
+        cbSixth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Blue", "Red", "Black", "Yellow", "White", "-" }));
+        cbSixth.setSelectedIndex(5);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(50, 50, 50)
-                .addComponent(bAccept)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(bMenu)
-                .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.CENTER, layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(40, 40, 40)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                    .addComponent(tfWires)
-                    .addComponent(jLabel1))
-                .addGap(10, 10, 10))
+                    .addComponent(bAccept, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGap(2, 2, 2)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(cbSixth, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(cbFifth, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(cbFourth, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addGap(0, 0, Short.MAX_VALUE)
+                                .addComponent(cbThird, javax.swing.GroupLayout.PREFERRED_SIZE, 137, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(2, 2, 2)
+                                .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(cbSecond, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cbFirst, javax.swing.GroupLayout.PREFERRED_SIZE, 137, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addGap(34, 34, 34))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(tfWires, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                    .addComponent(bAccept)
-                    .addComponent(bMenu)))
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cbFirst)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addGap(9, 9, 9)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cbSecond))
+                .addGap(9, 9, 9)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cbThird))
+                .addGap(9, 9, 9)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cbFourth))
+                .addGap(6, 6, 6)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cbFifth))
+                .addGap(6, 6, 6)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cbSixth))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(bAccept, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void bAcceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAcceptActionPerformed
-        redC=blueC=blackC=yellowC=whiteC=0;
+        redC=blueC=blackC=yellowC=whiteC=wireC=0;
+        input = new String[6];
         for(int i=serial.length-1;i>=0;i--){
             if(Character.isDigit(serial[i]))
             {
@@ -169,8 +252,20 @@ public class Wires extends javax.swing.JFrame {
                 break;
             }
         }
-        input=tfWires.getText().toLowerCase().split(" ");
+        input[0]=cbFirst.getSelectedItem().toString().toLowerCase();
+        input[1]=cbSecond.getSelectedItem().toString().toLowerCase();
+        input[2]=cbThird.getSelectedItem().toString().toLowerCase();
+        input[3]=cbFourth.getSelectedItem().toString().toLowerCase();
+        input[4]=cbFifth.getSelectedItem().toString().toLowerCase();
+        input[5]=cbSixth.getSelectedItem().toString().toLowerCase();
         for (String input1 : input) {
+            if (!input1.matches("-")) {
+                wireC++;
+            }
+        }
+        wires=new String[wireC];
+            System.arraycopy(input, 0, wires, 0, wires.length);
+        for (String input1 : wires) {
             if (input1.matches("red")) {
                 redC++;
             }
@@ -187,36 +282,31 @@ public class Wires extends javax.swing.JFrame {
                 whiteC++;
             }
         }
-        switch(input.length)
+        switch(wires.length)
         {
             case 3:
                     {
-                        wires3(input);
+                        wires3(wires);
                         break;
                     }
             case 4:
                     {
-                        wires4(input);
+                        wires4(wires);
                         break;
                     }
             case 5:
                     {
-                        wires5(input);
+                        wires5(wires);
                         break;
                     }
             case 6:
                     {
-                        wires6(input);
+                        wires6(wires);
                         break;
                     }
         }
         
     }//GEN-LAST:event_bAcceptActionPerformed
-
-    private void bMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bMenuActionPerformed
-        menu.setVisible(true);
-        this.dispose();
-    }//GEN-LAST:event_bMenuActionPerformed
 
     /**
      * @param args the command line arguments
@@ -255,8 +345,17 @@ public class Wires extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bAccept;
-    private javax.swing.JButton bMenu;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JTextField tfWires;
+    private javax.swing.JComboBox<String> cbFifth;
+    private javax.swing.JComboBox<String> cbFirst;
+    private javax.swing.JComboBox<String> cbFourth;
+    private javax.swing.JComboBox<String> cbSecond;
+    private javax.swing.JComboBox<String> cbSixth;
+    private javax.swing.JComboBox<String> cbThird;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     // End of variables declaration//GEN-END:variables
 }

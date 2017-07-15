@@ -65,9 +65,6 @@ public class Menu extends javax.swing.JFrame {
         });
 
         tfSerial.addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusGained(java.awt.event.FocusEvent evt) {
-                tfSerialFocusGained(evt);
-            }
             public void focusLost(java.awt.event.FocusEvent evt) {
                 tfSerialFocusLost(evt);
             }
@@ -94,9 +91,20 @@ public class Menu extends javax.swing.JFrame {
         tfStereo.setText("0");
 
         tfLitInd.setToolTipText("");
+        tfLitInd.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                tfLitIndFocusLost(evt);
+            }
+        });
         tfLitInd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 tfLitIndActionPerformed(evt);
+            }
+        });
+
+        tfUnlitInd.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                tfUnlitIndFocusLost(evt);
             }
         });
 
@@ -276,12 +284,6 @@ public class Menu extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_tfLitIndActionPerformed
 
-    private void tfSerialFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_tfSerialFocusGained
-      if(tfSerial.getText().matches("Serial")){
-          tfSerial.setText("");
-      }
-    }//GEN-LAST:event_tfSerialFocusGained
-
     private void tfSerialFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_tfSerialFocusLost
         tfSerial.setText(tfSerial.getText().toUpperCase());
     }//GEN-LAST:event_tfSerialFocusLost
@@ -301,6 +303,14 @@ public class Menu extends javax.swing.JFrame {
         Keypads fKeypads = new Keypads();
         fKeypads.setVisible(true);
     }//GEN-LAST:event_bKeypadsActionPerformed
+
+    private void tfLitIndFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_tfLitIndFocusLost
+        tfLitInd.setText(tfLitInd.getText().toUpperCase());
+    }//GEN-LAST:event_tfLitIndFocusLost
+
+    private void tfUnlitIndFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_tfUnlitIndFocusLost
+        tfUnlitInd.setText(tfUnlitInd.getText().toUpperCase());
+    }//GEN-LAST:event_tfUnlitIndFocusLost
 
     /**
      * @param args the command line arguments

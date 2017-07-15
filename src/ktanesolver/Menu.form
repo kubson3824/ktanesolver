@@ -180,7 +180,6 @@
     </Component>
     <Component class="javax.swing.JTextField" name="tfSerial">
       <Events>
-        <EventHandler event="focusGained" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="tfSerialFocusGained"/>
         <EventHandler event="focusLost" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="tfSerialFocusLost"/>
       </Events>
     </Component>
@@ -239,10 +238,14 @@
         <Property name="toolTipText" type="java.lang.String" value=""/>
       </Properties>
       <Events>
+        <EventHandler event="focusLost" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="tfLitIndFocusLost"/>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="tfLitIndActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JTextField" name="tfUnlitInd">
+      <Events>
+        <EventHandler event="focusLost" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="tfUnlitIndFocusLost"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JTextField" name="tfInput">
     </Component>
