@@ -361,7 +361,7 @@ public class SimonSays extends javax.swing.JFrame {
 }
     private void checkVowel() {
         for(int i=0;i<serial.length;i++){
-            if(serial[i]=='A'||serial[i]=='E'||serial[i]=='I'||serial[i]=='O'||serial[i]=='U'||serial[i]=='Y'){
+            if(serial[i]=='A'||serial[i]=='E'||serial[i]=='I'||serial[i]=='O'||serial[i]=='U'){
                 vowel=true;
                 break;
             }

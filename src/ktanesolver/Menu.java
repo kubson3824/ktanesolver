@@ -55,6 +55,7 @@ public class Menu extends javax.swing.JFrame {
         jLabel14 = new javax.swing.JLabel();
         bKeypads = new javax.swing.JButton();
         bSimonSays = new javax.swing.JButton();
+        bWhosFirst = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -158,6 +159,13 @@ public class Menu extends javax.swing.JFrame {
             }
         });
 
+        bWhosFirst.setText("Who's First");
+        bWhosFirst.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                bWhosFirstActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -179,7 +187,9 @@ public class Menu extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 125, Short.MAX_VALUE)
+                        .addGap(0, 34, Short.MAX_VALUE)
+                        .addComponent(bWhosFirst)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(bSimonSays)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(bKeypads)
@@ -278,7 +288,8 @@ public class Menu extends javax.swing.JFrame {
                     .addComponent(bWires)
                     .addComponent(bButton)
                     .addComponent(bKeypads)
-                    .addComponent(bSimonSays))
+                    .addComponent(bSimonSays)
+                    .addComponent(bWhosFirst))
                 .addGap(18, 18, 18))
         );
 
@@ -329,6 +340,11 @@ public class Menu extends javax.swing.JFrame {
         fSimon.setVisible(true);
     }//GEN-LAST:event_bSimonSaysActionPerformed
 
+    private void bWhosFirstActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bWhosFirstActionPerformed
+        WhosFirstV1 fWho = new WhosFirstV1();
+        fWho.setVisible(true);
+    }//GEN-LAST:event_bWhosFirstActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -368,6 +384,7 @@ public class Menu extends javax.swing.JFrame {
     private javax.swing.JButton bButton;
     private javax.swing.JButton bKeypads;
     private javax.swing.JButton bSimonSays;
+    private javax.swing.JButton bWhosFirst;
     private javax.swing.JButton bWires;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;

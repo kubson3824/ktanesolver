@@ -41,7 +41,9 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="1" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace min="0" pref="125" max="32767" attributes="0"/>
+                      <EmptySpace min="0" pref="34" max="32767" attributes="0"/>
+                      <Component id="bWhosFirst" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="bSimonSays" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="bKeypads" min="-2" max="-2" attributes="0"/>
@@ -166,6 +168,7 @@
                   <Component id="bButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="bKeypads" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="bSimonSays" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="bWhosFirst" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
           </Group>
@@ -344,6 +347,14 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bSimonSaysActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="bWhosFirst">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Who&apos;s First"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bWhosFirstActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>
