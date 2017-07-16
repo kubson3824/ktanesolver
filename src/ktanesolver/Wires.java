@@ -27,7 +27,7 @@ public class Wires extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(rootPane, "Cut the second wire");
         }
         else{
-        if(w[2].matches("white")){
+        if(w[2].equals("white")){
             JOptionPane.showMessageDialog(rootPane, "Cut the last wire");
         }else{  
         if(blueC>1){
@@ -43,7 +43,7 @@ public class Wires extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(rootPane, "Cut the last red wire");
         }
         else{
-            if(w[3].matches("yellow")&&redC==0){
+            if(w[3].equals("yellow")&&redC==0){
                 JOptionPane.showMessageDialog(rootPane, "Cut the first wire");
             }
             else{
@@ -62,7 +62,7 @@ public class Wires extends javax.swing.JFrame {
         }
     }
     void wires5(String[] w){
-        if(w[4].matches("black")&&digit%2==1){
+        if(w[4].equals("black")&&digit%2==1){
             JOptionPane.showMessageDialog(rootPane, "Cut the fourth wire");
         }else{
             if(redC==1&&yellowC>1){
@@ -259,26 +259,26 @@ public class Wires extends javax.swing.JFrame {
         input[4]=cbFifth.getSelectedItem().toString().toLowerCase();
         input[5]=cbSixth.getSelectedItem().toString().toLowerCase();
         for (String input1 : input) {
-            if (!input1.matches("-")) {
+            if (!input1.equals("-")) {
                 wireC++;
             }
         }
         wires=new String[wireC];
             System.arraycopy(input, 0, wires, 0, wires.length);
         for (String input1 : wires) {
-            if (input1.matches("red")) {
+            if (input1.equals("red")) {
                 redC++;
             }
-            if (input1.matches("blue")) {
+            if (input1.equals("blue")) {
                 blueC++;
             }
-            if (input1.matches("black")) {
+            if (input1.equals("black")) {
                 blackC++;
             }
-            if (input1.matches("yellow")) {
+            if (input1.equals("yellow")) {
                 yellowC++;
             }
-            if (input1.matches("white")) {
+            if (input1.equals("white")) {
                 whiteC++;
             }
         }

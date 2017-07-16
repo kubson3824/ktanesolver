@@ -58,12 +58,12 @@ public class WhosFirstV1 extends javax.swing.JFrame {
     private void initComponents() {
 
         cbUP = new javax.swing.JComboBox<>();
-        cbUL = new javax.swing.JComboBox<>();
-        cbUR = new javax.swing.JComboBox<>();
-        cbML = new javax.swing.JComboBox<>();
-        cbMR = new javax.swing.JComboBox<>();
-        cbBL = new javax.swing.JComboBox<>();
-        cbBR = new javax.swing.JComboBox<>();
+        cbUpLeft = new javax.swing.JComboBox<>();
+        cbUpRight = new javax.swing.JComboBox<>();
+        cbMidLeft = new javax.swing.JComboBox<>();
+        cbMidRight = new javax.swing.JComboBox<>();
+        cbBotLeft = new javax.swing.JComboBox<>();
+        cbBotRight = new javax.swing.JComboBox<>();
         bAccept = new javax.swing.JButton();
         lResult = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -72,17 +72,17 @@ public class WhosFirstV1 extends javax.swing.JFrame {
 
         cbUP.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "YES", "FIRST", "DISPLAY", "OKAY", "SAYS", "NOTHING", "", "BLANK", "NO", "LED", "LEAD", "READ", "RED", "REED", "LEED", "HOLD ON", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "THERE", "THEY'RE", "THEIR", "THEY ARE", "SEE", "C", "CEE" }));
 
-        cbUL.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
+        cbUpLeft.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
 
-        cbUR.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
+        cbUpRight.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
 
-        cbML.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
+        cbMidLeft.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
 
-        cbMR.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
+        cbMidRight.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
 
-        cbBL.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
+        cbBotLeft.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
 
-        cbBR.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
+        cbBotRight.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "READY", "FIRST", "NO", "BLANK", "NOTHING", "YES", "WHAT", "UHHH", "LEFT", "RIGHT", "MIDDLE", "OKAY", "WAIT", "PRESS", "YOU", "YOU ARE", "YOUR", "YOU'RE", "UR", "U", "UH HUH", "UH UH", "WHAT?", "DONE", "NEXT", "HOLD", "SURE", "LIKE" }));
 
         bAccept.setText("OK");
         bAccept.addActionListener(new java.awt.event.ActionListener() {
@@ -106,17 +106,17 @@ public class WhosFirstV1 extends javax.swing.JFrame {
                                 .addGap(56, 56, 56)
                                 .addComponent(cbUP, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(cbML, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(cbMidLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(59, 59, 59)
-                                .addComponent(cbMR, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(cbMidRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(cbUL, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(cbUpLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(59, 59, 59)
-                                .addComponent(cbUR, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(cbUpRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(cbBL, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(cbBotLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(59, 59, 59)
-                                .addComponent(cbBR, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(cbBotRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(jLabel2)
@@ -133,16 +133,16 @@ public class WhosFirstV1 extends javax.swing.JFrame {
                 .addComponent(cbUP, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbUL, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cbUR, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(cbUpLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbUpRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbML, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cbMR, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(cbMidLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbMidRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbBL, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cbBR, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(cbBotLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbBotRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 28, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(bAccept)
@@ -156,12 +156,12 @@ public class WhosFirstV1 extends javax.swing.JFrame {
 
     private void bAcceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAcceptActionPerformed
         display=cbUP.getSelectedItem().toString();
-        words[0]=cbUL.getSelectedItem().toString();
-        words[1]=cbUR.getSelectedItem().toString();
-        words[2]=cbML.getSelectedItem().toString();
-        words[3]=cbMR.getSelectedItem().toString();
-        words[4]=cbBL.getSelectedItem().toString();
-        words[5]=cbBR.getSelectedItem().toString();
+        words[0]=cbUpLeft.getSelectedItem().toString();
+        words[1]=cbUpRight.getSelectedItem().toString();
+        words[2]=cbMidLeft.getSelectedItem().toString();
+        words[3]=cbMidRight.getSelectedItem().toString();
+        words[4]=cbBotLeft.getSelectedItem().toString();
+        words[5]=cbBotRight.getSelectedItem().toString();
         searchedWord();
         resultSelection();
     }//GEN-LAST:event_bAcceptActionPerformed
@@ -284,13 +284,13 @@ public class WhosFirstV1 extends javax.swing.JFrame {
     }
     private void resultSelection(){
         for(int i=0;i<wordslist.length;i++){
-            if(wordslist[i][0].matches(searched)){
+            if(wordslist[i][0].equals(searched)){
                 row=i;
                 break;
             }
         }
         for (int i=1;i<wordslist[row].length;i++){
-            if(wordslist[row][i].matches(words[0])||wordslist[row][i].matches(words[1])||wordslist[row][i].matches(words[2])||wordslist[row][i].matches(words[3])||wordslist[row][i].matches(words[4])||wordslist[row][i].matches(words[5])){
+            if(wordslist[row][i].equals(words[0])||wordslist[row][i].equals(words[1])||wordslist[row][i].equals(words[2])||wordslist[row][i].equals(words[3])||wordslist[row][i].equals(words[4])||wordslist[row][i].equals(words[5])){
                 result=wordslist[row][i];
                 break;
             }
@@ -336,13 +336,13 @@ public class WhosFirstV1 extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bAccept;
-    private javax.swing.JComboBox<String> cbBL;
-    private javax.swing.JComboBox<String> cbBR;
-    private javax.swing.JComboBox<String> cbML;
-    private javax.swing.JComboBox<String> cbMR;
-    private javax.swing.JComboBox<String> cbUL;
+    private javax.swing.JComboBox<String> cbBotLeft;
+    private javax.swing.JComboBox<String> cbBotRight;
+    private javax.swing.JComboBox<String> cbMidLeft;
+    private javax.swing.JComboBox<String> cbMidRight;
     private javax.swing.JComboBox<String> cbUP;
-    private javax.swing.JComboBox<String> cbUR;
+    private javax.swing.JComboBox<String> cbUpLeft;
+    private javax.swing.JComboBox<String> cbUpRight;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel lResult;
     // End of variables declaration//GEN-END:variables

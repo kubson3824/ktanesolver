@@ -314,7 +314,7 @@ public class Menu extends javax.swing.JFrame {
        batAA=Integer.parseInt(tfAABat.getText());
        batD=Integer.parseInt(tfDBat.getText());
        batSum=batAA+batD;
-       if(!tfLitInd.getText().matches("")){
+       if(!tfLitInd.getText().equals("")){
        litInd=tfLitInd.getText().toUpperCase().split(" ");
        }
        Button fButton = new Button(this,batSum,litInd);

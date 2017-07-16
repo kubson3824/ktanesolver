@@ -23,10 +23,10 @@ public class Button extends javax.swing.JFrame {
         if(null==l){
         } else {
             for (String l1 : l) {
-                if (l1.matches("FRK")) {
+                if (l1.equals("FRK")) {
                     frk=true;
                 }
-                if (l1.matches("CAR")) {
+                if (l1.equals("CAR")) {
                     car=true;
                 }
             }
@@ -107,22 +107,22 @@ public class Button extends javax.swing.JFrame {
         colour=cbColour.getSelectedItem().toString().toLowerCase();
         text=cbText.getSelectedItem().toString().toLowerCase();
         
-        if(colour.matches("blue")&&text.matches("abort"))
+        if(colour.equals("blue")&&text.equals("abort"))
             holding();
         else{
-            if(bat>1&&text.matches("detonate"))
+            if(bat>1&&text.equals("detonate"))
                 pushing();
             else{
-                if(colour.matches("white")&&car)
+                if(colour.equals("white")&&car)
                     holding();
                 else{
                     if(bat>2&&frk)
                         pushing();
                     else{
-                        if(colour.matches("yellow"))
+                        if(colour.equals("yellow"))
                             holding();
                         else{
-                            if(colour.matches("red")&&text.matches("hold"))
+                            if(colour.equals("red")&&text.equals("hold"))
                                 pushing();
                             else
                                 holding();

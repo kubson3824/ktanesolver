@@ -79,17 +79,17 @@ public class ButtonStrip extends javax.swing.JFrame {
     private void bAcceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAcceptActionPerformed
         
         String stripColour=cbStripColour.getSelectedItem().toString().toLowerCase();
-        if(stripColour.matches("blue")){
+        if(stripColour.equals("blue")){
             JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 4 in it");
             this.dispose();
         }
         else{
-            if(stripColour.matches("white")){
+            if(stripColour.equals("white")){
                 JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 1 in it");
                 this.dispose();
             }
             else{
-                if(stripColour.matches("yellow")){
+                if(stripColour.equals("yellow")){
                     JOptionPane.showMessageDialog(rootPane, "Release when the timer has a 5 in it");
                     this.dispose();
                 }
