@@ -23,7 +23,6 @@ public class Menu extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        bWires = new javax.swing.JButton();
         tfSerial = new javax.swing.JTextField();
         tfAABat = new javax.swing.JTextField();
         tfDBat = new javax.swing.JTextField();
@@ -37,7 +36,6 @@ public class Menu extends javax.swing.JFrame {
         tfStereo = new javax.swing.JTextField();
         tfLitInd = new javax.swing.JTextField();
         tfUnlitInd = new javax.swing.JTextField();
-        bButton = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
@@ -51,22 +49,12 @@ public class Menu extends javax.swing.JFrame {
         jLabel11 = new javax.swing.JLabel();
         jLabel12 = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
-        bKeypads = new javax.swing.JButton();
-        bSimonSays = new javax.swing.JButton();
-        bWhosFirst = new javax.swing.JButton();
-        bMemory = new javax.swing.JButton();
-        bMorse = new javax.swing.JButton();
-        bComplicated = new javax.swing.JButton();
-        bWireSequence = new javax.swing.JButton();
+        cbRegular = new javax.swing.JComboBox<>();
+        cbNeedy = new javax.swing.JComboBox<>();
+        jButton1 = new javax.swing.JButton();
+        bNeedy = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        bWires.setText("Wires");
-        bWires.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bWiresActionPerformed(evt);
-            }
-        });
 
         tfSerial.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusLost(java.awt.event.FocusEvent evt) {
@@ -112,13 +100,6 @@ public class Menu extends javax.swing.JFrame {
             }
         });
 
-        bButton.setText("Button");
-        bButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bButtonActionPerformed(evt);
-            }
-        });
-
         jLabel1.setText("Serial Number");
 
         jLabel2.setText("AA Batteries");
@@ -145,52 +126,21 @@ public class Menu extends javax.swing.JFrame {
 
         jLabel13.setText("Lit indicators");
 
-        bKeypads.setText("Keypads");
-        bKeypads.addActionListener(new java.awt.event.ActionListener() {
+        cbRegular.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Button", "Complicated Wires", "Keypads", "Mazes", "Memory", "Morse Code", "Passwords", "Simon Says", "Who's on First", "Wire Sequences", "Wires" }));
+
+        cbNeedy.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Knobs" }));
+
+        jButton1.setText("Regular");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bKeypadsActionPerformed(evt);
+                jButton1ActionPerformed(evt);
             }
         });
 
-        bSimonSays.setText("Simon Says");
-        bSimonSays.addActionListener(new java.awt.event.ActionListener() {
+        bNeedy.setText("Needy");
+        bNeedy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bSimonSaysActionPerformed(evt);
-            }
-        });
-
-        bWhosFirst.setText("Who's First");
-        bWhosFirst.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bWhosFirstActionPerformed(evt);
-            }
-        });
-
-        bMemory.setText("Memory");
-        bMemory.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bMemoryActionPerformed(evt);
-            }
-        });
-
-        bMorse.setText("Morse Code");
-        bMorse.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bMorseActionPerformed(evt);
-            }
-        });
-
-        bComplicated.setText("Complicated");
-        bComplicated.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bComplicatedActionPerformed(evt);
-            }
-        });
-
-        bWireSequence.setText("Sequence");
-        bWireSequence.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bWireSequenceActionPerformed(evt);
+                bNeedyActionPerformed(evt);
             }
         });
 
@@ -198,70 +148,56 @@ public class Menu extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(tfStereo, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE)
+                    .addComponent(tfSerialP, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(tfRJ45)
+                    .addComponent(tfPS2, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(tfParallel)
+                    .addComponent(tfDVI)
+                    .addComponent(tfPortPlate)
+                    .addComponent(tfBatHold)
+                    .addComponent(tfDBat)
+                    .addComponent(tfSerial)
+                    .addComponent(tfAABat))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(tfStereo, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE)
-                            .addComponent(tfSerialP, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(tfRJ45)
-                            .addComponent(tfPS2, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(tfParallel)
-                            .addComponent(tfDVI)
-                            .addComponent(tfPortPlate)
-                            .addComponent(tfBatHold)
-                            .addComponent(tfDBat)
-                            .addComponent(tfSerial)
-                            .addComponent(tfAABat))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel2)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(jLabel2)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING)
-                                            .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING)))
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel1)
-                                            .addComponent(jLabel3)
-                                            .addComponent(jLabel4)
-                                            .addComponent(jLabel5)
-                                            .addComponent(jLabel6)
-                                            .addComponent(jLabel9)
-                                            .addComponent(jLabel11)
-                                            .addComponent(jLabel10))
-                                        .addGap(0, 0, Short.MAX_VALUE)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING)))
+                            .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(tfUnlitInd, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 287, Short.MAX_VALUE)
-                                        .addComponent(tfLitInd, javax.swing.GroupLayout.Alignment.TRAILING))
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                        .addComponent(bWireSequence)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(bComplicated))))
-                            .addComponent(jLabel7)
-                            .addComponent(jLabel8)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 26, Short.MAX_VALUE)
-                        .addComponent(bMorse)
+                                    .addComponent(jLabel1)
+                                    .addComponent(jLabel3)
+                                    .addComponent(jLabel4)
+                                    .addComponent(jLabel5)
+                                    .addComponent(jLabel6)
+                                    .addComponent(jLabel9)
+                                    .addComponent(jLabel11)
+                                    .addComponent(jLabel10))
+                                .addGap(0, 0, Short.MAX_VALUE)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bMemory)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bWhosFirst)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bSimonSays)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bKeypads)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bWires)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bButton)))
-                .addContainerGap())
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(tfUnlitInd, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 287, Short.MAX_VALUE)
+                            .addComponent(tfLitInd, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(cbRegular, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(cbNeedy, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jButton1)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(bNeedy)))
+                        .addContainerGap())
+                    .addComponent(jLabel7)
+                    .addComponent(jLabel8)))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -287,11 +223,15 @@ public class Menu extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(tfBatHold, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel4))
+                    .addComponent(jLabel4)
+                    .addComponent(cbRegular, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbNeedy, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(tfPortPlate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel5))
+                    .addComponent(jLabel5)
+                    .addComponent(jButton1)
+                    .addComponent(bNeedy))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(tfDVI, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -315,29 +255,12 @@ public class Menu extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(tfStereo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel11)
-                    .addComponent(bComplicated)
-                    .addComponent(bWireSequence))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(bWires)
-                    .addComponent(bButton)
-                    .addComponent(bKeypads)
-                    .addComponent(bSimonSays)
-                    .addComponent(bWhosFirst)
-                    .addComponent(bMemory)
-                    .addComponent(bMorse))
-                .addGap(18, 18, 18))
+                    .addComponent(jLabel11))
+                .addGap(14, 14, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void bWiresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bWiresActionPerformed
-        serial= tfSerial.getText().toCharArray();
-        Wires fWires = new Wires(serial);
-        fWires.setVisible(true);
-    }//GEN-LAST:event_bWiresActionPerformed
 
     private void tfLitIndActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfLitIndActionPerformed
         // TODO add your handling code here:
@@ -347,22 +270,6 @@ public class Menu extends javax.swing.JFrame {
         tfSerial.setText(tfSerial.getText().toUpperCase());
     }//GEN-LAST:event_tfSerialFocusLost
 
-    private void bButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bButtonActionPerformed
-       batAA=Integer.parseInt(tfAABat.getText());
-       batD=Integer.parseInt(tfDBat.getText());
-       batSum=batAA+batD;
-       if(!tfLitInd.getText().equals("")){
-       litInd=tfLitInd.getText().toUpperCase().split(" ");
-       }
-       Button fButton = new Button(batSum,litInd);
-       fButton.setVisible(true);
-    }//GEN-LAST:event_bButtonActionPerformed
-
-    private void bKeypadsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bKeypadsActionPerformed
-        Keypads fKeypads = new Keypads();
-        fKeypads.setVisible(true);
-    }//GEN-LAST:event_bKeypadsActionPerformed
-
     private void tfLitIndFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_tfLitIndFocusLost
         tfLitInd.setText(tfLitInd.getText().toUpperCase());
     }//GEN-LAST:event_tfLitIndFocusLost
@@ -371,42 +278,96 @@ public class Menu extends javax.swing.JFrame {
         tfUnlitInd.setText(tfUnlitInd.getText().toUpperCase());
     }//GEN-LAST:event_tfUnlitIndFocusLost
 
-    private void bSimonSaysActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bSimonSaysActionPerformed
-        serial= tfSerial.getText().toCharArray();
-        SimonSays fSimon = new SimonSays(serial);
-        fSimon.setVisible(true);
-    }//GEN-LAST:event_bSimonSaysActionPerformed
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        init();
+        switch(cbRegular.getSelectedItem().toString().toLowerCase()){
+            case "button":{
+                Button fBut = new Button(batD, litInd);
+                fBut.setVisible(true);
+                break;
+            }
+            case "complicated wires":{
+                ComplicatedWires fComp = new ComplicatedWires(serial, portParallel, batD);
+                fComp.setVisible(true);
+                break;
+            }
+            case "keypads":{
+                Keypads fKeypads = new Keypads();
+                fKeypads.setVisible(true);
+                break;
+            }
+            /*case "mazes":{
+                Button fBut = new Button(batD, litInd);
+                fBut.setVisible(true);
+                break;
+            }*/
+            case "memory":{
+                Memory fMem = new Memory();
+                fMem.setVisible(true);
+                break;
+            }
+            case "morse code":{
+                MorseCode fMorse = new MorseCode();
+                fMorse.setVisible(true);
+                break;
+            }
+            case "passwords":{
+                Passwords fPassword = new Passwords();
+                fPassword.setVisible(true);
+                break;
+            }
+            case "simon says":{
+                SimonSays fSim = new SimonSays(serial);
+                fSim.setVisible(true);
+                break;
+            }
+            case "who's on first":{
+                WhosFirstV1 fWho = new WhosFirstV1();
+                fWho.setVisible(true);
+                break;
+            }
+            case "wire sequences":{
+                WireSequence fSeq = new WireSequence();
+                fSeq.setVisible(true);
+                break;
+            }
+            case "wires":{
+                Wires fWires = new Wires(serial);
+                fWires.setVisible(true);
+                break;
+            }
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void bWhosFirstActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bWhosFirstActionPerformed
-        WhosFirstV1 fWho = new WhosFirstV1();
-        fWho.setVisible(true);
-    }//GEN-LAST:event_bWhosFirstActionPerformed
-
-    private void bMemoryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bMemoryActionPerformed
-        Memory fMemo = new Memory();
-        fMemo.setVisible(true);
-    }//GEN-LAST:event_bMemoryActionPerformed
-
-    private void bMorseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bMorseActionPerformed
-        MorseCode fMorse = new MorseCode();
-        fMorse.setVisible(true);
-    }//GEN-LAST:event_bMorseActionPerformed
-
-    private void bComplicatedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bComplicatedActionPerformed
-        serial=tfSerial.getText().toCharArray();
-        batAA=Integer.parseInt(tfAABat.getText());
-        batD=Integer.parseInt(tfDBat.getText());
-        portParallel=Integer.parseInt(tfParallel.getText());
+    private void bNeedyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bNeedyActionPerformed
+        init();
+        switch(cbNeedy.getSelectedItem().toString().toLowerCase()){
+            case "knobs":{
+                NeedyKnobs fKnob = new NeedyKnobs();
+                fKnob.setVisible(true);
+                break;
+            }
+        }
+    }//GEN-LAST:event_bNeedyActionPerformed
+    private void init(){
+        litInd=tfLitInd.toString().split(" ");
+        unlitInd=tfUnlitInd.toString().split(" ");
+        batAA=0;
+        batD=0;
+        batHold=0;
+        portPlate=0;
+        portDVI=0;
+        portParallel=0;
+        portPS2=0;        
+        portRJ45=0;
+        portSerial=0;
+        portStereoRCA=0;
         batSum=batAA+batD;
-        ComplicatedWires fComp = new ComplicatedWires(serial , portParallel, batD);
-        fComp.setVisible(true);
-    }//GEN-LAST:event_bComplicatedActionPerformed
-
-    private void bWireSequenceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bWireSequenceActionPerformed
-        WireSequence fSeq = new WireSequence();
-        fSeq.setVisible(true);
-    }//GEN-LAST:event_bWireSequenceActionPerformed
-
+        indSum=litInd.length+unlitInd.length;
+        portSum=portDVI+portPS2+portParallel+portRJ45+portSerial+portStereoRCA;
+        
+        
+    }
     /**
      * @param args the command line arguments
      */
@@ -443,15 +404,10 @@ public class Menu extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton bButton;
-    private javax.swing.JButton bComplicated;
-    private javax.swing.JButton bKeypads;
-    private javax.swing.JButton bMemory;
-    private javax.swing.JButton bMorse;
-    private javax.swing.JButton bSimonSays;
-    private javax.swing.JButton bWhosFirst;
-    private javax.swing.JButton bWireSequence;
-    private javax.swing.JButton bWires;
+    private javax.swing.JButton bNeedy;
+    private javax.swing.JComboBox<String> cbNeedy;
+    private javax.swing.JComboBox<String> cbRegular;
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;

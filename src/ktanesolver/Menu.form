@@ -23,84 +23,67 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Group type="102" attributes="0">
-              <Group type="103" groupAlignment="1" attributes="0">
-                  <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Component id="tfStereo" pref="150" max="32767" attributes="0"/>
-                          <Component id="tfSerialP" alignment="1" max="32767" attributes="0"/>
-                          <Component id="tfRJ45" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfPS2" alignment="1" max="32767" attributes="0"/>
-                          <Component id="tfParallel" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfDVI" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfPortPlate" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfBatHold" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfDBat" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfSerial" alignment="0" max="32767" attributes="0"/>
-                          <Component id="tfAABat" alignment="0" max="32767" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" attributes="0">
-                                      <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="32767" attributes="0"/>
-                                      <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="jLabel13" alignment="1" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel12" alignment="1" min="-2" max="-2" attributes="0"/>
-                                      </Group>
-                                  </Group>
-                                  <Group type="102" attributes="0">
-                                      <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel5" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel6" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel9" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel11" alignment="0" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabel10" min="-2" max="-2" attributes="0"/>
-                                      </Group>
-                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                                  </Group>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="tfUnlitInd" alignment="1" pref="287" max="32767" attributes="0"/>
-                                      <Component id="tfLitInd" alignment="1" max="32767" attributes="0"/>
-                                  </Group>
-                                  <Group type="102" alignment="1" attributes="0">
-                                      <Component id="bWireSequence" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="bComplicated" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                              </Group>
-                          </Group>
-                          <Component id="jLabel7" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="jLabel8" alignment="0" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                  </Group>
-                  <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace min="0" pref="26" max="32767" attributes="0"/>
-                      <Component id="bMorse" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="bMemory" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="bWhosFirst" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="bSimonSays" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="bKeypads" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="bWires" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="bButton" min="-2" max="-2" attributes="0"/>
-                  </Group>
+          <Group type="102" alignment="1" attributes="0">
+              <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                  <Component id="tfStereo" pref="150" max="32767" attributes="0"/>
+                  <Component id="tfSerialP" alignment="1" max="32767" attributes="0"/>
+                  <Component id="tfRJ45" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfPS2" alignment="1" max="32767" attributes="0"/>
+                  <Component id="tfParallel" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfDVI" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfPortPlate" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfBatHold" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfDBat" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfSerial" alignment="0" max="32767" attributes="0"/>
+                  <Component id="tfAABat" alignment="0" max="32767" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" attributes="0">
+                              <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="jLabel13" alignment="1" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel12" alignment="1" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                          </Group>
+                          <Group type="102" attributes="0">
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel5" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel6" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel9" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel11" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel10" alignment="0" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                          </Group>
+                      </Group>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                          <Component id="tfUnlitInd" alignment="1" pref="287" max="32767" attributes="0"/>
+                          <Component id="tfLitInd" alignment="1" max="32767" attributes="0"/>
+                          <Group type="102" attributes="0">
+                              <Component id="cbRegular" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Component id="cbNeedy" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Group type="102" attributes="0">
+                              <Component id="jButton1" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Component id="bNeedy" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                      </Group>
+                      <EmptySpace max="-2" attributes="0"/>
+                  </Group>
+                  <Component id="jLabel7" alignment="0" min="-2" max="-2" attributes="0"/>
+                  <Component id="jLabel8" alignment="0" min="-2" max="-2" attributes="0"/>
+              </Group>
           </Group>
       </Group>
     </DimensionLayout>
@@ -134,11 +117,15 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="tfBatHold" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="cbRegular" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="cbNeedy" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="tfPortPlate" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel5" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jButton1" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="bNeedy" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
@@ -169,33 +156,13 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="tfStereo" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel11" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bComplicated" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bWireSequence" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
-              <EmptySpace max="32767" attributes="0"/>
-              <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="bWires" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bKeypads" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bSimonSays" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bWhosFirst" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bMemory" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="bMorse" alignment="3" min="-2" max="-2" attributes="0"/>
-              </Group>
-              <EmptySpace type="separate" max="-2" attributes="0"/>
+              <EmptySpace type="separate" pref="14" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Component class="javax.swing.JButton" name="bWires">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Wires"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bWiresActionPerformed"/>
-      </Events>
-    </Component>
     <Component class="javax.swing.JTextField" name="tfSerial">
       <Events>
         <EventHandler event="focusLost" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="tfSerialFocusLost"/>
@@ -265,14 +232,6 @@
         <EventHandler event="focusLost" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="tfUnlitIndFocusLost"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="bButton">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Button"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bButtonActionPerformed"/>
-      </Events>
-    </Component>
     <Component class="javax.swing.JLabel" name="jLabel1">
       <Properties>
         <Property name="text" type="java.lang.String" value="Serial Number"/>
@@ -338,60 +297,54 @@
         <Property name="text" type="java.lang.String" value="Lit indicators"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JButton" name="bKeypads">
+    <Component class="javax.swing.JComboBox" name="cbRegular">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Keypads"/>
+        <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+          <StringArray count="11">
+            <StringItem index="0" value="Button"/>
+            <StringItem index="1" value="Complicated Wires"/>
+            <StringItem index="2" value="Keypads"/>
+            <StringItem index="3" value="Mazes"/>
+            <StringItem index="4" value="Memory"/>
+            <StringItem index="5" value="Morse Code"/>
+            <StringItem index="6" value="Passwords"/>
+            <StringItem index="7" value="Simon Says"/>
+            <StringItem index="8" value="Who&apos;s on First"/>
+            <StringItem index="9" value="Wire Sequences"/>
+            <StringItem index="10" value="Wires"/>
+          </StringArray>
+        </Property>
+      </Properties>
+      <AuxValues>
+        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+      </AuxValues>
+    </Component>
+    <Component class="javax.swing.JComboBox" name="cbNeedy">
+      <Properties>
+        <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+          <StringArray count="1">
+            <StringItem index="0" value="Knobs"/>
+          </StringArray>
+        </Property>
+      </Properties>
+      <AuxValues>
+        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+      </AuxValues>
+    </Component>
+    <Component class="javax.swing.JButton" name="jButton1">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Regular"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bKeypadsActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButton1ActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="bSimonSays">
+    <Component class="javax.swing.JButton" name="bNeedy">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Simon Says"/>
+        <Property name="text" type="java.lang.String" value="Needy"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bSimonSaysActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="bWhosFirst">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Who&apos;s First"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bWhosFirstActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="bMemory">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Memory"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bMemoryActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="bMorse">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Morse Code"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bMorseActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="bComplicated">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Complicated"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bComplicatedActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="bWireSequence">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Sequence"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bWireSequenceActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bNeedyActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>
