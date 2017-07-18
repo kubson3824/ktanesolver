@@ -4,12 +4,15 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/G:/KTANESolver/src/ktanesolver/Keypads.java</file>
+            <file>file:/G:/KTANESolver/src/ktanesolver/Memory.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/Button.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/WhosFirstV1.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/ButtonStrip.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/SimonSays.java</file>
+            <file>file:/G:/KTANESolver/src/ktanesolver/ComplicatedWires.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/Wires.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/Menu.java</file>
+            <file>file:/G:/KTANESolver/src/ktanesolver/MorseCode.java</file>
         </group>
     </open-files>
 </project-private>

@@ -13,12 +13,11 @@ import javax.swing.JOptionPane;
  * @author Komp
  */
 public class Button extends javax.swing.JFrame {
-    Menu menu;
+   
     String colour,text;
     boolean frk=false, car=false;
     int bat;
-    public Button(Menu m,int b, String[] l) {
-        menu=m;
+    public Button(int b, String[] l) {
         bat=b;
         if(null==l){
         } else {

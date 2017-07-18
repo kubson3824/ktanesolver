@@ -17,8 +17,7 @@ public class Wires extends javax.swing.JFrame {
     String[] input, wires;
     char[] serial;
     int digit, wireC;
-    public Wires(Menu m,char[] s) {
-        menu=m;
+    public Wires(char[] s) {
         serial=s;
         initComponents();
     }
