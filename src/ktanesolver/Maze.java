@@ -6,10 +6,6 @@
 
 package ktanesolver;
 
-/**
- *
- * @author Komp
- */
 public class Maze extends javax.swing.JFrame {
 
     /** Creates new form Maze */

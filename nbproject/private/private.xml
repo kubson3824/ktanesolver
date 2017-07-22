@@ -3,12 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/G:/KTANESolver/src/ktanesolver/Button.java</file>
-            <file>file:/G:/KTANESolver/src/ktanesolver/NeedyKnobs.java</file>
-            <file>file:/G:/KTANESolver/src/ktanesolver/Maze.java</file>
-            <file>file:/G:/KTANESolver/src/ktanesolver/ComplicatedWires.java</file>
-            <file>file:/G:/KTANESolver/src/ktanesolver/Passwords.java</file>
+            <file>file:/G:/KTANESolver/src/ktanesolver/Wires.java</file>
             <file>file:/G:/KTANESolver/src/ktanesolver/Menu.java</file>
+            <file>file:/G:/KTANESolver/src/ktanesolver/AdventureGame.java</file>
         </group>
     </open-files>
 </project-private>
