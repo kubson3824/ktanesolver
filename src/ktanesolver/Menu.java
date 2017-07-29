@@ -5,6 +5,7 @@
  */
 package ktanesolver;
 
+import javax.swing.JOptionPane;
 import ktanesolver.VanillaNeedy.*;
 import ktanesolver.ModdedRegular.*;
 import ktanesolver.VanillaRegular.*;
@@ -131,7 +132,7 @@ public class Menu extends javax.swing.JFrame {
             }
         });
 
-        cbRegularModded.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Adjacent Letters", "Adventure Game", "Astrology", "Blind Alley", "Caesar Cipher", "Logic" }));
+        cbRegularModded.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Adjacent Letters", "Adventure Game", "Astrology", "Blind Alley", "Caesar Cipher", "Colored Squares", "Logic" }));
 
         bModdedRegular.setText("Mod Regular");
         bModdedRegular.addActionListener(new java.awt.event.ActionListener() {
@@ -442,6 +443,12 @@ public class Menu extends javax.swing.JFrame {
                 fCa.setVisible(true);
                 break;
             }
+            case "colored squares":{
+                JOptionPane.showMessageDialog(this, "Press the group containing fewest squares");
+                ColoredSquares fCo = new ColoredSquares();
+                fCo.setVisible(true);
+                break;
+            }
             case "logic":{
                 Logic fLogic = new Logic(batSum, indSum, portTypes, unlitIndA, batHold, litIndA, portParallel, portPS2, portSerial, unlitInd, litInd, serial, portDVI, portRJ45, portStereoRCA, portSum);
                 fLogic.setVisible(true);
@@ -520,10 +527,6 @@ public class Menu extends javax.swing.JFrame {
         portSum=portDVI+portPS2+portParallel+portRJ45+portSerial+portStereoRCA;
         
         
-    }
-    private void setZero(javax.swing.JTextField i){
-        if(i.getText()==null)
-            i.setText("0");
     }
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
