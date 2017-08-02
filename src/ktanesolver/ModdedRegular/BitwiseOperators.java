@@ -11,10 +11,121 @@ package ktanesolver.ModdedRegular;
  */
 public class BitwiseOperators extends javax.swing.JFrame {
 
-    /**
-     * Creates new form BitwiseOperators
-     */
-    public BitwiseOperators() {
+    class Bit{
+        boolean byte1=false, byte2=false;
+        Bit(int n){
+            switch (n){
+                case 0:{
+                    if(batAA==0)
+                        byte1=true;
+                    if(batD>0)
+                        byte2=true;
+                    break;
+                }
+                case 1:{
+                    if(portPar>0)
+                        byte1=true;
+                    if(portCount>2)
+                        byte2=true;
+                    break;
+                }
+                case 2:{
+                    if(nsa)
+                        byte1=true;
+                    if(batHold>1)
+                        byte2=true;
+                    break;
+                }
+                case 3:{
+                    if(modulesAmount>(startTime/60))
+                        byte1=true;
+                    if(bob)
+                        byte2=true;
+                    break;
+                }
+                case 4:{
+                    if(litCount>1)
+                        byte1=true;
+                    if(unlitCount>1)
+                        byte2=true;
+                    break;
+                }
+                case 5:{
+                    if(modulesAmount%3==0)
+                        byte1=true;
+                    if(lastDigit%2==1)
+                        byte2=true;
+                    break;
+                }
+                case 6:{
+                    if(batD<2)
+                        byte1=true;
+                    if(modulesAmount%2==0)
+                        byte2=true;
+                    break;
+                }
+                case 7:{
+                    if(portCount<4)
+                        byte1=true;
+                    if(batCount>1)
+                        byte2=true;
+                    break;
+                }
+            }
+        }
+        boolean determine(String s){
+            boolean result=false;
+            switch(s){
+                case "AND":{
+                    if(byte1&&byte2)
+                        result=true;
+                    else
+                        result=false;
+                    break;
+                }
+                case "OR":{
+                    if(byte1||byte2)
+                        result=true;
+                    else
+                        result=false;
+                    break;
+                }
+                case "XOR":{
+                    if((byte1&&!byte2)||(!byte1&&byte2))
+                        result=true;
+                    else
+                        result=false;
+                    break;
+                }
+                case "NOT":{
+                    if(!byte1)
+                        result=true;
+                    else
+                        result=false;
+                    break;
+                }
+            }
+            return result;
+        }
+    }
+    Bit[] defaultbytes;
+    boolean bob=false,nsa=false;
+    int batAA,batD,portPar,portCount, batHold, modulesAmount, startTime, litCount, unlitCount, batCount, lastDigit;
+    char[] serial;
+    String[] lit;
+    public BitwiseOperators(int aa, int d, int pp, int pc, int bh, int ma, int st, int litc, int unlitc, int batc, String[] l, char[] s) {
+        batAA=aa;
+        batD=d;
+        portPar=pp;
+        portCount=pc;
+        batHold=bh;
+        modulesAmount=ma;
+        startTime=st;
+        litCount=litc;
+        unlitCount=unlitc;
+        batCount=batc;
+        lit=l;
+        serial=s;
         initComponents();
     }
 
@@ -27,36 +138,41 @@ public class BitwiseOperators extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jTextField1 = new javax.swing.JTextField();
-        jTextField2 = new javax.swing.JTextField();
-        jTextField3 = new javax.swing.JTextField();
-        jTextField4 = new javax.swing.JTextField();
-        jTextField5 = new javax.swing.JTextField();
-        jTextField6 = new javax.swing.JTextField();
-        jTextField7 = new javax.swing.JTextField();
-        jTextField8 = new javax.swing.JTextField();
+        tf0 = new javax.swing.JTextField();
+        tf1 = new javax.swing.JTextField();
+        tf2 = new javax.swing.JTextField();
+        tf3 = new javax.swing.JTextField();
+        tf4 = new javax.swing.JTextField();
+        tf5 = new javax.swing.JTextField();
+        tf6 = new javax.swing.JTextField();
+        tf7 = new javax.swing.JTextField();
         bAccept = new javax.swing.JButton();
         cbOperator = new javax.swing.JComboBox<>();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        jTextField1.setEditable(false);
+        tf0.setEditable(false);
 
-        jTextField2.setEditable(false);
+        tf1.setEditable(false);
 
-        jTextField3.setEditable(false);
+        tf2.setEditable(false);
 
-        jTextField4.setEditable(false);
+        tf3.setEditable(false);
 
-        jTextField5.setEditable(false);
+        tf4.setEditable(false);
 
-        jTextField6.setEditable(false);
+        tf5.setEditable(false);
 
-        jTextField7.setEditable(false);
+        tf6.setEditable(false);
 
-        jTextField8.setEditable(false);
+        tf7.setEditable(false);
 
         bAccept.setText("OK");
+        bAccept.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                bAcceptActionPerformed(evt);
+            }
+        });
 
         cbOperator.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "AND", "OR", "XOR", "NOT" }));
 
@@ -67,34 +183,29 @@ public class BitwiseOperators extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(bAccept))
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(bAccept)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tf0, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tf1, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tf2, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tf3, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tf4, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tf5, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(cbOperator, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                                .addComponent(tf6, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(tf7, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(cbOperator, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
-
-        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jTextField1, jTextField2, jTextField3, jTextField4, jTextField5, jTextField6, jTextField7, jTextField8});
-
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
@@ -102,21 +213,78 @@ public class BitwiseOperators extends javax.swing.JFrame {
                 .addComponent(cbOperator, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(17, 17, 17)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(tf0, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tf7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(bAccept)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void bAcceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAcceptActionPerformed
+        if(lit!=null){
+        for (String lit1 : lit) {
+            if (lit1.equals("BOB")) {
+                bob=true;
+            }
+            if (lit1.equals("NSA")) {
+                nsa=true;
+            }
+        }
+        }
+        for(int i=serial.length-1;i>=0;i--){
+            if(Character.isDigit(serial[i]))
+            {
+                lastDigit=Character.getNumericValue(serial[i]);
+                break;
+            }
+        }
+        defaultbytes= new Bit[8];
+        for(int i=0;i<8;i++){
+            defaultbytes[i]=new Bit(i);
+        }
+        if(defaultbytes[0].determine(cbOperator.getSelectedItem().toString()))
+            tf0.setText("1");
+        else
+            tf0.setText("0");
+        if(defaultbytes[1].determine(cbOperator.getSelectedItem().toString()))
+            tf1.setText("1");
+        else
+            tf1.setText("0");
+        if(defaultbytes[2].determine(cbOperator.getSelectedItem().toString()))
+            tf2.setText("1");
+        else
+            tf2.setText("0");
+        if(defaultbytes[3].determine(cbOperator.getSelectedItem().toString()))
+            tf3.setText("1");
+        else
+            tf3.setText("0");
+        if(defaultbytes[4].determine(cbOperator.getSelectedItem().toString()))
+            tf4.setText("1");
+        else
+            tf4.setText("0");
+        if(defaultbytes[5].determine(cbOperator.getSelectedItem().toString()))
+            tf5.setText("1");
+        else
+            tf5.setText("0");
+        if(defaultbytes[6].determine(cbOperator.getSelectedItem().toString()))
+            tf6.setText("1");
+        else
+            tf6.setText("0");
+        if(defaultbytes[7].determine(cbOperator.getSelectedItem().toString()))
+            tf7.setText("1");
+        else
+            tf7.setText("0");
+    }//GEN-LAST:event_bAcceptActionPerformed
 
     /**
      * @param args the command line arguments
@@ -148,7 +316,7 @@ public class BitwiseOperators extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new BitwiseOperators().setVisible(true);
+                //new BitwiseOperators().setVisible(true);
             }
         });
     }
@@ -156,13 +324,13 @@ public class BitwiseOperators extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bAccept;
     private javax.swing.JComboBox<String> cbOperator;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField3;
-    private javax.swing.JTextField jTextField4;
-    private javax.swing.JTextField jTextField5;
-    private javax.swing.JTextField jTextField6;
-    private javax.swing.JTextField jTextField7;
-    private javax.swing.JTextField jTextField8;
+    private javax.swing.JTextField tf0;
+    private javax.swing.JTextField tf1;
+    private javax.swing.JTextField tf2;
+    private javax.swing.JTextField tf3;
+    private javax.swing.JTextField tf4;
+    private javax.swing.JTextField tf5;
+    private javax.swing.JTextField tf6;
+    private javax.swing.JTextField tf7;
     // End of variables declaration//GEN-END:variables
 }

@@ -88,6 +88,7 @@ public class CaesarCipher extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void bAcceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAcceptActionPerformed
@@ -140,7 +141,7 @@ public class CaesarCipher extends javax.swing.JFrame {
                 output[i]=(char) ((input[i]+offset)-26);
             if(input[i]+offset<65)
                 output[i]=(char) ((input[i]+offset)+26);
-            else
+            if(input[i]+offset>=65&&input[i]+offset<=90)
                 output[i]=(char) (input[i]+offset);
         }
         for(int i=0;i<output.length;i++)
