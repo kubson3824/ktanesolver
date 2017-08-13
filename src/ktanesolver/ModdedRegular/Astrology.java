@@ -250,8 +250,8 @@ public class Astrology extends javax.swing.JFrame {
         result=result+determ(symbols[0], symbols[1]);
         result=result+determ(symbols[0], symbols[2]);
         result=result+determ(symbols[1], symbols[2]);
-        for(int i=0;i<3;i++){
-            for(int j=0;j<3;j++){
+        for(int i=0;i<symbols.length;i++){
+            for(int j=0;j<letters.length;j++){
                 if(symbols[i].name.toUpperCase().contains(letters[j])){
                     symbols[i].contains=true;
                     break;

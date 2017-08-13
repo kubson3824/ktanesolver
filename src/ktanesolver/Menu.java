@@ -77,6 +77,7 @@ public class Menu extends javax.swing.JFrame {
         sAmount = new javax.swing.JSpinner();
         sSolved = new javax.swing.JSpinner();
         sStartTime = new javax.swing.JSpinner();
+        bRestart = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -195,6 +196,13 @@ public class Menu extends javax.swing.JFrame {
 
         sStartTime.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
 
+        bRestart.setText("Clear all");
+        bRestart.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                bRestartActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -241,8 +249,8 @@ public class Menu extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel1)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -256,7 +264,7 @@ public class Menu extends javax.swing.JFrame {
                             .addComponent(sAmount)
                             .addComponent(sSolved)
                             .addComponent(sStartTime)))
-                    .addGroup(layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(cbRegularModded, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(bRegular)
@@ -267,7 +275,8 @@ public class Menu extends javax.swing.JFrame {
                             .addComponent(cbNeedy, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(bModdedNeedy)
                             .addComponent(bNeedy)
-                            .addComponent(cbNeedyModded, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(cbNeedyModded, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(bRestart))
                 .addGap(24, 24, 24))
         );
 
@@ -379,17 +388,20 @@ public class Menu extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(bModdedNeedy)))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addComponent(jLabel10))
-                    .addComponent(sSerial, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(9, 9, 9)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addComponent(jLabel11))
-                    .addComponent(sStereo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(jLabel10))
+                            .addComponent(sSerial, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(9, 9, 9)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(jLabel11))
+                            .addComponent(sStereo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(bRestart))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -557,6 +569,26 @@ public class Menu extends javax.swing.JFrame {
            }
        }
     }//GEN-LAST:event_bModdedNeedyActionPerformed
+
+    private void bRestartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bRestartActionPerformed
+        tfLitInd.setText("");
+        tfSerial.setText("");
+        tfUnlitInd.setText("");
+        sAA.setValue(0);
+        sAmount.setValue(0);
+        sD.setValue(0);
+        sDVI.setValue(0);
+        sEmpty.setValue(0);
+        sHold.setValue(0);
+        sPS2.setValue(0);
+        sParallel.setValue(0);
+        sPlate.setValue(0);
+        sRJ45.setValue(0);
+        sSerial.setValue(0);
+        sSolved.setValue(0);
+        sStartTime.setValue(0);
+        sStereo.setValue(0);
+    }//GEN-LAST:event_bRestartActionPerformed
     private void init(){
         serial=tfSerial.getText().toCharArray();
         litInd=tfLitInd.getText().split(" ");
@@ -659,6 +691,7 @@ public class Menu extends javax.swing.JFrame {
     private javax.swing.JButton bModdedRegular;
     private javax.swing.JButton bNeedy;
     private javax.swing.JButton bRegular;
+    private javax.swing.JButton bRestart;
     private javax.swing.JComboBox<String> cbNeedy;
     private javax.swing.JComboBox<String> cbNeedyModded;
     private javax.swing.JComboBox<String> cbRegular;
