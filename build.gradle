@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+sourceCompatibility = 21
+targetCompatibility = 21
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // No external dependencies identified in the original project
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+        resources {
+            srcDirs = ['src']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['test']
+        }
+    }
+}
+
+application {
+    mainClass.set('ktanesolver.Menu')
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'ktanesolver.Menu'
+    }
+}
