@@ -31,11 +31,11 @@ sourceSets {
 }
 
 application {
-    mainClass.set('ktanesolver.Menu')
+    mainClass.set('ktanesolver.ui.MenuUI')
 }
 
 jar {
     manifest {
-        attributes 'Main-Class': 'ktanesolver.Menu'
+        attributes 'Main-Class': 'ktanesolver.ui.MenuUI'
     }
 }

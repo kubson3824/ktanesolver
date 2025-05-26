@@ -47,7 +47,33 @@ The JAR file will be created in the `build/libs` directory.
 ## Project Structure
 
 - `src/ktanesolver`: Contains the main application code
+  - `model`: Contains data classes that represent the state of the bomb and modules
+    - `vanilla`: Models for vanilla (original game) modules
+    - `modded`: Models for modded (community-created) modules
+  - `logic`: Contains business logic for solving modules
+    - `vanilla`: Logic for vanilla modules
+    - `modded`: Logic for modded modules
+  - `ui`: Contains UI components for the application
+    - `vanilla`: UI for vanilla modules
+    - `modded`: UI for modded modules
 - `src/KTANEResources`: Contains resources used by the application
+
+### Architecture
+
+The project has been refactored to separate UI and logic:
+
+1. **Model Layer**: Data classes that represent the state of the bomb and modules
+   - `Bomb`: Represents the bomb's properties (serial number, indicators, batteries, ports, etc.)
+   - Module-specific model classes (e.g., `ButtonModel`)
+
+2. **Logic Layer**: Business logic for solving modules
+   - Module-specific logic classes (e.g., `ButtonLogic`)
+
+3. **UI Layer**: User interface components
+   - `MenuUI`: Main menu for the application
+   - Module-specific UI classes (e.g., `ButtonUI`)
+
+This separation of concerns makes the code more maintainable and testable.
 
 ## Converting from Ant to Gradle
 
