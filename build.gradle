@@ -1,41 +1,44 @@
 plugins {
     id 'java'
-    id 'application'
+    id 'org.springframework.boot' version '4.0.0'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
-sourceCompatibility = 21
-targetCompatibility = 21
+
+group = 'ktanesolver'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    // No external dependencies identified in the original project
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-70:3.14.0'
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-jdbc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-web-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src']
-        }
-        resources {
-            srcDirs = ['src']
-        }
-    }
-    test {
-        java {
-            srcDirs = ['test']
-        }
-    }
-}
-
-application {
-    mainClass.set('ktanesolver.ui.MenuUI')
-}
-
-jar {
-    manifest {
-        attributes 'Main-Class': 'ktanesolver.ui.MenuUI'
-    }
+tasks.named('test') {
+    useJUnitPlatform()
 }

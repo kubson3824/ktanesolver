@@ -1,0 +1,12 @@
+package ktanesolver;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class KtaneSolverApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(KtaneSolverApplication.class, args);
+    }
+}

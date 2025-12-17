@@ -1,84 +1,84 @@
-# KTANESolver
+# KTANESolver Backend
 
-A Java application for solving puzzles in the game "Keep Talking and Nobody Explodes".
+Backend service for solving "Keep Talking and Nobody Explodes" puzzles. The legacy Swing UI has been retired in favor of a REST API that a modern React frontend can consume.
 
-## Building the Project
+## Stack
 
-This project uses Gradle as its build system. You don't need to install Gradle separately as the project includes a Gradle wrapper.
+- Java 21
+- Spring Boot 3 (Web starter)
+- Gradle 8 (wrapper included)
 
-### Prerequisites
-
-- Java 21 or higher
-
-### Build Commands
-
-To build the project:
+## Getting Started
 
 ```bash
-# On Unix-like systems
-./gradlew build
+# Build and run tests
+./gradlew clean build
 
-# On Windows
-gradlew.bat build
+# Launch backend locally (defaults to http://localhost:8080)
+./gradlew bootRun
 ```
 
-To run the application:
+### Configuration
 
-```bash
-# On Unix-like systems
-./gradlew run
+- **CORS** is currently open (`@CrossOrigin(origins = "*")`) for rapid frontend iteration. Lock this down before production.
+- Application properties can be added under `src/main/resources/application.yml`.
 
-# On Windows
-gradlew.bat run
+## API Surface
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | `/api/bomb/summarize` | Accepts a bomb description and returns derived information (battery totals, indicator counts, etc.). |
+
+Sample request:
+
+```json
+POST /api/bomb/summarize
+{
+  "serialNumber": "ABC123",
+  "litIndicators": ["CAR"],
+  "unlitIndicators": ["NSA"],
+  "batteriesAA": 2,
+  "batteriesD": 1,
+  "portRJ45": 1,
+  "totalModules": 11,
+  "solvedModules": 3
+}
 ```
 
-To create a distributable JAR file:
+## Project Layout
 
-```bash
-# On Unix-like systems
-./gradlew jar
+- `src/main/java/ktanesolver/KtaneSolverApplication.java` – Spring Boot entry point
+- `src/main/java/ktanesolver/api/` – REST controller and service layer
+- `src/main/java/ktanesolver/api/dto/` – Request/response records for the API
+- `src/ktanesolver` – Existing model and puzzle-solving logic (to be incrementally ported into the service layer)
+- `src/KTANEResources` – Legacy resources, still available for reuse
 
-# On Windows
-gradlew.bat jar
-```
+## Frontend Prep (React)
 
-The JAR file will be created in the `build/libs` directory.
+1. **Create React app** in a sibling folder, e.g. `frontend/`.
+2. Configure environment variables:
+   - `VITE_API_BASE=http://localhost:8080` (Vite example)
+3. Implement API client (fetch/Axios) targeting `/api/bomb/...` endpoints.
+4. For local development, run both apps:
+   ```bash
+   # backend
+   ./gradlew bootRun
 
-## Project Structure
+   # frontend (from frontend directory)
+   npm install
+   npm run dev
+   ```
+5. For production, either:
+   - Deploy frontend separately (static hosting) and point it to the backend API URL, or
+   - Build the React app and serve it from Spring Boot's `src/main/resources/static` folder.
 
-- `src/ktanesolver`: Contains the main application code
-  - `model`: Contains data classes that represent the state of the bomb and modules
-    - `vanilla`: Models for vanilla (original game) modules
-    - `modded`: Models for modded (community-created) modules
-  - `logic`: Contains business logic for solving modules
-    - `vanilla`: Logic for vanilla modules
-    - `modded`: Logic for modded modules
-  - `ui`: Contains UI components for the application
-    - `vanilla`: UI for vanilla modules
-    - `modded`: UI for modded modules
-- `src/KTANEResources`: Contains resources used by the application
+## Migration Notes
 
-### Architecture
+- Legacy Swing `MenuUI` remains in `src/ktanesolver/ui` for reference but is no longer the entry point.
+- Gradle now uses Spring Boot plugins; jar/manifest configuration is handled automatically.
 
-The project has been refactored to separate UI and logic:
+## Next Steps
 
-1. **Model Layer**: Data classes that represent the state of the bomb and modules
-   - `Bomb`: Represents the bomb's properties (serial number, indicators, batteries, ports, etc.)
-   - Module-specific model classes (e.g., `ButtonModel`)
-
-2. **Logic Layer**: Business logic for solving modules
-   - Module-specific logic classes (e.g., `ButtonLogic`)
-
-3. **UI Layer**: User interface components
-   - `MenuUI`: Main menu for the application
-   - Module-specific UI classes (e.g., `ButtonUI`)
-
-This separation of concerns makes the code more maintainable and testable.
-
-## Converting from Ant to Gradle
-
-This project was originally built using Apache Ant and has been converted to use Gradle. The original Ant build files (`build.xml` and files in `nbproject/`) are kept for reference but are no longer used for building the project.
-
-## Java Version
-
-This project has been updated to use Java 21. If you're using an older version of Java, you'll need to upgrade to Java 21 or higher to build and run the project.
+1. Port module-solving logic into Spring services.
+2. Design React components that map to bomb setup and solver outputs.
+3. Add authentication/authorization if the service will be exposed publicly.
