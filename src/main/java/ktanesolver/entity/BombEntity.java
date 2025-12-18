@@ -66,4 +66,8 @@ public class BombEntity {
             portPlates.add(plate);
         }
     }
+
+    public int getBatteryCount() {
+        return aaBatteryCount + dBatteryCount;
+    }
 }
