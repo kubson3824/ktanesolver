@@ -1,5 +1,7 @@
 package ktanesolver.module.vanilla.regular.wires;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -11,6 +13,7 @@ import ktanesolver.logic.SolveSuccess;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class WiresSolver implements ModuleSolver<WiresInput, WiresOutput> {
@@ -47,7 +50,11 @@ public class WiresSolver implements ModuleSolver<WiresInput, WiresOutput> {
                 new WiresOutput(result.position(), result.instruction()),
                 true
         );
-
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> convertedValue = objectMapper.convertValue(wiresOutputSolveSuccess.output(), new TypeReference<>() {
+        });
+        convertedValue.forEach(module.getSolution()::put);
+        module.getState().put("wires", wires);
         module.setSolved(true);
         return wiresOutputSolveSuccess;
     }

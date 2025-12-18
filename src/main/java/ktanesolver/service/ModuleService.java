@@ -1,5 +1,6 @@
 package ktanesolver.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.transaction.annotation.Transactional;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
@@ -14,7 +15,6 @@ import ktanesolver.repository.ModuleRepository;
 import ktanesolver.repository.RoundRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 import java.util.UUID;
