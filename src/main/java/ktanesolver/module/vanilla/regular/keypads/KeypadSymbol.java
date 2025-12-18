@@ -1,0 +1,31 @@
+package ktanesolver.module.vanilla.regular.keypads;
+
+public enum KeypadSymbol {
+    BALLOON,
+    AT,
+    LAMBDA,
+    LIGHTNING,
+    SQUID_KNIFE,
+    HOOK_N,
+    BACKWARD_C,
+    EURO,
+    CURSIVE,
+    HOLLOW_STAR,
+    QUESTION_MARK,
+    COPYRIGHT,
+    PUMPKIN,
+    DOUBLE_K,
+    MELTED_3,
+    SIX,
+    PARAGRAPH,
+    BT,
+    SMILEY,
+    PITCHFORK,
+    C,
+    DRAGON,
+    FILLED_STAR,
+    TRACK,
+    AE,
+    N_WITH_HAT,
+    OMEGA
+}
