@@ -1,7 +1,6 @@
 package ktanesolver.module.vanilla.regular.button;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -9,6 +8,7 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.utils.Json;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -89,8 +89,7 @@ public class ButtonSolver implements ModuleSolver<ButtonInput, ButtonOutput> {
 
     private void setModuleSolution(ModuleEntity module, ButtonOutput output) {
         module.setSolved(true);
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> convertedValue = objectMapper.convertValue(output, new TypeReference<>() {
+        Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {
         });
         convertedValue.forEach(module.getSolution()::put);
     }

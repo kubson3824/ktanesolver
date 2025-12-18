@@ -1,6 +1,6 @@
 package ktanesolver.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ktanesolver.utils.Json;
 import org.springframework.transaction.annotation.Transactional;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
@@ -27,7 +27,6 @@ public class ModuleService {
     private final BombRepository bombRepo;
     private final ModuleRepository moduleRepo;
     private final ModuleSolverRegistry registry;
-    private final ObjectMapper mapper;
 
     @Transactional
     public SolveResult<?> solveModule(UUID roundId, UUID bombId, UUID moduleId, Map<String, Object> rawInput) {
@@ -39,7 +38,7 @@ public class ModuleService {
 
         ModuleSolver<?, ?> solver = registry.get(module.getType());
 
-        ModuleInput input = mapper.convertValue(rawInput, solver.inputType());
+        ModuleInput input = Json.mapper().convertValue(rawInput, solver.inputType());
 
         SolveResult<?> result = invokeSolver(solver, round, bomb, module, input);
 

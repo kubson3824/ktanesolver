@@ -2,6 +2,7 @@ package ktanesolver.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import ktanesolver.enums.BombStatus;
 import ktanesolver.enums.PortType;
 import jakarta.persistence.MapKeyColumn;
@@ -40,7 +42,6 @@ public class BombEntity {
 
     @OneToMany(mappedBy = "bomb", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "plate_order")
-    @JsonIgnore
     private List<PortPlateEntity> portPlates = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
@@ -67,6 +68,7 @@ public class BombEntity {
         }
     }
 
+    @JsonIgnore
     public int getBatteryCount() {
         return aaBatteryCount + dBatteryCount;
     }
@@ -78,14 +80,20 @@ public class BombEntity {
 
     public boolean isIndicatorUnlit(String indicator) {
         Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
-        return indicatorStatus != null  && !indicatorStatus;
+        return indicatorStatus != null && !indicatorStatus;
     }
 
+    @JsonIgnore
     public boolean isLastDigitOdd() {
         return serialNumber.chars().filter(Character::isDigit).map(c -> c - '0').reduce((a, b) -> b).orElse(0) % 2 == 1;
     }
 
+    @JsonIgnore
     public boolean isLastDigitEven() {
         return !isLastDigitOdd();
+    }
+
+    public boolean serialHasVowel() {
+        return serialNumber.chars().anyMatch(c -> "AEIOU".indexOf(c) >= 0);
     }
 }
