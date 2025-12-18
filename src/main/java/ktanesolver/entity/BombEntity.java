@@ -70,4 +70,22 @@ public class BombEntity {
     public int getBatteryCount() {
         return aaBatteryCount + dBatteryCount;
     }
+
+    public boolean isIndicatorLit(String indicator) {
+        Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
+        return indicatorStatus != null && indicatorStatus;
+    }
+
+    public boolean isIndicatorUnlit(String indicator) {
+        Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
+        return indicatorStatus != null  && !indicatorStatus;
+    }
+
+    public boolean isLastDigitOdd() {
+        return serialNumber.chars().filter(Character::isDigit).map(c -> c - '0').reduce((a, b) -> b).orElse(0) % 2 == 1;
+    }
+
+    public boolean isLastDigitEven() {
+        return !isLastDigitOdd();
+    }
 }
