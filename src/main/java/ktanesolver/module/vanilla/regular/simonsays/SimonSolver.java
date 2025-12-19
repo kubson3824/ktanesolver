@@ -27,7 +27,7 @@ public class SimonSolver implements ModuleSolver<SimonInput, SimonOutput> {
     @Override
     public SolveResult<SimonOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, SimonInput input) {
         boolean hasVowel = bomb.serialHasVowel();
-        int strikes = round.getGlobalStrikes();
+        int strikes = bomb.getStrikes();
 
         List<SimonColor> presses = input.flashes().stream().map(color -> mapColor(color, hasVowel, strikes)).toList();
 

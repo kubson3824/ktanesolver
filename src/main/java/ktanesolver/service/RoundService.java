@@ -23,7 +23,6 @@ public class RoundService {
     public RoundEntity createRound() {
         RoundEntity round = new RoundEntity();
         round.setStatus(RoundStatus.SETUP);
-        round.setGlobalStrikes(0);
         return roundRepo.save(round);
     }
 
@@ -58,12 +57,6 @@ public class RoundService {
                 HttpStatus.NOT_FOUND,
                 "Round not found"
             ));
-    }
-
-    @Transactional(readOnly = true)
-    public void addStrike(RoundEntity round, int count) {
-        round.setGlobalStrikes(round.getGlobalStrikes() + count);
-        roundRepo.save(round);
     }
 
     @Transactional
