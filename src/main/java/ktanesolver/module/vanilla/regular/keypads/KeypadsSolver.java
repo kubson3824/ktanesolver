@@ -1,7 +1,6 @@
 package ktanesolver.module.vanilla.regular.keypads;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -10,6 +9,7 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.utils.Json;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -67,8 +67,7 @@ public class KeypadsSolver implements ModuleSolver<KeypadsInput, KeypadsOutput> 
         module.setSolved(true);
         
         KeypadsOutput keypadsOutput = new KeypadsOutput(ordered);
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.convertValue(keypadsOutput, new TypeReference<Map<String, Object>>() {})
+        Json.mapper().convertValue(keypadsOutput, new TypeReference<Map<String, Object>>() {})
             .forEach(module.getSolution()::put);
             
         return new SolveSuccess<>(keypadsOutput, true);

@@ -2,10 +2,10 @@ package ktanesolver.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import ktanesolver.enums.ModuleType;
+import ktanesolver.utils.Json;
 import lombok.Data;
 import org.hibernate.annotations.Type;
 
@@ -18,11 +18,6 @@ import java.util.function.Supplier;
 @Data
 @Table(name = "modules")
 public class ModuleEntity {
-
-
-    @Transient
-    @JsonIgnore
-    private static ObjectMapper mapper;
 
     @Id
     @GeneratedValue
@@ -51,11 +46,11 @@ public class ModuleEntity {
             setState(value);
             return value;
         }
-        return mapper.convertValue(state, type);
+        return Json.mapper().convertValue(state, type);
     }
 
     public void setState(Object value) {
-        this.state = mapper.convertValue(value, new TypeReference<Map<String, Object>>() {
+        this.state = Json.mapper().convertValue(value, new TypeReference<>() {
         });
     }
 

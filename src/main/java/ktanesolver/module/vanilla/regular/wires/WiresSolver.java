@@ -1,7 +1,6 @@
 package ktanesolver.module.vanilla.regular.wires;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -10,6 +9,7 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.utils.Json;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,8 +39,7 @@ public class WiresSolver implements ModuleSolver<WiresInput, WiresOutput> {
         WireCutResult result = determineCut(wires, bomb);
 
         SolveSuccess<WiresOutput> wiresOutputSolveSuccess = new SolveSuccess<>(new WiresOutput(result.position(), result.instruction()), true);
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> convertedValue = objectMapper.convertValue(wiresOutputSolveSuccess.output(), new TypeReference<>() {
+        Map<String, Object> convertedValue = Json.mapper().convertValue(wiresOutputSolveSuccess.output(), new TypeReference<>() {
         });
         convertedValue.forEach(module.getSolution()::put);
         module.getState().put("wires", wires);
