@@ -4,5 +4,5 @@ import ktanesolver.logic.ModuleInput;
 
 import java.util.List;
 
-public record MemoryInput(int display, List<Integer> labels) implements ModuleInput {
+public record MemoryInput(int stage, int display, List<Integer> labels) implements ModuleInput {
 }
