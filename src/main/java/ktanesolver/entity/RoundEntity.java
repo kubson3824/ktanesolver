@@ -23,8 +23,6 @@ public class RoundEntity {
 
     private Instant startTime;
 
-    private int globalStrikes;
-
     @Version
     private long version;
 

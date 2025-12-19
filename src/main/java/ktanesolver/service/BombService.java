@@ -1,5 +1,6 @@
 package ktanesolver.service;
 
+import ktanesolver.enums.BombStatus;
 import org.springframework.transaction.annotation.Transactional;
 import ktanesolver.dto.BombConfig;
 import ktanesolver.entity.BombEntity;
@@ -19,26 +20,38 @@ public class BombService {
 
     @Transactional
     public BombEntity configureBomb(UUID bombId, BombConfig config) {
-        BombEntity bomb = bombRepo.findById(bombId)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Bomb not found"
-            ));
+        BombEntity bomb = bombRepo.findById(bombId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bomb not found"));
 
-        if (config.serialNumber() != null)
+        if (config.serialNumber() != null) {
             bomb.setSerialNumber(config.serialNumber());
+        }
 
-        if (config.aaBatteryCount() != null)
+        if (config.aaBatteryCount() != null) {
             bomb.setAaBatteryCount(config.aaBatteryCount());
+        }
 
-        if (config.dBatteryCount() != null)
+        if (config.dBatteryCount() != null) {
             bomb.setDBatteryCount(config.dBatteryCount());
+        }
 
-        if (config.indicators() != null)
+        if (config.indicators() != null) {
             bomb.setIndicators(config.indicators());
+        }
 
-        if (config.portPlates() != null)
+        if (config.portPlates() != null) {
             bomb.replacePortPlates(config.portPlates());
+        }
 
+        return bombRepo.save(bomb);
+    }
+
+    @Transactional
+    public BombEntity addStrike(UUID bombId) {
+        BombEntity bomb = bombRepo.findById(bombId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bomb not found"));
+        bomb.setStrikes(bomb.getStrikes() + 1);
+        if (bomb.getStrikes() >= 3) {
+            bomb.setStatus(BombStatus.EXPLODED);
+        }
         return bombRepo.save(bomb);
     }
 }

@@ -68,11 +68,11 @@ public class ButtonSolver implements ModuleSolver<ButtonInput, ButtonOutput> {
             return solved(module, "Press and immediately release");
         }
 
-        if (color.equalsIgnoreCase("WHITE") && hasLitIndicator(bomb, "CAR")) {
+        if (color.equalsIgnoreCase("WHITE") && bomb.isIndicatorLit("CAR")) {
             return hold(module);
         }
 
-        if (bomb.getBatteryCount() > 2 && hasLitIndicator(bomb, "FRK")) {
+        if (bomb.getBatteryCount() > 2 && bomb.isIndicatorLit("FRK")) {
             return solved(module, "Press and immediately release");
         }
 
@@ -104,10 +104,5 @@ public class ButtonSolver implements ModuleSolver<ButtonInput, ButtonOutput> {
         ButtonOutput output = new ButtonOutput(false, instruction, null);
         setModuleSolution(module, output);
         return new SolveSuccess<>(output, true);
-    }
-
-    private boolean hasLitIndicator(BombEntity bomb, String indicator) {
-        Boolean bombIndicator = bomb.getIndicators().getOrDefault(indicator, null);
-        return bombIndicator != null && bombIndicator;
     }
 }

@@ -37,8 +37,6 @@ public class ModuleEntity {
 
     private boolean solved;
 
-    private int strikes;
-
     @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> state = new HashMap<>();

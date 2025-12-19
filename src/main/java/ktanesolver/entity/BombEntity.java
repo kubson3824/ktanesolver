@@ -47,6 +47,8 @@ public class BombEntity {
     @Enumerated(EnumType.STRING)
     private BombStatus status;
 
+    private int strikes;
+
     @OneToMany(mappedBy = "bomb", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ModuleEntity> modules = new ArrayList<>();
 

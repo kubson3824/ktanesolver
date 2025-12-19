@@ -10,7 +10,7 @@ public enum ModuleType {
     MEMORY(false),
     SIMON_SAYS(false),
     FORGET_ME_NOT(false),
-
+    WHOS_ON_FIRST(false),
     VENTING_GAS(true),
     CAPACITOR_DISCHARGE(true);
 

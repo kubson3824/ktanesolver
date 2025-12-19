@@ -45,17 +45,17 @@ public class KeypadsSolver implements ModuleSolver<KeypadsInput, KeypadsOutput> 
         List<KeypadSymbol> symbols = input.symbols();
 
         if (symbols.size() != REQUIRED_SYMBOLS) {
-            return new SolveFailure<>("Keypads requires exactly " + REQUIRED_SYMBOLS + " symbols", 1);
+            return new SolveFailure<>("Keypads requires exactly " + REQUIRED_SYMBOLS + " symbols");
         }
 
         // Early return if there are duplicate symbols
         if (new HashSet<>(symbols).size() != REQUIRED_SYMBOLS) {
-            return new SolveFailure<>("Duplicate symbols are not allowed", 1);
+            return new SolveFailure<>("Duplicate symbols are not allowed");
         }
 
         int matchingColumnIndex = findMatchingColumnIndex(symbols);
         if (matchingColumnIndex == -1) {
-            return new SolveFailure<>("No valid keypad column found", 1);
+            return new SolveFailure<>("No valid keypad column found");
         }
 
         List<KeypadSymbol> column = KeypadColumns.COLUMNS.get(matchingColumnIndex);
