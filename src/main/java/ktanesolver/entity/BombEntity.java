@@ -93,4 +93,8 @@ public class BombEntity {
 	public boolean serialHasVowel() {
 		return serialNumber.chars().anyMatch(c -> "AEIOU".indexOf(c) >= 0);
 	}
+
+    public boolean hasPort(PortType portType) {
+        return portPlates.stream().anyMatch(plate -> plate.getPorts().contains(portType));
+    }
 }

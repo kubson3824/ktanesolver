@@ -1,5 +1,5 @@
 
-package ktanesolver.module.vanilla.regular.wires;
+package ktanesolver.module.vanilla.regular.wires.basic;
 
 import java.util.List;
 import java.util.Map;

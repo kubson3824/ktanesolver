@@ -1,5 +1,5 @@
 
-package ktanesolver.module.vanilla.regular.wires;
+package ktanesolver.module.vanilla.regular.wires.basic;
 
 import ktanesolver.logic.ModuleOutput;
 
