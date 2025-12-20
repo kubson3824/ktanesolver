@@ -1,3 +1,4 @@
+
 package ktanesolver.dto;
 
 import ktanesolver.enums.ModuleType;

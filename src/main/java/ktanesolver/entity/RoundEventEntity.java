@@ -1,31 +1,33 @@
-package ktanesolver.entity;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.*;
-import ktanesolver.enums.EventType;
-import org.hibernate.annotations.Type;
+package ktanesolver.entity;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import org.hibernate.annotations.Type;
+
+import io.hypersistence.utils.hibernate.type.json.JsonType;
+import jakarta.persistence.*;
+import ktanesolver.enums.EventType;
+
 @Entity
-@Table(name = "round_events")
+@Table (name = "round_events")
 public class RoundEventEntity {
 
-    @Id
-    @GeneratedValue
-    private UUID id;
+	@Id
+	@GeneratedValue
+	private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private RoundEntity round;
+	@ManyToOne (fetch = FetchType.LAZY)
+	private RoundEntity round;
 
-    private Instant timestamp;
+	private Instant timestamp;
 
-    @Enumerated(EnumType.STRING)
-    private EventType type;
+	@Enumerated (EnumType.STRING)
+	private EventType type;
 
-    @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> payload;
+	@Type (JsonType.class)
+	@Column (columnDefinition = "jsonb")
+	private Map<String, Object> payload;
 }

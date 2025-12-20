@@ -1,3 +1,4 @@
+
 package ktanesolver.module.vanilla.regular.wires;
 
 import ktanesolver.logic.ModuleOutput;

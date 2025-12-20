@@ -1,7 +1,6 @@
+
 package ktanesolver.enums;
 
 public enum BombStatus {
-    ACTIVE,
-    DEFUSED,
-    EXPLODED
+	ACTIVE, DEFUSED, EXPLODED
 }

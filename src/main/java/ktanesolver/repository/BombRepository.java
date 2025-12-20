@@ -1,10 +1,12 @@
+
 package ktanesolver.repository;
 
-import ktanesolver.entity.BombEntity;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
+import ktanesolver.entity.BombEntity;
 
 @Repository
 public interface BombRepository extends JpaRepository<BombEntity, UUID> {

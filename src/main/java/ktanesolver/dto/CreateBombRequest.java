@@ -1,15 +1,11 @@
-package ktanesolver.dto;
 
-import ktanesolver.enums.PortType;
+package ktanesolver.dto;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public record CreateBombRequest(
-    String serialNumber,
-    int aaBatteryCount,
-    int dBatteryCount,
-    Map<String, Boolean> indicators,
-    List<Set<PortType>> portPlates
-) {}
+import ktanesolver.enums.PortType;
+
+public record CreateBombRequest(String serialNumber, int aaBatteryCount, int dBatteryCount, Map<String, Boolean> indicators, List<Set<PortType>> portPlates) {
+}

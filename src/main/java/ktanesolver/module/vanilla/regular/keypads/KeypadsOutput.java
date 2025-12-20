@@ -1,8 +1,9 @@
+
 package ktanesolver.module.vanilla.regular.keypads;
 
-import ktanesolver.logic.ModuleOutput;
-
 import java.util.List;
+
+import ktanesolver.logic.ModuleOutput;
 
 public record KeypadsOutput(List<KeypadSymbol> pressOrder) implements ModuleOutput {
 }

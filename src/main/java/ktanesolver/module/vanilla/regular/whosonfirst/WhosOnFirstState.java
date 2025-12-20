@@ -1,3 +1,4 @@
+
 package ktanesolver.module.vanilla.regular.whosonfirst;
 
 import java.util.List;

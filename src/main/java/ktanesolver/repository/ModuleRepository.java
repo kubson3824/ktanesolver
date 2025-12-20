@@ -1,9 +1,11 @@
+
 package ktanesolver.repository;
 
-import ktanesolver.entity.ModuleEntity;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.UUID;
+import ktanesolver.entity.ModuleEntity;
 
 public interface ModuleRepository extends JpaRepository<ModuleEntity, UUID> {
 }

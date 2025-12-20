@@ -1,7 +1,12 @@
+
 package ktanesolver.service;
 
-import ktanesolver.utils.Json;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -13,43 +18,40 @@ import ktanesolver.registry.ModuleSolverRegistry;
 import ktanesolver.repository.BombRepository;
 import ktanesolver.repository.ModuleRepository;
 import ktanesolver.repository.RoundRepository;
+import ktanesolver.utils.Json;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ModuleService {
 
-    private final RoundRepository roundRepo;
-    private final BombRepository bombRepo;
-    private final ModuleRepository moduleRepo;
-    private final ModuleSolverRegistry registry;
+	private final RoundRepository roundRepo;
+	private final BombRepository bombRepo;
+	private final ModuleRepository moduleRepo;
+	private final ModuleSolverRegistry registry;
 
-    @Transactional
-    public SolveResult<?> solveModule(UUID roundId, UUID bombId, UUID moduleId, Map<String, Object> rawInput) {
-        RoundEntity round = roundRepo.findById(roundId).orElseThrow();
+	@Transactional
+	public SolveResult<?> solveModule(UUID roundId, UUID bombId, UUID moduleId, Map<String, Object> rawInput) {
+		RoundEntity round = roundRepo.findById(roundId).orElseThrow();
 
-        BombEntity bomb = bombRepo.findById(bombId).orElseThrow();
+		BombEntity bomb = bombRepo.findById(bombId).orElseThrow();
 
-        ModuleEntity module = moduleRepo.findById(moduleId).orElseThrow();
+		ModuleEntity module = moduleRepo.findById(moduleId).orElseThrow();
 
-        ModuleSolver<?, ?> solver = registry.get(module.getType());
+		ModuleSolver<?, ?> solver = registry.get(module.getType());
 
-        ModuleInput input = Json.mapper().convertValue(rawInput, solver.inputType());
+		ModuleInput input = Json.mapper().convertValue(rawInput, solver.inputType());
 
-        SolveResult<?> result = invokeSolver(solver, round, bomb, module, input);
+		SolveResult<?> result = invokeSolver(solver, round, bomb, module, input);
 
-        moduleRepo.save(module);
-        roundRepo.save(round);
+		moduleRepo.save(module);
+		roundRepo.save(round);
 
-        return result;
-    }
+		return result;
+	}
 
-    @SuppressWarnings("unchecked")
-    private <I extends ModuleInput, O extends ModuleOutput> SolveResult<O> invokeSolver(ModuleSolver<I, O> solver, RoundEntity round, BombEntity bomb, ModuleEntity module, ModuleInput input) {
-        return solver.solve(round, bomb, module, (I) input);
-    }
+	@SuppressWarnings ("unchecked")
+	private <I extends ModuleInput, O extends ModuleOutput> SolveResult<O> invokeSolver(ModuleSolver<I, O> solver, RoundEntity round, BombEntity bomb, ModuleEntity module, ModuleInput input) {
+		return solver.solve(round, bomb, module, (I)input);
+	}
 }

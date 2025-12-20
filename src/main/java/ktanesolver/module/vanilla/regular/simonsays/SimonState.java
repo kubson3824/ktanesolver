@@ -1,3 +1,4 @@
+
 package ktanesolver.module.vanilla.regular.simonsays;
 
 import java.util.List;

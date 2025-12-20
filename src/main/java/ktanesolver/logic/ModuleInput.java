@@ -1,3 +1,5 @@
+
 package ktanesolver.logic;
 
-public interface ModuleInput {}
+public interface ModuleInput {
+}
