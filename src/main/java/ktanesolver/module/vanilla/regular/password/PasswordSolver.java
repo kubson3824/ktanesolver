@@ -2,6 +2,7 @@
 package ktanesolver.module.vanilla.regular.password;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -28,15 +29,16 @@ public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutpu
 
 	@Override
 	public SolveResult<PasswordOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, PasswordInput input) {
+		Map<Integer, Set<Character>> columns = normalize(input.letters());
 
-		List<String> matches = Arrays.stream(PasswordWord.values()).map(Enum::name).filter(word -> matches(word, input.letters())).toList();
+		List<String> possible = Arrays.stream(PasswordWord.values()).map(Enum::name).filter(word -> matches(word, columns)).toList();
 
-		boolean resolved = matches.size() == 1;
-		if(resolved) {
+		boolean solved = possible.size() == 1;
+		if(solved) {
 			module.setSolved(true);
 		}
 
-		return new SolveSuccess<>(new PasswordOutput(matches, resolved), resolved);
+		return new SolveSuccess<>(new PasswordOutput(possible, solved), solved);
 	}
 
 	// ----------------------------------------------------
@@ -45,7 +47,7 @@ public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutpu
 		for(Map.Entry<Integer, Set<Character>> e: columns.entrySet()) {
 			int idx = e.getKey() - 1;
 			if(idx < 0 || idx >= 5)
-				return false;
+				continue;
 
 			Set<Character> allowed = e.getValue();
 			if(allowed == null || allowed.isEmpty())
@@ -58,4 +60,15 @@ public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutpu
 		return true;
 	}
 
+	private Map<Integer, Set<Character>> normalize(Map<Integer, Set<Character>> input) {
+		if(input == null || input.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<Integer, Set<Character>> out = new HashMap<>();
+		for(var e: input.entrySet()) {
+			out.put(e.getKey(), e.getValue().stream().map(Character::toUpperCase).collect(Collectors.toSet()));
+		}
+		return out;
+	}
 }
