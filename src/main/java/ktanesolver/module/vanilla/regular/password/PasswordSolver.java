@@ -1,0 +1,61 @@
+
+package ktanesolver.module.vanilla.regular.password;
+
+import java.util.*;
+
+import org.springframework.stereotype.Service;
+
+import ktanesolver.entity.BombEntity;
+import ktanesolver.entity.ModuleEntity;
+import ktanesolver.entity.RoundEntity;
+import ktanesolver.enums.ModuleType;
+import ktanesolver.logic.ModuleSolver;
+import ktanesolver.logic.SolveResult;
+import ktanesolver.logic.SolveSuccess;
+
+@Service
+public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutput> {
+
+	@Override
+	public ModuleType getType() {
+		return ModuleType.PASSWORDS;
+	}
+
+	@Override
+	public Class<PasswordInput> inputType() {
+		return PasswordInput.class;
+	}
+
+	@Override
+	public SolveResult<PasswordOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, PasswordInput input) {
+
+		List<String> matches = Arrays.stream(PasswordWord.values()).map(Enum::name).filter(word -> matches(word, input.letters())).toList();
+
+		boolean resolved = matches.size() == 1;
+		if(resolved) {
+			module.setSolved(true);
+		}
+
+		return new SolveSuccess<>(new PasswordOutput(matches, resolved), resolved);
+	}
+
+	// ----------------------------------------------------
+
+	private boolean matches(String word, Map<Integer, Set<Character>> columns) {
+		for(Map.Entry<Integer, Set<Character>> e: columns.entrySet()) {
+			int idx = e.getKey() - 1;
+			if(idx < 0 || idx >= 5)
+				return false;
+
+			Set<Character> allowed = e.getValue();
+			if(allowed == null || allowed.isEmpty())
+				continue;
+
+			if( !allowed.contains(word.charAt(idx))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+}

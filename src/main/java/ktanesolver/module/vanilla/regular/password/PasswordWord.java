@@ -1,0 +1,11 @@
+package ktanesolver.module.vanilla.regular.password;
+
+public enum PasswordWord {
+    ABOUT, AFTER, AGAIN, BELOW, COULD,
+    EVERY, FIRST, FOUND, GREAT, HOUSE,
+    LARGE, LEARN, NEVER, OTHER, PLACE,
+    PLANT, POINT, RIGHT, SMALL, SOUND,
+    SPELL, STILL, STUDY, THEIR, THERE,
+    THESE, THING, THINK, THREE, WATER,
+    WHERE, WHICH, WORLD, WOULD, WRITE
+}
