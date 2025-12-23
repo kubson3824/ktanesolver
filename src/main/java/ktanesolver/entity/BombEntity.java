@@ -4,6 +4,7 @@ package ktanesolver.entity;
 import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
 import ktanesolver.enums.BombStatus;
@@ -25,7 +26,9 @@ public class BombEntity {
 
 	private String serialNumber;
 
+	@JsonProperty("aaBatteryCount")
 	private int aaBatteryCount;
+	@JsonProperty("dBatteryCount")
 	private int dBatteryCount;
 
 	@ElementCollection

@@ -47,7 +47,7 @@ type RoundStoreActions = {
 const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.WIRES]: "Wires",
     [ModuleType.BUTTON]: "The Button",
-    [ModuleType.KEYPADS]: "Keypads",
+    [ModuleType.KEYPADS]: "Keypad",
     [ModuleType.MEMORY]: "Memory",
     [ModuleType.SIMON_SAYS]: "Simon Says",
     [ModuleType.MORSE_CODE]: "Morse Code",

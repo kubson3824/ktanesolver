@@ -4,6 +4,7 @@ import { useRoundStore } from "../store/useRoundStore";
 import type {ModuleEntity} from "../types";
 import WireSolver from "../components/WireSolver";
 import ButtonSolver from "../components/ButtonSolver";
+import KeypadsSolver from "../components/KeypadsSolver";
 
 const formatModuleName = (type: string) =>
   type
@@ -192,6 +193,8 @@ export default function SolvePage() {
                         <WireSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "BUTTON" ? (
                         <ButtonSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "KEYPADS" ? (
+                        <KeypadsSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>
