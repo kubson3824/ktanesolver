@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRoundStore } from "../store/useRoundStore";
 import type {ModuleEntity} from "../types";
+import WireSolver from "../components/WireSolver";
+import ButtonSolver from "../components/ButtonSolver";
 
 const formatModuleName = (type: string) =>
   type
@@ -51,13 +53,15 @@ export default function SolvePage() {
 
   if (!roundId) {
     return (
-      <div className="app-shell">
-        <div className="shell-content">
-          <div className="panel empty-state">
-            <p>No round selected. Return to setup.</p>
-            <button className="action-primary" onClick={() => navigate("/setup")}>
-              Back to setup
-            </button>
+      <div className="min-h-screen p-10 lg:p-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+            <div className="card-body text-center">
+              <p className="text-base-content/70 mb-4">No round selected. Return to setup.</p>
+              <button className="btn btn-primary" onClick={() => navigate("/setup")}>
+                Back to setup
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -65,112 +69,148 @@ export default function SolvePage() {
   }
 
   return (
-    <div className="app-shell">
-      <div className="shell-content grid">
-        <header className="panel solve-header">
-          <div>
-            <p className="eyebrow">Round #{round?.id?.slice(0, 8)}</p>
-            <h1>Live defusal</h1>
-            <p className="hero-subtitle">
-              Tabs for each bomb below. Pick the module you&apos;re defusing,
-              study the binder on the left, drive the solver on the right.
-            </p>
+    <div className="min-h-screen p-10 lg:p-16">
+      <div className="max-w-7xl mx-auto grid gap-5">
+        <header className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+          <div className="card-body">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-secondary font-medium uppercase tracking-wider">Round #{round?.id?.slice(0, 8)}</p>
+                <h1 className="text-3xl font-bold mt-2 mb-4">Live defusal</h1>
+                <p className="text-base-content/70">
+                  Tabs for each bomb below. Pick the module you&apos;re defusing,
+                  study the binder on the left, drive the solver on the right.
+                </p>
+              </div>
+              <button className="btn btn-outline btn-sm" onClick={() => navigate("/setup")}>
+                Back to setup
+              </button>
+            </div>
           </div>
-          <button className="ghost-button" onClick={() => navigate("/setup")}>
-            Back to bomb list
-          </button>
         </header>
 
         {!currentModule ? (
-          <section className="panel solve-stage">
-            <div className="bomb-tabs">
-              {round?.bombs.map((bomb) => (
-                <button
-                  key={bomb.id}
-                  className={`bomb-tab ${
-                    currentBomb?.id === bomb.id ? "active" : ""
-                  }`}
-                  onClick={() => selectBomb(bomb.id)}
-                >
-                  <span>{bomb.serialNumber || "Unknown serial"}</span>
-                  <small>{bomb.modules.length} modules</small>
-                </button>
-              ))}
-            </div>
-
-            <div className="modules-grid">
-              {modules.length === 0 && (
-                <div className="empty-state">No modules assigned to this bomb.</div>
-              )}
-              {modules.map((module) => (
-                <article key={module.id} className="module-card interactive">
-                  <header>
-                    <h3>{formatModuleName(module.type)}</h3>
-                    <span
-                      className={`tag ${module.solved ? "tag-success" : "tag-warning"}`}
-                    >
-                      {module.solved ? "Solved" : "Awaiting"}
-                    </span>
-                  </header>
-                  <p className="module-note">
-                    {module.solved
-                      ? "This module has already been cleared."
-                      : "Tap to open the live solving cockpit."}
-                  </p>
+          <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+            <div className="card-body">
+              <div className="tabs tabs-boxed mb-6">
+                {round?.bombs.map((bomb) => (
                   <button
-                    className="action-primary"
-                    onClick={() => handleModuleClick(module)}
-                    disabled={module.solved}
+                    key={bomb.id}
+                    className={`tab ${
+                      currentBomb?.id === bomb.id ? "tab-active" : ""
+                    }`}
+                    onClick={() => selectBomb(bomb.id)}
                   >
-                    {module.solved ? "Solved" : "Solve module"}
+                    <div className="text-left">
+                      <div className="font-medium">{bomb.serialNumber || "Unknown serial"}</div>
+                      <div className="text-xs text-base-content/50">{bomb.modules.length} modules</div>
+                    </div>
                   </button>
-                </article>
-              ))}
+                ))}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {modules.length === 0 && (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-base-content/50">No modules assigned to this bomb.</p>
+                  </div>
+                )}
+                {modules.map((module) => (
+                  <div key={module.id} className="card bg-base-100 border border-base-300 hover:border-primary transition-colors">
+                    <div className="card-body">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="card-title">{formatModuleName(module.type)}</h3>
+                        <span
+                          className={`badge ${
+                            module.solved ? "badge-success" : "badge-warning"
+                          }`}
+                        >
+                          {module.solved ? "Solved" : "Awaiting"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-base-content/70 mb-4">
+                        {module.solved
+                          ? "This module has already been cleared."
+                          : "Tap to open the live solving cockpit."}
+                      </p>
+                      <div className="card-actions">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleModuleClick(module)}
+                          disabled={module.solved}
+                        >
+                          {module.solved ? "Solved" : "Solve module"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         ) : (
-          <section className="panel module-detail">
-            <header className="panel-header">
-              <div>
-                <p className="eyebrow">Currently solving</p>
-                <h2>
-                  {formatModuleName(currentModule.moduleType)}
-                  <span className="tag highlight">
-                    {currentBomb?.serialNumber ?? "Unknown serial"}
-                  </span>
-                </h2>
+          <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+            <div className="card-body">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <p className="text-sm text-secondary font-medium uppercase tracking-wider">Currently solving</p>
+                  <h2 className="text-2xl font-bold mt-1">
+                    {formatModuleName(currentModule.moduleType)}
+                    <span className="badge badge-primary ml-2">
+                      {currentBomb?.serialNumber ?? "Unknown serial"}
+                    </span>
+                  </h2>
+                </div>
+                <button className="btn btn-outline btn-sm" onClick={handleBack}>
+                  Back to modules
+                </button>
               </div>
-              <button className="ghost-button" onClick={handleBack}>
-                Back to modules
-              </button>
-            </header>
-            <div className="solve-grid">
-              <div className="manual-pane">
-                {manualUrl ? (
-                  <iframe
-                    src={manualUrl}
-                    title={`${currentModule.moduleType} manual`}
-                  />
-                ) : (
-                  <div className="empty-state">Manual loading...</div>
-                )}
-              </div>
-              <div className="solver-pane">
-                <div className="solver-placeholder">
-                  <p className="eyebrow">Solver UI</p>
-                  <h3>Coming soon</h3>
-                  <p>
-                    This is where module-specific solver components will live. Hook
-                    up forms, logic helpers, or real-time instructions while
-                    referencing the manual.
-                  </p>
-                  <div className="solver-actions">
-                    <button className="action-primary" disabled>
-                      Submit
-                    </button>
-                    <button className="ghost-button" onClick={handleBack}>
-                      Back
-                    </button>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="card bg-base-100 border border-base-300 h-full">
+                  <div className="card-body h-full flex flex-col">
+                    <h3 className="card-title text-lg mb-4">Manual</h3>
+                    <div className="flex-1 min-h-0">
+                      {manualUrl ? (
+                        <iframe
+                          src={manualUrl}
+                          title={`${currentModule.moduleType} manual`}
+                          className="w-full h-full rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-base-content/50">
+                          Manual loading...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="card bg-base-100 border border-base-300 h-full">
+                  <div className="card-body h-full flex flex-col">
+                    <h3 className="card-title text-lg mb-4">Solver UI</h3>
+                    <div className="flex-1">
+                      {currentModule.moduleType === "WIRES" ? (
+                        <WireSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "BUTTON" ? (
+                        <ButtonSolver bomb={currentBomb} />
+                      ) : (
+                        <div className="text-center py-12">
+                          <p className="text-sm text-secondary mb-2">Coming soon</p>
+                          <p className="text-base-content/70 mb-6">
+                            This is where module-specific solver components will live. Hook
+                            up forms, logic helpers, or real-time instructions while
+                            referencing the manual.
+                          </p>
+                          <div className="flex justify-center gap-2">
+                            <button className="btn btn-primary" disabled>
+                              Submit
+                            </button>
+                            <button className="btn btn-outline" onClick={handleBack}>
+                              Back
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -179,9 +219,11 @@ export default function SolvePage() {
         )}
       </div>
       {loading && (
-        <div className="loading-overlay">
-          <div className="loading-spinner" />
-          <p>Syncing round...</p>
+        <div className="fixed inset-0 bg-base-300/80 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-4">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <p className="text-base-content">Syncing round...</p>
+          </div>
         </div>
       )}
     </div>

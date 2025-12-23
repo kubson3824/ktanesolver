@@ -244,278 +244,301 @@ export default function SetupPage() {
         navigate(`/solve/${updated.id}`);
     };
 
+    const handleContinueRound = () => {
+        if (!round) return;
+        navigate(`/solve/${round.id}`);
+    };
+
     return (
-        <div className="app-shell">
-            <div className="shell-content grid">
-                <section className="panel hero">
-                    <div className="hero-content">
-                        <div className="hero-text">
-                            <p className="eyebrow">Round preparation</p>
-                            <h1>Build your bomb roster</h1>
-                            <p className="hero-subtitle">
-                                Capture edgework, curate modules, and hand off the binder to the
-                                expert team before the timer even starts ticking.
-                            </p>
-                            <div className="hero-actions">
-                                <button
-                                    className="action-primary"
-                                    onClick={openCreateForm}
-                                    disabled={loading}
-                                >
-                                    Add Bomb
-                                </button>
-                                {round && (
-                                    <span className="tag">
+        <div className="min-h-screen p-10 lg:p-16">
+            <div className="max-w-7xl mx-auto grid gap-5">
+                <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+                    <div className="card-body">
+                        <div className="flex flex-col lg:flex-row gap-8 items-center">
+                            <div className="flex-1">
+                                <p className="text-sm text-secondary font-medium uppercase tracking-wider">Round preparation</p>
+                                <h1 className="text-4xl font-bold mt-2 mb-4">Build your bomb roster</h1>
+                                <p className="text-base-content/70 mb-6">
+                                    Capture edgework, curate modules, and hand off the binder to the
+                                    expert team before the timer even starts ticking.
+                                </p>
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={openCreateForm}
+                                        disabled={loading}
+                                    >
+                                        Add Bomb
+                                    </button>
+                                    {round && (
+                                        <span className="badge badge-outline gap-2">
                     Round status:&nbsp;
                                         <strong>{roundStatusLabel}</strong>
                   </span>
-                                )}
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                        <div className="hero-board">
-                            <div className="hero-stat">
-                                <span>Total bombs</span>
-                                <strong>{round?.bombs.length ?? 0}</strong>
-                            </div>
-                            <div className="hero-stat">
-                                <span>Modules queued</span>
-                                <strong>
-                                    {round?.bombs.reduce(
-                                        (sum, bomb) => sum + (bomb.modules?.length ?? 0),
-                                        0,
-                                    ) ?? 0}
-                                </strong>
-                            </div>
-                            <div className="hero-stat accent">
-                                <span>Ready checks</span>
-                                <strong>{canStartRound ? "All green" : "Pending"}</strong>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="stat">
+                                    <span className="stat-title text-secondary">Total bombs</span>
+                                    <div className="stat-value text-3xl font-bold">{round?.bombs.length ?? 0}</div>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-title text-secondary">Modules queued</span>
+                                    <div className="stat-value text-3xl font-bold">
+                                        {round?.bombs.reduce(
+                                            (sum, bomb) => sum + (bomb.modules?.length ?? 0),
+                                            0,
+                                        ) ?? 0}
+                                    </div>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-title text-secondary">Ready checks</span>
+                                    <div className={`stat-value text-3xl font-bold ${canStartRound ? "text-success" : "text-warning"}`}>
+                                        {canStartRound ? "All green" : "Pending"}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {error && <div className="error-banner panel">{error}</div>}
+                {error && <div className="alert alert-error mb-5">Error: {error}</div>}
 
-                <section className="panel bombs-panel">
-                    <header className="panel-header">
-                        <div>
-                            <p className="eyebrow">Current round</p>
-                            <h2>Bomb manifest</h2>
+                <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+                    <div className="card-body">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <p className="text-sm text-secondary font-medium uppercase tracking-wider">Current round</p>
+                                <h2 className="text-2xl font-bold mt-1">Bomb manifest</h2>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    className="btn btn-outline btn-sm"
+                                    onClick={openCreateForm}
+                                    disabled={loading}
+                                >
+                                    Add Bomb
+                                </button>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    disabled={!canStartRound || loading}
+                                    onClick={round?.status === RoundStatus.ACTIVE ? handleContinueRound : handleStartRound}
+                                >
+                                    {round?.status === RoundStatus.ACTIVE ? "Continue Round" : "Start Round"}
+                                </button>
+                            </div>
                         </div>
-                        <div className="panel-actions">
-                            <button
-                                className="ghost-button"
-                                onClick={openCreateForm}
-                                disabled={loading}
-                            >
-                                Add Bomb
-                            </button>
-                            <button
-                                className="action-primary"
-                                disabled={!canStartRound || loading}
-                                onClick={handleStartRound}
-                            >
-                                Start Round
-                            </button>
-                        </div>
-                    </header>
 
-                    {round?.bombs.length ? (
-                        <div className="bomb-grid">
-                            {round.bombs.map((bomb) => (
-                                <article key={bomb.id} className="bomb-card">
-                                    <div className="bomb-card-header">
-                                        <div>
-                                            <p className="eyebrow">Serial</p>
-                                            <h3>{bomb.serialNumber || "Unknown"}</h3>
-                                        </div>
-                                        <span className="tag">{bomb.status}</span>
-                                    </div>
-                                    <dl className="bomb-meta">
-                                        <div>
-                                            <dt>AA / D batteries</dt>
-                                            <dd>
-                                                {bomb.aaBatteryCount} / {bomb.dBatteryCount}
-                                            </dd>
-                                        </div>
-                                        <div>
-                                            <dt>Indicators</dt>
-                                            <dd>
-                                                {Object.entries(bomb.indicators ?? {}).map(
-                                                    ([name, lit]) => (
-                                                        <span
-                                                            key={`${bomb.id}-${name}`}
-                                                            className={`indicator-chip ${
-                                                                lit ? "lit" : "unlit"
-                                                            }`}
-                                                        >
+                        {round?.bombs.length ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {round.bombs.map((bomb) => (
+                                    <div key={bomb.id} className="card bg-base-100 border border-base-300">
+                                        <div className="card-body">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <p className="text-xs text-secondary uppercase tracking-wider">Serial</p>
+                                                    <h3 className="card-title text-lg">{bomb.serialNumber || "Unknown"}</h3>
+                                                </div>
+                                                <span className="badge badge-outline">{bomb.status}</span>
+                                            </div>
+                                            <div className="space-y-3 mb-4">
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-secondary">AA / D batteries</span>
+                                                    <span className="font-mono font-bold">
+                                                        {bomb.aaBatteryCount} / {bomb.dBatteryCount}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm text-secondary block mb-2">Indicators</span>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {Object.entries(bomb.indicators ?? {}).map(
+                                                            ([name, lit]) => (
+                                                                <span
+                                                                    key={`${bomb.id}-${name}`}
+                                                                    className={`badge ${
+                                                                        lit ? "badge-success" : "badge-neutral"
+                                                                    } badge-sm`}
+                                                                >
                               {name}
                             </span>
-                                                    ),
-                                                )}
-                                            </dd>
-                                        </div>
-                                        <div>
-                                            <dt>Port plates</dt>
-                                            <dd>
-                                                {bomb.portPlates.length === 0
-                                                    ? "—"
-                                                    : bomb.portPlates
-                                                        .map((plate, index) => {
-                                                            const ports = plate.ports.join(", ");
-                                                            return `Plate ${index + 1}: ${ports || "Empty"}`;
-                                                        })
-                                                        .join(" • ")}
-                                            </dd>
-                                        </div>
-                                    </dl>
-                                    <div className="modules-summary">
-                                        {moduleTypes.map((type) => {
-                                            const count =
-                                                bomb.modules?.filter((module) => module.type === type)
-                                                    .length ?? 0;
-                                            if (count === 0) return null;
-                                            return (
-                                                <span key={type} className="module-chip">
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm text-secondary block mb-2">Port plates</span>
+                                                    <span className="text-xs">
+                                                        {bomb.portPlates.length === 0
+                                                            ? "—"
+                                                            : bomb.portPlates
+                                                                .map((plate, index) => {
+                                                                    const ports = plate.ports.join(", ");
+                                                                    return `Plate ${index + 1}: ${ports || "Empty"}`;
+                                                                })
+                                                                .join(" • ")}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="divider my-2"></div>
+                                            <div className="flex flex-wrap gap-1 mb-4">
+                                                {moduleTypes.map((type) => {
+                                                    const count =
+                                                        bomb.modules?.filter((module) => module.type === type)
+                                                            .length ?? 0;
+                                                    if (count === 0) return null;
+                                                    return (
+                                                        <span key={type} className="badge badge-info badge-sm">
                           {type.replaceAll("_", " ")} ({count})
                         </span>
-                                            );
-                                        })}
-                                        {bomb.modules.length === 0 && (
-                                            <p className="empty-state">No modules yet</p>
-                                        )}
+                                                    );
+                                                })}
+                                                {bomb.modules.length === 0 && (
+                                                    <p className="text-sm text-base-content/50 italic">No modules yet</p>
+                                                )}
+                                            </div>
+                                            <div className="card-actions justify-end gap-2">
+                                                <button
+                                                    className="btn btn-outline btn-sm"
+                                                    onClick={() => openEditForm(bomb)}
+                                                >
+                                                    Adjust edgework
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => openModulePanel(bomb)}
+                                                >
+                                                    Add modules
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="card-actions">
-                                        <button
-                                            className="ghost-button"
-                                            onClick={() => openEditForm(bomb)}
-                                        >
-                                            Adjust edgework
-                                        </button>
-                                        <button
-                                            className="action-primary"
-                                            onClick={() => openModulePanel(bomb)}
-                                        >
-                                            Add modules
-                                        </button>
-                                    </div>
-                                </article>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="empty-state">
-                            <p>No bombs configured yet. Start by adding edgework.</p>
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <p className="text-base-content/70">No bombs configured yet. Start by adding edgework.</p>
+                            </div>
+                        )}
+                    </div>
                 </section>
 
                 {isFormOpen && (
-                    <section className="panel form-panel">
-                        <header className="panel-header">
-                            <div>
-                                <p className="eyebrow">
-                                    {isEditing ? "Update" : "Configure"} bomb
-                                </p>
-                                <h2>{isEditing ? "Edgework adjustments" : "New bomb setup"}</h2>
-                            </div>
-                            <button className="ghost-button" onClick={() => setIsFormOpen(false)}>
-                                Close
-                            </button>
-                        </header>
-
-                        <form className="form-grid" onSubmit={handleFormSubmit}>
-                            <div className="two-column">
-                                <label className="form-field">
-                                    <span>Serial number</span>
-                                    <input
-                                        type="text"
-                                        value={formState.serialNumber}
-                                        onChange={(event) =>
-                                            setFormState((prev) => ({
-                                                ...prev,
-                                                serialNumber: event.target.value.toUpperCase(),
-                                            }))
-                                        }
-                                        required
-                                    />
-                                </label>
-                                <div className="battery-grid">
-                                    <label className="form-field">
-                                        <span>AA batteries</span>
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            value={formState.aaBatteryCount}
-                                            onChange={(event) =>
-                                                setFormState((prev) => ({
-                                                    ...prev,
-                                                    aaBatteryCount: Number(event.target.value),
-                                                }))
-                                            }
-                                        />
-                                    </label>
-                                    <label className="form-field">
-                                        <span>D batteries</span>
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            value={formState.dBatteryCount}
-                                            onChange={(event) =>
-                                                setFormState((prev) => ({
-                                                    ...prev,
-                                                    dBatteryCount: Number(event.target.value),
-                                                }))
-                                            }
-                                        />
-                                    </label>
+                    <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+                        <div className="card-body">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <p className="text-sm text-secondary font-medium uppercase tracking-wider">
+                                        {isEditing ? "Update" : "Configure"} bomb
+                                    </p>
+                                    <h2 className="text-2xl font-bold mt-1">{isEditing ? "Edgework adjustments" : "New bomb setup"}</h2>
                                 </div>
+                                <button className="btn btn-outline btn-sm" onClick={() => setIsFormOpen(false)}>
+                                    Close
+                                </button>
                             </div>
 
-                            <div className="form-section">
-                                <div className="section-header">
-                                    <h3>Indicators</h3>
-                                    <div className="indicator-inputs">
+                            <form className="space-y-6" onSubmit={handleFormSubmit}>
+                                <div className="grid gap-6 md:grid-cols-2">
+                                    <label className="form-control w-full">
+                                        <span className="label-text">Serial number</span>
                                         <input
                                             type="text"
-                                            placeholder="Label"
-                                            value={indicatorDraft.name}
+                                            className="input input-bordered w-full"
+                                            value={formState.serialNumber}
                                             onChange={(event) =>
-                                                setIndicatorDraft((prev) => ({
+                                                setFormState((prev) => ({
                                                     ...prev,
-                                                    name: event.target.value,
+                                                    serialNumber: event.target.value.toUpperCase(),
                                                 }))
                                             }
+                                            required
                                         />
-                                        <select
-                                            value={indicatorDraft.lit ? "lit" : "unlit"}
-                                            onChange={(event) =>
-                                                setIndicatorDraft((prev) => ({
-                                                    ...prev,
-                                                    lit: event.target.value === "lit",
-                                                }))
-                                            }
-                                        >
-                                            <option value="lit">Lit</option>
-                                            <option value="unlit">Unlit</option>
-                                        </select>
-                                        <button
-                                            type="button"
-                                            className="ghost-button"
-                                            onClick={addIndicator}
-                                        >
-                                            Add
-                                        </button>
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="form-control w-full">
+                                            <span className="label-text">AA batteries</span>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                className="input input-bordered w-full"
+                                                value={formState.aaBatteryCount}
+                                                onChange={(event) =>
+                                                    setFormState((prev) => ({
+                                                        ...prev,
+                                                        aaBatteryCount: Number(event.target.value),
+                                                    }))
+                                                }
+                                            />
+                                        </label>
+                                        <label className="form-control w-full">
+                                            <span className="label-text">D batteries</span>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                className="input input-bordered w-full"
+                                                value={formState.dBatteryCount}
+                                                onChange={(event) =>
+                                                    setFormState((prev) => ({
+                                                        ...prev,
+                                                        dBatteryCount: Number(event.target.value),
+                                                    }))
+                                                }
+                                            />
+                                        </label>
                                     </div>
                                 </div>
-                                <div className="indicator-list">
-                                    {formState.indicators.map((indicator) => (
-                                        <span
-                                            key={indicator.id}
-                                            className={`indicator-chip ${indicator.lit ? "lit" : "unlit"}`}
-                                        >
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold">Indicators</h3>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                className="input input-bordered input-sm"
+                                                placeholder="Label"
+                                                value={indicatorDraft.name}
+                                                onChange={(event) =>
+                                                    setIndicatorDraft((prev) => ({
+                                                        ...prev,
+                                                        name: event.target.value,
+                                                    }))
+                                                }
+                                            />
+                                            <select
+                                                className="select select-bordered select-sm"
+                                                value={indicatorDraft.lit ? "lit" : "unlit"}
+                                                onChange={(event) =>
+                                                    setIndicatorDraft((prev) => ({
+                                                        ...prev,
+                                                        lit: event.target.value === "lit",
+                                                    }))
+                                                }
+                                            >
+                                                <option value="lit">Lit</option>
+                                                <option value="unlit">Unlit</option>
+                                            </select>
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline btn-sm"
+                                                onClick={addIndicator}
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formState.indicators.map((indicator) => (
+                                            <span
+                                                key={indicator.id}
+                                                className={`badge ${
+                                                    indicator.lit ? "badge-success" : "badge-neutral"
+                                                } gap-2`}
+                                            >
                       {indicator.name}
                                             <button
                                                 type="button"
+                                                className="btn btn-ghost btn-xs p-0 h-4 min-h-4"
                                                 onClick={() =>
                                                     setFormState((prev) => ({
                                                         ...prev,
@@ -528,181 +551,198 @@ export default function SetupPage() {
                         ×
                       </button>
                     </span>
-                                    ))}
-                                    {formState.indicators.length === 0 && (
-                                        <p className="empty-state">No indicators yet.</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="form-section">
-                                <div className="section-header">
-                                    <h3>Port plates</h3>
-                                    <button
-                                        type="button"
-                                        className="ghost-button"
-                                        onClick={() =>
-                                            setFormState((prev) => ({
-                                                ...prev,
-                                                portPlates: [
-                                                    ...prev.portPlates,
-                                                    {id: randomId(), ports: []},
-                                                ],
-                                            }))
-                                        }
-                                    >
-                                        Add plate
-                                    </button>
-                                </div>
-                                <div className="port-plates-list">
-                                    {formState.portPlates.length === 0 && (
-                                        <p className="empty-state">No plates configured.</p>
-                                    )}
-                                    {formState.portPlates.map((plate, index) => (
-                                        <div key={plate.id} className="port-plate">
-                                            <header>
-                                                <strong>Plate {index + 1}</strong>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setFormState((prev) => ({
-                                                            ...prev,
-                                                            portPlates: prev.portPlates.filter(
-                                                                (entry) => entry.id !== plate.id,
-                                                            ),
-                                                        }))
-                                                    }
-                                                >
-                                                    Remove
-                                                </button>
-                                            </header>
-                                            <div className="port-grid">
-                                                {portTypes.map((port) => (
-                                                    <label key={port} className="port-checkbox">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={plate.ports.includes(port)}
-                                                            onChange={() => updatePlate(plate.id, port)}
-                                                        />
-                                                        {port}
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {!isEditing && (
-                                <div className="form-section">
-                                    <div className="section-header">
-                                        <h3>Modules for this bomb</h3>
+                                        ))}
+                                        {formState.indicators.length === 0 && (
+                                            <p className="text-sm text-base-content/50 italic">No indicators yet.</p>
+                                        )}
                                     </div>
-                                    <div className="module-grid">
-                                        {formState.modules.map((entry) => (
-                                            <div key={entry.type} className="module-card">
-                                                <span>{entry.type.replaceAll("_", " ")}</span>
-                                                <div className="module-counter">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => bumpModule(entry.type, -1)}
-                                                    >
-                                                        −
-                                                    </button>
-                                                    <strong>{entry.count}</strong>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => bumpModule(entry.type, 1)}
-                                                    >
-                                                        +
-                                                    </button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold">Port plates</h3>
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline btn-sm"
+                                            onClick={() =>
+                                                setFormState((prev) => ({
+                                                    ...prev,
+                                                    portPlates: [
+                                                        ...prev.portPlates,
+                                                        {id: randomId(), ports: []},
+                                                    ],
+                                                }))
+                                            }
+                                        >
+                                            Add plate
+                                        </button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {formState.portPlates.length === 0 && (
+                                            <p className="text-sm text-base-content/50 italic">No plates configured.</p>
+                                        )}
+                                        {formState.portPlates.map((plate, index) => (
+                                            <div key={plate.id} className="card bg-base-100 border border-base-300">
+                                                <div className="card-body p-4">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <strong className="text-sm">Plate {index + 1}</strong>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-ghost btn-xs"
+                                                            onClick={() =>
+                                                                setFormState((prev) => ({
+                                                                    ...prev,
+                                                                    portPlates: prev.portPlates.filter(
+                                                                        (entry) => entry.id !== plate.id,
+                                                                    ),
+                                                                }))
+                                                            }
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                        {portTypes.map((port) => (
+                                                            <label key={port} className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="checkbox checkbox-sm"
+                                                                    checked={plate.ports.includes(port)}
+                                                                    onChange={() => updatePlate(plate.id, port)}
+                                                                />
+                                                                <span className="text-sm">{port}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            <div className="form-actions">
-                                <button
-                                    type="submit"
-                                    className="action-primary"
-                                    disabled={loading}
-                                >
-                                    {isEditing ? "Save changes" : "Save bomb"}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="ghost-button"
-                                    onClick={() => setIsFormOpen(false)}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
+                                {!isEditing && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold">Modules for this bomb</h3>
+                                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                            {formState.modules.map((entry) => (
+                                                <div key={entry.type} className="card bg-base-100 border border-base-300">
+                                                    <div className="card-body p-4">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-medium">{entry.type.replaceAll("_", " ")}</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-ghost btn-xs btn-circle"
+                                                                    onClick={() => bumpModule(entry.type, -1)}
+                                                                >
+                                                                    −
+                                                                </button>
+                                                                <span className="w-8 text-center font-bold">{entry.count}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-ghost btn-xs btn-circle"
+                                                                    onClick={() => bumpModule(entry.type, 1)}
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-end gap-2 pt-4">
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={loading}
+                                    >
+                                        {isEditing ? "Save changes" : "Save bomb"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={() => setIsFormOpen(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </section>
                 )}
 
                 {moduleTarget && (
-                    <section className="panel form-panel">
-                        <header className="panel-header">
-                            <div>
-                                <p className="eyebrow">Module injection</p>
-                                <h2>Add modules to {moduleTarget.serialNumber}</h2>
-                            </div>
-                            <button
-                                className="ghost-button"
-                                onClick={() => setModuleTarget(undefined)}
-                            >
-                                Close
-                            </button>
-                        </header>
-                        <div className="module-grid">
-                            {moduleTypes.map((type) => (
-                                <div key={type} className="module-card">
-                                    <span>{type.replaceAll("_", " ")}</span>
-                                    <div className="module-counter">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setModuleDraft((prev) => ({
-                                                    ...prev,
-                                                    [type]: Math.max(0, prev[type] - 1),
-                                                }))
-                                            }
-                                        >
-                                            −
-                                        </button>
-                                        <strong>{moduleDraft[type]}</strong>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setModuleDraft((prev) => ({
-                                                    ...prev,
-                                                    [type]: prev[type] + 1,
-                                                }))
-                                            }
-                                        >
-                                            +
-                                        </button>
-                                    </div>
+                    <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
+                        <div className="card-body">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <p className="text-sm text-secondary font-medium uppercase tracking-wider">Module injection</p>
+                                    <h2 className="text-2xl font-bold mt-1">Add modules to {moduleTarget.serialNumber}</h2>
                                 </div>
-                            ))}
-                        </div>
-                        <div className="form-actions">
-                            <button
-                                className="action-primary"
-                                onClick={submitModuleDraft}
-                                disabled={loading}
-                            >
-                                Save modules
-                            </button>
-                            <button
-                                className="ghost-button"
-                                onClick={() => setModuleTarget(undefined)}
-                            >
-                                Cancel
-                            </button>
+                                <button
+                                    className="btn btn-outline btn-sm"
+                                    onClick={() => setModuleTarget(undefined)}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {moduleTypes.map((type) => (
+                                    <div key={type} className="card bg-base-100 border border-base-300">
+                                        <div className="card-body p-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-medium">{type.replaceAll("_", " ")}</span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-ghost btn-xs btn-circle"
+                                                        onClick={() =>
+                                                            setModuleDraft((prev) => ({
+                                                                ...prev,
+                                                                [type]: Math.max(0, prev[type] - 1),
+                                                            }))
+                                                        }
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <span className="w-8 text-center font-bold">{moduleDraft[type]}</span>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-ghost btn-xs btn-circle"
+                                                        onClick={() =>
+                                                            setModuleDraft((prev) => ({
+                                                                ...prev,
+                                                                [type]: prev[type] + 1,
+                                                            }))
+                                                        }
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={submitModuleDraft}
+                                    disabled={loading}
+                                >
+                                    Save modules
+                                </button>
+                                <button
+                                    className="btn btn-outline"
+                                    onClick={() => setModuleTarget(undefined)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </section>
                 )}

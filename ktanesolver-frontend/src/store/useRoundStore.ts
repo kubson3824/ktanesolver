@@ -15,6 +15,7 @@ type RoundStoreState = {
     round?: RoundEntity;
     currentBomb?: BombEntity;
     currentModule?: {
+        id: string;
         bomb: BombEntity;
         moduleType: ModuleType;
     };
@@ -40,10 +41,28 @@ type RoundStoreActions = {
     selectModule: (bombId: string, moduleType: ModuleType) => void;
     clearModule: () => void;
     setManualUrl: (url: string) => void;
+    markModuleSolved: (bombId: string, moduleId: string) => void;
+};
+
+const moduleManualNames: Record<ModuleType, string> = {
+    [ModuleType.WIRES]: "Wires",
+    [ModuleType.BUTTON]: "The Button",
+    [ModuleType.KEYPADS]: "Keypads",
+    [ModuleType.MEMORY]: "Memory",
+    [ModuleType.SIMON_SAYS]: "Simon Says",
+    [ModuleType.MORSE_CODE]: "Morse Code",
+    [ModuleType.FORGET_ME_NOT]: "Forget Me Not",
+    [ModuleType.WHOS_ON_FIRST]: "Who's on First",
+    [ModuleType.VENTING_GAS]: "Venting Gas",
+    [ModuleType.CAPACITOR_DISCHARGE]: "Capacitor Discharge",
+    [ModuleType.COMPLICATED_WIRES]: "Complicated Wires",
+    [ModuleType.WIRE_SEQUENCES]: "Wire Sequences",
+    [ModuleType.PASSWORDS]: "Passwords",
+    [ModuleType.MAZES]: "Mazes",
 };
 
 const attachManualUrl = (moduleType: ModuleType) =>
-    `https://ktane.timwi.de/HTML/${moduleType.replaceAll("_", "%20")}.html`;
+    `https://ktane.timwi.de/html/${moduleManualNames[moduleType].replaceAll(" ", "%20")}.html`;
 
 export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
     devtools(
@@ -242,8 +261,10 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 if (!round) return;
                 const bomb = round.bombs.find((b) => b.id === bombId);
                 if (!bomb) return;
+                const module = bomb.modules.find((m) => m.type === moduleType);
+                if (!module) return;
                 set({
-                    currentModule: {bomb, moduleType},
+                    currentModule: {id: module.id, bomb, moduleType},
                     manualUrl: attachManualUrl(moduleType),
                 });
             },
@@ -251,6 +272,37 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             clearModule: () => set({currentModule: undefined, manualUrl: undefined}),
 
             setManualUrl: (url) => set({manualUrl: url}),
+
+            markModuleSolved: (bombId, moduleId) => {
+                set((state) => {
+                    if (!state.round) return state;
+                    return {
+                        round: {
+                            ...state.round,
+                            bombs: state.round.bombs.map((bomb) => {
+                                if (bomb.id !== bombId) return bomb;
+                                return {
+                                    ...bomb,
+                                    modules: bomb.modules.map((module) => {
+                                        if (module.id !== moduleId) return module;
+                                        return {...module, solved: true};
+                                    }),
+                                };
+                            }),
+                        },
+                        currentBomb:
+                            state.currentBomb?.id === bombId
+                                ? {
+                                      ...state.currentBomb,
+                                      modules: state.currentBomb.modules.map((module) => {
+                                          if (module.id !== moduleId) return module;
+                                          return {...module, solved: true};
+                                      }),
+                                  }
+                                : state.currentBomb,
+                    };
+                });
+            },
         }),
         {name: "round-store"},
     ),

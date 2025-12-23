@@ -1,121 +1,33 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --bg: radial-gradient(circle at top, #141622, #08080f 55%);
-  --panel: rgba(16, 18, 32, 0.85);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --text: #f4f6ff;
-  --text-muted: #9fa5cf;
-  --accent: #f5c84c;
-  --accent-strong: #ff6b35;
-  --danger: #ff4d6d;
-  --success: #5be7a9;
-  --outline: rgba(245, 200, 76, 0.35);
-  --radius: 18px;
-  font-family: "Space Grotesk", sans-serif;
-  color: var(--text);
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
+@layer base {
+  :root {
+    font-family: "Space Grotesk", sans-serif;
+    color: theme("colors.base-content");
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+  * {
+    @apply border-neutral;
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-}
+  body {
+    @apply min-h-screen bg-gradient-radial text-base-content m-0;
+  }
 
-#root {
-  min-height: 100vh;
-}
+  #root {
+    @apply min-h-screen;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  a {
+    @apply text-base-content no-underline;
+  }
 
-button {
-  font-family: inherit;
-}
-
-.app-shell {
-  min-height: 100vh;
-  padding: 2.5rem clamp(1.25rem, 5vw, 4rem) 4rem;
-}
-
-.shell-content {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(24px);
-}
-
-.action-primary {
-  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
-  color: #120b0a;
-  border: none;
-  border-radius: 999px;
-  padding: 0.9rem 2.4rem;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.action-primary:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 14px 30px rgba(245, 200, 76, 0.35);
-}
-
-.ghost-button {
-  background: transparent;
-  border: 1px solid var(--outline);
-  border-radius: 999px;
-  color: var(--text);
-  padding: 0.7rem 1.8rem;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
-}
-
-.ghost-button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  padding: 0.15rem 0.8rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.grid {
-  display: grid;
-  gap: 1.25rem;
-}
-
-.two-column {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  button {
+    @apply font-sans;
+  }
 }
