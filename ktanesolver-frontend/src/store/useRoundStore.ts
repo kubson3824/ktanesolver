@@ -22,6 +22,7 @@ type RoundStoreState = {
     manualUrl?: string;
     loading: boolean;
     error?: string;
+    moduleNumber: number;
 };
 
 type RoundStoreActions = {
@@ -42,6 +43,7 @@ type RoundStoreActions = {
     clearModule: () => void;
     setManualUrl: (url: string) => void;
     markModuleSolved: (bombId: string, moduleId: string) => void;
+    setModuleNumber: (number: number) => void;
 };
 
 const moduleManualNames: Record<ModuleType, string> = {
@@ -73,6 +75,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             manualUrl: undefined,
             loading: false,
             error: undefined,
+            moduleNumber: 1,
 
             createRound: async () => {
                 set({loading: true, error: undefined});
@@ -303,6 +306,8 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                     };
                 });
             },
+
+            setModuleNumber: (number) => set({moduleNumber: Math.max(1, Math.min(99, number))}),
         }),
         {name: "round-store"},
     ),

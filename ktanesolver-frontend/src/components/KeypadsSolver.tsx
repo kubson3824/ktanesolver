@@ -1,7 +1,10 @@
 import { useState } from "react";
-import type { BombEntity } from "../types";
+import type { BombEntity} from "../types";
+import { ModuleType } from "../types";
 import { solveKeypads, type KeypadSymbol } from "../services/keypadsService";
 import { useRoundStore } from "../store/useRoundStore";
+import { generateTwitchCommand } from "../utils/twitchCommands";
+import ModuleNumberInput from "./ModuleNumberInput";
 
 interface KeypadsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -52,10 +55,12 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
   const [isSolved, setIsSolved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
 
   const currentModule = useRoundStore((state) => state.currentModule);
   const round = useRoundStore((state) => state.round);
   const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
+  const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
   const handleSymbolClick = (symbol: KeypadSymbol) => {
     if (isSolved) return;
@@ -93,6 +98,20 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
       });
 
       setResult(response.output.pressOrder);
+      
+      // Generate Twitch commands for each press in sequence
+      const positionNames = ['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'];
+      const commands = response.output.pressOrder.map((symbol: KeypadSymbol, index: number) => {
+        const positionIndex = selectedSymbols.indexOf(symbol);
+        const positionName = positionNames[positionIndex];
+        return generateTwitchCommand({
+          moduleType: ModuleType.KEYPADS,
+          result: { position: positionName },
+          moduleNumber
+        });
+      });
+      setTwitchCommands(commands);
+      
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
     } catch (err) {
@@ -107,10 +126,12 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
     setResult([]);
     setIsSolved(false);
     setError("");
+    setTwitchCommands([]);
   };
 
   return (
     <div className="w-full">
+      <ModuleNumberInput />
       {/* Module visualization - 2x2 grid showing selected symbols */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
@@ -137,13 +158,36 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
         {isSolved && (
           <div className="mt-4 text-center">
             <p className="text-green-400 text-sm font-medium mb-2">Press in order:</p>
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 mb-3">
               {result.map((symbol, index) => (
                 <div key={index} className="bg-green-900/50 border border-green-600 rounded px-3 py-2">
                   <span className="text-green-300 font-bold">{index + 1}.</span>
                   <span className="text-xl ml-1">{SYMBOL_DISPLAY[symbol].display}</span>
                 </div>
               ))}
+            </div>
+            
+            {/* Twitch Commands */}
+            <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-3">
+              <h4 className="text-sm font-medium text-purple-400 mb-2">Twitch Chat Commands:</h4>
+              <div className="space-y-1">
+                {twitchCommands.map((command, index) => (
+                  <div key={index} className="flex items-center justify-between gap-2">
+                    <code className="text-sm font-mono text-purple-200">{command}</code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(command);
+                      }}
+                      className="btn btn-xs btn-outline btn-purple"
+                      title="Copy to clipboard"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
