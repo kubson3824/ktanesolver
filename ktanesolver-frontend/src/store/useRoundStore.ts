@@ -62,7 +62,7 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.CAPACITOR_DISCHARGE]: "Capacitor Discharge",
     [ModuleType.COMPLICATED_WIRES]: "Complicated Wires",
     [ModuleType.WIRE_SEQUENCES]: "Wire Sequences",
-    [ModuleType.PASSWORDS]: "Passwords",
+    [ModuleType.PASSWORDS]: "Password",
     [ModuleType.MAZES]: "Maze",
 };
 

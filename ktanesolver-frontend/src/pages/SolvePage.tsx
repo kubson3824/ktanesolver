@@ -7,6 +7,8 @@ import ButtonSolver from "../components/ButtonSolver";
 import KeypadsSolver from "../components/KeypadsSolver";
 import MazeSolver from "../components/MazeSolver";
 import MemorySolver from "../components/MemorySolver";
+import MorseCodeSolver from "../components/MorseCodeSolver";
+import PasswordSolver from "../components/PasswordSolver";
 
 const formatModuleName = (type: string) =>
   type
@@ -206,6 +208,10 @@ export default function SolvePage() {
                         <MazeSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "MEMORY" ? (
                         <MemorySolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "MORSE_CODE" ? (
+                        <MorseCodeSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "PASSWORDS" ? (
+                        <PasswordSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

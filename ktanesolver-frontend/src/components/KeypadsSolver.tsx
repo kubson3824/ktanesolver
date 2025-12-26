@@ -101,7 +101,7 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
       
       // Generate Twitch commands for each press in sequence
       const positionNames = ['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'];
-      const commands = response.output.pressOrder.map((symbol: KeypadSymbol, index: number) => {
+      const commands = response.output.pressOrder.map((symbol: KeypadSymbol) => {
         const positionIndex = selectedSymbols.indexOf(symbol);
         const positionName = positionNames[positionIndex];
         return generateTwitchCommand({

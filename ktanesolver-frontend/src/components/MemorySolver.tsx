@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { BombEntity, ModuleType } from "../types";
+import type { BombEntity } from "../types";
+import { ModuleType } from "../types";
 import { solveMemory } from "../services/memoryService";
 import { useRoundStore } from "../store/useRoundStore";
 import { generateTwitchCommand } from "../utils/twitchCommands";
@@ -127,7 +128,7 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     const isHighlighted = result?.position === position + 1;
 
     return (
-      <div className="flex flex-col items-center gap-2">
+      <div key={position} className="flex flex-col items-center gap-2">
         <div className="text-xs text-gray-400">Position {position + 1}</div>
         <button
           className={`w-20 h-20 rounded-lg border-2 font-bold text-2xl transition-all ${

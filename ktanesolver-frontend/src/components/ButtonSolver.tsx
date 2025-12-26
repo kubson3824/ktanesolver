@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { BombEntity, ModuleType } from "../types";
+import type { BombEntity } from "../types";
+import { ModuleType } from "../types";
 import { solveButton as solveButtonApi } from "../services/buttonService";
 import { useRoundStore } from "../store/useRoundStore";
 import { generateTwitchCommand } from "../utils/twitchCommands";

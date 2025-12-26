@@ -38,7 +38,7 @@ public class MorseCodeSolver implements ModuleSolver<MorseInput, MorseOutput> {
 	@Override
 	public SolveResult<MorseOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, MorseInput input) {
 
-		String observed = input.letter().toUpperCase().replaceAll(" ","");
+		String observed = input.word().toUpperCase().replaceAll(" ","");
 		List<MorseCandidate> candidates = Arrays.stream(MorseWord.values()).map(word -> scoreWord(observed, word)).sorted(Comparator.comparingDouble(MorseCandidate::confidence).reversed()).toList();
 
 		MorseCandidate best = candidates.get(0);
