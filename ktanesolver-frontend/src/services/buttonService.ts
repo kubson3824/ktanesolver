@@ -22,9 +22,9 @@ export const solveButton = async (
     moduleId: string,
     input: {
         input: {
-            color: "RED" | "BLUE" | "WHITE" | "YELLOW";
+            color: "RED" | "BLUE" | "WHITE" | "YELLOW" | "OTHER";
             label: "ABORT" | "DETONATE" | "HOLD" | "PRESS";
-            stripColor: "BLUE" | "WHITE" | "YELLOW" | null | undefined
+            stripColor: "BLUE" | "WHITE" | "YELLOW" | "OTHER" | null | undefined
         }
     }
 ): Promise<ButtonSolveResponse> => {

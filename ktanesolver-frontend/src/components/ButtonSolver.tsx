@@ -212,7 +212,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
           Batteries: <span className="font-mono font-bold">{(bomb?.aaBatteryCount ?? 0) + (bomb?.dBatteryCount ?? 0)}</span>
         </p>
         <p className="text-sm text-base-content/70">
-          Indicators: <span className="font-mono font-bold">{bomb?.indicators ? Object.entries(bomb.indicators).filter(([_, value]) => value).map(([key]) => key).join(", ") || "None" : "None"}</span>
+          Indicators: <span className="font-mono font-bold">{bomb?.indicators ? Object.entries(bomb.indicators).filter(([_key, value]) => value).map(([key]) => key).join(", ") || "None" : "None"}</span>
         </p>
       </div>
 

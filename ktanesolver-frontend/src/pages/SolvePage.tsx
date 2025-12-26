@@ -5,6 +5,8 @@ import type {ModuleEntity} from "../types";
 import WireSolver from "../components/WireSolver";
 import ButtonSolver from "../components/ButtonSolver";
 import KeypadsSolver from "../components/KeypadsSolver";
+import MazeSolver from "../components/MazeSolver";
+import MemorySolver from "../components/MemorySolver";
 
 const formatModuleName = (type: string) =>
   type
@@ -195,6 +197,10 @@ export default function SolvePage() {
                         <ButtonSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "KEYPADS" ? (
                         <KeypadsSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "MAZES" ? (
+                        <MazeSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "MEMORY" ? (
+                        <MemorySolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

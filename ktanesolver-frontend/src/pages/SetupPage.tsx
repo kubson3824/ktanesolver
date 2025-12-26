@@ -460,6 +460,7 @@ export default function SetupPage() {
                                             <span className="label-text">AA batteries</span>
                                             <input
                                                 type="number"
+                                                step={2}
                                                 min={0}
                                                 className="input input-bordered w-full"
                                                 value={formState.aaBatteryCount}

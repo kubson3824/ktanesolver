@@ -58,7 +58,7 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.COMPLICATED_WIRES]: "Complicated Wires",
     [ModuleType.WIRE_SEQUENCES]: "Wire Sequences",
     [ModuleType.PASSWORDS]: "Passwords",
-    [ModuleType.MAZES]: "Mazes",
+    [ModuleType.MAZES]: "Maze",
 };
 
 const attachManualUrl = (moduleType: ModuleType) =>
