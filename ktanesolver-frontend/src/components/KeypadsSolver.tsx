@@ -10,43 +10,33 @@ interface KeypadsSolverProps {
 // Symbol display configuration - mapping symbols to their visual representation
 const SYMBOL_DISPLAY: Record<KeypadSymbol, { display: string; className?: string }> = {
   BALLOON: { display: "Ϙ" },
-  AT: { display: "@" },
-  LAMBDA: { display: "λ" },
-  LIGHTNING: { display: "⚡" },
-  SQUID_KNIFE: { display: "🦑🔪" },
-  HOOK_N: { display: "🪝N" },
-  BACKWARD_C: { display: "Ↄ" },
-  EURO: { display: "€" },
-  CURSIVE: { display: "𝓗" },
+  AT: { display: "Ѧ" },
+  LAMBDA: { display: "ƛ" },
+  LIGHTNING: { display: "ϟ" },
+  SQUID_KNIFE: { display: "Ѭ" },
+  CURSIVE: { display: "Ҩ" },
+  BACKWARD_C: { display: "Ͽ" },
+  EURO: { display: "Ӭ" },
+  N_WITH_HAT: { display: "Ҋ" },
   HOLLOW_STAR: { display: "☆" },
-  QUESTION_MARK: { display: "?" },
+  QUESTION_MARK: { display: "¿" },
   COPYRIGHT: { display: "©" },
-  PUMPKIN: { display: "🎃" },
-  DOUBLE_K: { display: "KK" },
-  MELTED_3: { display: "Ʒ" },
-  SIX: { display: "6" },
+  PUMPKIN: { display: "Ѽ" },
+  DOUBLE_K: { display: "Җ" },
+  MELTED_3: { display: "Ԇ" },
+  SIX: { display: "б" },
   PARAGRAPH: { display: "¶" },
-  BT: { display: "BT" },
-  SMILEY: { display: "😊" },
-  PITCHFORK: { display: "🔱" },
-  C: { display: "C" },
-  DRAGON: { display: "🐉" },
+  BT: { display: "Ѣ" },
+  SMILEY: { display: "ټ" },
+  PITCHFORK: { display: "Ψ" },
+  C: { display: "Ͼ" },
+  DRAGON: { display: "Ѯ" },
   FILLED_STAR: { display: "★" },
-  TRACK: { display: "🎵" },
+  TRACK: { display: "҂" },
   AE: { display: "æ" },
-  N_WITH_HAT: { display: "Ń" },
+  HOOK_N: { display: "ⳤ" },
   OMEGA: { display: "Ω" },
 };
-
-// All symbols in a logical order for the grid
-const ALL_SYMBOLS: KeypadSymbol[] = [
-  "BALLOON", "AT", "LAMBDA", "LIGHTNING", "SQUID_KNIFE", "HOOK_N", "BACKWARD_C",
-  "EURO", "BALLOON", "BACKWARD_C", "CURSIVE", "HOLLOW_STAR", "HOOK_N", "QUESTION_MARK",
-  "COPYRIGHT", "PUMPKIN", "CURSIVE", "DOUBLE_K", "MELTED_3", "LAMBDA", "HOLLOW_STAR",
-  "SIX", "PARAGRAPH", "BT", "SQUID_KNIFE", "DOUBLE_K", "QUESTION_MARK", "SMILEY",
-  "PITCHFORK", "SMILEY", "BT", "C", "PARAGRAPH", "DRAGON", "FILLED_STAR",
-  "SIX", "EURO", "TRACK", "AE", "PITCHFORK", "N_WITH_HAT", "OMEGA"
-];
 
 // Unique symbols for selection (removing duplicates)
 const UNIQUE_SYMBOLS: KeypadSymbol[] = [
