@@ -1,6 +1,7 @@
 
 package ktanesolver.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.web.bind.annotation.*;
@@ -29,5 +30,15 @@ public class RoundController {
 	@PostMapping ("/{roundId}/start")
 	public RoundEntity startRound(@PathVariable UUID roundId) {
 		return roundService.startRound(roundId);
+	}
+
+	@GetMapping
+	public List<RoundEntity> getAllRounds() {
+		return roundService.getAllRounds();
+	}
+
+	@DeleteMapping("/{roundId}")
+	public void deleteRound(@PathVariable UUID roundId) {
+		roundService.deleteRound(roundId);
 	}
 }

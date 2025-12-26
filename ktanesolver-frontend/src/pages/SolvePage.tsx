@@ -85,9 +85,14 @@ export default function SolvePage() {
                   study the binder on the left, drive the solver on the right.
                 </p>
               </div>
-              <button className="btn btn-outline btn-sm" onClick={() => navigate("/setup")}>
-                Back to setup
-              </button>
+              <div className="flex gap-2">
+                <button className="btn btn-outline btn-sm" onClick={() => navigate("/rounds")}>
+                  All Rounds
+                </button>
+                <button className="btn btn-outline btn-sm" onClick={() => navigate("/setup")}>
+                  Back to setup
+                </button>
+              </div>
             </div>
           </div>
         </header>

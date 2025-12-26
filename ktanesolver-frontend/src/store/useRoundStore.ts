@@ -13,6 +13,7 @@ import {api, withErrorWrapping} from "../lib/api";
 
 type RoundStoreState = {
     round?: RoundEntity;
+    allRounds?: RoundEntity[];
     currentBomb?: BombEntity;
     currentModule?: {
         id: string;
@@ -28,6 +29,8 @@ type RoundStoreState = {
 type RoundStoreActions = {
     createRound: () => Promise<RoundEntity>;
     fetchRound: (roundId: string) => Promise<RoundEntity>;
+    fetchAllRounds: () => Promise<RoundEntity[]>;
+    deleteRound: (roundId: string) => Promise<void>;
     addBomb: (payload: CreateBombRequest) => Promise<BombEntity>;
     configureBomb: (
         bombId: string,
@@ -70,6 +73,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
     devtools(
         (set, get) => ({
             round: undefined,
+            allRounds: undefined,
             currentBomb: undefined,
             currentModule: undefined,
             manualUrl: undefined,
@@ -84,7 +88,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         const {data} = await api.post<RoundEntity>("/rounds");
                         return data;
                     });
-                    set({round, loading: false, currentBomb: undefined});
+                    set({round, loading: false, currentBomb: undefined, currentModule: undefined, manualUrl: undefined});
                     return round;
                 } catch (error) {
                     set({
@@ -102,8 +106,46 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         const {data} = await api.get<RoundEntity>(`/rounds/${roundId}`);
                         return data;
                     });
-                    set({round, loading: false});
+                    set({round, loading: false, currentBomb: undefined, currentModule: undefined, manualUrl: undefined});
                     return round;
+                } catch (error) {
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
+
+            fetchAllRounds: async () => {
+                set({loading: true, error: undefined});
+                try {
+                    const rounds = await withErrorWrapping(async () => {
+                        const {data} = await api.get<RoundEntity[]>("/rounds");
+                        return data;
+                    });
+                    set({allRounds: rounds, loading: false});
+                    return rounds;
+                } catch (error) {
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
+
+            deleteRound: async (roundId: string) => {
+                set({loading: true, error: undefined});
+                try {
+                    await withErrorWrapping(async () => {
+                        await api.delete(`/rounds/${roundId}`);
+                    });
+                    set((state) => ({
+                        ...state,
+                        loading: false,
+                        allRounds: state.allRounds?.filter((r) => r.id !== roundId),
+                    }));
                 } catch (error) {
                     set({
                         loading: false,

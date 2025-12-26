@@ -2,6 +2,7 @@
 package ktanesolver.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -62,5 +63,16 @@ public class RoundService {
 		RoundEntity round = getRound(roundId);
 		round.setStatus(RoundStatus.FAILED);
 		roundRepo.save(round);
+	}
+
+	@Transactional
+	public List<RoundEntity> getAllRounds() {
+		return roundRepo.findAll();
+	}
+
+	@Transactional
+	public void deleteRound(UUID roundId) {
+		RoundEntity round = getRound(roundId);
+		roundRepo.delete(round);
 	}
 }

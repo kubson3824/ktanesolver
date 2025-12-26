@@ -270,6 +270,12 @@ export default function SetupPage() {
                                     >
                                         Add Bomb
                                     </button>
+                                    <button
+                                        className="btn btn-outline"
+                                        onClick={() => navigate("/rounds")}
+                                    >
+                                        View All Rounds
+                                    </button>
                                     {round && (
                                         <span className="badge badge-outline gap-2">
                     Round status:&nbsp;
