@@ -51,9 +51,6 @@ public class BombService {
 	public BombEntity addStrike(UUID bombId) {
 		BombEntity bomb = bombRepo.findById(bombId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bomb not found"));
 		bomb.setStrikes(bomb.getStrikes() + 1);
-		if(bomb.getStrikes() >= 3) {
-			bomb.setStatus(BombStatus.EXPLODED);
-		}
 		return bombRepo.save(bomb);
 	}
 }

@@ -47,6 +47,7 @@ type RoundStoreActions = {
     setManualUrl: (url: string) => void;
     markModuleSolved: (bombId: string, moduleId: string) => void;
     setModuleNumber: (number: number) => void;
+    addStrike: (bombId: string) => Promise<BombEntity>;
 };
 
 const moduleManualNames: Record<ModuleType, string> = {
@@ -350,6 +351,42 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             },
 
             setModuleNumber: (number) => set({moduleNumber: Math.max(1, Math.min(99, number))}),
+
+            addStrike: async (bombId) => {
+                set({loading: true, error: undefined});
+                try {
+                    const updated = await withErrorWrapping(async () => {
+                        const {data} = await api.post<BombEntity>(
+                            `/bombs/${bombId}/strike`,
+                        );
+                        return data;
+                    });
+
+                    set((state) => {
+                        if (!state.round) {
+                            return {loading: false};
+                        }
+                        return {
+                            loading: false,
+                            round: {
+                                ...state.round,
+                                bombs: state.round.bombs.map((b) =>
+                                    b.id === bombId ? updated : b,
+                                ),
+                            },
+                            currentBomb:
+                                state.currentBomb?.id === bombId ? updated : state.currentBomb,
+                        };
+                    });
+                    return updated;
+                } catch (error) {
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
         }),
         {name: "round-store"},
     ),

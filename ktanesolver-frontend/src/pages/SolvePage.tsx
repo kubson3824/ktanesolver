@@ -9,6 +9,9 @@ import MazeSolver from "../components/MazeSolver";
 import MemorySolver from "../components/MemorySolver";
 import MorseCodeSolver from "../components/MorseCodeSolver";
 import PasswordSolver from "../components/PasswordSolver";
+import SimonSolver from "../components/SimonSolver";
+import { StrikeButton } from "../components/StrikeButton";
+import { StrikeIndicator } from "../components/StrikeIndicator";
 
 const formatModuleName = (type: string) =>
   type
@@ -87,13 +90,17 @@ export default function SolvePage() {
                   study the binder on the left, drive the solver on the right.
                 </p>
               </div>
-              <div className="flex gap-2">
-                <button className="btn btn-outline btn-sm" onClick={() => navigate("/rounds")}>
-                  All Rounds
-                </button>
-                <button className="btn btn-outline btn-sm" onClick={() => navigate("/setup")}>
-                  Back to setup
-                </button>
+              <div className="flex flex-col items-end gap-2">
+                <StrikeIndicator />
+                <div className="flex gap-2">
+                  <StrikeButton className="btn-sm" />
+                  <button className="btn btn-outline btn-sm" onClick={() => navigate("/rounds")}>
+                    All Rounds
+                  </button>
+                  <button className="btn btn-outline btn-sm" onClick={() => navigate("/setup")}>
+                    Back to setup
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -212,6 +219,8 @@ export default function SolvePage() {
                         <MorseCodeSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "PASSWORDS" ? (
                         <PasswordSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "SIMON_SAYS" ? (
+                        <SimonSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>
