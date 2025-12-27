@@ -10,6 +10,7 @@ import MemorySolver from "../components/MemorySolver";
 import MorseCodeSolver from "../components/MorseCodeSolver";
 import PasswordSolver from "../components/PasswordSolver";
 import SimonSolver from "../components/SimonSolver";
+import WhosOnFirstSolver from "../components/WhosOnFirstSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 
@@ -221,6 +222,8 @@ export default function SolvePage() {
                         <PasswordSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "SIMON_SAYS" ? (
                         <SimonSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "WHOS_ON_FIRST" ? (
+                        <WhosOnFirstSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

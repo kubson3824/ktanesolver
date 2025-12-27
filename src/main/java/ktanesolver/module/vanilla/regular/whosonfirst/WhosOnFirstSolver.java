@@ -76,6 +76,9 @@ public class WhosOnFirstSolver implements ModuleSolver<WhosOnFirstInput, WhosOnF
 	}
 
 	private String normalize(String s) {
-		return s == null ? "" : s.trim().toUpperCase();
+		if (s == null || s.trim().isEmpty()) {
+			return " "; // Empty display maps to space
+		}
+		return s.trim().toUpperCase();
 	}
 }
