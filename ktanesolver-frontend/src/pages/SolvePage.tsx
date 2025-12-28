@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRoundStore } from "../store/useRoundStore";
 import type {ModuleEntity} from "../types";
@@ -15,6 +15,7 @@ import ComplicatedWiresSolver from "../components/ComplicatedWiresSolver";
 import WireSequencesSolver from "../components/WireSequencesSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
+import NeedyModulesPanel from "../components/NeedyModulesPanel";
 
 const formatModuleName = (type: string) =>
   type
@@ -35,6 +36,7 @@ export default function SolvePage() {
   const selectModule = useRoundStore((state) => state.selectModule);
   const clearModule = useRoundStore((state) => state.clearModule);
   const manualUrl = useRoundStore((state) => state.manualUrl);
+  const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
 
   useEffect(() => {
     if (roundId && round?.id !== roundId) {
@@ -52,6 +54,23 @@ export default function SolvePage() {
     if (!currentBomb) return [];
     return currentBomb.modules ?? [];
   }, [currentBomb]);
+
+  const { regularModules, needyModules } = useMemo(() => {
+    const regular: ModuleEntity[] = [];
+    const needy: ModuleEntity[] = [];
+    
+    modules.forEach((module) => {
+      // Check if module type is needy
+      const isNeedy = ["FORGET_ME_NOT", "VENTING_GAS", "CAPACITOR_DISCHARGE", "KNOBS"].includes(module.type);
+      if (isNeedy) {
+        needy.push(module);
+      } else {
+        regular.push(module);
+      }
+    });
+    
+    return { regularModules: regular, needyModules: needy };
+  }, [modules]);
 
   const handleModuleClick = (module: ModuleEntity) => {
     if (!currentBomb) return;
@@ -130,12 +149,12 @@ export default function SolvePage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {modules.length === 0 && (
+                {regularModules.length === 0 && (
                   <div className="col-span-full text-center py-12">
-                    <p className="text-base-content/50">No modules assigned to this bomb.</p>
+                    <p className="text-base-content/50">No regular modules assigned to this bomb.</p>
                   </div>
                 )}
-                {modules.map((module) => (
+                {regularModules.map((module) => (
                   <div key={module.id} className="card bg-base-100 border border-base-300 hover:border-primary transition-colors">
                     <div className="card-body">
                       <div className="flex justify-between items-start mb-4">
@@ -264,6 +283,16 @@ export default function SolvePage() {
           </div>
         </div>
       )}
+      
+      {/* Needy Modules Panel */}
+      <NeedyModulesPanel
+        needyModules={needyModules}
+        bomb={currentBomb}
+        roundId={roundId || ''}
+        bombId={currentBomb?.id || ''}
+        isOpen={isNeedyPanelOpen}
+        onToggle={() => setIsNeedyPanelOpen(!isNeedyPanelOpen)}
+      />
     </div>
   );
 }

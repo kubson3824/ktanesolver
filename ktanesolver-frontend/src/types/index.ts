@@ -13,6 +13,7 @@ export enum ModuleType {
   WIRE_SEQUENCES = "WIRE_SEQUENCES",
   PASSWORDS = "PASSWORDS",
   MAZES = "MAZES",
+  KNOBS = "KNOBS",
 }
 
 export enum PortType {
