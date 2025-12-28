@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class KnobsModuleSolver implements ModuleSolver<KnobsModuleSolver.KnobsInput, KnobsModuleSolver.KnobsOutput> {
+public class KnobsModuleSolver implements ModuleSolver<KnobsInput, KnobsOutput> {
 
     @Override
     public ModuleType getType() {
@@ -73,7 +73,5 @@ public class KnobsModuleSolver implements ModuleSolver<KnobsModuleSolver.KnobsIn
         return "Unknown configuration";
     }
 
-    public record KnobsInput(boolean[] indicators) implements ModuleInput {}
-    
-    public record KnobsOutput(String position) implements ModuleOutput {}
+
 }
