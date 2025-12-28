@@ -11,6 +11,8 @@ import MorseCodeSolver from "../components/MorseCodeSolver";
 import PasswordSolver from "../components/PasswordSolver";
 import SimonSolver from "../components/SimonSolver";
 import WhosOnFirstSolver from "../components/WhosOnFirstSolver";
+import ComplicatedWiresSolver from "../components/ComplicatedWiresSolver";
+import WireSequencesSolver from "../components/WireSequencesSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 
@@ -224,6 +226,10 @@ export default function SolvePage() {
                         <SimonSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "WHOS_ON_FIRST" ? (
                         <WhosOnFirstSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "COMPLICATED_WIRES" ? (
+                        <ComplicatedWiresSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "WIRE_SEQUENCES" ? (
+                        <WireSequencesSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

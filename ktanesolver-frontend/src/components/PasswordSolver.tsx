@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { BombEntity } from "../types";
 import { solvePassword, type PasswordOutput } from "../services/passwordService";
 import { useRoundStore } from "../store/useRoundStore";
@@ -10,16 +10,6 @@ interface PasswordSolverProps {
 }
 
 // All possible password words from the enum
-const PASSWORD_WORDS = [
-  "ABOUT", "AFTER", "AGAIN", "BELOW", "COULD",
-  "EVERY", "FIRST", "FOUND", "GREAT", "HOUSE",
-  "LARGE", "LEARN", "NEVER", "OTHER", "PLACE",
-  "PLANT", "POINT", "RIGHT", "SMALL", "SOUND",
-  "SPELL", "STILL", "STUDY", "THEIR", "THERE",
-  "THESE", "THING", "THINK", "THREE", "WATER",
-  "WHERE", "WHICH", "WORLD", "WOULD", "WRITE"
-];
-
 export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   const [columnLetters, setColumnLetters] = useState<Record<number, string>>({});
   const [result, setResult] = useState<PasswordOutput | null>(null);
@@ -187,7 +177,7 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
                 className={`
                   p-3 rounded text-center font-mono text-lg font-bold
                   ${result.resolved && result.possibleWords.length === 1
-                    ? 'bg-success text-success-content'
+                    ? 'bg-success text-neutral-content border-2 border-success shadow-lg shadow-success/25'
                     : 'bg-warning text-warning-content'
                   }
                 `}

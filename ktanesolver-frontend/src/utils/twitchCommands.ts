@@ -80,7 +80,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${moduleNumber} ${result.action}`;
     
     case ModuleType.COMPLICATED_WIRES:
-      return `!${moduleNumber} cut ${result.wirePosition}`;
+      return `!${moduleNumber} cut ${result.wire}`;
     
     case ModuleType.WIRE_SEQUENCES:
       // Assuming result has the wire to cut
