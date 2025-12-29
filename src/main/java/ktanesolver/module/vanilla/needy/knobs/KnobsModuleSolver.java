@@ -6,11 +6,12 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.*;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
+@Service
 public class KnobsModuleSolver implements ModuleSolver<KnobsInput, KnobsOutput> {
 
     @Override
