@@ -14,6 +14,7 @@ export enum ModuleType {
   PASSWORDS = "PASSWORDS",
   MAZES = "MAZES",
   KNOBS = "KNOBS",
+  COLOR_FLASH = "COLOR_FLASH",
 }
 
 export enum PortType {

@@ -13,6 +13,7 @@ import SimonSolver from "../components/SimonSolver";
 import WhosOnFirstSolver from "../components/WhosOnFirstSolver";
 import ComplicatedWiresSolver from "../components/ComplicatedWiresSolver";
 import WireSequencesSolver from "../components/WireSequencesSolver";
+import ColorFlashSolver from "../components/ColorFlashSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -249,6 +250,8 @@ export default function SolvePage() {
                         <ComplicatedWiresSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "WIRE_SEQUENCES" ? (
                         <WireSequencesSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "COLOR_FLASH" ? (
+                        <ColorFlashSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>
