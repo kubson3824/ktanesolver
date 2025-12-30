@@ -148,20 +148,7 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
         
         {/* Word and Color Selection */}
         <div className="mb-6">
-          <p className="text-center text-gray-400 mb-3 text-sm">Select Word and Color:</p>
-          <div className="grid grid-cols-6 gap-2 mb-3">
-            {COLORS.map((color) => (
-              <button
-                key={color}
-                className={`h-12 rounded border-2 transition-all duration-200 text-white font-medium text-sm ${COLOR_CLASSES[color].bg} ${COLOR_CLASSES[color].border}`}
-                disabled={isSolved || isLoading || sequence.length >= 8}
-              >
-                {color}
-              </button>
-            ))}
-          </div>
-          
-          {/* Quick combinations for common patterns */}
+          <p className="text-center text-gray-400 mb-3 text-sm">Select Word and Color combinations:</p>
           <div className="flex justify-center gap-2 flex-wrap">
             {COLORS.map((word) => (
               <div key={word} className="flex gap-1">
@@ -169,10 +156,10 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
                   <button
                     key={`${word}-${color}`}
                     onClick={() => handleAddEntry(word, color)}
-                    className={`w-8 h-8 rounded border transition-all duration-200 text-xs font-medium ${
+                    className={`w-8 h-8 rounded border transition-all duration-200 text-xs font-bold ${
                       word === color 
                         ? `${COLOR_CLASSES[color].bg} ${COLOR_CLASSES[color].border} text-white`
-                        : `bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600`
+                        : `bg-gray-700 border-gray-600 ${COLOR_CLASSES[color].text}`
                     }`}
                     disabled={isSolved || isLoading || sequence.length >= 8}
                     title={`${word} in ${color}`}
@@ -202,9 +189,12 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
                   }`}
                 >
                   <span className="text-gray-400 text-xs mb-1">#{index + 1}</span>
-                  <span className="font-bold text-sm">{entry.word}</span>
-                  <span className={`text-xs ${entry.word === entry.color ? 'text-white/80' : COLOR_CLASSES[entry.color].text}`}>
-                    in {entry.color}
+                  <span className={`font-bold text-sm ${
+                    entry.word === entry.color 
+                      ? 'text-white'
+                      : COLOR_CLASSES[entry.color].text
+                  }`}>
+                    {entry.word}
                   </span>
                   {!isSolved && !isLoading && (
                     <button
