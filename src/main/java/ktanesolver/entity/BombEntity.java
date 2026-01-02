@@ -100,4 +100,9 @@ public class BombEntity {
     public boolean hasPort(PortType portType) {
         return portPlates.stream().anyMatch(plate -> plate.getPorts().contains(portType));
     }
+
+	@JsonIgnore
+    public int getBatteryHolders() {
+        return (int) (aaBatteryCount / 2.0 + dBatteryCount);
+    }
 }

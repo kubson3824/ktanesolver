@@ -14,6 +14,7 @@ import WhosOnFirstSolver from "../components/WhosOnFirstSolver";
 import ComplicatedWiresSolver from "../components/ComplicatedWiresSolver";
 import WireSequencesSolver from "../components/WireSequencesSolver";
 import ColorFlashSolver from "../components/ColorFlashSolver";
+import PianoKeysSolver from "../components/PianoKeysSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -252,6 +253,8 @@ export default function SolvePage() {
                         <WireSequencesSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "COLOR_FLASH" ? (
                         <ColorFlashSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "PIANO_KEYS" ? (
+                        <PianoKeysSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>
