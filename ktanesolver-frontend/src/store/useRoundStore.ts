@@ -69,6 +69,7 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.COLOR_FLASH]: "Colour Flash",
     [ModuleType.PIANO_KEYS]: "Piano Keys",
     [ModuleType.SEMAPHORE]: "Semaphore",
+    [ModuleType.MATH]: "Math",
 };
 
 const attachManualUrl = (moduleType: ModuleType) =>
