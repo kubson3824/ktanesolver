@@ -16,6 +16,7 @@ export enum ModuleType {
   KNOBS = "KNOBS",
   COLOR_FLASH = "COLOR_FLASH",
   PIANO_KEYS = "PIANO_KEYS",
+  SEMAPHORE = "SEMAPHORE",
 }
 
 export enum PortType {
