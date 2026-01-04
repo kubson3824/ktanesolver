@@ -19,6 +19,7 @@ export enum ModuleType {
   SEMAPHORE = "SEMAPHORE",
   MATH = "MATH",
   EMOJI_MATH = "EMOJI_MATH",
+  SWITCHES = "SWITCHES",
 }
 
 export enum PortType {
