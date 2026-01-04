@@ -18,6 +18,7 @@ export enum ModuleType {
   PIANO_KEYS = "PIANO_KEYS",
   SEMAPHORE = "SEMAPHORE",
   MATH = "MATH",
+  EMOJI_MATH = "EMOJI_MATH",
 }
 
 export enum PortType {

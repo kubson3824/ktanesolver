@@ -111,6 +111,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${moduleNumber} ${result.action || 'unknown'}`;
     
+    case ModuleType.EMOJI_MATH:
+      return `!${moduleNumber} answer ${result.answer}`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -132,6 +135,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.WIRE_SEQUENCES]: "Wire Sequences",
     [ModuleType.PASSWORDS]: "Passwords",
     [ModuleType.MAZES]: "Mazes",
+    [ModuleType.EMOJI_MATH]: "Emoji Math",
   };
   
   return displayNames[moduleType] || moduleType;

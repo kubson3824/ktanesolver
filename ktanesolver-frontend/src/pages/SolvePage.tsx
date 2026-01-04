@@ -17,6 +17,7 @@ import ColorFlashSolver from "../components/ColorFlashSolver";
 import PianoKeysSolver from "../components/PianoKeysSolver";
 import SemaphoreSolver from "../components/SemaphoreSolver";
 import MathSolver from "../components/MathSolver";
+import EmojiSolver from "../components/EmojiSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -261,6 +262,8 @@ export default function SolvePage() {
                         <SemaphoreSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "MATH" ? (
                         <MathSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "EMOJI_MATH" ? (
+                        <EmojiSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

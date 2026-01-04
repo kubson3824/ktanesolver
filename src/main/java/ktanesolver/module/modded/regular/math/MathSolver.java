@@ -12,8 +12,6 @@ import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
