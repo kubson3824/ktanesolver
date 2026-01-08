@@ -93,6 +93,11 @@ public class BombEntity {
 		return !isLastDigitOdd();
 	}
 
+	@JsonIgnore
+	public int getLastDigit() {
+		return serialNumber.chars().filter(Character::isDigit).map(c -> c - '0').reduce((a, b) -> b).orElse(0);
+	}
+
 	public boolean serialHasVowel() {
 		return serialNumber.chars().anyMatch(c -> "AEIOU".indexOf(c) >= 0);
 	}

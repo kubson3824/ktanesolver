@@ -20,6 +20,7 @@ export enum ModuleType {
   MATH = "MATH",
   EMOJI_MATH = "EMOJI_MATH",
   SWITCHES = "SWITCHES",
+  TWO_BITS = "TWO_BITS",
 }
 
 export enum PortType {

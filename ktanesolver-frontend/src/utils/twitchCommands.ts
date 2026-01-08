@@ -118,6 +118,10 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       // For switches, we'll provide the instruction as is
       return `!${moduleNumber} ${result.instruction}`;
     
+    case ModuleType.TWO_BITS:
+      // For Two Bits, we provide the letters to display
+      return `!${moduleNumber} display ${result.letters}`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -141,6 +145,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.MAZES]: "Mazes",
     [ModuleType.EMOJI_MATH]: "Emoji Math",
     [ModuleType.SWITCHES]: "Switches",
+    [ModuleType.TWO_BITS]: "Two Bits",
   };
   
   return displayNames[moduleType] || moduleType;
