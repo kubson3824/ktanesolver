@@ -133,6 +133,13 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${moduleNumber} anagrams no solution`;
     
+    case ModuleType.COMBINATION_LOCK:
+      // For Combination Lock, we provide the combination numbers
+      if (result.combination && Array.isArray(result.combination)) {
+        return `!${moduleNumber} combo ${result.combination.join(' ')}`;
+      }
+      return `!${moduleNumber} combo ${result.firstNumber || '0'} ${result.secondNumber || '0'} ${result.thirdNumber || '0'}`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -159,6 +166,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.TWO_BITS]: "Two Bits",
     [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
     [ModuleType.ANAGRAMS]: "Anagrams",
+    [ModuleType.COMBINATION_LOCK]: "Combination Lock",
   };
   
   return displayNames[moduleType] || moduleType;

@@ -22,6 +22,7 @@ import SwitchesSolver from "../components/SwitchesSolver";
 import TwoBitsSolver from "../components/TwoBitsSolver";
 import WordScrambleSolver from "../components/WordScrambleSolver";
 import AnagramsSolver from "../components/AnagramsSolver";
+import CombinationLockSolver from "../components/CombinationLockSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -276,6 +277,8 @@ export default function SolvePage() {
                         <WordScrambleSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "ANAGRAMS" ? (
                         <AnagramsSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "COMBINATION_LOCK" ? (
+                        <CombinationLockSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

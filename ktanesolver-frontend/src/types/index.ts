@@ -23,6 +23,7 @@ export enum ModuleType {
   TWO_BITS = "TWO_BITS",
   WORD_SCRAMBLE = "WORD_SCRAMBLE",
   ANAGRAMS = "ANAGRAMS",
+  COMBINATION_LOCK = "COMBINATION_LOCK",
 }
 
 export enum PortType {
