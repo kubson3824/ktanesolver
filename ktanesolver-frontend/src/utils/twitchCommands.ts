@@ -126,6 +126,13 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       // For Word Scramble, we provide the solution word
       return `!${moduleNumber} word ${result.solution || 'unknown'}`;
     
+    case ModuleType.ANAGRAMS:
+      // For Anagrams, we provide the possible solutions
+      if (result.possibleSolutions && result.possibleSolutions.length > 0) {
+        return `!${moduleNumber} anagrams ${result.possibleSolutions.join(', ')}`;
+      }
+      return `!${moduleNumber} anagrams no solution`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -151,6 +158,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.SWITCHES]: "Switches",
     [ModuleType.TWO_BITS]: "Two Bits",
     [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
+    [ModuleType.ANAGRAMS]: "Anagrams",
   };
   
   return displayNames[moduleType] || moduleType;

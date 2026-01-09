@@ -21,6 +21,8 @@ export enum ModuleType {
   EMOJI_MATH = "EMOJI_MATH",
   SWITCHES = "SWITCHES",
   TWO_BITS = "TWO_BITS",
+  WORD_SCRAMBLE = "WORD_SCRAMBLE",
+  ANAGRAMS = "ANAGRAMS",
 }
 
 export enum PortType {
