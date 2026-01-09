@@ -122,6 +122,10 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       // For Two Bits, we provide the letters to display
       return `!${moduleNumber} display ${result.letters}`;
     
+    case ModuleType.WORD_SCRAMBLE:
+      // For Word Scramble, we provide the solution word
+      return `!${moduleNumber} word ${result.solution || 'unknown'}`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -146,6 +150,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.EMOJI_MATH]: "Emoji Math",
     [ModuleType.SWITCHES]: "Switches",
     [ModuleType.TWO_BITS]: "Two Bits",
+    [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
   };
   
   return displayNames[moduleType] || moduleType;
