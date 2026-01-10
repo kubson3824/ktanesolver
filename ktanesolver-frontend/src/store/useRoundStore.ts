@@ -72,6 +72,9 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.MATH]: "Math",
     [ModuleType.EMOJI_MATH]: "Emoji Math",
     [ModuleType.SWITCHES]: "Switches",
+    [ModuleType.TWO_BITS]: "Two Bits",
+    [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
+    [ModuleType.ANAGRAMS]: "Anagrams",
 };
 
 const attachManualUrl = (moduleType: ModuleType) =>

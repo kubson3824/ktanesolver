@@ -1,30 +1,32 @@
-import { SolveRequest, SolveResponse } from "./api";
+import {api, withErrorWrapping} from "../lib/api";
 
-export interface AnagramsInput {
-  displayWord: string;
+export interface AnagramsSolveRequest {
+    input: {
+        displayWord: string;
+    }
 }
 
-export interface AnagramsOutput {
-  possibleSolutions: string[];
+export interface AnagramsSolveResponse {
+    output: {
+        possibleSolutions: string[];
+    };
 }
 
-export async function solveAnagrams(
-  roundId: string,
-  bombId: string,
-  moduleId: string,
-  data: SolveRequest<AnagramsInput>
-): Promise<SolveResponse<AnagramsOutput>> {
-  const response = await fetch(`/api/round/${roundId}/bomb/${bombId}/module/${moduleId}/solve`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to solve anagrams module");
-  }
-
-  return response.json();
-}
+export const solveAnagrams = async (
+    roundId: string,
+    bombId: string,
+    moduleId: string,
+    input: {
+        input: {
+            displayWord: string;
+        }
+    }
+): Promise<AnagramsSolveResponse> => {
+    return withErrorWrapping(async () => {
+        const response = await api.post<AnagramsSolveResponse>(
+            `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
+            input
+        );
+        return response.data;
+    });
+};
