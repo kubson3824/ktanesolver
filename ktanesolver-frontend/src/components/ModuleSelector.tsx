@@ -27,6 +27,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const [selectedCategory, setSelectedCategory] = useState<ModuleCategory | "ALL">("ALL");
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
   const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "category">("name-asc");
 
   useEffect(() => {
     fetchModules();
@@ -60,12 +61,37 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       );
     }
 
-    // Show recently used first
+    // Separate recently used and others first
     const recent = filtered.filter(m => recentlyUsed.includes(m.id));
     const others = filtered.filter(m => !recentlyUsed.includes(m.id));
+
+    // Apply sorting function
+    const sortFunction = (a: ModuleCatalogItem, b: ModuleCatalogItem) => {
+      if (sortBy === "name-asc") {
+        return a.name.localeCompare(b.name);
+      } else if (sortBy === "name-desc") {
+        return b.name.localeCompare(a.name);
+      } else if (sortBy === "category") {
+        const categoryOrder = [
+          ModuleCategory.VANILLA_REGULAR,
+          ModuleCategory.VANILLA_NEEDY,
+          ModuleCategory.MODDED_REGULAR,
+          ModuleCategory.MODDED_NEEDY,
+        ];
+        const aIndex = categoryOrder.indexOf(a.category);
+        const bIndex = categoryOrder.indexOf(b.category);
+        if (aIndex !== bIndex) return aIndex - bIndex;
+        return a.name.localeCompare(b.name);
+      }
+      return 0;
+    };
+
+    // Sort both groups
+    const sortedRecent = [...recent].sort(sortFunction);
+    const sortedOthers = [...others].sort(sortFunction);
     
-    return [...recent, ...others];
-  }, [modules, selectedCategory, searchTerm, recentlyUsed]);
+    return [...sortedRecent, ...sortedOthers];
+  }, [modules, selectedCategory, searchTerm, sortBy, recentlyUsed]);
 
   const updateModuleCount = (moduleType: string, delta: number) => {
     setSelectedModules(prev => {
@@ -108,13 +134,24 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
     <div className="space-y-4">
       {/* Search and Filters */}
       <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="Search modules by name, description, or tags..."
-          className="input input-bordered w-full"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            placeholder="Search modules by name, description, or tags..."
+            className="input input-bordered flex-1"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select
+            className="select select-bordered w-32"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "name-asc" | "name-desc" | "category")}
+          >
+            <option value="name-asc">Name ↑</option>
+            <option value="name-desc">Name ↓</option>
+            <option value="category">Category</option>
+          </select>
+        </div>
         
         <div className="flex flex-wrap gap-2">
           <button
