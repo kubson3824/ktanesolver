@@ -18,6 +18,9 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class MorseCodeSolver implements ModuleSolver<MorseInput, MorseOutput> {
@@ -33,6 +36,12 @@ public class MorseCodeSolver implements ModuleSolver<MorseInput, MorseOutput> {
 	@Override
 	public Class<MorseInput> inputType() {
 		return MorseInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("morse", "Morse Code", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"MORSE_CODE", List.of("decoding", "pattern"),
+			"Decode the morse code and transmit the correct word", true, true);
 	}
 
 	@Override

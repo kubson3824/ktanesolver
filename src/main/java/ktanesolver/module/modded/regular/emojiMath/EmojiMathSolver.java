@@ -1,5 +1,6 @@
 package ktanesolver.module.modded.regular.emojiMath;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -16,6 +17,9 @@ import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOutput> {
@@ -42,6 +46,12 @@ public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOu
     public Class<EmojiMathInput> inputType() {
         return EmojiMathInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("emoji_math", "Emoji Math", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"EMOJI_MATH", List.of("puzzle", "visual"),
+			"Solve math problems with emoji values", true, true);
+	}
 
     @Override
     public SolveResult<EmojiMathOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, EmojiMathInput input) {

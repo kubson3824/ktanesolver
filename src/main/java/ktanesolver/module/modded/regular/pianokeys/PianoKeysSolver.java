@@ -16,6 +16,9 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class PianoKeysSolver implements ModuleSolver<PianoKeysInput, PianoKeysOutput> {
@@ -29,6 +32,12 @@ public class PianoKeysSolver implements ModuleSolver<PianoKeysInput, PianoKeysOu
     public Class<PianoKeysInput> inputType() {
         return PianoKeysInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("piano", "Piano Keys", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"PIANO_KEYS", List.of("music", "pattern"),
+			"Play the correct sequence of piano keys", true, true);
+	}
 
     @Override
     public SolveResult<PianoKeysOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, PianoKeysInput input) {

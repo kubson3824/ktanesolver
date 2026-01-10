@@ -18,6 +18,9 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class ComplicatedWiresSolver implements ModuleSolver<ComplicatedWiresInput, ComplicatedWiresOutput> {
@@ -30,6 +33,12 @@ public class ComplicatedWiresSolver implements ModuleSolver<ComplicatedWiresInpu
 	@Override
 	public Class<ComplicatedWiresInput> inputType() {
 		return ComplicatedWiresInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("complicated_wires", "Complicated Wires", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"COMPLICATED_WIRES", List.of("puzzle", "logic"),
+			"Cut wires based on multiple properties", true, true);
 	}
 
 	@Override

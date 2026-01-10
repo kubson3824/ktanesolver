@@ -99,6 +99,24 @@ export interface BombConfig {
   portPlates?: PortType[][];
 }
 
+export interface ModuleCatalogItem {
+  id: string;
+  name: string;
+  category: ModuleCategory;
+  type: string;  // Changed from ModuleType to string
+  tags: string[];
+  description: string;
+  isSolvable: boolean;
+  hasSolver: boolean;  // Indicates if this module has a solver implementation
+}
+
+export enum ModuleCategory {
+  VANILLA_REGULAR = "VANILLA_REGULAR",
+  VANILLA_NEEDY = "VANILLA_NEEDY",
+  MODDED_REGULAR = "MODDED_REGULAR",
+  MODDED_NEEDY = "MODDED_NEEDY",
+}
+
 export interface AddModulesRequest {
   type: ModuleType;
   count: number;

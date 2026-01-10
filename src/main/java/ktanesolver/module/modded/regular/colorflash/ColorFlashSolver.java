@@ -16,6 +16,9 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class ColorFlashSolver implements ModuleSolver<ColorFlashInput, ColorFlashOutput> {
@@ -29,6 +32,12 @@ public class ColorFlashSolver implements ModuleSolver<ColorFlashInput, ColorFlas
     public Class<ColorFlashInput> inputType() {
         return ColorFlashInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("color_flash", "Color Flash", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"COLOR_FLASH", List.of("pattern", "timing"),
+			"Press the button when the colors match", true, true);
+	}
 
     @Override
     public SolveResult<ColorFlashOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, ColorFlashInput input) {

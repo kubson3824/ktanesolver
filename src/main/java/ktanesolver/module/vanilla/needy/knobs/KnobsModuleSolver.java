@@ -9,7 +9,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class KnobsModuleSolver implements ModuleSolver<KnobsInput, KnobsOutput> {
@@ -23,6 +27,12 @@ public class KnobsModuleSolver implements ModuleSolver<KnobsInput, KnobsOutput> 
     public Class<KnobsInput> inputType() {
         return KnobsInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("knobs", "Knobs", ModuleCatalogDto.ModuleCategory.VANILLA_NEEDY,
+			"KNOBS", List.of("puzzle", "position"),
+			"Set the knobs to the correct positions", true, true);
+	}
 
     @Override
     public SolveResult<KnobsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, KnobsInput input) {

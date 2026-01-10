@@ -1,0 +1,235 @@
+import { useState, useEffect, useMemo } from "react";
+import { type ModuleCatalogItem, ModuleCategory } from "../types";
+
+interface ModuleSelectorProps {
+  onSelectionChange: (selectedModules: Record<string, number>) => void;
+  initialCounts?: Record<string, number>;
+}
+
+const categoryLabels = {
+  [ModuleCategory.VANILLA_REGULAR]: "Vanilla Regular",
+  [ModuleCategory.VANILLA_NEEDY]: "Vanilla Needy",
+  [ModuleCategory.MODDED_REGULAR]: "Modded Regular",
+  [ModuleCategory.MODDED_NEEDY]: "Modded Needy",
+};
+
+const categoryColors = {
+  [ModuleCategory.VANILLA_REGULAR]: "badge-primary",
+  [ModuleCategory.VANILLA_NEEDY]: "badge-warning",
+  [ModuleCategory.MODDED_REGULAR]: "badge-info",
+  [ModuleCategory.MODDED_NEEDY]: "badge-error",
+};
+
+export default function ModuleSelector({ onSelectionChange, initialCounts = {} }: ModuleSelectorProps) {
+  const [modules, setModules] = useState<ModuleCatalogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<ModuleCategory | "ALL">("ALL");
+  const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
+  const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchModules();
+  }, []);
+
+  const fetchModules = async () => {
+    try {
+      const response = await fetch("/api/modules");
+      const data = await response.json();
+      setModules(data);
+    } catch (error) {
+      console.error("Failed to fetch modules:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredModules = useMemo(() => {
+    let filtered = modules;
+
+    if (selectedCategory !== "ALL") {
+      filtered = filtered.filter(m => m.category === selectedCategory);
+    }
+
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(m =>
+        m.name.toLowerCase().includes(searchLower) ||
+        m.description.toLowerCase().includes(searchLower) ||
+        m.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Show recently used first
+    const recent = filtered.filter(m => recentlyUsed.includes(m.id));
+    const others = filtered.filter(m => !recentlyUsed.includes(m.id));
+    
+    return [...recent, ...others];
+  }, [modules, selectedCategory, searchTerm, recentlyUsed]);
+
+  const updateModuleCount = (moduleType: string, delta: number) => {
+    setSelectedModules(prev => {
+      const newCounts = { ...prev };
+      newCounts[moduleType] = Math.max(0, (newCounts[moduleType] || 0) + delta);
+      return newCounts;
+    });
+  };
+
+  useEffect(() => {
+    onSelectionChange(selectedModules);
+  }, [selectedModules, onSelectionChange]);
+
+  const handleModuleClick = (module: ModuleCatalogItem) => {
+    // Track recently used
+    setRecentlyUsed(prev => {
+      const updated = [module.id, ...prev.filter(id => id !== module.id)];
+      return updated.slice(0, 10); // Keep only last 10
+    });
+
+    // Increment count
+    updateModuleCount(module.type, 1);
+  };
+
+  const clearAll = () => {
+    setSelectedModules({});
+  };
+
+  const totalCount = Object.values(selectedModules).reduce((sum, count) => sum + count, 0);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Search and Filters */}
+      <div className="space-y-3">
+        <input
+          type="text"
+          placeholder="Search modules by name, description, or tags..."
+          className="input input-bordered w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        
+        <div className="flex flex-wrap gap-2">
+          <button
+            className={`btn btn-sm ${selectedCategory === "ALL" ? "btn-active" : "btn-outline"}`}
+            onClick={() => setSelectedCategory("ALL")}
+          >
+            All ({modules.length})
+          </button>
+          {Object.values(ModuleCategory).map(category => (
+            <button
+              key={category}
+              className={`btn btn-sm ${selectedCategory === category ? "btn-active" : "btn-outline"}`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {categoryLabels[category]} ({modules.filter(m => m.category === category).length})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Selected Modules Summary */}
+      {totalCount > 0 && (
+        <div className="card bg-base-100 border border-base-300">
+          <div className="card-body p-4">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Selected: {totalCount} modules</span>
+              <button className="btn btn-xs btn-ghost" onClick={clearAll}>
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {Object.entries(selectedModules).filter(([, count]) => count > 0).map(([type, count]) => (
+                <span key={type} className="badge badge-info gap-1">
+                  {type.replace(/_/g, " ")} × {count}
+                  <button
+                    className="btn btn-ghost btn-xs p-0 h-4 min-h-4"
+                    onClick={() => updateModuleCount(type, -count)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Module List */}
+      <div className="grid gap-2 max-h-96 overflow-y-auto">
+        {filteredModules.length === 0 ? (
+          <div className="text-center py-8 text-base-content/50">
+            No modules found matching your criteria.
+          </div>
+        ) : (
+          filteredModules.map(module => {
+            const count = selectedModules[module.type] || 0;
+            const isRecent = recentlyUsed.includes(module.id);
+            
+            return (
+              <div
+                key={module.id}
+                className={`card bg-base-100 border border-base-300 cursor-pointer hover:border-primary transition-colors ${
+                  isRecent ? "ring-2 ring-primary/20" : ""
+                }`}
+                onClick={() => handleModuleClick(module)}
+              >
+                <div className="card-body p-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{module.name}</h3>
+                        {isRecent && <span className="badge badge-xs badge-primary">Recent</span>}
+                        <span className={`badge badge-xs ${categoryColors[module.category]}`}>
+                          {categoryLabels[module.category]}
+                        </span>
+                      </div>
+                      <p className="text-sm text-base-content/70 mb-2">{module.description}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {module.tags.map(tag => (
+                          <span key={tag} className="badge badge-outline badge-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {count > 0 && (
+                      <div className="flex items-center gap-1 ml-4">
+                        <button
+                          className="btn btn-xs btn-ghost btn-circle"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateModuleCount(module.type, -1);
+                          }}
+                        >
+                          -
+                        </button>
+                        <span className="badge badge-info w-8 text-center">{count}</span>
+                        <button
+                          className="btn btn-xs btn-ghost btn-circle"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateModuleCount(module.type, 1);
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}

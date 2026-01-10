@@ -8,10 +8,13 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
@@ -29,6 +32,13 @@ public class WiresSolver implements ModuleSolver<WiresInput, WiresOutput> {
 	@Override
 	public Class<WiresInput> inputType() {
 		return WiresInput.class;
+	}
+	
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("wires", "Wires", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"WIRES", List.of("puzzle", "logic"),
+			"Cut the correct wires based on the rules", true, true);
 	}
 
 	@Override

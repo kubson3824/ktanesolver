@@ -13,6 +13,9 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutput> {
@@ -25,6 +28,12 @@ public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutpu
 	@Override
 	public Class<PasswordInput> inputType() {
 		return PasswordInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("passwords", "Passwords", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"PASSWORDS", List.of("puzzle", "word"),
+			"Find the correct password from the list", true, true);
 	}
 
 	@Override

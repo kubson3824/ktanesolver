@@ -20,6 +20,7 @@ import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
 public class SemaphoreSolver implements ModuleSolver<SemaphoreInput, SemaphoreOutput> {
@@ -33,6 +34,12 @@ public class SemaphoreSolver implements ModuleSolver<SemaphoreInput, SemaphoreOu
     public Class<SemaphoreInput> inputType() {
         return SemaphoreInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("semaphore", "Semaphore", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"SEMAPHORE", List.of("decoding", "pattern"),
+			"Decode the semaphore flags and form words", true, true);
+	}
 
     @Override
     public SolveResult<SemaphoreOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, SemaphoreInput input) {

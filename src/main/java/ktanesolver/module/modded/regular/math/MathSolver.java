@@ -1,5 +1,6 @@
 package ktanesolver.module.modded.regular.math;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,6 +18,9 @@ import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class MathSolver implements ModuleSolver<MathInput, MathOutput> {
@@ -32,6 +36,12 @@ public class MathSolver implements ModuleSolver<MathInput, MathOutput> {
     public Class<MathInput> inputType() {
         return MathInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("math", "Math", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"MATH", List.of("calculation", "puzzle"),
+			"Solve the math problems", true, true);
+	}
 
     @Override
     public SolveResult<MathOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, MathInput input) {

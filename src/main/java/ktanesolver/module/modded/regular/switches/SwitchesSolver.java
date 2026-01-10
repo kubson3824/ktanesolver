@@ -19,6 +19,9 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutput> {
@@ -35,6 +38,12 @@ public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutpu
     public Class<SwitchesInput> inputType() {
         return SwitchesInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("switches", "Switches", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"SWITCHES", List.of("logic", "puzzle"),
+			"Set switches to the correct positions", true, true);
+	}
 
     @Override
     public SolveResult<SwitchesOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, SwitchesInput input) {

@@ -20,6 +20,9 @@ import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class KeypadsSolver implements ModuleSolver<KeypadsInput, KeypadsOutput> {
@@ -39,6 +42,12 @@ public class KeypadsSolver implements ModuleSolver<KeypadsInput, KeypadsOutput> 
 	@Override
 	public Class<KeypadsInput> inputType() {
 		return KeypadsInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("keypads", "Keypads", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"KEYPADS", List.of("memory", "pattern"),
+			"Press buttons in the correct sequence", true, true);
 	}
 
 	@Override

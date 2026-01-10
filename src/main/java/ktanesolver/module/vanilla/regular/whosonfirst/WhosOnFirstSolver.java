@@ -19,6 +19,9 @@ import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class WhosOnFirstSolver implements ModuleSolver<WhosOnFirstInput, WhosOnFirstOutput> {
@@ -31,6 +34,12 @@ public class WhosOnFirstSolver implements ModuleSolver<WhosOnFirstInput, WhosOnF
 	@Override
 	public Class<WhosOnFirstInput> inputType() {
 		return WhosOnFirstInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("whos_on_first", "Who's on First", ModuleCatalogDto.ModuleCategory.VANILLA_NEEDY,
+			"WHOS_ON_FIRST", List.of("word", "logic"),
+			"Display the correct word based on the display", true, true);
 	}
 
 	@Override

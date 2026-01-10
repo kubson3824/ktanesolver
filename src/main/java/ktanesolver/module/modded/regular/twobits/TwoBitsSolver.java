@@ -14,7 +14,11 @@ import ktanesolver.utils.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class TwoBitsSolver implements ModuleSolver<TwoBitsInput, TwoBitsOutput> {
@@ -47,6 +51,12 @@ public class TwoBitsSolver implements ModuleSolver<TwoBitsInput, TwoBitsOutput> 
     public Class<TwoBitsInput> inputType() {
         return TwoBitsInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("two_bits", "Two Bits", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"TWO_BITS", List.of("binary", "puzzle"),
+			"Convert binary to decimal and set the switches", true, true);
+	}
 
     @Override
     public SolveResult<TwoBitsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, TwoBitsInput input) {

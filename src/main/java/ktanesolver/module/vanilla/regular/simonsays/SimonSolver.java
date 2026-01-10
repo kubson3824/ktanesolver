@@ -12,6 +12,9 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class SimonSolver implements ModuleSolver<SimonInput, SimonOutput> {
@@ -24,6 +27,12 @@ public class SimonSolver implements ModuleSolver<SimonInput, SimonOutput> {
 	@Override
 	public Class<SimonInput> inputType() {
 		return SimonInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("simon", "Simon Says", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"SIMON_SAYS", List.of("memory", "pattern"),
+			"Repeat the color sequence following the strike count", true, true);
 	}
 
 	@Override

@@ -12,6 +12,9 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class MazesSolver implements ModuleSolver<MazesInput, MazesOutput> {
@@ -24,6 +27,12 @@ public class MazesSolver implements ModuleSolver<MazesInput, MazesOutput> {
 	@Override
 	public Class<MazesInput> inputType() {
 		return MazesInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("mazes", "Mazes", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"MAZES", List.of("navigation", "puzzle"),
+			"Navigate the maze following the rules", true, true);
 	}
 
 	@Override

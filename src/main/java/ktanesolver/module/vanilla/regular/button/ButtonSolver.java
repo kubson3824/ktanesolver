@@ -1,16 +1,20 @@
 
 package ktanesolver.module.vanilla.regular.button;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
@@ -27,6 +31,13 @@ public class ButtonSolver implements ModuleSolver<ButtonInput, ButtonOutput> {
 	@Override
 	public Class<ButtonInput> inputType() {
 		return ButtonInput.class;
+	}
+	
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("button", "The Button", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"BUTTON", List.of("timing", "color"),
+			"Press and hold the button based on strip color and text", true, true);
 	}
 
 	@Override

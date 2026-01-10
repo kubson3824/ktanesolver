@@ -18,6 +18,9 @@ import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class WordScrambleSolver implements ModuleSolver<WordScrambleInput, WordScrambleOutput> {
@@ -34,6 +37,12 @@ public class WordScrambleSolver implements ModuleSolver<WordScrambleInput, WordS
     public Class<WordScrambleInput> inputType() {
         return WordScrambleInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("word_scramble", "Word Scramble", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"WORD_SCRAMBLE", List.of("word", "puzzle"),
+			"Unscramble the letters to form words", true, true);
+	}
 
     @Override
     public SolveResult<WordScrambleOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, WordScrambleInput input) {

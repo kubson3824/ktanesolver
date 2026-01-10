@@ -1,6 +1,7 @@
 
 package ktanesolver.logic;
 
+import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -13,4 +14,6 @@ public interface ModuleSolver<I extends ModuleInput, O extends ModuleOutput> {
 	Class<I> inputType();
 
 	SolveResult<O> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, I input);
+	
+	ModuleCatalogDto getCatalogInfo();
 }

@@ -18,6 +18,9 @@ import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveResult;
 import ktanesolver.logic.SolveSuccess;
 import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class MemorySolver implements ModuleSolver<MemoryInput, MemoryOutput> {
@@ -30,6 +33,12 @@ public class MemorySolver implements ModuleSolver<MemoryInput, MemoryOutput> {
 	@Override
 	public Class<MemoryInput> inputType() {
 		return MemoryInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("memory", "Memory", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"MEMORY", List.of("memory", "sequence"),
+			"Repeat the growing sequence of numbers", true, true);
 	}
 
 	@Override

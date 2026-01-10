@@ -9,6 +9,9 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class AnagramsSolver implements ModuleSolver<AnagramsInput, AnagramsOutput> {
@@ -33,6 +36,12 @@ public class AnagramsSolver implements ModuleSolver<AnagramsInput, AnagramsOutpu
     public Class<AnagramsInput> inputType() {
         return AnagramsInput.class;
     }
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("anagrams", "Anagrams", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"ANAGRAMS", List.of("word", "puzzle"),
+			"Find words that can be formed from the given letters", true, true);
+	}
 
     @Override
     public SolveResult<AnagramsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, AnagramsInput input) {

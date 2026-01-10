@@ -16,6 +16,9 @@ import ktanesolver.logic.SolveResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.ModuleInput;
+import ktanesolver.logic.ModuleOutput;
 
 @Service
 public class WireSequencesSolver implements ModuleSolver<WireSequenceInput, WireSequenceOutput> {
@@ -28,6 +31,12 @@ public class WireSequencesSolver implements ModuleSolver<WireSequenceInput, Wire
 	@Override
 	public Class<WireSequenceInput> inputType() {
 		return WireSequenceInput.class;
+	}
+	@Override
+	public ModuleCatalogDto getCatalogInfo() {
+		return new ModuleCatalogDto("wire_sequences", "Wire Sequences", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+			"WIRE_SEQUENCES", List.of("memory", "pattern"),
+			"Cut wires in the correct order based on previous wires", true, true);
 	}
 
 	@Override
