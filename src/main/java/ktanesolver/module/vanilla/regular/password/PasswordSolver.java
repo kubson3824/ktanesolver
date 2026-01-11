@@ -4,50 +4,36 @@ package ktanesolver.module.vanilla.regular.password;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class PasswordSolver implements ModuleSolver<PasswordInput, PasswordOutput> {
+@ModuleInfo(
+		type = ModuleType.PASSWORDS,
+		id = "passwords",
+		name = "Passwords",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Find the correct password from the list",
+		tags = {"puzzle", "word"}
+)
+public class PasswordSolver extends AbstractModuleSolver<PasswordInput, PasswordOutput> {
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.PASSWORDS;
-	}
-
-	@Override
-	public Class<PasswordInput> inputType() {
-		return PasswordInput.class;
-	}
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("passwords", "Passwords", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"PASSWORDS", List.of("puzzle", "word"),
-			"Find the correct password from the list", true, true);
-	}
-
-	@Override
-	public SolveResult<PasswordOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, PasswordInput input) {
+	public SolveResult<PasswordOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, PasswordInput input) {
 		Map<Integer, Set<Character>> columns = normalize(input.letters());
 
 		List<String> possible = Arrays.stream(PasswordWord.values()).map(Enum::name).filter(word -> matches(word, columns)).toList();
 
 		boolean solved = possible.size() == 1;
-		if(solved) {
-			module.setSolved(true);
-		}
 
-		return new SolveSuccess<>(new PasswordOutput(possible, solved), solved);
+		return success(new PasswordOutput(possible, solved), solved);
 	}
 
 	// ----------------------------------------------------

@@ -3,29 +3,29 @@ package ktanesolver.module.vanilla.regular.keypads;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveFailure;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class KeypadsSolver implements ModuleSolver<KeypadsInput, KeypadsOutput> {
+@ModuleInfo(
+		type = ModuleType.KEYPADS,
+		id = "keypads",
+		name = "Keypads",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Press buttons in the correct sequence",
+		tags = {"memory", "pattern"}
+)
+public class KeypadsSolver extends AbstractModuleSolver<KeypadsInput, KeypadsOutput> {
 	private static final int REQUIRED_SYMBOLS = 4;
 	private static final List<Set<KeypadSymbol>> COLUMN_SETS;
 
@@ -35,50 +35,29 @@ public class KeypadsSolver implements ModuleSolver<KeypadsInput, KeypadsOutput> 
 	}
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.KEYPADS;
-	}
-
-	@Override
-	public Class<KeypadsInput> inputType() {
-		return KeypadsInput.class;
-	}
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("keypads", "Keypads", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"KEYPADS", List.of("memory", "pattern"),
-			"Press buttons in the correct sequence", true, true);
-	}
-
-	@Override
-	public SolveResult<KeypadsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, KeypadsInput input) {
+	public SolveResult<KeypadsOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, KeypadsInput input) {
 		List<KeypadSymbol> symbols = input.symbols();
 
 		if(symbols.size() != REQUIRED_SYMBOLS) {
-			return new SolveFailure<>("Keypads requires exactly " + REQUIRED_SYMBOLS + " symbols");
+			return failure("Keypads requires exactly " + REQUIRED_SYMBOLS + " symbols");
 		}
 
-		// Early return if there are duplicate symbols
 		if(new HashSet<>(symbols).size() != REQUIRED_SYMBOLS) {
-			return new SolveFailure<>("Duplicate symbols are not allowed");
+			return failure("Duplicate symbols are not allowed");
 		}
 
 		int matchingColumnIndex = findMatchingColumnIndex(symbols);
 		if(matchingColumnIndex == -1) {
-			return new SolveFailure<>("No valid keypad column found");
+			return failure("No valid keypad column found");
 		}
 
 		List<KeypadSymbol> column = KeypadColumns.COLUMNS.get(matchingColumnIndex);
 		List<KeypadSymbol> ordered = column.stream().filter(symbols::contains).collect(Collectors.toList());
 
-		module.getState().put("symbols", symbols);
-		module.setSolved(true);
+		storeState(module, "symbols", symbols);
 
 		KeypadsOutput keypadsOutput = new KeypadsOutput(ordered);
-		Json.mapper().convertValue(keypadsOutput, new TypeReference<Map<String, Object>>() {
-		}).forEach(module.getSolution()::put);
-
-		return new SolveSuccess<>(keypadsOutput, true);
+		return success(keypadsOutput);
 	}
 
 	private int findMatchingColumnIndex(List<KeypadSymbol> symbols) {

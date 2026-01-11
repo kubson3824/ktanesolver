@@ -1,61 +1,44 @@
 package ktanesolver.module.modded.regular.math;
 
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveFailure;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class MathSolver implements ModuleSolver<MathInput, MathOutput> {
+@ModuleInfo(
+        type = ModuleType.MATH,
+        id = "math",
+        name = "Math",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Solve math problems",
+        tags = {"puzzle", "visual"}
+)
+public class MathSolver extends AbstractModuleSolver<MathInput, MathOutput> {
 
     private static final Pattern EQUATION_PATTERN = Pattern.compile("^(-?\\d+)([+\\-*/])(-?\\d+)$");
-    
-    @Override
-    public ModuleType getType() {
-        return ModuleType.MATH;
-    }
 
     @Override
-    public Class<MathInput> inputType() {
-        return MathInput.class;
-    }
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("math", "Math", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"MATH", List.of("calculation", "puzzle"),
-			"Solve the math problems", true, true);
-	}
-
-    @Override
-    public SolveResult<MathOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, MathInput input) {
+    public SolveResult<MathOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, MathInput input) {
         String equation = input.equation();
         
         if (equation == null || equation.trim().isEmpty()) {
-            return new SolveFailure<>("Equation cannot be empty");
+            return failure("Equation cannot be empty");
         }
         
         equation = equation.trim().replaceAll("\\s+", "");
         
         Matcher matcher = EQUATION_PATTERN.matcher(equation);
         if (!matcher.matches()) {
-            return new SolveFailure<>("Invalid equation format. Expected format: number [+,-,*,/] number (e.g., '52+123')");
+            return failure("Invalid equation format. Expected format: number [+,-,*,/] number (e.g., '52+123')");
         }
         
         try {
@@ -76,26 +59,22 @@ public class MathSolver implements ModuleSolver<MathInput, MathOutput> {
                     break;
                 case "/":
                     if (rightOperand == 0) {
-                        return new SolveFailure<>("Division by zero is not allowed");
+                        return failure("Division by zero is not allowed");
                     }
                     result = leftOperand / rightOperand;
                     break;
                 default:
-                    return new SolveFailure<>("Unsupported operator: " + operator);
+                    return failure("Unsupported operator: " + operator);
             }
             
             MathOutput output = new MathOutput(result);
-            module.setSolved(true);
-            Json.mapper().convertValue(output, new TypeReference<Map<String, Object>>() {})
-                .forEach(module.getSolution()::put);
-            
-            module.setState(input);
-            return new SolveSuccess<>(output, true);
+            storeState(module, "input", input);
+            return success(output);
             
         } catch (NumberFormatException e) {
-            return new SolveFailure<>("Invalid number format in equation");
+            return failure("Invalid number format in equation");
         } catch (ArithmeticException e) {
-            return new SolveFailure<>("Arithmetic error: " + e.getMessage());
+            return failure("Arithmetic error: " + e.getMessage());
         }
     }
 }

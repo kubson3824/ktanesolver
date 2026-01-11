@@ -1,58 +1,42 @@
 package ktanesolver.module.modded.regular.colorflash;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class ColorFlashSolver implements ModuleSolver<ColorFlashInput, ColorFlashOutput> {
+@ModuleInfo(
+        type = ModuleType.COLOR_FLASH,
+        id = "color_flash",
+        name = "Color Flash",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Press the button when the colors match",
+        tags = {"pattern", "timing"}
+)
+public class ColorFlashSolver extends AbstractModuleSolver<ColorFlashInput, ColorFlashOutput> {
 
     @Override
-    public ModuleType getType() {
-        return ModuleType.COLOR_FLASH;
-    }
-
-    @Override
-    public Class<ColorFlashInput> inputType() {
-        return ColorFlashInput.class;
-    }
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("color_flash", "Color Flash", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"COLOR_FLASH", List.of("pattern", "timing"),
-			"Press the button when the colors match", true, true);
-	}
-
-    @Override
-    public SolveResult<ColorFlashOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, ColorFlashInput input) {
+    public SolveResult<ColorFlashOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ColorFlashInput input) {
         List<ColorFlashEntry> sequence = input.sequence();
         
-        // Store sequence in module state
-        module.getState().put("sequence", Json.mapper().convertValue(sequence, new TypeReference<>() {}));
-        
+        storeState(module, "sequence", sequence);
+
         if (sequence == null || sequence.size() != 8) {
-            throw new IllegalArgumentException("Color Flash requires exactly 8 word/color pairs");
+            return failure("Color Flash requires exactly 8 word/color pairs");
         }
         
         ColorFlashEntry lastEntry = sequence.get(7);
         String lastColor = lastEntry.color().toUpperCase();
-        
+
         ColorFlashOutput output = switch (lastColor) {
             case "RED" -> solveRed(sequence);
             case "YELLOW" -> solveYellow(sequence);
@@ -62,10 +46,9 @@ public class ColorFlashSolver implements ModuleSolver<ColorFlashInput, ColorFlas
             case "WHITE" -> solveWhite(sequence);
             default -> throw new IllegalArgumentException("Invalid color: " + lastColor);
         };
-        
-        setModuleSolution(module, output);
-        module.setState(input);
-        return new SolveSuccess<>(output, true);
+
+        storeState(module, "input", input);
+        return success(output);
     }
 
     private ColorFlashOutput solveRed(List<ColorFlashEntry> sequence) {
@@ -247,9 +230,4 @@ public class ColorFlashSolver implements ModuleSolver<ColorFlashInput, ColorFlas
         return -1; // Return -1 if not found
     }
 
-    private void setModuleSolution(ModuleEntity module, ColorFlashOutput output) {
-        module.setSolved(true);
-        Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {});
-        convertedValue.forEach(module.getSolution()::put);
-    }
 }

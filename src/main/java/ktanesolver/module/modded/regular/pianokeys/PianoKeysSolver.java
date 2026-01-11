@@ -1,61 +1,44 @@
 package ktanesolver.module.modded.regular.pianokeys;
 
 import java.util.List;
-import java.util.Map;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class PianoKeysSolver implements ModuleSolver<PianoKeysInput, PianoKeysOutput> {
+@ModuleInfo(
+        type = ModuleType.PIANO_KEYS,
+        id = "piano_keys",
+        name = "Piano Keys",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Play the correct sequence of piano keys",
+        tags = {"music", "pattern"}
+)
+public class PianoKeysSolver extends AbstractModuleSolver<PianoKeysInput, PianoKeysOutput> {
 
     @Override
-    public ModuleType getType() {
-        return ModuleType.PIANO_KEYS;
-    }
-
-    @Override
-    public Class<PianoKeysInput> inputType() {
-        return PianoKeysInput.class;
-    }
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("piano", "Piano Keys", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"PIANO_KEYS", List.of("music", "pattern"),
-			"Play the correct sequence of piano keys", true, true);
-	}
-
-    @Override
-    public SolveResult<PianoKeysOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, PianoKeysInput input) {
+    public SolveResult<PianoKeysOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, PianoKeysInput input) {
         List<PianoKeysSymbol> symbols = input.symbols();
         
         // Store symbols in module state
-        module.getState().put("symbols", Json.mapper().convertValue(symbols, new TypeReference<>() {}));
-        
+        storeState(module, "symbols", symbols);
+        storeState(module, "input", input);
         if (symbols == null || symbols.size() != 3) {
-            throw new IllegalArgumentException("Piano Keys requires exactly 3 symbols");
+            return failure("Piano Keys requires exactly 3 symbols");
         }
         
         // Check rules in order
         PianoKeysOutput output = checkRules(symbols, bomb);
         
-        setModuleSolution(module, output);
-        module.setState(input);
-        return new SolveSuccess<>(output, true);
+        return success(output);
     }
 
     private PianoKeysOutput checkRules(List<PianoKeysSymbol> symbols, BombEntity bomb) {
@@ -141,11 +124,5 @@ public class PianoKeysSolver implements ModuleSolver<PianoKeysInput, PianoKeysOu
 
     private PianoKeysOutput createMelody(PianoKeysNote... notes) {
         return new PianoKeysOutput(List.of(notes));
-    }
-
-    private void setModuleSolution(ModuleEntity module, PianoKeysOutput output) {
-        module.setSolved(true);
-        Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {});
-        convertedValue.forEach(module.getSolution()::put);
     }
 }

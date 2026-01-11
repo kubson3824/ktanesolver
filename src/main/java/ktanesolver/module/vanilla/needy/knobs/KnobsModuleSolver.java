@@ -1,55 +1,36 @@
 package ktanesolver.module.vanilla.needy.knobs;
 
+import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.*;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class KnobsModuleSolver implements ModuleSolver<KnobsInput, KnobsOutput> {
+@ModuleInfo(
+        type = ModuleType.KNOBS,
+        id = "knobs",
+        name = "Knobs",
+        category = ModuleCatalogDto.ModuleCategory.VANILLA_NEEDY,
+        description = "Set the knobs to the correct positions",
+        tags = {"puzzle", "position"}
+)
+public class KnobsModuleSolver extends AbstractModuleSolver<KnobsInput, KnobsOutput> {
 
     @Override
-    public ModuleType getType() {
-        return ModuleType.KNOBS;
-    }
-
-    @Override
-    public Class<KnobsInput> inputType() {
-        return KnobsInput.class;
-    }
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("knobs", "Knobs", ModuleCatalogDto.ModuleCategory.VANILLA_NEEDY,
-			"KNOBS", List.of("puzzle", "position"),
-			"Set the knobs to the correct positions", true, true);
-	}
-
-    @Override
-    public SolveResult<KnobsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, KnobsInput input) {
+    public SolveResult<KnobsOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, KnobsInput input) {
         String position = solveKnob(input.indicators());
         
         KnobsOutput output = new KnobsOutput(position);
         
         // Save the state and solution to the module
-        module.setState(Map.of(
-            "indicators", input.indicators()
-        ));
-        module.setSolution(Map.of(
-            "position", position
-        ));
-        module.setSolved(true);
+        storeState(module, "indicators", input.indicators());
         
-        return new SolveSuccess<>(output, true);
+        return success(output);
     }
 
     private String solveKnob(boolean[] indicators) {

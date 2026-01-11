@@ -1,122 +1,87 @@
 
 package ktanesolver.module.vanilla.regular.button;
 
-import java.util.List;
-import java.util.Map;
-
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.AbstractModuleSolver;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
-import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 
 @Service
-public class ButtonSolver implements ModuleSolver<ButtonInput, ButtonOutput> {
+@ModuleInfo(
+		type = ModuleType.BUTTON,
+		id = "button",
+		name = "The Button",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Press and hold the button based on strip color and text",
+		tags = {"timing", "color"}
+)
+public class ButtonSolver extends AbstractModuleSolver<ButtonInput, ButtonOutput> {
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.BUTTON;
-	}
-
-	@Override
-	public Class<ButtonInput> inputType() {
-		return ButtonInput.class;
-	}
-	
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("button", "The Button", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"BUTTON", List.of("timing", "color"),
-			"Press and hold the button based on strip color and text", true, true);
-	}
-
-	@Override
-	public SolveResult<ButtonOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, ButtonInput input) {
+	public SolveResult<ButtonOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ButtonInput input) {
 		String color = input.color();
 		String label = input.label();
 
 		// Set module state with inputs
-		module.getState().put("color", color);
-		module.getState().put("label", label);
-		if(input.stripColor() != null) {
-			module.getState().put("stripColor", input.stripColor());
-		}
+		storeState(module, "color", color);
+		storeState(module, "label", label);
 
 		if(input.stripColor() != null) {
+			storeState(module, "stripColor", input.stripColor());
+
 			if(input.stripColor().equalsIgnoreCase("BLUE")) {
-				ButtonOutput output = new ButtonOutput(false, "Release when timer has 4", 4);
-				setModuleSolution(module, output);
-				return new SolveSuccess<>(output, true);
+                return success(new ButtonOutput(false, "Release when timer has 4", 4));
 			}
 			if(input.stripColor().equalsIgnoreCase("WHITE")) {
-				ButtonOutput output = new ButtonOutput(false, "Release when timer has 1", 1);
-				setModuleSolution(module, output);
-				return new SolveSuccess<>(output, true);
+                return success(new ButtonOutput(false, "Release when timer has 1", 1));
 			}
 			if(input.stripColor().equalsIgnoreCase("YELLOW")) {
-				ButtonOutput output = new ButtonOutput(false, "Release when timer has 5", 5);
-				setModuleSolution(module, output);
-				return new SolveSuccess<>(output, true);
+                return success(new ButtonOutput(false, "Release when timer has 5", 5));
 			}
-			ButtonOutput output = new ButtonOutput(false, "Release when timer has 1", 1);
-			setModuleSolution(module, output);
-			return new SolveSuccess<>(output, true);
+            return success(new ButtonOutput(false, "Release when timer has 1", 1));
 		}
 
 		// Immediate release rules
 		if(color.equalsIgnoreCase("BLUE") && label.equalsIgnoreCase("ABORT")) {
-			return hold(module);
+			return hold();
 		}
 
 		if(label.equalsIgnoreCase("DETONATE") && bomb.getBatteryCount() > 1) {
-			return solved(module, "Press and immediately release");
+			return solved();
 		}
 
 		if(color.equalsIgnoreCase("WHITE") && bomb.isIndicatorLit("CAR")) {
-			return hold(module);
+			return hold();
 		}
 
 		if(bomb.getBatteryCount() > 2 && bomb.isIndicatorLit("FRK")) {
-			return solved(module, "Press and immediately release");
+			return solved();
 		}
 
 		if(color.equalsIgnoreCase("YELLOW")) {
-			return hold(module);
+			return hold();
 		}
 
 		if(color.equalsIgnoreCase("RED") && label.equalsIgnoreCase("HOLD")) {
-			return solved(module, "Press and immediately release");
+			return solved();
 		}
 
-		return hold(module);
+		return hold();
 	}
 
-	private void setModuleSolution(ModuleEntity module, ButtonOutput output) {
-		module.setSolved(true);
-		Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {
-		});
-		convertedValue.forEach(module.getSolution()::put);
-	}
-
-	private SolveResult<ButtonOutput> hold(ModuleEntity module) {
+	private SolveResult<ButtonOutput> hold() {
 		ButtonOutput output = new ButtonOutput(true, "Hold the button", null);
-		setModuleSolution(module, output);
-		return new SolveSuccess<>(output, true);
+		return success(output);
 	}
 
-	private SolveResult<ButtonOutput> solved(ModuleEntity module, String instruction) {
-		ButtonOutput output = new ButtonOutput(false, instruction, null);
-		setModuleSolution(module, output);
-		return new SolveSuccess<>(output, true);
+	private SolveResult<ButtonOutput> solved() {
+		ButtonOutput output = new ButtonOutput(false, "Press and immediately release", null);
+		return success(output);
 	}
 }

@@ -1,77 +1,48 @@
 package ktanesolver.module.modded.regular.semaphore;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveFailure;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class SemaphoreSolver implements ModuleSolver<SemaphoreInput, SemaphoreOutput> {
+@ModuleInfo(
+        type = ModuleType.SEMAPHORE,
+        id = "semaphore",
+        name = "Semaphore",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Decode the semaphore flags and form words",
+        tags = {"decoding", "pattern"}
+)
+public class SemaphoreSolver extends AbstractModuleSolver<SemaphoreInput, SemaphoreOutput> {
 
     @Override
-    public ModuleType getType() {
-        return ModuleType.SEMAPHORE;
-    }
-
-    @Override
-    public Class<SemaphoreInput> inputType() {
-        return SemaphoreInput.class;
-    }
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("semaphore", "Semaphore", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"SEMAPHORE", List.of("decoding", "pattern"),
-			"Decode the semaphore flags and form words", true, true);
-	}
-
-    @Override
-    public SolveResult<SemaphoreOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, SemaphoreInput input) {
+    public SolveResult<SemaphoreOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, SemaphoreInput input) {
         List<FlagAngles> flagAnglesSequence = input.sequence();
         
         if (flagAnglesSequence == null || flagAnglesSequence.isEmpty()) {
-            return new SolveFailure<>("Invalid semaphore sequence");
+            return failure("Invalid semaphore sequence");
         }
         
         // Convert flag angles to semaphore positions and track mode
-        List<SemaphorePosition> sequence = new ArrayList<>();
-        boolean numeralsMode = false;
+        boolean numeralsMode;
         
         for (FlagAngles angles : flagAnglesSequence) {
             SemaphorePosition position = SemaphorePosition.fromAngles(angles.leftFlagAngle(), angles.rightFlagAngle());
             if (position == null) {
-                return new SolveFailure<>("Invalid flag angles: (" + angles.leftFlagAngle() + "°, " + angles.rightFlagAngle() + "°)");
+                return failure("Invalid flag angles: (" + angles.leftFlagAngle() + "°, " + angles.rightFlagAngle() + "°)");
             }
-            
-            // Check for control characters
-            if (position == SemaphorePosition.NUMERALS) {
-                numeralsMode = true;
-                continue; // Don't add control characters to sequence
-            } else if (position == SemaphorePosition.LETTERS) {
-                numeralsMode = false;
-                continue; // Don't add control characters to sequence
-            }
-            
-            sequence.add(position);
         }
         
-        // Count character occurrences in the sequence
         Map<Character, Integer> sequenceCharCounts = new HashMap<>();
         numeralsMode = false; // Reset for counting
         
@@ -107,7 +78,7 @@ public class SemaphoreSolver implements ModuleSolver<SemaphoreInput, SemaphoreOu
         
         String serialNumber = bomb.getSerialNumber();
         if (serialNumber == null || serialNumber.isEmpty()) {
-            return new SolveFailure<>("Bomb serial number is required");
+            return failure("Bomb serial number is required");
         }
         
         // Count character occurrences in the serial number
@@ -133,16 +104,12 @@ public class SemaphoreSolver implements ModuleSolver<SemaphoreInput, SemaphoreOu
         }
         
         if (missingCharacter == '\0') {
-            return new SolveFailure<>("Could not determine missing character");
+            return failure("Could not determine missing character");
         }
         
         // Always return resolved since we're no longer navigating
         SemaphoreOutput output = new SemaphoreOutput(missingCharacter, true);
-        module.setSolved(true);
-        Json.mapper().convertValue(output, new TypeReference<Map<String, Object>>() {})
-            .forEach(module.getSolution()::put);
-        
-        module.setState(input);
-        return new SolveSuccess<>(output, true);
+        storeState(module, "input", input);
+        return success(output);
     }
 }

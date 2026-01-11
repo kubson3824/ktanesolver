@@ -4,48 +4,33 @@ package ktanesolver.module.vanilla.regular.morse;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.logic.ModuleInput;
-import ktanesolver.logic.ModuleOutput;
 
 @Service
-public class MorseCodeSolver implements ModuleSolver<MorseInput, MorseOutput> {
+@ModuleInfo(
+		type = ModuleType.MORSE_CODE,
+		id = "morse_code",
+		name = "Morse Code",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Decode the morse code and transmit the correct word",
+		tags = {"decoding", "pattern"}
+)
+public class MorseCodeSolver extends AbstractModuleSolver<MorseInput, MorseOutput> {
 
 	private static final double RESOLVE_THRESHOLD = 0.85;
 	private static final double CLEAR_GAP = 0.20;
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.MORSE_CODE;
-	}
-
-	@Override
-	public Class<MorseInput> inputType() {
-		return MorseInput.class;
-	}
-	@Override
-	public ModuleCatalogDto getCatalogInfo() {
-		return new ModuleCatalogDto("morse", "Morse Code", ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-			"MORSE_CODE", List.of("decoding", "pattern"),
-			"Decode the morse code and transmit the correct word", true, true);
-	}
-
-	@Override
-	public SolveResult<MorseOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, MorseInput input) {
+	public SolveResult<MorseOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, MorseInput input) {
 
 		String observed = input.word().toUpperCase().replaceAll(" ","");
 		List<MorseCandidate> candidates = Arrays.stream(MorseWord.values()).map(word -> scoreWord(observed, word)).sorted(Comparator.comparingDouble(MorseCandidate::confidence).reversed()).toList();
@@ -55,14 +40,9 @@ public class MorseCodeSolver implements ModuleSolver<MorseInput, MorseOutput> {
 		boolean resolved = best.confidence() >= RESOLVE_THRESHOLD && (candidates.size() == 1 || best.confidence() - candidates.get(1).confidence() >= CLEAR_GAP);
 
 		MorseOutput morseOutput = new MorseOutput(candidates, resolved);
-		if(resolved) {
-			module.setSolved(true);
-			Json.mapper().convertValue(morseOutput, new TypeReference<Map<String, Object>>() {
-			}).forEach(module.getSolution()::put);
-		}
 
-		module.setState(input);
-		return new SolveSuccess<>(morseOutput, resolved);
+		storeState(module, "input", input);
+		return success(morseOutput, resolved);
 	}
 
 	// ------------------------------------------------------
