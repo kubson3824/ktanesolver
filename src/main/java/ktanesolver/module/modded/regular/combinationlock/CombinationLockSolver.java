@@ -1,35 +1,29 @@
 package ktanesolver.module.modded.regular.combinationlock;
 
-import java.util.Map;
-
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.logic.AbstractModuleSolver;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
 import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
 
 @Service
-public class CombinationLockSolver implements ModuleSolver<CombinationLockInput, CombinationLockOutput> {
-    
-    @Override
-    public ModuleType getType() {
-        return ModuleType.COMBINATION_LOCK;
-    }
+@ModuleInfo(
+        type = ModuleType.COMBINATION_LOCK,
+        id = "combination_lock",
+        name = "Combination Lock",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Turn the dial: RIGHT to X → LEFT to Y → RIGHT to Z",
+        tags = {"modded", "regular", "combination"}
+)
+public class CombinationLockSolver extends AbstractModuleSolver<CombinationLockInput, CombinationLockOutput> {
 
     @Override
-    public Class<CombinationLockInput> inputType() {
-        return CombinationLockInput.class;
-    }
-
-    @Override
-    public SolveResult<CombinationLockOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, CombinationLockInput input) {
+    public SolveResult<CombinationLockOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, CombinationLockInput input) {
         // Calculate solved modules count from bomb
         int solvedModulesCount = (int) bomb.getModules().stream()
             .filter(m -> m.isSolved())
@@ -60,12 +54,11 @@ public class CombinationLockSolver implements ModuleSolver<CombinationLockInput,
             }
             
             CombinationLockOutput output = new CombinationLockOutput(true, instruction, firstNumber, secondNumber, thirdNumber);
-            setModuleSolution(module, output);
-            return new SolveSuccess<>(output, true);
+            return success(output);
             
         } catch (Exception e) {
             CombinationLockOutput output = new CombinationLockOutput(false, "Error calculating combination: " + e.getMessage(), 0, 0, 0);
-            return new SolveSuccess<>(output, false);
+            return success(output, false);
         }
     }
     
@@ -121,11 +114,5 @@ public class CombinationLockSolver implements ModuleSolver<CombinationLockInput,
         
         return sum;
     }
-    
-    private void setModuleSolution(ModuleEntity module, CombinationLockOutput output) {
-        module.setSolved(output.solved());
-        Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {
-        });
-        convertedValue.forEach(module.getSolution()::put);
-    }
+
 }
