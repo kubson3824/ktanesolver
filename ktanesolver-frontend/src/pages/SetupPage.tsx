@@ -7,6 +7,7 @@ import {
     PortType,
     RoundStatus,
 } from "../types";
+import ModuleSelector from "../components/ModuleSelector";
 
 type IndicatorInput = {
     id: string;
@@ -19,10 +20,6 @@ type PlateInput = {
     ports: PortType[];
 };
 
-type ModuleInput = {
-    type: ModuleType;
-    count: number;
-};
 
 type BombFormState = {
     serialNumber: string;
@@ -30,7 +27,7 @@ type BombFormState = {
     dBatteryCount: number;
     indicators: IndicatorInput[];
     portPlates: PlateInput[];
-    modules: ModuleInput[];
+    modules: Record<string, number>;  // Changed from array to record for dynamic modules
 };
 
 const moduleTypes = Object.values(ModuleType);
@@ -42,7 +39,7 @@ const initialFormState = (): BombFormState => ({
     dBatteryCount: 0,
     indicators: [],
     portPlates: [],
-    modules: moduleTypes.map((type) => ({type, count: 0})),
+    modules: {},
 });
 
 const randomId = () => Math.random().toString(36).slice(2, 10);
@@ -66,7 +63,7 @@ export default function SetupPage() {
         lit: boolean;
     }>({name: "", lit: true});
     const [moduleTarget, setModuleTarget] = useState<BombEntity | undefined>();
-    const [moduleDraft, setModuleDraft] = useState<Record<ModuleType, number>>(
+    const [moduleDraft, setModuleDraft] = useState<Record<string, number>>(
         () =>
             moduleTypes.reduce(
                 (acc, type) => {
@@ -110,11 +107,10 @@ export default function SetupPage() {
                 id: randomId(),
                 ports: plate.ports ?? [],
             })),
-            modules: moduleTypes.map((type) => {
-                const count =
-                    bomb.modules?.filter((module) => module.type === type).length ?? 0;
-                return {type, count};
-            }),
+            modules: bomb.modules?.reduce((acc, module) => {
+                acc[module.type] = (acc[module.type] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>) ?? {},
         });
         setIsFormOpen(true);
     };
@@ -151,17 +147,7 @@ export default function SetupPage() {
         }));
     };
 
-    const bumpModule = (type: ModuleType, delta: number) => {
-        setFormState((prev) => ({
-            ...prev,
-            modules: prev.modules.map((entry) =>
-                entry.type === type
-                    ? {...entry, count: Math.max(0, entry.count + delta)}
-                    : entry,
-            ),
-        }));
-    };
-
+    
     const handleFormSubmit = async (event: FormEvent) => {
         event.preventDefault();
         const indicatorMap = Object.fromEntries(
@@ -183,11 +169,13 @@ export default function SetupPage() {
         }
 
         const newBomb = await addBomb(payload);
-        const moduleEntries = formState.modules.filter((entry) => entry.count > 0);
+        const moduleEntries = Object.entries(formState.modules).filter(
+            ([, count]) => count > 0,
+        ) as [string, number][];
         if (moduleEntries.length > 0) {
             await Promise.all(
-                moduleEntries.map((entry) =>
-                    addModules(newBomb.id, {type: entry.type, count: entry.count}),
+                moduleEntries.map(([type, count]) =>
+                    addModules(newBomb.id, {type: type as ModuleType, count}),
                 ),
             );
         }
@@ -197,26 +185,21 @@ export default function SetupPage() {
 
     const openModulePanel = (bomb: BombEntity) => {
         setModuleTarget(bomb);
-        setModuleDraft(
-            moduleTypes.reduce((acc, type) => {
-                acc[type] = 0;
-                return acc;
-            }, {} as Record<ModuleType, number>),
-        );
+        setModuleDraft({});
     };
 
     const submitModuleDraft = async () => {
         if (!moduleTarget) return;
         const entries = Object.entries(moduleDraft).filter(
             ([, count]) => count > 0,
-        ) as [ModuleType, number][];
+        ) as [string, number][];
         if (entries.length === 0) {
             setModuleTarget(undefined);
             return;
         }
         await Promise.all(
             entries.map(([type, count]) =>
-                addModules(moduleTarget.id, {type, count}),
+                addModules(moduleTarget.id, {type: type as ModuleType, count}),
             ),
         );
         setModuleTarget(undefined);
@@ -630,34 +613,15 @@ export default function SetupPage() {
                                 {!isEditing && (
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold">Modules for this bomb</h3>
-                                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                            {formState.modules.map((entry) => (
-                                                <div key={entry.type} className="card bg-base-100 border border-base-300">
-                                                    <div className="card-body p-4">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm font-medium">{entry.type.replaceAll("_", " ")}</span>
-                                                            <div className="flex items-center gap-1">
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-ghost btn-xs btn-circle"
-                                                                    onClick={() => bumpModule(entry.type, -1)}
-                                                                >
-                                                                    −
-                                                                </button>
-                                                                <span className="w-8 text-center font-bold">{entry.count}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-ghost btn-xs btn-circle"
-                                                                    onClick={() => bumpModule(entry.type, 1)}
-                                                                >
-                                                                    +
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <ModuleSelector
+                                            onSelectionChange={(selectedModules) => {
+                                                setFormState(prev => ({
+                                                    ...prev,
+                                                    modules: selectedModules
+                                                }));
+                                            }}
+                                            initialCounts={formState.modules}
+                                        />
                                     </div>
                                 )}
 
@@ -697,44 +661,12 @@ export default function SetupPage() {
                                     Close
                                 </button>
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                {moduleTypes.map((type) => (
-                                    <div key={type} className="card bg-base-100 border border-base-300">
-                                        <div className="card-body p-4">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm font-medium">{type.replaceAll("_", " ")}</span>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-ghost btn-xs btn-circle"
-                                                        onClick={() =>
-                                                            setModuleDraft((prev) => ({
-                                                                ...prev,
-                                                                [type]: Math.max(0, prev[type] - 1),
-                                                            }))
-                                                        }
-                                                    >
-                                                        −
-                                                    </button>
-                                                    <span className="w-8 text-center font-bold">{moduleDraft[type]}</span>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-ghost btn-xs btn-circle"
-                                                        onClick={() =>
-                                                            setModuleDraft((prev) => ({
-                                                                ...prev,
-                                                                [type]: prev[type] + 1,
-                                                            }))
-                                                        }
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <ModuleSelector
+                                onSelectionChange={(selectedModules) => {
+                                    setModuleDraft(selectedModules as Record<ModuleType, number>);
+                                }}
+                                initialCounts={moduleDraft}
+                            />
                             <div className="flex justify-end gap-2 pt-4">
                                 <button
                                     className="btn btn-primary"

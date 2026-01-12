@@ -1,24 +1,27 @@
 package ktanesolver.module.modded.regular.emojiMath;
 
 import java.util.Map;
-import java.util.regex.Pattern;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveFailure;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOutput> {
+@ModuleInfo(
+        type = ModuleType.EMOJI_MATH,
+        id = "emoji_math",
+        name = "Emoji Math",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Solve math problems with emoji values",
+        tags = {"puzzle", "visual"}
+)
+public class EmojiMathSolver extends AbstractModuleSolver<EmojiMathInput, EmojiMathOutput> {
 
     private static final Map<String, String> EMOJI_TO_DIGIT = Map.ofEntries(
         Map.entry(":)", "0"),
@@ -34,21 +37,11 @@ public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOu
     );
 
     @Override
-    public ModuleType getType() {
-        return ModuleType.EMOJI_MATH;
-    }
-
-    @Override
-    public Class<EmojiMathInput> inputType() {
-        return EmojiMathInput.class;
-    }
-
-    @Override
-    public SolveResult<EmojiMathOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, EmojiMathInput input) {
+    public SolveResult<EmojiMathOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, EmojiMathInput input) {
         String emojiEquation = input.emojiEquation();
         
         if (emojiEquation == null || emojiEquation.trim().isEmpty()) {
-            return new SolveFailure<>("Emoji equation cannot be empty");
+            return failure("Emoji equation cannot be empty");
         }
         
         emojiEquation = emojiEquation.trim().replaceAll("\\s+", "");
@@ -66,15 +59,15 @@ public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOu
             }
         }
         
-        if (operatorIndex == -1 || operator == null) {
-            return new SolveFailure<>("Invalid emoji equation format. Expected format: emoji [+,-,*,/] emoji (e.g., ')::(+)=:(')");
+        if (operatorIndex == -1) {
+            return failure("Invalid emoji equation format. Expected format: emoji [+,-,*,/] emoji (e.g., ')::(+)=:(')");
         }
         
         String leftEmojis = emojiEquation.substring(0, operatorIndex);
         String rightEmojis = emojiEquation.substring(operatorIndex + 1);
         
         if (leftEmojis.isEmpty() || rightEmojis.isEmpty()) {
-            return new SolveFailure<>("Invalid emoji equation format. Expected format: emoji [+,-,*,/] emoji (e.g., ')::(+)=:(')");
+            return failure("Invalid emoji equation format. Expected format: emoji [+,-,*,/] emoji (e.g., ')::(+)=:(')");
         }
         
         try {
@@ -82,7 +75,7 @@ public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOu
             String rightNumber = translateEmojisToNumber(rightEmojis);
             
             if (leftNumber == null || rightNumber == null) {
-                return new SolveFailure<>("Invalid emoji in equation. Supported emojis: :) =( (: )= :( ): =) (= :| |:");
+                return failure("Invalid emoji in equation. Supported emojis: :) =( (: )= :( ): =) (= :| |:");
             }
             
             String translatedEquation = leftNumber + " " + operator + " " + rightNumber;
@@ -103,26 +96,23 @@ public class EmojiMathSolver implements ModuleSolver<EmojiMathInput, EmojiMathOu
                     break;
                 case "/":
                     if (rightOperand == 0) {
-                        return new SolveFailure<>("Division by zero is not allowed");
+                        return failure("Division by zero is not allowed");
                     }
                     result = leftOperand / rightOperand;
                     break;
                 default:
-                    return new SolveFailure<>("Unsupported operator: " + operator);
+                    return failure("Unsupported operator: " + operator);
             }
             
             EmojiMathOutput output = new EmojiMathOutput(result, translatedEquation);
-            module.setSolved(true);
-            Json.mapper().convertValue(output, new TypeReference<Map<String, Object>>() {})
-                .forEach(module.getSolution()::put);
-            
-            module.setState(input);
-            return new SolveSuccess<>(output, true);
+
+            storeState(module, "input", input);
+            return success(output);
             
         } catch (NumberFormatException e) {
-            return new SolveFailure<>("Invalid number format in translated equation");
+            return failure("Invalid number format in translated equation");
         } catch (ArithmeticException e) {
-            return new SolveFailure<>("Arithmetic error: " + e.getMessage());
+            return failure("Arithmetic error: " + e.getMessage());
         }
     }
     

@@ -3,38 +3,38 @@ package ktanesolver.module.vanilla.regular.maze;
 
 import java.util.*;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class MazesSolver implements ModuleSolver<MazesInput, MazesOutput> {
+@ModuleInfo(
+		type = ModuleType.MAZES,
+		id = "mazes",
+		name = "Mazes",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Navigate the maze following the rules",
+		tags = {"navigation", "puzzle"}
+)
+public class MazesSolver extends AbstractModuleSolver<MazesInput, MazesOutput> {
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.MAZES;
-	}
-
-	@Override
-	public Class<MazesInput> inputType() {
-		return MazesInput.class;
-	}
-
-	@Override
-	public SolveResult<MazesOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, MazesInput input) {
+	public SolveResult<MazesOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, MazesInput input) {
 		Maze maze = MazeRegistry.find(input.marker1(), input.marker2());
 
 		List<Move> path = solveMaze(maze, input.start(), input.target());
 
-		module.setSolved(true);
+		storeState(module, "maze", maze);
+		storeState(module, "input", input);
+		storeState(module, "path", path);
 
-		return new SolveSuccess<>(new MazesOutput(path), true);
+		return success(new MazesOutput(path));
 	}
 
 	private List<Move> solveMaze(Maze maze, Cell start, Cell target) {

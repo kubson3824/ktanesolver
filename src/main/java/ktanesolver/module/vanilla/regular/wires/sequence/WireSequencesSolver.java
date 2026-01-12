@@ -1,37 +1,33 @@
 
 package ktanesolver.module.vanilla.regular.wires.sequence;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class WireSequencesSolver implements ModuleSolver<WireSequenceInput, WireSequenceOutput> {
+@ModuleInfo(
+		type = ModuleType.WIRE_SEQUENCES,
+		id = "wire_sequences",
+		name = "Wire Sequences",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Cut wires in the correct order based on previous wires",
+		tags = {"memory", "pattern"}
+)
+public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput, WireSequenceOutput> {
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.WIRE_SEQUENCES;
-	}
-
-	@Override
-	public Class<WireSequenceInput> inputType() {
-		return WireSequenceInput.class;
-	}
-
-	@Override
-	public SolveResult<WireSequenceOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, WireSequenceInput input) {
+	public SolveResult<WireSequenceOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, WireSequenceInput input) {
 		WireSequenceState state = module.getStateAs(WireSequenceState.class, () -> new WireSequenceState(0, 0, 0, new ArrayList<>()));
 
 		int red = state.red();
@@ -62,18 +58,12 @@ public class WireSequencesSolver implements ModuleSolver<WireSequenceInput, Wire
 		List<WireSequenceCombo> history = state.history();
 		history.addAll(input.wires());
 		WireSequenceState newState = new WireSequenceState(red, blue, black, history);
-		module.setState(newState);
-		boolean solved = false;
+		storeTypedState(module, newState);
+		boolean solved = input.stage() == 4;
 
 		WireSequenceOutput wireSequenceOutput = new WireSequenceOutput(cut);
-		if(input.stage() == 4){
-			solved = true;
-			Json.mapper().convertValue(wireSequenceOutput, new TypeReference<Map<String, Object>>() {
-			}).forEach(module.getSolution()::put);
-		}
 
-		module.setSolved(solved);
-		return new SolveSuccess<>(wireSequenceOutput, solved);
+		return success(wireSequenceOutput, solved);
 	}
 
 	// ----------------------------------------------------

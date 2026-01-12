@@ -1,23 +1,29 @@
 package ktanesolver.module.modded.regular.twobits;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
+import ktanesolver.logic.*;
 import ktanesolver.utils.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Map;
+
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class TwoBitsSolver implements ModuleSolver<TwoBitsInput, TwoBitsOutput> {
+@ModuleInfo(
+        type = ModuleType.TWO_BITS,
+        id = "two_bits",
+        name = "Two Bits",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Convert binary to decimal and set the switches",
+        tags = {"binary", "puzzle"}
+)
+public class TwoBitsSolver extends AbstractModuleSolver<TwoBitsInput, TwoBitsOutput> {
 
     private static final String[][] NUMBERS_TO_LETTERS = {
             {"kb", "dk", "gv", "tk", "pv", "kp", "bv", "vt", "pz", "dt"},
@@ -39,17 +45,7 @@ public class TwoBitsSolver implements ModuleSolver<TwoBitsInput, TwoBitsOutput> 
     private static final int MODULO_100 = 100;
 
     @Override
-    public ModuleType getType() {
-        return ModuleType.TWO_BITS;
-    }
-
-    @Override
-    public Class<TwoBitsInput> inputType() {
-        return TwoBitsInput.class;
-    }
-
-    @Override
-    public SolveResult<TwoBitsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, TwoBitsInput input) {
+    public SolveResult<TwoBitsOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, TwoBitsInput input) {
         validateInput(input);
         
         TwoBitsState state = module.getStateAs(TwoBitsState.class, () -> new TwoBitsState(new ArrayList<>()));
@@ -108,21 +104,11 @@ public class TwoBitsSolver implements ModuleSolver<TwoBitsInput, TwoBitsOutput> 
     private SolveResult<TwoBitsOutput> processStage(int number, ModuleEntity module, TwoBitsState state, boolean isFinalStage) {
         String letters = resolveNumbersToLetters(number);
         state.stages().add(new TwoBitsStage(number, letters));
-        module.setState(state);
-        
-        TwoBitsOutput output = new TwoBitsOutput(letters);
-        saveSolutionToModule(output, module);
-        
-        if (isFinalStage) {
-            module.setSolved(true);
-        }
-        
-        return new SolveSuccess<>(output, isFinalStage);
-    }
+        storeTypedState(module, state);
 
-    private void saveSolutionToModule(TwoBitsOutput output, ModuleEntity module) {
-        Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {});
-        convertedValue.forEach(module.getSolution()::put);
+        TwoBitsOutput output = new TwoBitsOutput(letters);
+
+        return success(output, isFinalStage);
     }
 
     private String resolveNumbersToLetters(int number) {

@@ -3,44 +3,36 @@ package ktanesolver.module.vanilla.regular.simonsays;
 
 import java.util.List;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class SimonSolver implements ModuleSolver<SimonInput, SimonOutput> {
+@ModuleInfo(
+		type = ModuleType.SIMON_SAYS,
+		id = "simon_says",
+		name = "Simon Says",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Repeat the color sequence following the strike count",
+		tags = {"memory", "pattern"}
+)
+public class SimonSolver extends AbstractModuleSolver<SimonInput, SimonOutput> {
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.SIMON_SAYS;
-	}
-
-	@Override
-	public Class<SimonInput> inputType() {
-		return SimonInput.class;
-	}
-
-	@Override
-	public SolveResult<SimonOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, SimonInput input) {
+	public SolveResult<SimonOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, SimonInput input) {
 		boolean hasVowel = bomb.serialHasVowel();
 		int strikes = bomb.getStrikes();
 
 		List<SimonColor> presses = input.flashes().stream().map(color -> mapColor(color, hasVowel, strikes)).toList();
 
-		SimonState newState = new SimonState(presses);
 
-		module.setState(newState);
-		if(input.flashes().size() == presses.size()) {
-			module.setSolved(true);
-		}
-
-		return new SolveSuccess<>(new SimonOutput(presses), module.isSolved());
+		return success(new SimonOutput(presses), input.flashes().size() == presses.size());
 	}
 
 	private SimonColor mapColor(SimonColor flashed, boolean hasVowel, int strikes) {

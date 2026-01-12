@@ -1,32 +1,34 @@
-import { SolveRequest, SolveResponse } from "./api";
+import {api, withErrorWrapping} from "../lib/api";
 
-export interface WordScrambleInput {
-  letters: string;
+export interface WordScrambleSolveRequest {
+    input: {
+        letters: string;
+    }
 }
 
-export interface WordScrambleOutput {
-  solved: boolean;
-  instruction: string;
-  solution: string;
+export interface WordScrambleSolveResponse {
+    output: {
+        solved: boolean;
+        instruction: string;
+        solution: string;
+    };
 }
 
-export async function solveWordScramble(
-  roundId: string,
-  bombId: string,
-  moduleId: string,
-  data: SolveRequest<WordScrambleInput>
-): Promise<SolveResponse<WordScrambleOutput>> {
-  const response = await fetch(`/api/round/${roundId}/bomb/${bombId}/module/${moduleId}/solve`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to solve word scramble module");
-  }
-
-  return response.json();
-}
+export const solveWordScramble = async (
+    roundId: string,
+    bombId: string,
+    moduleId: string,
+    input: {
+        input: {
+            letters: string;
+        }
+    }
+): Promise<WordScrambleSolveResponse> => {
+    return withErrorWrapping(async () => {
+        const response = await api.post<WordScrambleSolveResponse>(
+            `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
+            input
+        );
+        return response.data;
+    });
+};

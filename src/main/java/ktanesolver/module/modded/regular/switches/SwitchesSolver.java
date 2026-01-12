@@ -7,44 +7,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutput> {
+@ModuleInfo(
+        type = ModuleType.SWITCHES,
+        id = "switches",
+        name = "Switches",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Set switches to the correct positions",
+        tags = {"logic", "puzzle"}
+)
+public class SwitchesSolver extends AbstractModuleSolver<SwitchesInput, SwitchesOutput> {
 
     // Default forbidden states from the manual (in binary: 0-31 range)
     private static final int[] DEFAULT_FORBIDDEN_STATES = {4, 26, 30, 9, 25, 29, 3, 11, 7, 15};
-    
-    @Override
-    public ModuleType getType() {
-        return ModuleType.SWITCHES;
-    }
 
     @Override
-    public Class<SwitchesInput> inputType() {
-        return SwitchesInput.class;
-    }
-
-    @Override
-    public SolveResult<SwitchesOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, SwitchesInput input) {
+    public SolveResult<SwitchesOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, SwitchesInput input) {
         boolean[] currentSwitches = input.currentSwitches();
         boolean[] ledPositions = input.ledPositions();
         
         // Validate input
         if (currentSwitches.length != 5 || ledPositions.length != 5) {
             SwitchesOutput output = new SwitchesOutput(false, "Invalid input: must have 5 switches and 5 LED positions", new ArrayList<>());
-            return new SolveSuccess<>(output, false);
+            return success(output, false);
         }
         
         // Store module state
@@ -53,23 +48,20 @@ public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutpu
         
         // Calculate target configuration (switches should point to lit LEDs)
         boolean[] targetSwitches = new boolean[5];
-        for (int i = 0; i < 5; i++) {
-            // If LED is at top (true), switch should be up (true)
-            // If LED is at bottom (false), switch should be down (false)
-            targetSwitches[i] = ledPositions[i];
-        }
+        // If LED is at top (true), switch should be up (true)
+        // If LED is at bottom (false), switch should be down (false)
+        System.arraycopy(ledPositions, 0, targetSwitches, 0, 5);
         
         // Check if already solved
         if (isMatch(currentSwitches, targetSwitches)) {
             SwitchesOutput output = new SwitchesOutput(true, "Module solved! All switches are in correct positions.", new ArrayList<>());
-            setModuleSolution(module, output);
-            return new SolveSuccess<>(output, true);
+            return success(output);
         }
         
         // Check if current state is forbidden
         if (isForbidden(currentSwitches)) {
             SwitchesOutput output = new SwitchesOutput(false, "Current switch configuration is invalid! Please reset the module.", new ArrayList<>());
-            return new SolveSuccess<>(output, false);
+            return success(output, false);
         }
         
         // Find solution path using BFS
@@ -77,8 +69,7 @@ public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutpu
         
         if (solutionPath.isEmpty()) {
             SwitchesOutput output = new SwitchesOutput(false, "No solution found. This should not happen with valid inputs.", new ArrayList<>());
-            setModuleSolution(module, output);
-            return new SolveSuccess<>(output, false);
+            return success(output, false);
         }
         
         // Generate instruction
@@ -88,9 +79,8 @@ public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutpu
             instruction.append("Switch ").append(solutionPath.get(i));
         }
         
-        SwitchesOutput output = new SwitchesOutput(false, instruction.toString(), solutionPath);
-        setModuleSolution(module, output);
-        return new SolveSuccess<>(output, false);
+        SwitchesOutput output = new SwitchesOutput(true, instruction.toString(), solutionPath);
+        return success(output);
     }
     
     private boolean isMatch(boolean[] switches, boolean[] target) {
@@ -169,7 +159,7 @@ public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutpu
         
         while (visited.get(current) != -1) {
             int switchFlippedToReachCurrent = switchFlipped.get(current);
-            path.add(0, switchFlippedToReachCurrent + 1); // Convert to 1-based indexing
+            path.addFirst(switchFlippedToReachCurrent + 1); // Convert to 1-based indexing
             current = visited.get(current);
         }
         
@@ -201,12 +191,5 @@ public class SwitchesSolver implements ModuleSolver<SwitchesInput, SwitchesOutpu
         StateNode(int state) {
             this.state = state;
         }
-    }
-    
-    private void setModuleSolution(ModuleEntity module, SwitchesOutput output) {
-        module.setSolved(output.solved());
-        Map<String, Object> convertedValue = Json.mapper().convertValue(output, new TypeReference<>() {
-        });
-        convertedValue.forEach(module.getSolution()::put);
     }
 }

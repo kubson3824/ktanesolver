@@ -1,6 +1,7 @@
 
 package ktanesolver.registry;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,5 +25,9 @@ public class ModuleSolverRegistry {
 	@SuppressWarnings ("unchecked")
 	public <I extends ModuleInput, O extends ModuleOutput> ModuleSolver<I, O> get(ModuleType type) {
 		return (ModuleSolver<I, O>)solvers.get(type);
+	}
+	
+	public Collection<ModuleSolver<?, ?>> getAllSolvers() {
+		return solvers.values();
 	}
 }

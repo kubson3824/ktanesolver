@@ -3,15 +3,26 @@ package ktanesolver.module.modded.regular.anagrams;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class AnagramsSolver implements ModuleSolver<AnagramsInput, AnagramsOutput> {
+@ModuleInfo(
+        type = ModuleType.ANAGRAMS,
+        id = "anagrams",
+        name = "Anagrams",
+        category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+        description = "Find words that can be formed from the given letters",
+        tags = {"word", "puzzle"}
+)
+public class AnagramsSolver extends AbstractModuleSolver<AnagramsInput, AnagramsOutput> {
     
     private static final List<String> VALID_WORDS = Arrays.asList(
         "STREAM", "MASTER", "TAMERS",
@@ -23,25 +34,13 @@ public class AnagramsSolver implements ModuleSolver<AnagramsInput, AnagramsOutpu
         "BARELY", "BARLEY", "BLEARY",
         "DUSTER", "RUSTED", "RUDEST"
     );
-    
-    @Override
-    public ModuleType getType() {
-        return ModuleType.ANAGRAMS;
-    }
 
     @Override
-    public Class<AnagramsInput> inputType() {
-        return AnagramsInput.class;
-    }
-
-    @Override
-    public SolveResult<AnagramsOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, AnagramsInput input) {
+    public SolveResult<AnagramsOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, AnagramsInput input) {
         List<String> solutions = findAnagrams(input.displayWord());
         AnagramsOutput output = new AnagramsOutput(solutions);
-        
-        module.setSolved(true);
-        
-        return new SolveSuccess<>(output, true);
+
+        return success(output);
     }
     
     private List<String> findAnagrams(String word) {

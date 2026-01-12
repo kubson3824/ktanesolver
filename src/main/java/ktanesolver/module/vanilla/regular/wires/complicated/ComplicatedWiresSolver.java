@@ -3,37 +3,31 @@ package ktanesolver.module.vanilla.regular.wires.complicated;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.logic.*;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
-import ktanesolver.logic.ModuleSolver;
-import ktanesolver.logic.SolveResult;
-import ktanesolver.logic.SolveSuccess;
-import ktanesolver.utils.Json;
+import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-public class ComplicatedWiresSolver implements ModuleSolver<ComplicatedWiresInput, ComplicatedWiresOutput> {
+@ModuleInfo(
+		type = ModuleType.COMPLICATED_WIRES,
+		id = "complicated_wires",
+		name = "Complicated Wires",
+		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+		description = "Cut wires based on multiple properties",
+		tags = {"puzzle", "logic"}
+)
+public class ComplicatedWiresSolver extends AbstractModuleSolver<ComplicatedWiresInput, ComplicatedWiresOutput> {
 
 	@Override
-	public ModuleType getType() {
-		return ModuleType.COMPLICATED_WIRES;
-	}
-
-	@Override
-	public Class<ComplicatedWiresInput> inputType() {
-		return ComplicatedWiresInput.class;
-	}
-
-	@Override
-	public SolveResult<ComplicatedWiresOutput> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, ComplicatedWiresInput input) {
+	public SolveResult<ComplicatedWiresOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ComplicatedWiresInput input) {
 		List<Integer> cut = new ArrayList<>();
 
 		boolean serialEven = bomb.isLastDigitEven();
@@ -45,12 +39,9 @@ public class ComplicatedWiresSolver implements ModuleSolver<ComplicatedWiresInpu
 			}
 		}
 
-		module.setSolved(true);
-		module.setState(input);
-		ComplicatedWiresOutput complicatedWiresOutput = new ComplicatedWiresOutput(cut);
-		Json.mapper().convertValue(complicatedWiresOutput, new TypeReference<Map<String, Object>>() {
-		}).forEach(module.getSolution()::put);
-		return new SolveSuccess<>(complicatedWiresOutput, true);
+		storeState(module, "input", input);
+
+		return success(new ComplicatedWiresOutput(cut));
 	}
 
 	// ----------------------------------------------------
@@ -63,48 +54,45 @@ public class ComplicatedWiresSolver implements ModuleSolver<ComplicatedWiresInpu
 		boolean led = w.led();
 
 		if( !red && !blue) {
-			if( !led && !w.star())
+			if( !led && !star)
 				return true;
-			if( !led && star)
+			if(!led)
 				return true;
-			if(led && !w.star())
+			if(!star)
 				return false;
 			return has2Batteries;
 		}
 
 		// Red only
-		if(w.red() && !w.blue()) {
-			if( !led && !w.star())
+		if(red && !blue) {
+			if( !led && !star)
 				return serialEven;
-			if( !led && w.star())
+			if(!led)
 				return true;
-			if(led && !w.star())
+			if(!star)
 				return has2Batteries;
 			return has2Batteries;
 		}
 
 		// Blue only
-		if( !w.red() && w.blue()) {
-			if( !led && !w.star())
+		if(!red) {
+			if( !led && !star)
 				return serialEven;
-			if( !led && w.star())
+			if(!led)
 				return false;
-			if(led && !w.star())
+			if(!star)
 				return hasParallel;
 			return hasParallel;
 		}
 
 		// Red + Blue
-		if(w.red() && w.blue()) {
-			if( !led && !w.star())
-				return serialEven;
-			if( !led && w.star())
-				return hasParallel;
-			if(led && !w.star())
-				return serialEven;
-			return false;
-		}
+        if (!led && !star)
+            return serialEven;
+        if(!led)
+            return hasParallel;
+        if(!star)
+            return serialEven;
+        return false;
 
-		return false;
-	}
+    }
 }
