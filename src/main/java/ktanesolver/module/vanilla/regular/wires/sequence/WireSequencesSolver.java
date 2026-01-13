@@ -22,7 +22,7 @@ import ktanesolver.dto.ModuleCatalogDto;
 		name = "Wire Sequences",
 		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
 		description = "Cut wires in the correct order based on previous wires",
-		tags = {"memory", "pattern"}
+		tags = {"1-to-3", "a", "b", "c", "up-arrow", "down-arrow", "red", "blue", "black"}
 )
 public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput, WireSequenceOutput> {
 

@@ -23,7 +23,7 @@ import ktanesolver.dto.ModuleCatalogDto;
 		name = "Who's on First",
 		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
 		description = "Display the correct word based on the display",
-		tags = {"word", "logic"}
+		tags = {"6-buttons", "display", "words", "3-squares"}
 )
 public class WhosOnFirstSolver extends AbstractModuleSolver<WhosOnFirstInput, WhosOnFirstOutput> {
 

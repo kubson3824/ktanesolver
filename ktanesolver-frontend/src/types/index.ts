@@ -24,6 +24,7 @@ export enum ModuleType {
   WORD_SCRAMBLE = "WORD_SCRAMBLE",
   ANAGRAMS = "ANAGRAMS",
   COMBINATION_LOCK = "COMBINATION_LOCK",
+  LISTENING = "LISTENING",
 }
 
 export enum PortType {

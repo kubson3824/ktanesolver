@@ -147,6 +147,13 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${moduleNumber} press none`;
     
+    case ModuleType.LISTENING:
+      // For Listening, we provide the 4-symbol code to enter
+      if (result.code) {
+        return `!${moduleNumber} code ${result.code}`;
+      }
+      return `!${moduleNumber} code unknown`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -175,6 +182,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.ANAGRAMS]: "Anagrams",
     [ModuleType.COMBINATION_LOCK]: "Combination Lock",
     [ModuleType.ROUND_KEYPAD]: "Round Keypad",
+    [ModuleType.LISTENING]: "Listening",
   };
   
   return displayNames[moduleType] || moduleType;

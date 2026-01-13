@@ -20,7 +20,7 @@ import ktanesolver.logic.SolveResult;
     name = "Wires",
     category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
     description = "Cut the correct wires based on the rules",
-    tags = {"puzzle", "logic"}
+    tags = {"horizontal-wires", "red", "blue", "black", "white", "yellow"}
 )
 public class WiresSolver extends AbstractModuleSolver<WiresInput, WiresOutput> {
 

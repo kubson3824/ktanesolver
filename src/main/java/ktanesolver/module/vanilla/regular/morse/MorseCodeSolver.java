@@ -22,7 +22,7 @@ import ktanesolver.dto.ModuleCatalogDto;
 		name = "Morse Code",
 		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
 		description = "Decode the morse code and transmit the correct word",
-		tags = {"decoding", "pattern"}
+		tags = {"blinking-orange-light", "frequency", "radio", "tx"}
 )
 public class MorseCodeSolver extends AbstractModuleSolver<MorseInput, MorseOutput> {
 

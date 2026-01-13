@@ -21,7 +21,7 @@ import ktanesolver.dto.ModuleCatalogDto;
 		name = "Passwords",
 		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
 		description = "Find the correct password from the list",
-		tags = {"puzzle", "word"}
+		tags = {"green", "5-up-arrows", "5-down-arrows", "submit"}
 )
 public class PasswordSolver extends AbstractModuleSolver<PasswordInput, PasswordOutput> {
 

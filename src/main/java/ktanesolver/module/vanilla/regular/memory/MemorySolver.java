@@ -21,7 +21,7 @@ import ktanesolver.logic.SolveResult;
     name = "Memory",
     category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
     description = "Repeat the growing sequence of numbers",
-    tags = {"memory", "sequence"}
+    tags = {"display", "4-numbers", "oscilloscope", "4-buttons", "5-leds"}
 )
 public class MemorySolver extends AbstractModuleSolver<MemoryInput, MemoryOutput> {
 

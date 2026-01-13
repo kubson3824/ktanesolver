@@ -20,7 +20,7 @@ import ktanesolver.dto.ModuleCatalogDto;
 		name = "Simon Says",
 		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
 		description = "Repeat the color sequence following the strike count",
-		tags = {"memory", "pattern"}
+		tags = {"blue", "red", "yellow", "green", "blinking", "tone"}
 )
 public class SimonSolver extends AbstractModuleSolver<SimonInput, SimonOutput> {
 
