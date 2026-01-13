@@ -140,6 +140,13 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${moduleNumber} combo ${result.firstNumber || '0'} ${result.secondNumber || '0'} ${result.thirdNumber || '0'}`;
     
+    case ModuleType.ROUND_KEYPAD:
+      // For Round Keypad, we provide the symbols to press
+      if (result.symbolsToPress && Array.isArray(result.symbolsToPress)) {
+        return `!${moduleNumber} press ${result.symbolsToPress.join(' ')}`;
+      }
+      return `!${moduleNumber} press none`;
+    
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -167,6 +174,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
     [ModuleType.ANAGRAMS]: "Anagrams",
     [ModuleType.COMBINATION_LOCK]: "Combination Lock",
+    [ModuleType.ROUND_KEYPAD]: "Round Keypad",
   };
   
   return displayNames[moduleType] || moduleType;
