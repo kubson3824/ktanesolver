@@ -25,6 +25,7 @@ import AnagramsSolver from "../components/AnagramsSolver";
 import CombinationLockSolver from "../components/CombinationLockSolver";
 import RoundKeypadSolver from "../components/RoundKeypadSolver";
 import ListeningSolver from "../components/ListeningSolver";
+import ForeignExchangeSolver from "../components/ForeignExchangeSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -285,6 +286,8 @@ export default function SolvePage() {
                         <RoundKeypadSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "LISTENING" ? (
                         <ListeningSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "FOREIGN_EXCHANGE_RATES" ? (
+                        <ForeignExchangeSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>
