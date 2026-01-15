@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api } from "../lib/api";
 
 export interface ListeningInput {
   soundDescription: string;
@@ -23,7 +23,7 @@ export async function solveListening(
   data: ListeningRequest
 ): Promise<ListeningResponse> {
   const response = await api.post<ListeningResponse>(
-    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve/listening`,
+    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
     data
   );
   return response.data;

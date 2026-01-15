@@ -74,11 +74,21 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.SWITCHES]: "Switches",
     [ModuleType.TWO_BITS]: "Two Bits",
     [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
+    [ModuleType.ROUND_KEYPAD]: "Round Keypad",
     [ModuleType.ANAGRAMS]: "Anagrams",
+    [ModuleType.COMBINATION_LOCK]: "Combination Lock",
+    [ModuleType.LISTENING]: "Listening",
+    [ModuleType.FOREIGN_EXCHANGE_RATES]: "Foreign Exchange Rates",
 };
 
-const attachManualUrl = (moduleType: ModuleType) =>
-    `https://ktane.timwi.de/html/${moduleManualNames[moduleType].replaceAll(" ", "%20")}.html`;
+const attachManualUrl = (moduleType: ModuleType) => {
+    const moduleName = moduleManualNames[moduleType];
+    if (!moduleName) {
+        console.warn(`No manual name found for module type: ${moduleType}`);
+        return undefined;
+    }
+    return `https://ktane.timwi.de/html/${moduleName.replaceAll(" ", "%20")}.html`;
+};
 
 export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
     devtools(

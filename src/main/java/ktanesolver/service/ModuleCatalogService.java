@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,9 +48,7 @@ public class ModuleCatalogService {
         if (cachedModules == null) {
             synchronized (this) {
                 if (cachedModules == null) {
-                    List<ModuleCatalogDto> modules = new ArrayList<>();
-                    modules.addAll(getSolverModules());
-                    modules.addAll(getPlannedModules());
+                    List<ModuleCatalogDto> modules = new ArrayList<>(getSolverModules());
                     cachedModules = modules;
                 }
             }
@@ -64,25 +61,5 @@ public class ModuleCatalogService {
             .map(ModuleSolver::getCatalogInfo)
             .collect(Collectors.toList());
     }
-    
-    private List<ModuleCatalogDto> getPlannedModules() {
-        return List.of(
-            // Example modded modules - no solvers yet
-            new ModuleCatalogDto("bigButton", "Big Button", ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-                "BIG_BUTTON", List.of("modded", "timing"),
-                "A modded version of The Button with extra features", true, false),
-            new ModuleCatalogDto("alphabets", "Alphabets", ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-                "ALPHABETS", List.of("modded", "puzzle", "word"),
-                "Match the alphabets to their correct positions", true, false),
-            new ModuleCatalogDto("tChess", "T-Chess", ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-                "T_CHESS", List.of("modded", "puzzle", "strategy"),
-                "Solve chess puzzles on the bomb", true, false),
-            new ModuleCatalogDto("needyKnobs", "Needy Knobs", ModuleCatalogDto.ModuleCategory.MODDED_NEEDY,
-                "NEEDY_KNOBS", List.of("modded", "timing", "rotation"),
-                "Turn the knobs to match the pattern before time runs out", true, false),
-            new ModuleCatalogDto("safetySafe", "Safety Safe", ModuleCatalogDto.ModuleCategory.MODDED_NEEDY,
-                "SAFETY_SAFE", List.of("modded", "timing", "puzzle"),
-                "Enter the correct combination before the safe opens", true, false)
-        );
-    }
+
 }

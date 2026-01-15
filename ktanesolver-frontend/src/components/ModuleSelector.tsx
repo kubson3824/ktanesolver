@@ -240,8 +240,10 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                     {count > 0 && (
                       <div className="flex items-center gap-1 ml-4">
                         <button
+                          type="button"
                           className="btn btn-xs btn-ghost btn-circle"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             updateModuleCount(module.type, -1);
                           }}
@@ -250,8 +252,10 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                         </button>
                         <span className="badge badge-info w-8 text-center">{count}</span>
                         <button
+                          type="button"
                           className="btn btn-xs btn-ghost btn-circle"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             updateModuleCount(module.type, 1);
                           }}

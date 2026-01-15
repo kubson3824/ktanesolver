@@ -1,4 +1,4 @@
-import {type FormEvent, useMemo, useState} from "react";
+import {type FormEvent, useMemo, useState, useCallback} from "react";
 import {useNavigate} from "react-router-dom";
 import {useRoundStore} from "../store/useRoundStore";
 import {
@@ -220,6 +220,13 @@ export default function SetupPage() {
                 return "Unknown";
         }
     }, [round]);
+
+    const handleModuleSelectionChange = useCallback((selectedModules: Record<string, number>) => {
+        setFormState(prev => ({
+            ...prev,
+            modules: selectedModules
+        }));
+    }, []);
 
     const handleStartRound = async () => {
         if (!round) return;
@@ -614,12 +621,7 @@ export default function SetupPage() {
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold">Modules for this bomb</h3>
                                         <ModuleSelector
-                                            onSelectionChange={(selectedModules) => {
-                                                setFormState(prev => ({
-                                                    ...prev,
-                                                    modules: selectedModules
-                                                }));
-                                            }}
+                                            onSelectionChange={handleModuleSelectionChange}
                                             initialCounts={formState.modules}
                                         />
                                     </div>

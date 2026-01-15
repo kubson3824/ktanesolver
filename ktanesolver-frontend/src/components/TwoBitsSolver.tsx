@@ -51,7 +51,7 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
 
       if (currentStage === 3) {
         setIsSolved(true);
-        markModuleSolved();
+        markModuleSolved(bomb.id, currentModule.id);
       } else {
         setCurrentStage(currentStage + 1);
         setInputNumber("");

@@ -1,9 +1,10 @@
-remove import { useState } from "react";
+import { useState } from "react";
 import type { BombEntity } from "../types";
 import { ModuleType } from "../types";
 import { useRoundStore } from "../store/useRoundStore";
 import { generateTwitchCommand } from "../utils/twitchCommands";
 import { solveForeignExchange, type ForeignExchangeInput, type ForeignExchangeOutput } from "../services/foreignExchangeService";
+import ModuleNumberInput from "./ModuleNumberInput";
 
 interface ForeignExchangeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -69,14 +70,14 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
       setIsSolved(true);
       
       // Generate Twitch command
-      const keyPosition = response.output.keyPosition;
-      const command = generateTwitchCommand(
-        moduleNumber,
-        `Press key ${keyPosition === 0 ? "1 (top-left)" : keyPosition}`
-      );
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
+        result: response.output,
+        moduleNumber
+      });
       setTwitchCommand(command);
       
-      markModuleSolved(currentModule.id);
+      markModuleSolved(bomb.id, currentModule.id);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Failed to solve module");
     } finally {
@@ -96,118 +97,168 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Foreign Exchange Rates Solver</h2>
+    <div className="w-full">
+      <ModuleNumberInput />
       
-      {!isSolved ? (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">LED Status</label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={hasGreenLights}
-                  onChange={() => setHasGreenLights(true)}
-                  className="mr-2"
-                />
-                <span className="text-green-600">Green Lights (API Available)</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={!hasGreenLights}
-                  onChange={() => setHasGreenLights(false)}
-                  className="mr-2"
-                />
-                <span className="text-red-600">Red Lights (API Failed)</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+      {/* Module visualization */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-4">
+        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
+        
+        {!isSolved ? (
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Base Currency (3-letter code)</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">LED Status</label>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={hasGreenLights}
+                    onChange={() => setHasGreenLights(true)}
+                    className="mr-2"
+                  />
+                  <span className="text-green-400">Green Lights (API Available)</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={!hasGreenLights}
+                    onChange={() => setHasGreenLights(false)}
+                    className="mr-2"
+                  />
+                  <span className="text-red-400">Red Lights (API Failed)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Base Currency (3-letter code)</label>
+                <input
+                  type="text"
+                  value={baseCurrency}
+                  onChange={(e) => setBaseCurrency(e.target.value.toUpperCase())}
+                  placeholder="e.g., USD"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
+                  disabled={isLoading}
+                  maxLength={3}
+                  style={{ textTransform: "uppercase" }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Target Currency (3-letter code)</label>
+                <input
+                  type="text"
+                  value={targetCurrency}
+                  onChange={(e) => setTargetCurrency(e.target.value.toUpperCase())}
+                  placeholder="e.g., EUR"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
+                  disabled={isLoading}
+                  maxLength={3}
+                  style={{ textTransform: "uppercase" }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Amount (3-digit number)</label>
               <input
-                type="text"
-                value={baseCurrency}
-                onChange={(e) => setBaseCurrency(e.target.value.toUpperCase())}
-                placeholder="e.g., USD"
-                className="w-full p-2 border rounded"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter 3-digit amount..."
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
                 disabled={isLoading}
-                maxLength={3}
-                style={{ textTransform: "uppercase" }}
+                min="0"
+                max="999"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Target Currency (3-letter code)</label>
-              <input
-                type="text"
-                value={targetCurrency}
-                onChange={(e) => setTargetCurrency(e.target.value.toUpperCase())}
-                placeholder="e.g., EUR"
-                className="w-full p-2 border rounded"
-                disabled={isLoading}
-                maxLength={3}
-                style={{ textTransform: "uppercase" }}
-              />
+            <button
+              onClick={solveForeignExchangeModule}
+              disabled={isLoading || !baseCurrency || !targetCurrency || !amount}
+              className="w-full btn btn-primary"
+            >
+              {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
+              {isLoading ? "Solving..." : "Solve"}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-green-900/50 border border-green-600 rounded-lg p-4">
+              <h3 className="font-bold text-lg mb-2 text-green-300">Solution</h3>
+              <p className="text-lg text-gray-100">
+                Press key <span className="font-bold text-xl text-green-300">
+                  {result?.keyPosition === 0 ? "1 (top-left)" : result?.keyPosition}
+                </span>
+              </p>
+              <p className="text-sm text-gray-400 mt-2">
+                Count keys from left to right, top to bottom
+              </p>
             </div>
           </div>
+        )}
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Amount (3-digit number)</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter 3-digit amount..."
-              className="w-full p-2 border rounded"
-              disabled={isLoading}
-              min="0"
-              max="999"
-            />
-          </div>
+      {/* Serial number display */}
+      <div className="bg-base-200 rounded-lg p-3 mb-4">
+        <p className="text-sm text-base-content/70">
+          Serial Number: <span className="font-mono font-bold">{bomb?.serialNumber || "Unknown"}</span>
+        </p>
+      </div>
 
-          {error && (
-            <div className="text-red-600 text-sm">{error}</div>
-          )}
-
-          <button
-            onClick={solveForeignExchangeModule}
-            disabled={isLoading || !baseCurrency || !targetCurrency || !amount}
-            className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-300"
-          >
-            {isLoading ? "Solving..." : "Solve"}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="bg-green-100 p-4 rounded">
-            <h3 className="font-bold text-lg mb-2">Solution</h3>
-            <p className="text-lg">
-              Press key <span className="font-bold text-xl">
-                {result?.keyPosition === 0 ? "1 (top-left)" : result?.keyPosition}
-              </span>
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              Count keys from left to right, top to bottom
-            </p>
-          </div>
-
-          {twitchCommand && (
-            <div className="bg-gray-100 p-3 rounded">
-              <h4 className="font-medium mb-1">Twitch Command</h4>
-              <code className="text-sm">{twitchCommand}</code>
-            </div>
-          )}
-
+      {/* Controls for solved state */}
+      {isSolved && (
+        <div className="flex gap-3 mb-4">
           <button
             onClick={reset}
-            className="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            className="btn btn-outline"
           >
             Reset
           </button>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="alert alert-error mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Twitch Command */}
+      {twitchCommand && (
+        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
+              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(twitchCommand);
+              }}
+              className="btn btn-sm btn-outline btn-purple"
+              title="Copy to clipboard"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
     </div>

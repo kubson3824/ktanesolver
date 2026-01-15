@@ -26,7 +26,7 @@ export async function solveForeignExchange(
   data: ForeignExchangeRequest
 ): Promise<ForeignExchangeResponse> {
   const response = await api.post<ForeignExchangeResponse>(
-    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve/foreignexchange`,
+    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
     data
   );
   return response.data;

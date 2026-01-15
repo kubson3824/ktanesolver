@@ -153,7 +153,11 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
         return `!${moduleNumber} code ${result.code}`;
       }
       return `!${moduleNumber} code unknown`;
-    
+
+    case ModuleType.FOREIGN_EXCHANGE_RATES:
+      // For Foreign Exchange, we provide the key position
+      return `!${moduleNumber} key ${result.keyPosition}`;
+
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
