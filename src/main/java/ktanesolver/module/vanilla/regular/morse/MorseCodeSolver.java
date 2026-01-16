@@ -16,14 +16,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.MORSE_CODE,
-		id = "morse_code",
-		name = "Morse Code",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Decode the morse code and transmit the correct word",
-		tags = {"blinking-orange-light", "frequency", "radio", "tx"}
-)
+@ModuleInfo (type = ModuleType.MORSE_CODE, id = "morse_code", name = "Morse Code", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Decode the morse code and transmit the correct word", tags = {
+	"blinking-orange-light", "frequency", "radio", "tx"})
 public class MorseCodeSolver extends AbstractModuleSolver<MorseInput, MorseOutput> {
 
 	private static final double RESOLVE_THRESHOLD = 0.85;
@@ -32,7 +26,7 @@ public class MorseCodeSolver extends AbstractModuleSolver<MorseInput, MorseOutpu
 	@Override
 	public SolveResult<MorseOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, MorseInput input) {
 
-		String observed = input.word().toUpperCase().replaceAll(" ","");
+		String observed = input.word().toUpperCase().replaceAll(" ", "");
 		List<MorseCandidate> candidates = Arrays.stream(MorseWord.values()).map(word -> scoreWord(observed, word)).sorted(Comparator.comparingDouble(MorseCandidate::confidence).reversed()).toList();
 
 		MorseCandidate best = candidates.get(0);
@@ -49,9 +43,9 @@ public class MorseCodeSolver extends AbstractModuleSolver<MorseInput, MorseOutpu
 
 	private MorseCandidate scoreWord(String observed, MorseWord word) {
 		String w = word.word;
-        int matched = countPresent(observed, w);
+		int matched = countPresent(observed, w);
 		int ordered = longestOrderedSubsequence(observed, w);
-		int uniqueMatched = (int) observed.chars().distinct().filter(c -> w.indexOf(c) >= 0).count();
+		int uniqueMatched = (int)observed.chars().distinct().filter(c -> w.indexOf(c) >= 0).count();
 
 		double presenceScore = safeDiv(matched, observed.length());
 		double orderScore = safeDiv(ordered, observed.length());

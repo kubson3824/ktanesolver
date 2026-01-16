@@ -26,7 +26,7 @@ public class ModuleSolverRegistry {
 	public <I extends ModuleInput, O extends ModuleOutput> ModuleSolver<I, O> get(ModuleType type) {
 		return (ModuleSolver<I, O>)solvers.get(type);
 	}
-	
+
 	public Collection<ModuleSolver<?, ?>> getAllSolvers() {
 		return solvers.values();
 	}

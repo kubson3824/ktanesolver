@@ -16,14 +16,8 @@ import ktanesolver.enums.PortType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.COMPLICATED_WIRES,
-		id = "complicated_wires",
-		name = "Complicated Wires",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Cut wires based on multiple properties",
-		tags = {"puzzle", "logic"}
-)
+@ModuleInfo (type = ModuleType.COMPLICATED_WIRES, id = "complicated_wires", name = "Complicated Wires", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Cut wires based on multiple properties", tags = {
+	"puzzle", "logic"})
 public class ComplicatedWiresSolver extends AbstractModuleSolver<ComplicatedWiresInput, ComplicatedWiresOutput> {
 
 	@Override
@@ -56,9 +50,9 @@ public class ComplicatedWiresSolver extends AbstractModuleSolver<ComplicatedWire
 		if( !red && !blue) {
 			if( !led && !star)
 				return true;
-			if(!led)
+			if( !led)
 				return true;
-			if(!star)
+			if( !star)
 				return false;
 			return has2Batteries;
 		}
@@ -67,32 +61,32 @@ public class ComplicatedWiresSolver extends AbstractModuleSolver<ComplicatedWire
 		if(red && !blue) {
 			if( !led && !star)
 				return serialEven;
-			if(!led)
+			if( !led)
 				return true;
-			if(!star)
+			if( !star)
 				return has2Batteries;
 			return has2Batteries;
 		}
 
 		// Blue only
-		if(!red) {
+		if( !red) {
 			if( !led && !star)
 				return serialEven;
-			if(!led)
+			if( !led)
 				return false;
-			if(!star)
+			if( !star)
 				return hasParallel;
 			return hasParallel;
 		}
 
 		// Red + Blue
-        if (!led && !star)
-            return serialEven;
-        if(!led)
-            return hasParallel;
-        if(!star)
-            return serialEven;
-        return false;
+		if( !led && !star)
+			return serialEven;
+		if( !led)
+			return hasParallel;
+		if( !star)
+			return serialEven;
+		return false;
 
-    }
+	}
 }

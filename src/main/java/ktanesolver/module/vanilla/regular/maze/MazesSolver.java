@@ -14,14 +14,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.MAZES,
-		id = "mazes",
-		name = "Mazes",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Navigate the maze following the rules",
-		tags = {"navigation", "puzzle"}
-)
+@ModuleInfo (type = ModuleType.MAZES, id = "mazes", name = "Mazes", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Navigate the maze following the rules", tags = {
+	"navigation", "puzzle"})
 public class MazesSolver extends AbstractModuleSolver<MazesInput, MazesOutput> {
 
 	@Override

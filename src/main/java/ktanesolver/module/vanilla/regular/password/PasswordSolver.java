@@ -15,14 +15,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.PASSWORDS,
-		id = "passwords",
-		name = "Passwords",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Find the correct password from the list",
-		tags = {"green", "5-up-arrows", "5-down-arrows", "submit"}
-)
+@ModuleInfo (type = ModuleType.PASSWORDS, id = "passwords", name = "Passwords", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Find the correct password from the list", tags = {
+	"green", "5-up-arrows", "5-down-arrows", "submit"})
 public class PasswordSolver extends AbstractModuleSolver<PasswordInput, PasswordOutput> {
 
 	@Override

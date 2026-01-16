@@ -37,7 +37,7 @@ public class RoundController {
 		return roundService.getAllRounds();
 	}
 
-	@DeleteMapping("/{roundId}")
+	@DeleteMapping ("/{roundId}")
 	public void deleteRound(@PathVariable UUID roundId) {
 		roundService.deleteRound(roundId);
 	}

@@ -1,3 +1,4 @@
+
 package ktanesolver.module.vanilla.regular.maze;
 
 import java.util.ArrayList;
@@ -6,7 +7,8 @@ import java.util.List;
 
 public final class MazeAsciiPrinter {
 
-	private MazeAsciiPrinter() {}
+	private MazeAsciiPrinter() {
+	}
 
 	public static void main(String[] args) {
 		List<Maze> mazes = MazeRegistry.MAZES;

@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.anagrams;
 
 import ktanesolver.logic.ModuleInput;

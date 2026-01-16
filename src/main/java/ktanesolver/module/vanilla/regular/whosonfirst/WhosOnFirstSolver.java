@@ -17,14 +17,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.WHOS_ON_FIRST,
-		id = "whos_on_first",
-		name = "Who's on First",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Display the correct word based on the display",
-		tags = {"6-buttons", "display", "words", "3-squares"}
-)
+@ModuleInfo (type = ModuleType.WHOS_ON_FIRST, id = "whos_on_first", name = "Who's on First", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Display the correct word based on the display", tags = {
+	"6-buttons", "display", "words", "3-squares"})
 public class WhosOnFirstSolver extends AbstractModuleSolver<WhosOnFirstInput, WhosOnFirstOutput> {
 
 	@Override
@@ -68,7 +62,7 @@ public class WhosOnFirstSolver extends AbstractModuleSolver<WhosOnFirstInput, Wh
 	}
 
 	private String normalize(String s) {
-		if (s == null || s.trim().isEmpty()) {
+		if(s == null || s.trim().isEmpty()) {
 			return " "; // Empty display maps to space
 		}
 		return s.trim().toUpperCase();

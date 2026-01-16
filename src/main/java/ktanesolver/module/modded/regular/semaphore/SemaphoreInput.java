@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.semaphore;
 
 import java.util.List;

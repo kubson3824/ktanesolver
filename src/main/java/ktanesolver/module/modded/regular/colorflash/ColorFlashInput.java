@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.colorflash;
 
 import java.util.List;

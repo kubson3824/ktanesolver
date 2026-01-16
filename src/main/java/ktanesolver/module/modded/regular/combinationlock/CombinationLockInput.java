@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.combinationlock;
 
 import ktanesolver.logic.ModuleInput;

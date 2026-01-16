@@ -13,14 +13,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.SolveResult;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.BUTTON,
-		id = "button",
-		name = "The Button",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Press and hold the button based on strip color and text",
-		tags = {"timing", "color"}
-)
+@ModuleInfo (type = ModuleType.BUTTON, id = "button", name = "The Button", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Press and hold the button based on strip color and text", tags = {
+	"timing", "color"})
 public class ButtonSolver extends AbstractModuleSolver<ButtonInput, ButtonOutput> {
 
 	@Override
@@ -36,15 +30,15 @@ public class ButtonSolver extends AbstractModuleSolver<ButtonInput, ButtonOutput
 			storeState(module, "stripColor", input.stripColor());
 
 			if(input.stripColor().equalsIgnoreCase("BLUE")) {
-                return success(new ButtonOutput(false, "Release when timer has 4", 4));
+				return success(new ButtonOutput(false, "Release when timer has 4", 4));
 			}
 			if(input.stripColor().equalsIgnoreCase("WHITE")) {
-                return success(new ButtonOutput(false, "Release when timer has 1", 1));
+				return success(new ButtonOutput(false, "Release when timer has 1", 1));
 			}
 			if(input.stripColor().equalsIgnoreCase("YELLOW")) {
-                return success(new ButtonOutput(false, "Release when timer has 5", 5));
+				return success(new ButtonOutput(false, "Release when timer has 5", 5));
 			}
-            return success(new ButtonOutput(false, "Release when timer has 1", 1));
+			return success(new ButtonOutput(false, "Release when timer has 1", 1));
 		}
 
 		// Immediate release rules

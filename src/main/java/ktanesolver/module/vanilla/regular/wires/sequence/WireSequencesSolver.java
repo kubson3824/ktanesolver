@@ -16,14 +16,8 @@ import java.util.List;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.WIRE_SEQUENCES,
-		id = "wire_sequences",
-		name = "Wire Sequences",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Cut wires in the correct order based on previous wires",
-		tags = {"1-to-3", "a", "b", "c", "up-arrow", "down-arrow", "red", "blue", "black"}
-)
+@ModuleInfo (type = ModuleType.WIRE_SEQUENCES, id = "wire_sequences", name = "Wire Sequences", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Cut wires in the correct order based on previous wires", tags = {
+	"1-to-3", "a", "b", "c", "up-arrow", "down-arrow", "red", "blue", "black"})
 public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput, WireSequenceOutput> {
 
 	@Override
@@ -36,7 +30,7 @@ public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput,
 
 		List<Boolean> cut = new ArrayList<>();
 
-		for (int i = 0; i < input.wires().size(); i++) {
+		for(int i = 0; i < input.wires().size(); i++) {
 			WireSequenceCombo wire = input.wires().get(i);
 			switch(wire.color()) {
 				case RED -> {
@@ -74,9 +68,9 @@ public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput,
 			case 2, 5, 9 -> l == 'B';
 			case 3 -> l == 'A';
 			case 4, 6 -> l == 'A' || l == 'C';
-            case 7 -> l == 'A' || l == 'B' || l == 'C';
+			case 7 -> l == 'A' || l == 'B' || l == 'C';
 			case 8 -> l == 'A' || l == 'B';
-            default -> false;
+			default -> false;
 		};
 	}
 
@@ -84,10 +78,10 @@ public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput,
 		return switch(n) {
 			case 1, 3, 5 -> l == 'B';
 			case 2, 8 -> l == 'A' || l == 'C';
-            case 4, 9 -> l == 'A';
-            case 6 -> l == 'B' || l == 'C';
+			case 4, 9 -> l == 'A';
+			case 6 -> l == 'B' || l == 'C';
 			case 7 -> l == 'C';
-            default -> false;
+			default -> false;
 		};
 	}
 
@@ -96,10 +90,10 @@ public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput,
 			case 1 -> true;
 			case 2, 4 -> l == 'A' || l == 'C';
 			case 3, 5 -> l == 'B';
-            case 6 -> l == 'B' || l == 'C';
+			case 6 -> l == 'B' || l == 'C';
 			case 7 -> l == 'A' || l == 'B';
 			case 8, 9 -> l == 'C';
-            default -> false;
+			default -> false;
 		};
 	}
 }

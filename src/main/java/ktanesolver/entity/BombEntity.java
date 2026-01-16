@@ -26,9 +26,9 @@ public class BombEntity {
 
 	private String serialNumber;
 
-	@JsonProperty("aaBatteryCount")
+	@JsonProperty ("aaBatteryCount")
 	private int aaBatteryCount;
-	@JsonProperty("dBatteryCount")
+	@JsonProperty ("dBatteryCount")
 	private int dBatteryCount;
 
 	@ElementCollection
@@ -102,12 +102,12 @@ public class BombEntity {
 		return serialNumber.chars().anyMatch(c -> "AEIOU".indexOf(c) >= 0);
 	}
 
-    public boolean hasPort(PortType portType) {
-        return portPlates.stream().anyMatch(plate -> plate.getPorts().contains(portType));
-    }
+	public boolean hasPort(PortType portType) {
+		return portPlates.stream().anyMatch(plate -> plate.getPorts().contains(portType));
+	}
 
 	@JsonIgnore
-    public int getBatteryHolders() {
-        return (int) (aaBatteryCount / 2.0 + dBatteryCount);
-    }
+	public int getBatteryHolders() {
+		return (int)(aaBatteryCount / 2.0 + dBatteryCount);
+	}
 }

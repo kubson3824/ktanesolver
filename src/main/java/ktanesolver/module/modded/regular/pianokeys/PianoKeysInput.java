@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.pianokeys;
 
 import ktanesolver.logic.ModuleInput;

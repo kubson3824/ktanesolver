@@ -14,6 +14,6 @@ public interface ModuleSolver<I extends ModuleInput, O extends ModuleOutput> {
 	Class<I> inputType();
 
 	SolveResult<O> solve(RoundEntity round, BombEntity bomb, ModuleEntity module, I input);
-	
+
 	ModuleCatalogDto getCatalogInfo();
 }

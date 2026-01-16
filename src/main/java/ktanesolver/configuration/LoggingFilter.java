@@ -1,3 +1,4 @@
+
 package ktanesolver.configuration;
 
 import jakarta.servlet.FilterChain;
@@ -17,62 +18,44 @@ import java.io.UnsupportedEncodingException;
 @Component
 public class LoggingFilter extends OncePerRequestFilter {
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+		ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
+		ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
 
-        long startTime = System.currentTimeMillis();
-        
-        try {
-            filterChain.doFilter(requestWrapper, responseWrapper);
-        } finally {
-            long timeTaken = System.currentTimeMillis() - startTime;
-            
-            String requestBody = getStringValue(requestWrapper.getContentAsByteArray(),
-                    request.getCharacterEncoding());
-            String responseBody = getStringValue(responseWrapper.getContentAsByteArray(),
-                    response.getCharacterEncoding());
+		long startTime = System.currentTimeMillis();
 
-            log.info(
-                    "\n" +
-                    "=== REQUEST ===\n" +
-                    "METHOD: {} | URI: {} | QUERY: {}\n" +
-                    "HEADERS: {}\n" +
-                    "REQUEST BODY: {}\n" +
-                    "=== RESPONSE ===\n" +
-                    "STATUS: {} | TIME: {}ms\n" +
-                    "RESPONSE BODY: {}",
-                    request.getMethod(),
-                    request.getRequestURI(),
-                    request.getQueryString() == null ? "" : request.getQueryString(),
-                    getRequestHeaders(request),
-                    requestBody,
-                    response.getStatus(),
-                    timeTaken,
-                    responseBody
-            );
+		try {
+			filterChain.doFilter(requestWrapper, responseWrapper);
+		}
+		finally {
+			long timeTaken = System.currentTimeMillis() - startTime;
 
-            responseWrapper.copyBodyToResponse();
-        }
-    }
+			String requestBody = getStringValue(requestWrapper.getContentAsByteArray(), request.getCharacterEncoding());
+			String responseBody = getStringValue(responseWrapper.getContentAsByteArray(), response.getCharacterEncoding());
 
-    private String getStringValue(byte[] contentAsByteArray, String characterEncoding) {
-        try {
-            return new String(contentAsByteArray, 0, contentAsByteArray.length, characterEncoding);
-        } catch (UnsupportedEncodingException e) {
-            log.error("Error reading request/response body", e);
-        }
-        return "";
-    }
+			log.info(
+				"\n" + "=== REQUEST ===\n" + "METHOD: {} | URI: {} | QUERY: {}\n" + "HEADERS: {}\n" + "REQUEST BODY: {}\n" + "=== RESPONSE ===\n" + "STATUS: {} | TIME: {}ms\n" + "RESPONSE BODY: {}",
+				request.getMethod(), request.getRequestURI(), request.getQueryString() == null ? "" : request.getQueryString(), getRequestHeaders(request), requestBody, response.getStatus(),
+				timeTaken, responseBody);
 
-    private String getRequestHeaders(HttpServletRequest request) {
-        StringBuilder headers = new StringBuilder();
-        request.getHeaderNames().asIterator()
-                .forEachRemaining(headerName -> 
-                    headers.append(headerName).append(": ").append(request.getHeader(headerName)).append(", ")
-                );
-        return headers.toString();
-    }
+			responseWrapper.copyBodyToResponse();
+		}
+	}
+
+	private String getStringValue(byte[] contentAsByteArray, String characterEncoding) {
+		try {
+			return new String(contentAsByteArray, characterEncoding);
+		}
+		catch(UnsupportedEncodingException e) {
+			log.error("Error reading request/response body", e);
+		}
+		return "";
+	}
+
+	private String getRequestHeaders(HttpServletRequest request) {
+		StringBuilder headers = new StringBuilder();
+		request.getHeaderNames().asIterator().forEachRemaining(headerName -> headers.append(headerName).append(": ").append(request.getHeader(headerName)).append(", "));
+		return headers.toString();
+	}
 }

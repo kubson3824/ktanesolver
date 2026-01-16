@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.emojiMath;
 
 import ktanesolver.logic.ModuleInput;

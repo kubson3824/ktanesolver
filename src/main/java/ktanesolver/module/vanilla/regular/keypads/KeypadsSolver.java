@@ -17,14 +17,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.KEYPADS,
-		id = "keypads",
-		name = "Keypads",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Press buttons in the correct sequence",
-		tags = {"memory", "pattern"}
-)
+@ModuleInfo (type = ModuleType.KEYPADS, id = "keypads", name = "Keypads", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Press buttons in the correct sequence", tags = {
+	"memory", "pattern"})
 public class KeypadsSolver extends AbstractModuleSolver<KeypadsInput, KeypadsOutput> {
 	private static final int REQUIRED_SYMBOLS = 4;
 	private static final List<Set<KeypadSymbol>> COLUMN_SETS;

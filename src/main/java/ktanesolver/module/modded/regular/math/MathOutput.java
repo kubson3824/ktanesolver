@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.math;
 
 import ktanesolver.logic.ModuleOutput;

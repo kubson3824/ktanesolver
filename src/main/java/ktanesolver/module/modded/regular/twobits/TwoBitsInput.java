@@ -1,3 +1,4 @@
+
 package ktanesolver.module.modded.regular.twobits;
 
 import ktanesolver.logic.ModuleInput;

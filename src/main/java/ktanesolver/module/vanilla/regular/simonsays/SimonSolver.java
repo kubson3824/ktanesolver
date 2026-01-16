@@ -14,14 +14,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo(
-		type = ModuleType.SIMON_SAYS,
-		id = "simon_says",
-		name = "Simon Says",
-		category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
-		description = "Repeat the color sequence following the strike count",
-		tags = {"blue", "red", "yellow", "green", "blinking", "tone"}
-)
+@ModuleInfo (type = ModuleType.SIMON_SAYS, id = "simon_says", name = "Simon Says", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Repeat the color sequence following the strike count", tags = {
+	"blue", "red", "yellow", "green", "blinking", "tone"})
 public class SimonSolver extends AbstractModuleSolver<SimonInput, SimonOutput> {
 
 	@Override
@@ -30,7 +24,6 @@ public class SimonSolver extends AbstractModuleSolver<SimonInput, SimonOutput> {
 		int strikes = bomb.getStrikes();
 
 		List<SimonColor> presses = input.flashes().stream().map(color -> mapColor(color, hasVowel, strikes)).toList();
-
 
 		return success(new SimonOutput(presses), input.flashes().size() == presses.size());
 	}

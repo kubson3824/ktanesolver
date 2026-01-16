@@ -1,3 +1,5 @@
+
 package ktanesolver.module.modded.regular.colorflash;
 
-public record ColorFlashEntry(String word, String color) {}
+public record ColorFlashEntry(String word, String color) {
+}
