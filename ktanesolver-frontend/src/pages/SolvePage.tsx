@@ -26,6 +26,7 @@ import CombinationLockSolver from "../components/CombinationLockSolver";
 import RoundKeypadSolver from "../components/RoundKeypadSolver";
 import ListeningSolver from "../components/ListeningSolver";
 import ForeignExchangeSolver from "../components/ForeignExchangeSolver";
+import OrientationCubeSolver from "../components/OrientationCubeSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -288,6 +289,8 @@ export default function SolvePage() {
                         <ListeningSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "FOREIGN_EXCHANGE_RATES" ? (
                         <ForeignExchangeSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "ORIENTATION_CUBE" ? (
+                        <OrientationCubeSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

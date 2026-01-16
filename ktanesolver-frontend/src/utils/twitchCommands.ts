@@ -158,6 +158,20 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       // For Foreign Exchange, we provide the key position
       return `!${moduleNumber} key ${result.keyPosition}`;
 
+    case ModuleType.ORIENTATION_CUBE:
+      // For Orientation Cube, we provide the rotation sequence
+      if (result.rotations && Array.isArray(result.rotations)) {
+        const rotationMap: Record<string, string> = {
+          'ROTATE_LEFT': 'L',
+          'ROTATE_RIGHT': 'R',
+          'ROTATE_CLOCKWISE': 'CW',
+          'ROTATE_COUNTERCLOCKWISE': 'CCW'
+        };
+        const rotations = result.rotations.map((rot: string) => rotationMap[rot] || rot).join(' ');
+        return `!${moduleNumber} rotate ${rotations}`;
+      }
+      return `!${moduleNumber} rotate unknown`;
+
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -187,6 +201,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.COMBINATION_LOCK]: "Combination Lock",
     [ModuleType.ROUND_KEYPAD]: "Round Keypad",
     [ModuleType.LISTENING]: "Listening",
+    [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
   };
   
   return displayNames[moduleType] || moduleType;

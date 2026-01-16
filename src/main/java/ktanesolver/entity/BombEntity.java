@@ -73,11 +73,18 @@ public class BombEntity {
 		return aaBatteryCount + dBatteryCount;
 	}
 
+	@JsonIgnore
+	public boolean hasIndicator(String indicator) {
+		return indicators.containsKey(indicator);
+	}
+
+	@JsonIgnore
 	public boolean isIndicatorLit(String indicator) {
 		Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
 		return indicatorStatus != null && indicatorStatus;
 	}
 
+	@JsonIgnore
 	public boolean isIndicatorUnlit(String indicator) {
 		Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
 		return indicatorStatus != null && !indicatorStatus;
@@ -110,4 +117,9 @@ public class BombEntity {
 	public int getBatteryHolders() {
 		return (int)(aaBatteryCount / 2.0 + dBatteryCount);
 	}
+
+	@JsonIgnore
+    public boolean serialHasCharacter(char character) {
+		return serialNumber.indexOf(character) >= 0;
+    }
 }
