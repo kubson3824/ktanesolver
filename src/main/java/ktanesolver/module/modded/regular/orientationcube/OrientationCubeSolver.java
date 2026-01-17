@@ -1,12 +1,16 @@
 
 package ktanesolver.module.modded.regular.orientationcube;
 
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
+import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +20,9 @@ import static ktanesolver.module.modded.regular.orientationcube.OrientationCubeR
 import static ktanesolver.module.modded.regular.orientationcube.OrientationCubeRotation.ROTATE_LEFT;
 import static ktanesolver.module.modded.regular.orientationcube.OrientationCubeRotation.ROTATE_RIGHT;
 
+@Service
+@ModuleInfo (type = ModuleType.ORIENTATION_CUBE, id = "orientation_cube", name = "Orientation Cube", category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR, description = "Rotate a cube in 3D space in such a way that specific faces move to specific new locations.", tags = {
+	"top", "reset", "left-arrow", "right-arrow", "rotate-clockwise", "rotate-anticlockwise"})
 public class OrientationCubeSolver extends AbstractModuleSolver<OrientationCubeInput, OrientationCubeOutput> {
 
 	private static final OrientationCubeRotation CW = ROTATE_CLOCKWISE;
