@@ -79,6 +79,7 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.COMBINATION_LOCK]: "Combination Lock",
     [ModuleType.LISTENING]: "Listening",
     [ModuleType.FOREIGN_EXCHANGE_RATES]: "Foreign Exchange Rates",
+    [ModuleType.MORSEMATICS]: "Morsematics",
 };
 
 const attachManualUrl = (moduleType: ModuleType) => {
