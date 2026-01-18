@@ -29,6 +29,7 @@ import ForeignExchangeSolver from "../components/ForeignExchangeSolver";
 import OrientationCubeSolver from "../components/OrientationCubeSolver";
 import MorsematicsSolver from "../components/MorsematicsSolver";
 import ConnectionCheckSolver from "../components/ConnectionCheckSolver";
+import LetterKeysSolver from "../components/LetterKeysSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -297,6 +298,8 @@ export default function SolvePage() {
                         <MorsematicsSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "CONNECTION_CHECK" ? (
                         <ConnectionCheckSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "LETTER_KEYS" ? (
+                        <LetterKeysSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

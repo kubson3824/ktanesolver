@@ -172,6 +172,10 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${moduleNumber} rotate unknown`;
 
+    case ModuleType.LETTER_KEYS:
+      // For Letter Keys, we provide the letter to press
+      return `!${moduleNumber} press ${result.letter}`;
+
     default:
       return `!${moduleNumber} action ${result.action || 'unknown'}`;
   }
@@ -202,6 +206,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.ROUND_KEYPAD]: "Round Keypad",
     [ModuleType.LISTENING]: "Listening",
     [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
+    [ModuleType.LETTER_KEYS]: "Letter Keys",
   };
   
   return displayNames[moduleType] || moduleType;
