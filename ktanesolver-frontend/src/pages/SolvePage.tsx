@@ -30,6 +30,7 @@ import OrientationCubeSolver from "../components/OrientationCubeSolver";
 import MorsematicsSolver from "../components/MorsematicsSolver";
 import ConnectionCheckSolver from "../components/ConnectionCheckSolver";
 import LetterKeysSolver from "../components/LetterKeysSolver";
+import ForgetMeNotSolver from "../components/ForgetMeNotSolver";
 import { StrikeButton } from "../components/StrikeButton";
 import { StrikeIndicator } from "../components/StrikeIndicator";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
@@ -50,7 +51,7 @@ export default function SolvePage() {
   const currentBomb = useRoundStore((state) => state.currentBomb);
   const currentModule = useRoundStore((state) => state.currentModule);
   const selectBomb = useRoundStore((state) => state.selectBomb);
-  const selectModule = useRoundStore((state) => state.selectModule);
+  const selectModuleById = useRoundStore((state) => state.selectModuleById);
   const clearModule = useRoundStore((state) => state.clearModule);
   const manualUrl = useRoundStore((state) => state.manualUrl);
   const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
@@ -78,7 +79,7 @@ export default function SolvePage() {
     
     modules.forEach((module) => {
       // Check if module type is needy
-      const isNeedy = ["FORGET_ME_NOT", "VENTING_GAS", "CAPACITOR_DISCHARGE", "KNOBS"].includes(module.type);
+      const isNeedy = ["VENTING_GAS", "CAPACITOR_DISCHARGE", "KNOBS"].includes(module.type);
       if (isNeedy) {
         needy.push(module);
       } else {
@@ -91,7 +92,7 @@ export default function SolvePage() {
 
   const handleModuleClick = (module: ModuleEntity) => {
     if (!currentBomb) return;
-    selectModule(currentBomb.id, module.type);
+    selectModuleById(currentBomb.id, module.id);
   };
 
   const handleBack = () => {
@@ -186,16 +187,15 @@ export default function SolvePage() {
                       </div>
                       <p className="text-sm text-base-content/70 mb-4">
                         {module.solved
-                          ? "This module has already been cleared."
+                          ? "This module has been cleared. Tap to review."
                           : "Tap to open the live solving cockpit."}
                       </p>
                       <div className="card-actions">
                         <button
                           className="btn btn-primary btn-sm"
                           onClick={() => handleModuleClick(module)}
-                          disabled={module.solved}
                         >
-                          {module.solved ? "Solved" : "Solve module"}
+                          {module.solved ? "Review Module" : "Solve module"}
                         </button>
                       </div>
                     </div>
@@ -300,6 +300,8 @@ export default function SolvePage() {
                         <ConnectionCheckSolver bomb={currentBomb} />
                       ) : currentModule.moduleType === "LETTER_KEYS" ? (
                         <LetterKeysSolver bomb={currentBomb} />
+                      ) : currentModule.moduleType === "FORGET_ME_NOT" ? (
+                        <ForgetMeNotSolver bomb={currentBomb} />
                       ) : (
                         <div className="text-center py-12">
                           <p className="text-sm text-secondary mb-2">Coming soon</p>

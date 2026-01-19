@@ -40,4 +40,9 @@ public class ModuleController {
 
 		return moduleRepo.saveAll(modules);
 	}
+
+	@GetMapping("/{moduleId}")
+	public ModuleEntity getModule(@PathVariable UUID bombId, @PathVariable UUID moduleId) {
+		return moduleRepo.findById(moduleId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));
+	}
 }

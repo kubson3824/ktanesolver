@@ -15,8 +15,7 @@ type RoundStoreState = {
     round?: RoundEntity;
     allRounds?: RoundEntity[];
     currentBomb?: BombEntity;
-    currentModule?: {
-        id: string;
+    currentModule?: ModuleEntity & {
         bomb: BombEntity;
         moduleType: ModuleType;
     };
@@ -43,6 +42,7 @@ type RoundStoreActions = {
     startRound: () => Promise<RoundEntity>;
     selectBomb: (bombId: string) => void;
     selectModule: (bombId: string, moduleType: ModuleType) => void;
+    selectModuleById: (bombId: string, moduleId: string) => void;
     clearModule: () => void;
     setManualUrl: (url: string) => void;
     markModuleSolved: (bombId: string, moduleId: string) => void;
@@ -333,7 +333,41 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 const module = bomb.modules.find((m) => m.type === moduleType);
                 if (!module) return;
                 set({
-                    currentModule: {id: module.id, bomb, moduleType},
+                    currentModule: {...module, bomb, moduleType},
+                    manualUrl: attachManualUrl(moduleType),
+                });
+            },
+
+            selectModuleById: async (bombId, moduleId) => {
+                const {round} = get();
+                if (!round) return;
+                const bomb = round.bombs.find((b) => b.id === bombId);
+                if (!bomb) return;
+                
+                // Try to find module in local state first
+                let module = bomb.modules.find((m) => m.id === moduleId);
+                
+                // If not found locally, fetch from API
+                if (!module) {
+                    try {
+                        const fetchedModule = await withErrorWrapping(async () => {
+                            const {data} = await api.get<ModuleEntity>(
+                                `/bombs/${bombId}/modules/${moduleId}`
+                            );
+                            return data;
+                        });
+                        module = fetchedModule;
+                    } catch (error) {
+                        console.error("Failed to fetch module:", error);
+                        return;
+                    }
+                }
+                
+                if (!module) return;
+                
+                const moduleType = module.type as ModuleType;
+                set({
+                    currentModule: {...module, bomb, moduleType},
                     manualUrl: attachManualUrl(moduleType),
                 });
             },
