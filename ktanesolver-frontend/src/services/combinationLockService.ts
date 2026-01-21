@@ -1,7 +1,6 @@
 import { api, withErrorWrapping } from "../lib/api";
 
-export interface CombinationLockInput {
-}
+export type CombinationLockInput = object;
 
 export interface CombinationLockOutput {
   solved: boolean;

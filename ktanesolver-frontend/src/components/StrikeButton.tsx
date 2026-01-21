@@ -1,6 +1,5 @@
 import React from 'react';
 import { useRoundStore } from '../store/useRoundStore';
-import { BombStatus } from '../types';
 
 interface StrikeButtonProps {
   bombId?: string;
@@ -28,10 +27,6 @@ export const StrikeButton: React.FC<StrikeButtonProps> = ({
       console.error('Failed to add strike:', error);
     }
   };
-
-  const bomb = bombId 
-    ? useRoundStore.getState().round?.bombs.find(b => b.id === bombId)
-    : currentBomb;
 
   const isDisabled = loading || (!bombId && !currentBomb);
 

@@ -45,7 +45,6 @@ export default function SemaphoreFlagSelector({ onPositionSelect, disabled = fal
 
   const renderFlag = (angle: number, isLeft: boolean) => {
     const flagColor = isLeft ? 'bg-red-500' : 'bg-yellow-500';
-    const rotationClass = `rotate-${angle}`;
 
     return (
       <div
@@ -60,7 +59,7 @@ export default function SemaphoreFlagSelector({ onPositionSelect, disabled = fal
     );
   };
 
-  const handlePositionClick = (pos: any) => {
+  const handlePositionClick = (pos: { id: string; leftFlagAngle: number; rightFlagAngle: number; letter: string; number: number | null; isControl: boolean; character: string }) => {
     if (pos.isControl) {
       // Handle control characters
       if (pos.id === 'NUMERALS') {

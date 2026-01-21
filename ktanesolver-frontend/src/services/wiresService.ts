@@ -2,7 +2,7 @@ import {api, withErrorWrapping} from "../lib/api";
 
 export interface WiresSolveRequest {
     input: {
-        wires: ("red" | "blue" | "black" | "yellow" | "white")[];
+        wires: ("RED" | "BLUE" | "BLACK" | "YELLOW" | "WHITE")[];
     }
 }
 

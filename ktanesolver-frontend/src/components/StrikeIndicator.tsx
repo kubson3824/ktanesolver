@@ -12,7 +12,6 @@ export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({
   className = '' 
 }) => {
   const { round, currentBomb } = useRoundStore();
-  const [flash, setFlash] = useState(false);
   const [previousStrikes, setPreviousStrikes] = useState(0);
 
   const bomb = bombId 
@@ -21,11 +20,11 @@ export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({
 
   useEffect(() => {
     if (bomb && bomb.strikes > previousStrikes) {
-      setFlash(true);
       setPreviousStrikes(bomb.strikes);
-      setTimeout(() => setFlash(false), 500);
+      const timer = setTimeout(() => setPreviousStrikes(bomb.strikes), 500);
+      return () => clearTimeout(timer);
     }
-  }, [bomb?.strikes, previousStrikes]);
+  }, [bomb, previousStrikes]);
 
   if (!bomb) return null;
 

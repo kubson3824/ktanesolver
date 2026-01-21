@@ -2,7 +2,7 @@ import { ModuleType } from "../types";
 
 export interface TwitchCommandData {
   moduleType: ModuleType;
-  result: any;
+  result: unknown;
   moduleNumber: number;
 }
 
@@ -11,21 +11,21 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
   
   switch (moduleType) {
     case ModuleType.WIRES:
-      return `!${moduleNumber} cut ${result.wirePosition + 1}`;
+      return `!${moduleNumber} cut ${(result as { wirePosition: number }).wirePosition + 1}`;
     
     case ModuleType.BUTTON:
-      if (result.hold) {
+      if ((result as { hold: boolean }).hold) {
         return `!${moduleNumber} hold`;
       } else {
         return `!${moduleNumber} press`;
       }
     
     case ModuleType.MEMORY:
-      return `!${moduleNumber} press ${result.position}`;
+      return `!${moduleNumber} press ${(result as { position: string }).position}`;
     
     case ModuleType.KEYPADS:
       // Assuming result has the button to press - convert position to TL TR BL BR format
-      if (result.position) {
+      if ((result as { position: string }).position) {
         const positionMap: Record<string, string> = {
           'TOP_LEFT': 'TL',
           'TOP_RIGHT': 'TR',
@@ -40,23 +40,23 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
           '2': 'BL',
           '3': 'BR'
         };
-        const position = positionMap[result.position.toString().toUpperCase()] || result.position;
+        const position = positionMap[(result as { position: string }).position.toString().toUpperCase()] || (result as { position: string }).position;
         return `!${moduleNumber} press ${position}`;
       }
       // Fallback to label if position not available
-      return `!${moduleNumber} press ${result.label || result.button || 'unknown'}`;
+      return `!${moduleNumber} press ${(result as { label?: string; button?: string }).label || (result as { label?: string; button?: string }).button || 'unknown'}`;
     
     case ModuleType.SIMON_SAYS:
       // Assuming result has the sequence or color to press
-      if (result.sequence) {
-        return `!${moduleNumber} sequence ${result.sequence.join(' ')}`;
+      if ((result as { sequence: string[] }).sequence) {
+        return `!${moduleNumber} sequence ${(result as { sequence: string[] }).sequence.join(' ')}`;
       } else {
-        return `!${moduleNumber} press ${result.color}`;
+        return `!${moduleNumber} press ${(result as { color: string }).color}`;
       }
     
     case ModuleType.MORSE_CODE:
       // Assuming result has the word to transmit
-      return `!${moduleNumber} transmit ${result.word}`;
+      return `!${moduleNumber} transmit ${(result as { word: string }).word}`;
     
     case ModuleType.FORGET_ME_NOT:
       // Assuming result has the action and parameter

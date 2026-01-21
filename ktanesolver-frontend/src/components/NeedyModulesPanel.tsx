@@ -1,8 +1,8 @@
 import {useState} from "react";
 import type {ModuleEntity} from "../types";
-import KnobsSolver from "./KnobsSolver";
-import CapacitorDischargeSolver from "./CapacitorDischargeSolver";
-import VentingGasSolver from "./VentingGasSolver";
+import KnobsSolver from "./solvers/KnobsSolver";
+import CapacitorDischargeSolver from "./solvers/CapacitorDischargeSolver";
+import VentingGasSolver from "./solvers/VentingGasSolver";
 
 const formatModuleName = (type: string) =>
     type
@@ -45,9 +45,9 @@ export default function NeedyModulesPanel({
             case "KNOBS":
                 return <KnobsSolver bomb={bomb} roundId={roundId} bombId={bombId} moduleId={selectedModule.id}/>;
             case "CAPACITOR_DISCHARGE":
-                return <CapacitorDischargeSolver bomb={bomb}/>;
+                return <CapacitorDischargeSolver/>;
             case "VENTING_GAS":
-                return <VentingGasSolver bomb={bomb}/>;
+                return <VentingGasSolver/>;
             default:
                 return (
                     <div className="text-center py-12">
