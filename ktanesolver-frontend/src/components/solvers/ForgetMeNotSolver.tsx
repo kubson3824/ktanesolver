@@ -5,7 +5,7 @@ import { solveForgetMeNot as solveForgetMeNotApi } from "../../services/forgetMe
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
-  useSolverState,
+  useSolver,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
@@ -32,10 +32,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
   const [twitchCommand, setTwitchCommand] = useState<string>("");
   const [reminderShown, setReminderShown] = useState<boolean>(false);
 
-  const { isLoading, error, setIsLoading, setError, clearError, reset: resetSolverState } = useSolverState();
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved, moduleNumber } = useSolver();
 
   // Show reminder when component mounts
   useEffect(() => {
@@ -101,6 +98,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         if (displayNumbers.length > 0 && displayNumbers[displayNumbers.length - 1] === -1) {
           setAllModulesCompleted(true);
           setShowSequence(true);
+          setIsSolved(true);
           setTwitchCommand(generateTwitchCommand({
             moduleType: ModuleType.FORGET_ME_NOT,
             result: { sequence: calculatedNumbers },
@@ -152,6 +150,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       if (allModulesCompleted && displayValue === -1) {
         // All modules completed, show final sequence
         setShowSequence(true);
+        setIsSolved(true);
         setTwitchCommand(generateTwitchCommand({
           moduleType: ModuleType.FORGET_ME_NOT,
           result: { sequence: newSequence },
@@ -206,6 +205,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       const newSequence = response.output.sequence;
       setSequence(newSequence);
       setShowSequence(true);
+      setIsSolved(true);
       setTwitchCommand(generateTwitchCommand({
         moduleType: ModuleType.FORGET_ME_NOT,
         result: { sequence: newSequence },
@@ -320,14 +320,14 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
-        isSolveDisabled={!display || showSequence}
+        isSolveDisabled={!display || isSolved}
         isLoading={isLoading}
         solveText={allModulesCompleted ? "Get Sequence" : "Calculate Stage"}
         loadingText={allModulesCompleted ? "Getting Sequence..." : "Calculating..."}
       />
 
       {/* All modules completed button */}
-      {!allModulesCompleted && stages.length > 0 && (
+      {!allModulesCompleted && stages.length > 0 && !isSolved && (
         <div className="mb-4">
           <button
             onClick={handleAllModulesCompleted}

@@ -242,6 +242,19 @@ export default function SetupPage() {
     return (
         <div className="min-h-screen p-10 lg:p-16">
             <div className="max-w-7xl mx-auto grid gap-5">
+                <div className="alert alert-warning mb-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                        <h3 className="font-bold">Important Notice</h3>
+                        <div className="text-sm">
+                            This solver is intended for educational purposes to help learn algorithms and problem-solving techniques. 
+                            The creator does not condone using solvers during actual Keep Talking and Nobody Explodes gameplay. 
+                            The game is designed to be fun and challenging - mistakes are part of the experience!
+                        </div>
+                    </div>
+                </div>
                 <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
                     <div className="card-body">
                         <div className="flex flex-col lg:flex-row gap-8 items-center">

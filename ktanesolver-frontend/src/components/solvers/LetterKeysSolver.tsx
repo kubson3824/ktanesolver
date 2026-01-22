@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveLetterKeys as solveLetterKeysApi } from "../../services/letterKeysService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface LetterKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -13,15 +20,52 @@ interface LetterKeysSolverProps {
 export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
   const [number, setNumber] = useState<string>("");
   const [result, setResult] = useState<string>("");
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { number?: string };
+      
+      if (moduleState.number) {
+        setNumber(moduleState.number);
+      }
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { letter?: string };
+      
+      if (solution.letter) {
+        setResult(`Press button ${solution.letter}`);
+        setIsSolved(true);
+
+        // Generate twitch command from the solution
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.LETTER_KEYS,
+          result: { letter: solution.letter },
+          moduleNumber
+        });
+        setTwitchCommand(command);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleSolve = async () => {
     const numValue = parseInt(number);
@@ -37,7 +81,7 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const response = await solveLetterKeysApi(round.id, bomb.id, currentModule.id, {
@@ -69,21 +113,32 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
     // Only allow numbers and limit to 2 digits
     if (value === "" || (/^\d{0,2}$/.test(value))) {
       setNumber(value);
-      if (error) setError("");
+      if (error) clearError();
+      
+      // Save state to module
+      if (currentModule) {
+        const moduleState = { number: value };
+        useRoundStore.getState().round?.bombs.forEach(bomb => {
+          if (bomb.id === currentModule.bomb.id) {
+            const module = bomb.modules.find(m => m.id === currentModule.id);
+            if (module) {
+              module.state = moduleState;
+            }
+          }
+        });
+      }
     }
   };
 
   const reset = () => {
     setNumber("");
     setResult("");
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
       
       {/* Module visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
@@ -118,53 +173,21 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
         </div>
       </div>
 
-      {/* Serial number and batteries display */}
-      <div className="bg-base-200 rounded p-3 mb-4">
-        <p className="text-sm text-base-content/70">
-          Serial Number: <span className="font-mono font-bold">{bomb?.serialNumber || "Unknown"}</span>
-        </p>
-        <p className="text-sm text-base-content/70">
-          Batteries: <span className="font-mono font-bold">{(bomb?.aaBatteryCount ?? 0) + (bomb?.dBatteryCount ?? 0)}</span>
-        </p>
-        <p className="text-sm text-base-content/70">
-          Indicators: <span className="font-mono font-bold">{bomb?.indicators ? Object.entries(bomb.indicators).filter(([, value]) => value).map(([key]) => key).join(", ") || "None" : "None"}</span>
-        </p>
-      </div>
+
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={handleSolve}
-          className="btn btn-primary flex-1"
-          disabled={!number || isLoading || isSolved}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Solve"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!number}
+        isLoading={isLoading}
+        solveText="Solve"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Result */}
       {result && (
@@ -186,33 +209,8 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
-      {twitchCommand && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p>Click on the display to enter the two-digit number shown on the module. The solver will tell you which button to press (A, B, C, or D).</p>
-      </div>
-    </div>
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
+    </SolverLayout>
   );
 }

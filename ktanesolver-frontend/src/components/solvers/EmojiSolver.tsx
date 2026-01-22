@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveEmojiMath, type EmojiMathOutput, type EmojiMathInput } from "../../services/emojiMathService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface EmojiSolverProps {
   bomb: BombEntity | null | undefined;
@@ -13,21 +20,84 @@ interface EmojiSolverProps {
 export default function EmojiSolver({ bomb }: EmojiSolverProps) {
   const [emojiEquation, setEmojiEquation] = useState<string>("");
   const [result, setResult] = useState<EmojiMathOutput | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        emojiEquation,
+        result,
+        twitchCommand
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [emojiEquation, result, twitchCommand]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        emojiEquation?: string;
+        result?: EmojiMathOutput | null;
+        twitchCommand?: string;
+      };
+      
+      if (moduleState.emojiEquation !== undefined) setEmojiEquation(moduleState.emojiEquation);
+      if (moduleState.result !== undefined) setResult(moduleState.result);
+      if (moduleState.twitchCommand) setTwitchCommand(moduleState.twitchCommand);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        result?: EmojiMathOutput;
+        isSolved?: boolean;
+      };
+      
+      if (solution.result) {
+        setResult(solution.result);
+      }
+      if (solution.isSolved) {
+        setIsSolved(true);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleEmojiEquationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow emojis and operators
     setEmojiEquation(value);
-    setError("");
+    clearError();
   };
 
   const solveEmojiMathModule = async () => {
@@ -42,7 +112,7 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const input: EmojiMathInput = {
@@ -63,6 +133,18 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
           moduleNumber
         });
         setTwitchCommand(command);
+        
+        // Save solution
+        if (currentModule) {
+          useRoundStore.getState().round?.bombs.forEach(bomb => {
+            if (bomb.id === currentModule.bomb.id) {
+              const module = bomb.modules.find(m => m.id === currentModule.id);
+              if (module) {
+                module.solution = { result: response.output };
+              }
+            }
+          });
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve emoji equation");
@@ -74,9 +156,8 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
   const reset = () => {
     setEmojiEquation("");
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -88,14 +169,12 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
   const insertEmoji = (emoji: string) => {
     if (!isLoading && !isSolved) {
       setEmojiEquation(prev => prev + emoji);
-      setError("");
+      clearError();
     }
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Emoji Math Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">EMOJI MATH MODULE</h3>
@@ -198,40 +277,20 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
         </div>
       </div>
 
-      {/* Solve button */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={solveEmojiMathModule}
-          className="btn btn-primary flex-1"
-          disabled={!emojiEquation.trim() || isLoading || isSolved}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Calculating..." : "Press OK"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
+      {/* Controls */}
+      <SolverControls
+        onSolve={solveEmojiMathModule}
+        onReset={reset}
+        isSolveDisabled={!emojiEquation.trim()}
+        isLoading={isLoading}
+        solveText="Press OK"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Results */}
       {result && (
@@ -258,27 +317,9 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
+      {/* Twitch command display */}
       {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TwitchCommandDisplay command={twitchCommand} />
       )}
 
       {/* Instructions */}

@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveAnagrams, type AnagramsSolveRequest, type AnagramsSolveResponse } from "../../services/anagramsService";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  BombInfoDisplay,
+  SolverControls,
+  ErrorAlert,
+  TwitchCommandDisplay
+} from "../common";
 
 interface AnagramsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -13,9 +20,6 @@ interface AnagramsSolverProps {
 export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
   const [displayWord, setDisplayWord] = useState<string>("");
   const [result, setResult] = useState<AnagramsSolveResponse["output"] | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
   const currentModule = useRoundStore((state) => state.currentModule);
@@ -23,13 +27,68 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
   const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
   const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
+  const { 
+    isLoading, 
+    error, 
+    isSolved, 
+    setIsLoading, 
+    setError, 
+    setIsSolved, 
+    clearError, 
+    reset: resetSolverState 
+  } = useSolver();
+
   const handleDisplayWordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
     if (value.length <= 6) {
       setDisplayWord(value);
-      setError("");
+      if (error) clearError();
+      
+      // Save state to module
+      if (currentModule) {
+        const moduleState = { displayWord: value };
+        useRoundStore.getState().round?.bombs.forEach(bomb => {
+          if (bomb.id === currentModule.bomb.id) {
+            const module = bomb.modules.find(m => m.id === currentModule.id);
+            if (module) {
+              module.state = moduleState;
+            }
+          }
+        });
+      }
     }
   };
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { displayWord?: string };
+      
+      if (moduleState.displayWord) {
+        setDisplayWord(moduleState.displayWord);
+      }
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as AnagramsSolveResponse["output"];
+      
+      if (solution) {
+        setResult(solution);
+        setIsSolved(true);
+
+        if (solution.possibleSolutions.length > 0) {
+          // Generate twitch command from the solution
+          const command = generateTwitchCommand({
+            moduleType: ModuleType.ANAGRAMS,
+            result: { possibleSolutions: solution.possibleSolutions },
+            moduleNumber
+          });
+          setTwitchCommand(command);
+        }
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const solveAnagramsModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -42,8 +101,8 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
       return;
     }
 
+    clearError();
     setIsLoading(true);
-    setError("");
 
     try {
       const input: AnagramsSolveRequest["input"] = {
@@ -68,7 +127,7 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
         setTwitchCommand(command);
       }
     } catch (err) {
-      setError((err as Error).message || "Failed to solve anagrams");
+      setError(err instanceof Error ? err.message : "Failed to solve anagrams");
     } finally {
       setIsLoading(false);
     }
@@ -77,14 +136,13 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
   const reset = () => {
     setDisplayWord("");
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
+      <BombInfoDisplay bomb={bomb} />
       
       {/* Anagrams Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
@@ -130,40 +188,17 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
         </div>
       </div>
 
-      {/* Solve button */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={solveAnagramsModule}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved || displayWord.length < 3}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Find Anagrams"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      {/* Controls */}
+      <SolverControls
+        onSolve={solveAnagramsModule}
+        onReset={reset}
+        isSolveDisabled={displayWord.length < 3}
+        isLoading={isLoading}
+        solveText="Find Anagrams"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Results */}
       {result && (
@@ -203,28 +238,8 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
-      {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">

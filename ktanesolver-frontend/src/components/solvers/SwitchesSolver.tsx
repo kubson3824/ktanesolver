@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveSwitches, type SwitchesInput, type SwitchesOutput } from "../../services/switchesService";
-import ModuleNumberInput from "../ModuleNumberInput";
+import SolverLayout from "../common/SolverLayout";
+import BombInfoDisplay from "../common/BombInfoDisplay";
+import SolverControls from "../common/SolverControls";
+import ErrorAlert from "../common/ErrorAlert";
+import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
+import { useSolver } from "../../hooks/useSolver";
 
 interface SwitchesSolverProps {
   bomb: BombEntity | null | undefined;
@@ -14,9 +19,6 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
   const [currentSwitches, setCurrentSwitches] = useState<boolean[]>([false, false, false, false, false]);
   const [ledPositions, setLedPositions] = useState<boolean[]>([false, false, false, false, false]);
   const [result, setResult] = useState<SwitchesOutput | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
   const currentModule = useRoundStore((state) => state.currentModule);
@@ -24,13 +26,15 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
   const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
   const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
+  const { isLoading, error, isSolved, clearError, resetSolverState } = useSolver();
+
   const toggleSwitch = (index: number) => {
     if (isLoading || isSolved) return;
     
     const newSwitches = [...currentSwitches];
     newSwitches[index] = !newSwitches[index];
     setCurrentSwitches(newSwitches);
-    setError("");
+    clearError();
   };
 
   const toggleLED = (index: number) => {
@@ -39,17 +43,17 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
     const newLEDs = [...ledPositions];
     newLEDs[index] = !newLEDs[index];
     setLedPositions(newLEDs);
-    setError("");
+    clearError();
   };
 
   const solveSwitchesModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
-      setError("Missing required information");
+      clearError();
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const input: SwitchesInput = {
@@ -64,7 +68,6 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
       setResult(response.output);
       
       if (response.output.solved) {
-        setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         
         const command = generateTwitchCommand({
@@ -73,9 +76,14 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
           moduleNumber
         });
         setTwitchCommand(command);
+        
+        // Save solution to currentModule
+        if (currentModule) {
+          currentModule.solution = response.output;
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve switches module");
+      console.error(err instanceof Error ? err.message : "Failed to solve switches module");
     } finally {
       setIsLoading(false);
     }
@@ -85,14 +93,47 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
     setCurrentSwitches([false, false, false, false, false]);
     setLedPositions([false, false, false, false, false]);
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
+  // Save state to currentModule
+  const saveState = () => {
+    if (currentModule) {
+      currentModule.state = {
+        currentSwitches,
+        ledPositions,
+        result,
+        twitchCommand
+      };
+    }
+  };
+
+  // Restore state from currentModule
+  useEffect(() => {
+    if (currentModule?.state) {
+      const state = currentModule.state as {
+        currentSwitches?: boolean[];
+        ledPositions?: boolean[];
+        result?: SwitchesOutput;
+        twitchCommand?: string;
+      };
+      
+      if (state.currentSwitches) setCurrentSwitches(state.currentSwitches);
+      if (state.ledPositions) setLedPositions(state.ledPositions);
+      if (state.result) setResult(state.result);
+      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+    }
+  }, [currentModule]);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    saveState();
+  }, [currentSwitches, ledPositions, result, twitchCommand]);
+
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
+      <BombInfoDisplay bomb={bomb} />
       
       {/* Switches Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
@@ -157,40 +198,15 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
         </div>
       </div>
 
-      {/* Solve button */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={solveSwitchesModule}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Solve"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={solveSwitchesModule}
+        onReset={reset}
+        isSolved={isSolved}
+        isLoading={isLoading}
+        solveButtonText="Solve"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      <ErrorAlert error={error} />
 
       {/* Results */}
       {result && (
@@ -236,27 +252,8 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
       {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TwitchCommandDisplay command={twitchCommand} />
       )}
 
       {/* Instructions */}
@@ -268,6 +265,6 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
         <p>• The solver will find the shortest path to solve the module</p>
         <p>• Follow the step-by-step instructions to flip switches in order</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

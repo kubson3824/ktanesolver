@@ -4,7 +4,14 @@ import { ModuleType } from "../../types";
 import { solveMorse, type MorseOutput, type MorseCandidate } from "../../services/morseService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface MorseCodeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -33,16 +40,82 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   const [morseInput, setMorseInput] = useState<string>("");
   const [translatedWord, setTranslatedWord] = useState<string>("");
   const [result, setResult] = useState<MorseOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [, setIsSolved] = useState(false);
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        morseInput,
+        translatedWord,
+        result,
+        twitchCommand
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [morseInput, translatedWord, result, twitchCommand]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        morseInput?: string;
+        translatedWord?: string;
+        result?: MorseOutput | null;
+        twitchCommand?: string;
+      };
+      
+      if (moduleState.morseInput !== undefined) setMorseInput(moduleState.morseInput);
+      if (moduleState.translatedWord !== undefined) setTranslatedWord(moduleState.translatedWord);
+      if (moduleState.result !== undefined) setResult(moduleState.result);
+      if (moduleState.twitchCommand !== undefined) setTwitchCommand(moduleState.twitchCommand);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        result?: MorseOutput;
+        isSolved?: boolean;
+      };
+      
+      if (solution.result) {
+        setResult(solution.result);
+        if (solution.isSolved || solution.result.resolved) {
+          setIsSolved(true);
+        }
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   // Translate Morse code to letters
   const translateMorseToWord = (morse: string): string => {
@@ -115,9 +188,9 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
     const translated = translateMorseToWord(morseInput);
     setTranslatedWord(translated);
     setResult(null);
-    setError("");
+    clearError();
     setTwitchCommand("");
-  }, [morseInput]);
+  }, [morseInput, clearError]);
 
   const handleMorseInput = (value: string) => {
     // Only allow dots, dashes, and spaces
@@ -142,7 +215,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const response = await solveMorse(round.id, bomb.id, currentModule.id, {
@@ -150,7 +223,6 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       });
       
       setResult(response.output);
-      setIsSolved(true);
       
       // Generate Twitch command for the highest confidence candidate
       if (response.output.candidates.length > 0) {
@@ -168,7 +240,19 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       
       // Mark module as solved if resolved
       if (response.output.resolved) {
+        setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
+        // Save solution
+        if (currentModule) {
+          useRoundStore.getState().round?.bombs.forEach(bomb => {
+            if (bomb.id === currentModule.bomb.id) {
+              const module = bomb.modules.find(m => m.id === currentModule.id);
+              if (module) {
+                module.solution = { result: response.output, isSolved: true };
+              }
+            }
+          });
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve morse code");
@@ -181,15 +265,12 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
     setMorseInput("");
     setTranslatedWord("");
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Morse Code Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MORSE CODE MODULE</h3>
@@ -258,6 +339,9 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
         </div>
       </div>
 
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
       {/* Controls */}
       <div className="flex gap-3 mb-4">
         <button
@@ -276,25 +360,8 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
         </button>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Results */}
       {result && (
@@ -359,28 +426,8 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
-      {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
@@ -390,6 +437,6 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
         <p>• Space = between letters</p>
         <p>• No spaces needed between dots/dashes</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

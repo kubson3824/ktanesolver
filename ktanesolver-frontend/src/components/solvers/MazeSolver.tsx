@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMaze, type Cell, type Move } from "../../services/mazeService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface MazeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -18,15 +25,84 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
   const [targetPos, setTargetPos] = useState<Cell | null>(null);
   const [placementMode, setPlacementMode] = useState<PlacementMode>('marker1');
   const [result, setResult] = useState<Move[]>([]);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        markers,
+        startPos,
+        targetPos,
+        placementMode
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [markers, startPos, targetPos, placementMode]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        markers?: Cell[];
+        startPos?: Cell;
+        targetPos?: Cell;
+        placementMode?: PlacementMode;
+      };
+      
+      if (moduleState.markers) setMarkers(moduleState.markers);
+      if (moduleState.startPos) setStartPos(moduleState.startPos);
+      if (moduleState.targetPos) setTargetPos(moduleState.targetPos);
+      if (moduleState.placementMode) setPlacementMode(moduleState.placementMode);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { moves?: Move[] };
+      
+      if (solution.moves) {
+        setResult(solution.moves);
+        setIsSolved(true);
+
+        // Generate twitch command from the solution
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.MAZES,
+          result: { directions: solution.moves },
+          moduleNumber
+        });
+        setTwitchCommand(command);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleCellClick = (row: number, col: number) => {
     if (isSolved) return;
@@ -78,7 +154,7 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const response = await solveMaze(round.id, bomb.id, currentModule.id, {
@@ -114,9 +190,8 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
     setStartPos(null);
     setTargetPos(null);
     setResult([]);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   const clearCell = (row: number, col: number) => {
@@ -214,8 +289,7 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
       {/* Maze visualization */}
       <div className="bg-gray-900 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MAZE GRID</h3>
@@ -301,6 +375,9 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
         </div>
       </div>
         
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
       {/* Solution display */}
       {isSolved && result.length > 0 && (
         <div className="bg-green-900/20 border border-green-600 rounded-lg p-4 mb-4">
@@ -316,69 +393,26 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
-      {twitchCommand && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Controls */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={handleSolve}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved || markers.length !== 2 || !startPos || !targetPos}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Solve"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={markers.length !== 2 || !startPos || !targetPos}
+        isLoading={isLoading}
+        solveText="Solve"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
+
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
         <p className="mb-2">Select a placement mode and click on the grid to place items. Place 2 markers, the start position (white light), and target position (red triangle).</p>
         <p>Right-click any placed item to remove it. Press Solve to find the shortest path.</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

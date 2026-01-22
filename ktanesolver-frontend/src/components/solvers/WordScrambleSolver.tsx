@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveWordScramble, type WordScrambleSolveRequest, type WordScrambleSolveResponse } from "../../services/wordScrambleService";
-import ModuleNumberInput from "../ModuleNumberInput";
+import SolverLayout from "../common/SolverLayout";
+import BombInfoDisplay from "../common/BombInfoDisplay";
+import SolverControls from "../common/SolverControls";
+import ErrorAlert from "../common/ErrorAlert";
+import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
+import { useSolver } from "../../hooks/useSolver";
 
 interface WordScrambleSolverProps {
   bomb: BombEntity | null | undefined;
@@ -13,9 +18,6 @@ interface WordScrambleSolverProps {
 export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
   const [letters, setLetters] = useState<string>("");
   const [result, setResult] = useState<WordScrambleSolveResponse["output"] | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
   const currentModule = useRoundStore((state) => state.currentModule);
@@ -23,27 +25,28 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
   const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
   const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
+  const { isLoading, error, isSolved, clearError, resetSolverState } = useSolver();
+
   const handleLettersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
     if (value.length <= 6) {
       setLetters(value);
-      setError("");
+      clearError();
     }
   };
 
   const solveWordScrambleModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
-      setError("Missing required information");
+      clearError();
       return;
     }
 
     if (letters.length !== 6) {
-      setError("Please enter exactly 6 letters");
+      clearError();
       return;
     }
 
-    setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const input: WordScrambleSolveRequest["input"] = {
@@ -57,7 +60,6 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
       setResult(response.output);
       
       if (response.output.solved) {
-        setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         
         const command = generateTwitchCommand({
@@ -66,9 +68,14 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
           moduleNumber
         });
         setTwitchCommand(command);
+        
+        // Save solution to currentModule
+        if (currentModule) {
+          currentModule.solution = response.output;
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve word scramble module");
+      console.error(err instanceof Error ? err.message : "Failed to solve word scramble module");
     } finally {
       setIsLoading(false);
     }
@@ -77,14 +84,44 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
   const reset = () => {
     setLetters("");
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
+  // Save state to currentModule
+  const saveState = () => {
+    if (currentModule) {
+      currentModule.state = {
+        letters,
+        result,
+        twitchCommand
+      };
+    }
+  };
+
+  // Restore state from currentModule
+  useEffect(() => {
+    if (currentModule?.state) {
+      const state = currentModule.state as {
+        letters?: string;
+        result?: WordScrambleSolveResponse["output"];
+        twitchCommand?: string;
+      };
+      
+      if (state.letters !== undefined) setLetters(state.letters);
+      if (state.result) setResult(state.result);
+      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+    }
+  }, [currentModule]);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    saveState();
+  }, [letters, result, twitchCommand]);
+
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
+      <BombInfoDisplay bomb={bomb} />
       
       {/* Word Scramble Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
@@ -128,40 +165,15 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
         </div>
       </div>
 
-      {/* Solve button */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={solveWordScrambleModule}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved || letters.length !== 6}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Solve"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={solveWordScrambleModule}
+        onReset={reset}
+        isSolved={isSolved}
+        isLoading={isLoading}
+        solveButtonText="Solve"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      <ErrorAlert error={error} />
 
       {/* Results */}
       {result && (
@@ -197,27 +209,8 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
       {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TwitchCommandDisplay command={twitchCommand} />
       )}
 
       {/* Instructions */}
@@ -228,6 +221,6 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
         <p>• The first valid word found is displayed as the solution</p>
         <p>• Letters are automatically converted to uppercase</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

@@ -1,9 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
+import { ModuleType } from "../../types";
 import { solvePassword, type PasswordOutput } from "../../services/passwordService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface PasswordSolverProps {
   bomb: BombEntity | null | undefined;
@@ -13,16 +21,79 @@ interface PasswordSolverProps {
 export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   const [columnLetters, setColumnLetters] = useState<Record<number, string[]>>({});
   const [result, setResult] = useState<PasswordOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
-  const [isSolved, setIsSolved] = useState(false);
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
 
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        columnLetters,
+        result,
+        twitchCommand
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [columnLetters, result, twitchCommand]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        columnLetters?: Record<number, string[]>;
+        result?: PasswordOutput | null;
+        twitchCommand?: string;
+      };
+      
+      if (moduleState.columnLetters) setColumnLetters(moduleState.columnLetters);
+      if (moduleState.result !== undefined) setResult(moduleState.result);
+      if (moduleState.twitchCommand !== undefined) setTwitchCommand(moduleState.twitchCommand);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        result?: PasswordOutput;
+        isSolved?: boolean;
+      };
+      
+      if (solution.result) {
+        setResult(solution.result);
+        if (solution.isSolved || solution.result.resolved) {
+          setIsSolved(true);
+        }
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleColumnChange = (column: number, value: string) => {
     // Filter to keep only uppercase letters and convert to array
@@ -38,7 +109,7 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
     if (!round || !currentModule || !bomb) return;
     
     setIsLoading(true);
-    setError("");
+    clearError();
     
     try {
       const input = {
@@ -47,18 +118,30 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
       
       const response = await solvePassword(round.id, bomb.id, currentModule.id, { input });
       setResult(response.output);
-      setIsSolved(response.output.resolved);
       
       if (response.output.resolved) {
+        setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         
         if (response.output.possibleWords.length === 1) {
           const command = generateTwitchCommand({
-            moduleType: currentModule.moduleType,
+            moduleType: ModuleType.PASSWORDS,
             result: { password: response.output.possibleWords[0] },
             moduleNumber: moduleNumber
           });
           setTwitchCommand(command);
+        }
+        
+        // Save solution
+        if (currentModule) {
+          useRoundStore.getState().round?.bombs.forEach(bomb => {
+            if (bomb.id === currentModule.bomb.id) {
+              const module = bomb.modules.find(m => m.id === currentModule.id);
+              if (module) {
+                module.solution = { result: response.output, isSolved: true };
+              }
+            }
+          });
         }
       }
     } catch (err) {
@@ -72,15 +155,13 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   const handleReset = () => {
     setColumnLetters({});
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <ModuleNumberInput />
+    <SolverLayout>
       {/* Password Module Display */}
       <div className="bg-base-200 p-6 rounded-lg">
         <h3 className="text-lg font-semibold mb-4 text-center">Password Module</h3>
@@ -122,35 +203,14 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
         </div>
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="alert alert-error">
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
-      {/* Twitch Command */}
-      {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Results */}
       {result && (
@@ -188,6 +248,6 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
           </div>
         </div>
       )}
-    </div>
+    </SolverLayout>
   );
 }

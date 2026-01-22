@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveButton as solveButtonApi } from "../../services/buttonService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 type ButtonColor = "RED" | "BLUE" | "WHITE" | "YELLOW" | "OTHER" | null;
 type ButtonLabel = "ABORT" | "DETONATE" | "HOLD" | "PRESS" | null;
@@ -46,16 +53,87 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
   const [result, setResult] = useState<string>("");
   const [releaseDigit, setReleaseDigit] = useState<number | null>(null);
   const [shouldHold, setShouldHold] = useState(false);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [showStripColor, setShowStripColor] = useState(false);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        buttonColor?: ButtonColor; 
+        buttonLabel?: ButtonLabel; 
+        stripColor?: StripColor;
+        showStripColor?: boolean;
+      };
+      
+      if (moduleState.buttonColor) setButtonColor(moduleState.buttonColor);
+      if (moduleState.buttonLabel) setButtonLabel(moduleState.buttonLabel);
+      if (moduleState.stripColor) setStripColor(moduleState.stripColor);
+      if (moduleState.showStripColor) setShowStripColor(moduleState.showStripColor);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        instruction?: string; 
+        releaseDigit?: number; 
+        hold?: boolean;
+      };
+      
+      if (solution.instruction) {
+        setResult(solution.instruction);
+        setIsSolved(true);
+      }
+      if (solution.releaseDigit) setReleaseDigit(solution.releaseDigit);
+      if (solution.hold !== undefined) setShouldHold(solution.hold);
+
+      // Generate twitch command from the solution
+      if (solution.instruction) {
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.BUTTON,
+          result: solution,
+          moduleNumber
+        });
+        setTwitchCommand(command);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
+
+  // Save state when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        buttonColor,
+        buttonLabel,
+        stripColor,
+        showStripColor
+      };
+      
+      useRoundStore.getState().round?.bombs.forEach(b => {
+        if (b.id === bomb?.id) {
+          const module = b.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
 
   const handleSolveButton = async (includeStrip = false) => {
     if (!buttonColor || !buttonLabel) {
@@ -74,7 +152,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const stripToSend = includeStrip ? stripColor : undefined;
@@ -128,6 +206,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     if (!showStripColor) {
       reset();
     }
+    saveState();
   };
 
   const cycleButtonLabel = () => {
@@ -138,22 +217,23 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     if (!showStripColor) {
       reset();
     }
+    saveState();
   };
 
   const cycleStripColor = () => {
     const currentIndex = STRIP_COLORS.findIndex((c) => c.color === stripColor);
     const nextIndex = (currentIndex + 1) % STRIP_COLORS.length;
     setStripColor(STRIP_COLORS[nextIndex].color);
+    saveState();
   };
 
   const reset = () => {
     setResult("");
     setReleaseDigit(null);
     setShouldHold(false);
-    setIsSolved(false);
     setShowStripColor(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   const fullReset = () => {
@@ -161,14 +241,12 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     setButtonLabel(null);
     setStripColor(null);
     reset();
-    setTwitchCommand("");
   };
 
   const currentColorClass = BUTTON_COLORS.find((c) => c.color === buttonColor)?.className || "bg-gray-700";
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
       {/* Bomb module visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <div className="space-y-4">
@@ -219,64 +297,20 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
         </div>
       </div>
 
-      {/* Serial number and batteries display */}
-      <div className="bg-base-200 rounded p-3 mb-4">
-        <p className="text-sm text-base-content/70">
-          Serial Number: <span className="font-mono font-bold">{bomb?.serialNumber || "Unknown"}</span>
-        </p>
-        <p className="text-sm text-base-content/70">
-          Batteries: <span className="font-mono font-bold">{(bomb?.aaBatteryCount ?? 0) + (bomb?.dBatteryCount ?? 0)}</span>
-        </p>
-        <p className="text-sm text-base-content/70">
-          Indicators: <span className="font-mono font-bold">{bomb?.indicators ? Object.entries(bomb.indicators).filter(([, value]) => value).map(([key]) => key).join(", ") || "None" : "None"}</span>
-        </p>
-      </div>
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
-      <div className="flex gap-3 mb-4">
-        {!showStripColor ? (
-          <button
-            onClick={() => handleSolveButton(false)}
-            className="btn btn-primary flex-1"
-            disabled={!buttonColor || !buttonLabel || isLoading}
-          >
-            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-            {isLoading ? "Solving..." : "Solve Button"}
-          </button>
-        ) : (
-          <button
-            onClick={() => handleSolveButton(true)}
-            className="btn btn-primary flex-1"
-            disabled={!stripColor || isLoading}
-          >
-            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-            {isLoading ? "Solving..." : "Submit Strip Color"}
-          </button>
-        )}
-        <button onClick={fullReset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={() => showStripColor ? handleSolveButton(true) : handleSolveButton(false)}
+        onReset={fullReset}
+        isSolveDisabled={showStripColor ? !stripColor : (!buttonColor || !buttonLabel)}
+        isLoading={isLoading}
+        solveText={showStripColor ? "Submit Strip Color" : "Solve Button"}
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Result */}
       {result && (
@@ -334,25 +368,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
 
       {/* Twitch Command */}
       {twitchCommand && (isSolved || !showStripColor) && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TwitchCommandDisplay command={twitchCommand} />
       )}
 
       {/* Instructions */}
@@ -370,6 +386,6 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
           <p className="text-warning">After holding the button, select the strip color that appears below.</p>
         )}
       </div>
-    </div>
+    </SolverLayout>
   );
 }

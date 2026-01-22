@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solvePianoKeys, type PianoKeysSymbol, type PianoKeysNote } from "../../services/pianoKeysService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface PianoKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -46,19 +53,87 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
   const [solution, setSolution] = useState<{
     notes: PianoKeysNote[];
   } | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
   
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        selectedSymbols,
+        solution,
+        twitchCommands
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [selectedSymbols, solution, twitchCommands]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        selectedSymbols?: PianoKeysSymbol[];
+        solution?: {
+          notes: PianoKeysNote[];
+        } | null;
+        twitchCommands?: string[];
+      };
+      
+      if (moduleState.selectedSymbols) setSelectedSymbols(moduleState.selectedSymbols);
+      if (moduleState.solution !== undefined) setSolution(moduleState.solution);
+      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        solution?: {
+          notes: PianoKeysNote[];
+        };
+        isSolved?: boolean;
+      };
+      
+      if (solution.solution) {
+        setSolution(solution.solution);
+      }
+      if (solution.isSolved) {
+        setIsSolved(true);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleSymbolClick = (symbol: PianoKeysSymbol) => {
     if (isSolved || isLoading) return;
     
-    setError("");
+    clearError();
     
     if (selectedSymbols.includes(symbol)) {
       // Remove symbol if already selected
@@ -83,7 +158,7 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const response = await solvePianoKeys(round.id, bomb.id, currentModule.id, {
@@ -106,6 +181,18 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
       });
       setTwitchCommands([command]);
       
+      // Save solution
+      if (currentModule) {
+        useRoundStore.getState().round?.bombs.forEach(bomb => {
+          if (bomb.id === currentModule.bomb.id) {
+            const module = bomb.modules.find(m => m.id === currentModule.id);
+            if (module) {
+              module.solution = { solution: response.output };
+            }
+          }
+        });
+      }
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve Piano Keys");
     } finally {
@@ -116,15 +203,12 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
   const reset = () => {
     setSelectedSymbols([]);
     setSolution(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommands([]);
+    resetSolverState();
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Piano Keys Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
@@ -272,76 +356,26 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
               </p>
             </div>
 
-            {/* Twitch Commands */}
-            <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-3 mt-3">
-              <h4 className="text-sm font-medium text-purple-400 mb-2">Twitch Chat Commands:</h4>
-              <div className="space-y-1">
-                {twitchCommands.map((command, index) => (
-                  <div key={index} className="flex items-center justify-between gap-2">
-                    <code className="text-sm font-mono text-purple-200">{command}</code>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(command);
-                      }}
-                      className="btn btn-xs btn-outline btn-purple"
-                      title="Copy to clipboard"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Twitch command display */}
+            <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
           </div>
         )}
       </div>
 
-      {/* Bomb Info */}
-      <div className="bg-base-200 rounded p-3 mb-4">
-        <p className="text-sm text-base-content/70">
-          Serial Number: <span className="font-mono font-bold">{bomb?.serialNumber || "Unknown"}</span>
-        </p>
-        <p className="text-sm text-base-content/70">
-          Strikes: <span className="font-mono font-bold">{bomb?.strikes || 0}</span>
-        </p>
-      </div>
-
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
       {/* Controls */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={handleSolve}
-          className="btn btn-primary flex-1"
-          disabled={selectedSymbols.length !== 3 || isLoading || isSolved}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Get Solution"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={selectedSymbols.length !== 3}
+        isLoading={isLoading}
+        solveText="Get Solution"
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveSimon, type SimonColor } from "../../services/simonService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
-  useSolverState,
+  useSolver,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
@@ -68,11 +68,77 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
   const [activePress, setActivePress] = useState<number | null>(null);
   const [manuallySolved, setManuallySolved] = useState(false);
 
-  const { isLoading, error, isSolved, setIsLoading, setIsSolved, setError, clearError, reset: resetSolverState } = useSolverState();
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        flashes,
+        presses,
+        twitchCommands,
+        manuallySolved
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [flashes, presses, twitchCommands, manuallySolved]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        flashes?: SimonColor[];
+        presses?: SimonColor[];
+        twitchCommands?: string[];
+        manuallySolved?: boolean;
+      };
+      
+      if (moduleState.flashes) setFlashes(moduleState.flashes);
+      if (moduleState.presses) setPresses(moduleState.presses);
+      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
+      if (moduleState.manuallySolved !== undefined) setManuallySolved(moduleState.manuallySolved);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        isSolved?: boolean;
+        manuallySolved?: boolean;
+      };
+      
+      if (solution.isSolved) {
+        setIsSolved(true);
+        setManuallySolved(solution.manuallySolved || false);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleColorClick = (color: SimonColor) => {
     if (isSolved || isLoading) return;
@@ -135,8 +201,17 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
       });
       setTwitchCommands(commands);
       
-      // DO NOT set solved state - just show the answer
-      // The backend might return solved=true but we ignore it until manual solve
+      // Save solution when solved
+      if (presses.length > 0 && currentModule) {
+        useRoundStore.getState().round?.bombs.forEach(bomb => {
+          if (bomb.id === currentModule.bomb.id) {
+            const module = bomb.modules.find(m => m.id === currentModule.id);
+            if (module) {
+              module.solution = { presses, twitchCommands };
+            }
+          }
+        });
+      }
       
       // Animate the press sequence after checking
       if (response.output.presses.length > 0) {
@@ -173,6 +248,18 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
     setIsSolved(true);
     setManuallySolved(true);
     markModuleSolved(bomb.id, currentModule.id);
+    
+    // Save solution
+    if (currentModule) {
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.solution = { isSolved: true, manuallySolved: true };
+          }
+        }
+      });
+    }
   };
 
   return (

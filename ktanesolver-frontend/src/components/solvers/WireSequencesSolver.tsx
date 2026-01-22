@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { 
@@ -9,7 +9,14 @@ import {
 } from "../../services/wireSequencesService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface WireSequencesSolverProps {
   bomb: BombEntity | null | undefined;
@@ -31,9 +38,6 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
   const [wires, setWires] = useState<WireSequenceCombo[]>([]);
   const [currentStage, setCurrentStage] = useState(1);
   const [solution, setSolution] = useState<boolean[]>([]);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
   const [moduleState, setModuleState] = useState({
     redCount: 0,
@@ -42,10 +46,89 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
   });
   const [stageSolved, setStageSolved] = useState(false);
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleStateData = {
+        wires,
+        currentStage,
+        solution,
+        twitchCommands,
+        moduleState,
+        stageSolved
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleStateData;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [wires, currentStage, solution, twitchCommands, moduleState, stageSolved]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleStateData = currentModule.state as { 
+        wires?: WireSequenceCombo[];
+        currentStage?: number;
+        solution?: boolean[];
+        twitchCommands?: string[];
+        moduleState?: { redCount: number; blueCount: number; blackCount: number };
+        stageSolved?: boolean;
+      };
+      
+      if (moduleStateData.wires) setWires(moduleStateData.wires);
+      if (moduleStateData.currentStage !== undefined) setCurrentStage(moduleStateData.currentStage);
+      if (moduleStateData.solution) setSolution(moduleStateData.solution);
+      if (moduleStateData.twitchCommands) setTwitchCommands(moduleStateData.twitchCommands);
+      if (moduleStateData.moduleState) setModuleState(moduleStateData.moduleState);
+      if (moduleStateData.stageSolved !== undefined) setStageSolved(moduleStateData.stageSolved);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        isSolved?: boolean;
+        finalStage?: number;
+        moduleState?: { redCount: number; blueCount: number; blackCount: number };
+      };
+      
+      if (solution.isSolved) {
+        setIsSolved(true);
+        if (solution.finalStage) {
+          setCurrentStage(solution.finalStage);
+        }
+        if (solution.moduleState) {
+          setModuleState(solution.moduleState);
+        }
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const addWire = (color: WireColor, letter: "A" | "B" | "C") => {
     if (wires.length >= 3) {
@@ -54,14 +137,14 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
     }
     const newWire: WireSequenceCombo = { color, letter };
     setWires([...wires, newWire]);
-    setError("");
+    clearError();
     setSolution([]);
     setTwitchCommands([]);
   };
 
   const removeWire = (index: number) => {
     setWires(wires.filter((_, i) => i !== index));
-    setError("");
+    clearError();
     setSolution([]);
     setTwitchCommands([]);
   };
@@ -78,7 +161,7 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const request: WireSequencesSolveRequest = {
@@ -126,6 +209,18 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
         setIsSolved(true);
         setStageSolved(false); // Don't show next stage button when module is fully solved
         markModuleSolved(bomb.id, currentModule.id);
+        
+        // Save solution
+        if (currentModule) {
+          useRoundStore.getState().round?.bombs.forEach(bomb => {
+            if (bomb.id === currentModule.bomb.id) {
+              const module = bomb.modules.find(m => m.id === currentModule.id);
+              if (module) {
+                module.solution = { isSolved: true, finalStage: currentStage, moduleState };
+              }
+            }
+          });
+        }
       } else {
         // Mark stage as solved but don't progress automatically
         setStageSolved(true);
@@ -141,8 +236,6 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
     setWires([]);
     setCurrentStage(1);
     setSolution([]);
-    setIsSolved(false);
-    setError("");
     setTwitchCommands([]);
     setModuleState({
       redCount: 0,
@@ -150,21 +243,20 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
       blackCount: 0,
     });
     setStageSolved(false);
+    resetSolverState();
   };
 
   const nextStage = () => {
     setCurrentStage(currentStage + 1);
     setWires([]);
     setSolution([]);
-    setError("");
+    clearError();
     setTwitchCommands([]);
     setStageSolved(false);
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Wire Sequences Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">
@@ -275,34 +367,17 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
               ))}
             </div>
 
-            {/* Twitch Commands */}
+            {/* Twitch command display */}
             {twitchCommands.length > 0 && (
-              <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-3 mt-3">
-                <h4 className="text-sm font-medium text-purple-400 mb-2">Twitch Chat Commands:</h4>
-                <div className="space-y-1">
-                  {twitchCommands.map((command, index) => (
-                    <div key={index} className="flex items-center justify-between gap-2">
-                      <code className="text-sm font-mono text-purple-200">{command}</code>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(command);
-                        }}
-                        className="btn btn-xs btn-outline btn-purple"
-                        title="Copy to clipboard"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
             )}
           </div>
         )}
       </div>
 
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
       {/* Controls */}
       <div className="flex gap-3 mb-4">
         {!stageSolved && !isSolved ? (
@@ -335,25 +410,8 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
         </button>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">

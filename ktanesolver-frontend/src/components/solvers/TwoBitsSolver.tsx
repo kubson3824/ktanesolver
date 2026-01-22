@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveTwoBits, type TwoBitsInput, type TwoBitsOutput } from "../../services/twoBitsService";
-import ModuleNumberInput from "../ModuleNumberInput";
+import SolverLayout from "../common/SolverLayout";
+import BombInfoDisplay from "../common/BombInfoDisplay";
+import SolverControls from "../common/SolverControls";
+import ErrorAlert from "../common/ErrorAlert";
+import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
+import { useSolver } from "../../hooks/useSolver";
 
 interface TwoBitsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -14,9 +19,6 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
   const [currentStage, setCurrentStage] = useState(1);
   const [inputNumber, setInputNumber] = useState("");
   const [result, setResult] = useState<TwoBitsOutput | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
   const currentModule = useRoundStore((state) => state.currentModule);
@@ -24,14 +26,15 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
   const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
   const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
+  const { isLoading, error, isSolved, clearError, resetSolverState } = useSolver();
+
   const solveTwoBitsModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
-      setError("Missing required information");
+      clearError();
       return;
     }
 
-    setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const input: TwoBitsInput = {
@@ -50,14 +53,18 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       setTwitchCommand(command);
 
       if (currentStage === 3) {
-        setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
+        
+        // Save solution to currentModule
+        if (currentModule) {
+          currentModule.solution = response.output;
+        }
       } else {
         setCurrentStage(currentStage + 1);
         setInputNumber("");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve module");
+      console.error(err instanceof Error ? err.message : "Failed to solve module");
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +74,7 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
     const num = parseInt(value);
     if (value === "" || (num >= 0 && num <= 99)) {
       setInputNumber(value);
-      setError("");
+      clearError();
     }
   };
 
@@ -75,14 +82,47 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
     setCurrentStage(1);
     setInputNumber("");
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
+  // Save state to currentModule
+  const saveState = () => {
+    if (currentModule) {
+      currentModule.state = {
+        currentStage,
+        inputNumber,
+        result,
+        twitchCommand
+      };
+    }
+  };
+
+  // Restore state from currentModule
+  useEffect(() => {
+    if (currentModule?.state) {
+      const state = currentModule.state as {
+        currentStage?: number;
+        inputNumber?: string;
+        result?: TwoBitsOutput;
+        twitchCommand?: string;
+      };
+      
+      if (state.currentStage) setCurrentStage(state.currentStage);
+      if (state.inputNumber !== undefined) setInputNumber(state.inputNumber);
+      if (state.result) setResult(state.result);
+      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+    }
+  }, [currentModule]);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    saveState();
+  }, [currentStage, inputNumber, result, twitchCommand]);
+
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
+      <BombInfoDisplay bomb={bomb} />
       
       {/* Two Bits Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
@@ -131,23 +171,16 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
         )}
       </div>
 
-      {/* Solve button */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={solveTwoBitsModule}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved || (currentStage > 1 && !inputNumber)}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : currentStage === 1 ? "Calculate Stage 1" : `Solve Stage ${currentStage}`}
-        </button>
-        
-        {isSolved && (
-          <button onClick={resetModule} className="btn btn-outline" disabled={isLoading}>
-            Reset
-          </button>
-        )}
-      </div>
+      <SolverControls
+        onSolve={solveTwoBitsModule}
+        onReset={resetModule}
+        isSolved={isSolved}
+        isLoading={isLoading}
+        solveButtonText={currentStage === 1 ? "Calculate Stage 1" : `Solve Stage ${currentStage}`}
+        showReset={isSolved}
+      />
+
+      <ErrorAlert error={error} />
 
       {/* Success Message */}
       {isSolved && (
@@ -169,26 +202,6 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
         </div>
       )}
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* Results */}
       {result && (
         <div className="bg-gray-800 rounded-lg p-6 mb-4">
@@ -201,27 +214,8 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
         </div>
       )}
 
-      {/* Twitch Command */}
       {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <TwitchCommandDisplay command={twitchCommand} />
       )}
 
       {/* Instructions */}
@@ -231,6 +225,6 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
         <p>• For stages 2 and 3, enter the number shown on the module</p>
         <p>• The solver will provide the corresponding letter sequence</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

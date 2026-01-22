@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { solveWhosOnFirst, type ButtonPosition, type WhosOnFirstSolveRequest } from "../../services/whosOnFirstService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { ModuleType } from "../../types";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface WhosOnFirstSolverProps {
   bomb: BombEntity | null | undefined;
@@ -43,29 +50,101 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
     BOTTOM_RIGHT: "",
   });
   const [solution, setSolution] = useState<{ position: ButtonPosition; buttonText: string } | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
   const [stageHistory, setStageHistory] = useState<{ stage: number; displayWord: string; position: ButtonPosition; buttonText: string }[]>([]);
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        currentStage,
+        displayWord,
+        buttons,
+        solution,
+        twitchCommands,
+        stageHistory
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [currentStage, displayWord, buttons, solution, twitchCommands, stageHistory]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        currentStage?: number;
+        displayWord?: string;
+        buttons?: Record<ButtonPosition, string>;
+        solution?: { position: ButtonPosition; buttonText: string } | null;
+        twitchCommands?: string[];
+        stageHistory?: { stage: number; displayWord: string; position: ButtonPosition; buttonText: string }[];
+      };
+      
+      if (moduleState.currentStage !== undefined) setCurrentStage(moduleState.currentStage);
+      if (moduleState.displayWord !== undefined) setDisplayWord(moduleState.displayWord);
+      if (moduleState.buttons) setButtons(moduleState.buttons);
+      if (moduleState.solution !== undefined) setSolution(moduleState.solution);
+      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
+      if (moduleState.stageHistory) setStageHistory(moduleState.stageHistory);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        isSolved?: boolean;
+        finalStage?: number;
+      };
+      
+      if (solution.isSolved) {
+        setIsSolved(true);
+        if (solution.finalStage) {
+          setCurrentStage(solution.finalStage);
+        }
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleDisplayWordChange = (value: string) => {
     // Allow empty display (can be " " or empty string)
     const processedValue = value === "" ? " " : value.toUpperCase();
     setDisplayWord(processedValue);
-    setError("");
+    clearError();
     setSolution(null);
     setTwitchCommands([]);
   };
 
   const handleButtonTextChange = (position: ButtonPosition, value: string) => {
     setButtons(prev => ({ ...prev, [position]: value.toUpperCase() }));
-    setError("");
+    clearError();
     setSolution(null);
     setTwitchCommands([]);
   };
@@ -85,7 +164,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const request: WhosOnFirstSolveRequest = {
@@ -122,6 +201,18 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       if (response.solved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
+        
+        // Save solution
+        if (currentModule) {
+          useRoundStore.getState().round?.bombs.forEach(bomb => {
+            if (bomb.id === currentModule.bomb.id) {
+              const module = bomb.modules.find(m => m.id === currentModule.id);
+              if (module) {
+                module.solution = { isSolved: true, finalStage: currentStage };
+              }
+            }
+          });
+        }
       } else {
         // Advance to next stage
         setCurrentStage(currentStage + 1);
@@ -149,10 +240,9 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       BOTTOM_RIGHT: "",
     });
     setSolution(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommands([]);
     setStageHistory([]);
+    resetSolverState();
   };
 
 
@@ -164,9 +254,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Who's On First Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">
@@ -222,28 +310,8 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
               </div>
             </div>
 
-            {/* Twitch Commands */}
-            <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-3">
-              <h4 className="text-sm font-medium text-purple-400 mb-2">Twitch Chat Commands:</h4>
-              <div className="space-y-1">
-                {twitchCommands.map((command, index) => (
-                  <div key={index} className="flex items-center justify-between gap-2">
-                    <code className="text-sm font-mono text-purple-200">{command}</code>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(command);
-                      }}
-                      className="btn btn-xs btn-outline btn-purple"
-                      title="Copy to clipboard"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Twitch command display */}
+            <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
           </div>
         )}
       </div>
@@ -282,50 +350,20 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
         </div>
       )}
 
-      {/* Bomb Info */}
-      <div className="bg-base-200 rounded p-3 mb-4">
-        <p className="text-sm text-base-content/70">
-          Serial Number: <span className="font-mono font-bold">{bomb?.serialNumber || "Unknown"}</span>
-        </p>
-        <p className="text-sm text-base-content/70">
-          Strikes: <span className="font-mono font-bold">{bomb?.strikes || 0}</span>
-        </p>
-      </div>
-
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
       {/* Controls */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={handleCheckAnswer}
-          className="btn btn-primary flex-1"
-          disabled={Object.values(buttons).some(b => !b.trim()) || isLoading || isSolved}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Checking..." : isSolved ? "Module Solved" : currentStage === 3 ? "Final Stage" : `Solve Stage ${currentStage}`}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={handleCheckAnswer}
+        onReset={reset}
+        isSolveDisabled={Object.values(buttons).some(b => !b.trim())}
+        isLoading={isLoading}
+        solveText={isSolved ? "Module Solved" : currentStage === 3 ? "Final Stage" : `Solve Stage ${currentStage}`}
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">

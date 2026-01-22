@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { BombEntity } from '../../types';
 import { ModuleType } from '../../types';
 import { useRoundStore } from '../../store/useRoundStore';
 import { generateTwitchCommand } from '../../utils/twitchCommands';
 import { solveRoundKeypad, type RoundKeypadInput, type RoundKeypadOutput, type RoundKeypadSymbol } from '../../services/roundKeypadService';
-import ModuleNumberInput from '../ModuleNumberInput';
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from '../common';
 
 // Symbol display configuration - same as Keypads component
 const SYMBOL_DISPLAY: Record<RoundKeypadSymbol, { display: string; className?: string }> = {
@@ -51,25 +58,85 @@ interface RoundKeypadSolverProps {
 export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
   const [selectedSymbols, setSelectedSymbols] = useState<RoundKeypadSymbol[]>([]);
   const [solution, setSolution] = useState<RoundKeypadOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
-  const [isSolved, setIsSolved] = useState(false);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { selectedSymbols?: RoundKeypadSymbol[] };
+      
+      if (moduleState.selectedSymbols) {
+        setSelectedSymbols(moduleState.selectedSymbols);
+      }
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as RoundKeypadOutput;
+      
+      if (solution.symbolsToPress) {
+        setSolution(solution);
+        setIsSolved(true);
+
+        // Generate twitch command from the solution
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.ROUND_KEYPAD,
+          result: solution,
+          moduleNumber
+        });
+        setTwitchCommand(command);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
+
+  // Save state when symbols change
+  const saveState = (symbols: RoundKeypadSymbol[]) => {
+    if (currentModule) {
+      const moduleState = { selectedSymbols: symbols };
+      // Update the module in the store
+      const { round } = useRoundStore.getState();
+      round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
 
   const handleSymbolClick = (symbol: RoundKeypadSymbol) => {
     if (isLoading || isSolved) return;
     
+    let newSymbols: RoundKeypadSymbol[];
     if (selectedSymbols.includes(symbol)) {
-      setSelectedSymbols(selectedSymbols.filter(s => s !== symbol));
+      newSymbols = selectedSymbols.filter(s => s !== symbol);
     } else if (selectedSymbols.length < 8) {
-      setSelectedSymbols([...selectedSymbols, symbol]);
+      newSymbols = [...selectedSymbols, symbol];
+    } else {
+      return;
     }
-    setError("");
+    
+    setSelectedSymbols(newSymbols);
+    saveState(newSymbols);
+    clearError();
   };
 
   const handleSolve = async () => {
@@ -84,7 +151,7 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const input: RoundKeypadInput = { symbols: selectedSymbols };
@@ -110,9 +177,9 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
   const handleReset = () => {
     setSelectedSymbols([]);
     setSolution(null);
-    setError("");
-    setIsSolved(false);
     setTwitchCommand("");
+    saveState([]);
+    resetSolverState();
   };
 
   const getSymbolDisplay = (symbol: RoundKeypadSymbol) => {
@@ -120,9 +187,7 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Round Keypad Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">ROUND KEYPAD MODULE</h3>
@@ -131,9 +196,6 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h4 className="text-lg font-semibold text-gray-200">Selected Symbols ({selectedSymbols.length}/8)</h4>
-              <button className="btn btn-outline btn-sm" onClick={handleReset}>
-                Reset
-              </button>
             </div>
             
             {/* Circular layout for selected symbols */}
@@ -223,60 +285,23 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
         </div>
       </div>
 
-      {/* Controls for solved state */}
-      {isSolved && (
-        <div className="flex gap-3 mb-4">
-          <button
-            onClick={handleReset}
-            className="btn btn-outline"
-          >
-            Reset
-          </button>
-        </div>
-      )}
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Controls */}
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={handleReset}
+        isSolveDisabled={selectedSymbols.length !== 8}
+        isLoading={isLoading}
+        solveText="Solve"
+      />
 
-      {/* Twitch Command */}
-      {twitchCommand && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
+
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
@@ -284,6 +309,6 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
         <p>• The solver will identify the column with the most matches (rightmost on tie)</p>
         <p>• Press the symbols in the order shown in the solution</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

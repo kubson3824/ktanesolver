@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMemory } from "../../services/memoryService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface MemorySolverProps {
   bomb: BombEntity | null | undefined;
@@ -23,15 +30,88 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
   const [buttonLabels, setButtonLabels] = useState<number[]>([1, 2, 3, 4]);
   const [stageHistory, setStageHistory] = useState<StageResult[]>([]);
   const [result, setResult] = useState<{ position: number; label: number } | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Save state to module when inputs change
+  const saveState = () => {
+    if (currentModule) {
+      const moduleState = {
+        currentStage,
+        displayNumber,
+        buttonLabels,
+        stageHistory,
+        result,
+        twitchCommand
+      };
+      // Update the module in the store
+      useRoundStore.getState().round?.bombs.forEach(bomb => {
+        if (bomb.id === currentModule.bomb.id) {
+          const module = bomb.modules.find(m => m.id === currentModule.id);
+          if (module) {
+            module.state = moduleState;
+          }
+        }
+      });
+    }
+  };
+
+  // Update state when inputs change
+  useEffect(() => {
+    saveState();
+  }, [currentStage, displayNumber, buttonLabels, stageHistory, result, twitchCommand]);
+
+  // Restore state from module when component loads
+  useEffect(() => {
+    if (currentModule?.state && typeof currentModule.state === 'object') {
+      const moduleState = currentModule.state as { 
+        currentStage?: number;
+        displayNumber?: number | null;
+        buttonLabels?: number[];
+        stageHistory?: StageResult[];
+        result?: { position: number; label: number } | null;
+        twitchCommand?: string;
+      };
+      
+      if (moduleState.currentStage !== undefined) setCurrentStage(moduleState.currentStage);
+      if (moduleState.displayNumber !== undefined) setDisplayNumber(moduleState.displayNumber);
+      if (moduleState.buttonLabels) setButtonLabels(moduleState.buttonLabels);
+      if (moduleState.stageHistory) setStageHistory(moduleState.stageHistory);
+      if (moduleState.result !== undefined) setResult(moduleState.result);
+      if (moduleState.twitchCommand !== undefined) setTwitchCommand(moduleState.twitchCommand);
+    }
+
+    // Restore solution if module was solved
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as { 
+        isSolved?: boolean;
+        finalResult?: { position: number; label: number };
+      };
+      
+      if (solution.isSolved) {
+        setIsSolved(true);
+        if (solution.finalResult) {
+          setResult(solution.finalResult);
+          setCurrentStage(5);
+        }
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleLabelChange = (position: number, label: number) => {
     if (isSolved) return;
@@ -57,7 +137,7 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const response = await solveMemory(round.id, bomb.id, currentModule.id, {
@@ -91,6 +171,17 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       if (currentStage === 5) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
+        // Save final solution
+        if (currentModule) {
+          useRoundStore.getState().round?.bombs.forEach(bomb => {
+            if (bomb.id === currentModule.bomb.id) {
+              const module = bomb.modules.find(m => m.id === currentModule.id);
+              if (module) {
+                module.solution = { isSolved: true, finalResult: response.output };
+              }
+            }
+          });
+        }
       } else {
         setCurrentStage(currentStage + 1);
         setDisplayNumber(null);
@@ -118,9 +209,8 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     setButtonLabels([1, 2, 3, 4]);
     setStageHistory([]);
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   const renderButton = (position: number) => {
@@ -155,8 +245,7 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
+    <SolverLayout>
       {/* Stage indicator */}
       <div className="bg-gray-900 rounded-lg p-4 mb-4">
         <h3 className="text-center text-gray-400 mb-2 text-sm font-medium">STAGE PROGRESS</h3>
@@ -239,6 +328,9 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
         </div>
       )}
 
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
+      
       {/* Stage history */}
       {stageHistory.length > 0 && (
         <div className="bg-base-200 rounded-lg p-4 mb-4">
@@ -256,45 +348,25 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       )}
 
       {/* Controls */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={handleSolve}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved || displayNumber === null}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : isSolved ? "Module Solved" : currentStage === 5 ? "Final Stage" : `Solve Stage ${currentStage}`}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={displayNumber === null}
+        isLoading={isLoading}
+        solveText={isSolved ? "Module Solved" : currentStage === 5 ? "Final Stage" : `Solve Stage ${currentStage}`}
+      />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Error display */}
+      <ErrorAlert error={error} />
+
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
         <p className="mb-2">Select the number shown on the display. Set the labels on each button (1-4).</p>
         <p>Press solve to determine which button to press. The module has 5 stages.</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

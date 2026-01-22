@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveCombinationLock, type CombinationLockInput, type CombinationLockOutput } from "../../services/combinationLockService";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { 
+  useSolver,
+  SolverLayout,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  BombInfoDisplay,
+  SolverControls
+} from "../common";
 
 interface CombinationLockSolverProps {
   bomb: BombEntity | null | undefined;
@@ -12,15 +18,46 @@ interface CombinationLockSolverProps {
 
 export default function CombinationLockSolver({ bomb }: CombinationLockSolverProps) {
   const [result, setResult] = useState<CombinationLockOutput | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
+  // Use the common solver hook for shared state
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+    moduleNumber
+  } = useSolver();
+
+  // Restore solution if module was solved
+  useEffect(() => {
+    if (currentModule?.solution && typeof currentModule.solution === 'object') {
+      const solution = currentModule.solution as CombinationLockOutput;
+      
+      if (solution.instruction) {
+        setResult(solution);
+        setIsSolved(true);
+
+        // Generate twitch command from the solution
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.COMBINATION_LOCK,
+          result: { 
+            combination: [solution.firstNumber, solution.secondNumber, solution.thirdNumber],
+            instruction: solution.instruction
+          },
+          moduleNumber
+        });
+        setTwitchCommand(command);
+      }
+    }
+  }, [currentModule, moduleNumber, setIsSolved]);
 
   const solveCombinationLockModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -29,7 +66,7 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
     }
 
     setIsLoading(true);
-    setError("");
+    clearError();
 
     try {
       const input: CombinationLockInput = {
@@ -61,64 +98,31 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
 
   const reset = () => {
     setResult(null);
-    setIsSolved(false);
-    setError("");
     setTwitchCommand("");
+    resetSolverState();
   };
 
   return (
-    <div className="w-full">
-      <ModuleNumberInput />
-      
+    <SolverLayout>
       {/* Combination Lock Module Configuration */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">COMBINATION LOCK MODULE</h3>
-        
-        {/* Bomb Info Display */}
-        {bomb && (
-          <div className="text-xs text-gray-500 mb-4">
-            <div>Serial Number: {bomb.serialNumber || "N/A"}</div>
-            <div>Batteries: {bomb.aaBatteryCount + bomb.dBatteryCount}</div>
-            <div>Total Modules: {bomb.modules?.length || 0}</div>
-            <div>Solved Modules: {bomb.modules?.filter(m => m.solved).length || 0}</div>
-          </div>
-        )}
       </div>
 
-      {/* Solve button */}
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={solveCombinationLockModule}
-          className="btn btn-primary flex-1"
-          disabled={isLoading || isSolved}
-        >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Solve"}
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading}>
-          Reset
-        </button>
-      </div>
+      {/* Bomb info display */}
+      <BombInfoDisplay bomb={bomb} />
 
-      {/* Error */}
-      {error && (
-        <div className="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Controls */}
+      <SolverControls
+        onSolve={solveCombinationLockModule}
+        onReset={reset}
+        isSolveDisabled={isSolved}
+        isLoading={isLoading}
+        solveText="Solve"
+      />
+
+      {/* Error display */}
+      <ErrorAlert error={error} />
 
       {/* Results */}
       {result && (
@@ -146,28 +150,8 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
         </div>
       )}
 
-      {/* Twitch Command */}
-      {twitchCommand && result && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Twitch command display */}
+      <TwitchCommandDisplay command={twitchCommand} />
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
@@ -178,6 +162,6 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
         <p>• Turn the dial: RIGHT to first number, LEFT to second, RIGHT to third</p>
         <p>• If sequential numbers are the same, make a full revolution back to the same number</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }
