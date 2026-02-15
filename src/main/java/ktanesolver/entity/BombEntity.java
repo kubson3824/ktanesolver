@@ -47,6 +47,7 @@ public class BombEntity {
 	private int strikes;
 
 	@OneToMany (mappedBy = "bomb", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy ("id ASC")
 	private List<ModuleEntity> modules = new ArrayList<>();
 
 	public void replacePortPlates(List<Set<PortType>> portPlateDefinitions) {

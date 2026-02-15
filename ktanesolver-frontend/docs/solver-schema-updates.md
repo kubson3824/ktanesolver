@@ -204,9 +204,9 @@ The new schema requires solvers to:
   - Added state persistence for equation
   - Added solution restoration logic
 
-### ✅ EmojiSolver
+### ✅ EmojiMathSolver
 - **Status**: Fully updated
-- **File**: `src/components/solvers/EmojiSolver.tsx`
+- **File**: `src/components/solvers/EmojiMathSolver.tsx`
 - **Changes Made**:
   - Replaced manual state with `useSolver` hook
   - Wrapped UI in `SolverLayout`
@@ -450,6 +450,45 @@ For each remaining solver, the following changes need to be applied:
 6. **Function Updates**:
    - Use `clearError()` instead of `setError("")`
    - Use `resetSolverState()` in reset function
+
+## Java Backend vs Frontend State/Solution Alignment
+
+When the round is loaded from the API (e.g. after refresh), each module’s `state` and `solution` come from the Java backend. The frontend must restore from those shapes.
+
+### How the backend stores data
+
+- **Solution**: After a successful solve, `AbstractModuleSolver.handleSuccess` converts the output record to a `Map` and merges it into `module.getSolution()`. So `module.solution` in the API is the **flat output DTO** (e.g. Button: `{ hold, instruction, releaseDigit }`, Memory: `{ position, label }`). There is no `"output"` wrapper.
+- **State**: Either:
+  - **Key-value**: `storeState(module, "key", value)` → `module.state = { key: value, ... }`, or
+  - **Full object**: `module.setState(object)` → `module.state = { displayHistory, solutionHistory }` (e.g. Memory, ForgetMeNot).
+
+### Solve API response
+
+The solve endpoint returns `SolveSuccess<O>` serialized as `{ output: O, solved: boolean }`. The frontend uses `response.data.output` when handling the solve call. That same output shape is what gets stored in `module.solution` on the backend; when the frontend later loads the module from the round, `currentModule.solution` is that flat map, not `{ output: ... }`.
+
+### Frontend restoration requirements
+
+- **extractSolution(raw)**: `raw` is `currentModule.solution`, i.e. the flat output map. Handlers should:
+  1. Optionally accept a wrapped shape (e.g. `raw.output`) for compatibility.
+  2. **Accept the flat shape** when the backend stores it (e.g. `raw.position` and `raw.label` for Memory, `raw.letter` for LetterKeys). Many solvers already do this with a final `return raw as T` or an explicit check for the output fields.
+- **onRestoreState(state)**: `state` is `currentModule.state`. Keys must match what the backend stores (e.g. Button: `color`, `label`, `stripColor`; modules using `storeState(module, "input", input)` use `state.input` with the same structure as the solve request input).
+
+### Per-module notes
+
+| Module | Backend state keys / shape | Backend solution (output) | Frontend restoration |
+|--------|----------------------------|---------------------------|----------------------|
+| Button | `color`, `label`, `stripColor` | `hold`, `instruction`, `releaseDigit` | ✅ State: accepts `color`/`label`/`stripColor` (and legacy names). Solution: accepts flat and wrapped. |
+| Memory | `setState(MemoryState)` → `displayHistory`, `solutionHistory` | `position`, `label` | ✅ Solution: fixed to accept flat `{ position, label }`. State: frontend expects `currentStage`, `stageHistory`, etc.; backend stores `displayHistory`/`solutionHistory` — different shape (state restore from API not fully aligned). |
+| LetterKeys | (none) | `letter` | ✅ extractSolution accepts `raw.letter`. |
+| Simon Says | `input` | `presses` (list) | Frontend should accept `raw.presses` / flat object. |
+| Complicated Wires | `input` | `cutWires` (list) | Frontend should accept `raw.cutWires` or raw as list. |
+| Piano Keys | `input` | `notes` (list) | Frontend accepts `raw` with `notes`. |
+| WhosOnFirst | `storeTypedState(WhosOnFirstState)` (displayHistory, buttonHistory, buttonPressHistory) | `position`, `buttonText` | Solution: backend stores `{ position, buttonText }`; frontend currently expects `output`/`finalStage` or number — restoration from API may not apply. |
+| Others | Various `storeState("input", input)` or specific keys | Same as output record fields | Each solver’s `extractSolution` should handle flat `raw` (and optionally `raw.output`). |
+
+### Fix applied
+
+- **MemorySolver**: `extractSolution` now treats flat `{ position, label }` (as stored by the backend) as the solution, so restoring from the bomb/round works after refresh.
 
 ## Last Updated
 

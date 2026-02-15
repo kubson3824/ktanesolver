@@ -86,9 +86,10 @@ public abstract class AbstractModuleSolver<I extends ModuleInput, O extends Modu
 		}
 	}
 
+	/** Replaces the module state with the serialized form of the given object (e.g. {@code {"stages": [...]}}). */
 	protected final <T> void storeTypedState(ModuleEntity module, T state) {
-		if(state != null) {
-			module.getState().put(state.getClass().getName(), state);
+		if (state != null) {
+			module.setState(state);
 		}
 	}
 

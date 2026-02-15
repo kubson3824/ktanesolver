@@ -44,10 +44,15 @@ public class ModuleEntity {
 	private Map<String, Object> solution = new HashMap<>();
 
 	public <T> T getStateAs(Class<T> type, Supplier<T> defaultSupplier) {
-		if(state == null || state.isEmpty()) {
+		if (state == null || state.isEmpty()) {
 			T value = defaultSupplier.get();
 			setState(value);
 			return value;
+		}
+		// State may have been stored under the type name by storeTypedState(); use it if present
+		String typeKey = type.getName();
+		if (state.containsKey(typeKey)) {
+			return Json.mapper().convertValue(state.get(typeKey), type);
 		}
 		return Json.mapper().convertValue(state, type);
 	}

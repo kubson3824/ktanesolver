@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoundStore } from "../../store/useRoundStore";
 
 export interface SolverState {
@@ -20,7 +20,7 @@ export function useSolverState(initialState: Partial<SolverState> = {}) {
   const [error, setError] = useState(initialState.error ?? "");
   const [isSolved, setIsSolved] = useState(initialState.isSolved ?? false);
 
-  const clearError = () => setError("");
+  const clearError = useCallback(() => setError(""), []);
   
   const reset = () => {
     setIsLoading(false);
@@ -44,22 +44,38 @@ export function useSolverData() {
   const currentModule = useRoundStore((state) => state.currentModule);
   const round = useRoundStore((state) => state.round);
   const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
   return {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber,
   };
 }
 
 export function useSolver() {
-  const state = useSolverState();
-  const data = useSolverData();
+  const currentModule = useRoundStore((state) => state.currentModule);
+  const round = useRoundStore((state) => state.round);
+  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
+  
+  // Initialize isSolved based on currentModule.solved
+  const initialState = {
+    isSolved: currentModule?.solved ?? false
+  };
+  
+  const state = useSolverState(initialState);
+  
+  // Update isSolved when currentModule.solved changes
+  useEffect(() => {
+    if (currentModule?.solved !== state.isSolved) {
+      state.setIsSolved(currentModule?.solved ?? false);
+    }
+  }, [currentModule?.solved, state.isSolved, state.setIsSolved]);
 
   return {
     ...state,
-    ...data,
+    resetSolverState: state.reset,
+    currentModule,
+    round,
+    markModuleSolved,
   };
 }

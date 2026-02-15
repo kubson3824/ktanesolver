@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveWordScramble, type WordScrambleSolveRequest, type WordScrambleSolveResponse } from "../../services/wordScrambleService";
 import SolverLayout from "../common/SolverLayout";
-import BombInfoDisplay from "../common/BombInfoDisplay";
 import SolverControls from "../common/SolverControls";
 import ErrorAlert from "../common/ErrorAlert";
 import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
-import { useSolver } from "../../hooks/useSolver";
+import { useSolver, useSolverModulePersistence } from "../common";
 
 interface WordScrambleSolverProps {
   bomb: BombEntity | null | undefined;
@@ -21,11 +20,46 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
   const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
 
-  const { isLoading, error, isSolved, clearError, resetSolverState } = useSolver();
+  const { isLoading, error, isSolved, clearError, reset, setIsLoading, setError, setIsSolved, round, markModuleSolved } = useSolver();
+
+  const moduleState = useMemo(
+    () => ({ letters, result, twitchCommand }),
+    [letters, result, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: { letters?: string; result?: WordScrambleSolveResponse["output"]; twitchCommand?: string }) => {
+      if (state.letters !== undefined) setLetters(state.letters);
+      if (state.result) setResult(state.result);
+      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: WordScrambleSolveResponse["output"]) => {
+      setResult(solution);
+
+      if (solution.solved) {
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.WORD_SCRAMBLE,
+          result: { instruction: solution.instruction },
+        });
+        setTwitchCommand(command);
+      }
+    },
+  []);
+
+  useSolverModulePersistence<{ letters: string; result: WordScrambleSolveResponse["output"] | null; twitchCommand: string }, WordScrambleSolveResponse["output"]>({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => (raw && typeof raw === "object" ? (raw as WordScrambleSolveResponse["output"]) : null),
+    inferSolved: (solution) => Boolean(solution?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleLettersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
@@ -36,13 +70,16 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
   };
 
   const solveWordScrambleModule = async () => {
+    setIsLoading(true);
     if (!round?.id || !bomb?.id || !currentModule?.id) {
-      clearError();
+      setError("Missing required information");
+      setIsLoading(false);
       return;
     }
 
     if (letters.length !== 6) {
-      clearError();
+      setError("Please enter exactly 6 letters");
+      setIsLoading(false);
       return;
     }
 
@@ -59,70 +96,32 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
       
       setResult(response.output);
       
-      if (response.output.solved) {
+      if (response.output) {
+        setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         
         const command = generateTwitchCommand({
           moduleType: ModuleType.WORD_SCRAMBLE,
-          result: { instruction: response.output.instruction },
-          moduleNumber
+          result: response.output,
         });
         setTwitchCommand(command);
-        
-        // Save solution to currentModule
-        if (currentModule) {
-          currentModule.solution = response.output;
-        }
       }
     } catch (err) {
-      console.error(err instanceof Error ? err.message : "Failed to solve word scramble module");
+      setError(err instanceof Error ? err.message : "Failed to solve word scramble");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const reset = () => {
+  const resetModule = () => {
     setLetters("");
     setResult(null);
     setTwitchCommand("");
-    resetSolverState();
+    reset();
   };
-
-  // Save state to currentModule
-  const saveState = () => {
-    if (currentModule) {
-      currentModule.state = {
-        letters,
-        result,
-        twitchCommand
-      };
-    }
-  };
-
-  // Restore state from currentModule
-  useEffect(() => {
-    if (currentModule?.state) {
-      const state = currentModule.state as {
-        letters?: string;
-        result?: WordScrambleSolveResponse["output"];
-        twitchCommand?: string;
-      };
-      
-      if (state.letters !== undefined) setLetters(state.letters);
-      if (state.result) setResult(state.result);
-      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
-    }
-  }, [currentModule]);
-
-  // Save state whenever it changes
-  useEffect(() => {
-    saveState();
-  }, [letters, result, twitchCommand]);
 
   return (
     <SolverLayout>
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Word Scramble Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">WORD SCRAMBLE MODULE</h3>
@@ -166,11 +165,13 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
       </div>
 
       <SolverControls
-        onSolve={solveWordScrambleModule}
-        onReset={reset}
-        isSolved={isSolved}
+        onSolve={() => {
+          void solveWordScrambleModule();
+        }}
+        onReset={resetModule}
         isLoading={isLoading}
-        solveButtonText="Solve"
+        solveText="Solve"
+        isSolveDisabled={isSolved}
       />
 
       <ErrorAlert error={error} />

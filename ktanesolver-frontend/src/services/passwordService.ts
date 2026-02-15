@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api, withErrorWrapping } from '../lib/api';
 
 export interface PasswordInput {
   letters: Record<number, string[]>;
@@ -15,6 +15,8 @@ export async function solvePassword(
   moduleId: string,
   data: { input: PasswordInput }
 ): Promise<{ output: PasswordOutput }> {
-  const response = await api.post(`/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`, data);
-  return response.data;
+  return withErrorWrapping(async () => {
+    const response = await api.post(`/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`, data);
+    return response.data;
+  });
 }

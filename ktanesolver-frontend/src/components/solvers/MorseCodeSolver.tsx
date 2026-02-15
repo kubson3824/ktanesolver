@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMorse, type MorseOutput, type MorseCandidate } from "../../services/morseService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import { useRoundStore } from "../../store/useRoundStore";
+import {
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
-  SolverControls
 } from "../common";
 
 interface MorseCodeSolverProps {
@@ -35,6 +34,11 @@ const LETTER_TO_MORSE: Record<string, string> = {
   'Y': '-.--', 'Z': '--..'
 };
 
+// Display Morse pattern with readable symbols (· = dot, − = dash)
+function formatMorseForDisplay(morse: string): string {
+  return morse.replace(/\./g, "·").replace(/-/g, "−");
+}
+
 
 export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   const [morseInput, setMorseInput] = useState<string>("");
@@ -42,12 +46,14 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   const [result, setResult] = useState<MorseOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  /** Skip clearing result for the next N runs of the [morseInput] effect (restore triggers 2 runs: before and after input is applied). */
+  const skipClearResultCountRef = useRef(0);
 
   // Use the common solver hook for shared state
   const {
     isLoading,
     error,
-    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -56,66 +62,87 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
+  const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        morseInput,
-        translatedWord,
-        result,
-        twitchCommand
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
+  const moduleState = useMemo(
+    () => ({ morseInput, translatedWord, result, twitchCommand }),
+    [morseInput, translatedWord, result, twitchCommand],
+  );
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [morseInput, translatedWord, result, twitchCommand]);
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        morseInput?: string;
-        translatedWord?: string;
-        result?: MorseOutput | null;
-        twitchCommand?: string;
-      };
-      
-      if (moduleState.morseInput !== undefined) setMorseInput(moduleState.morseInput);
-      if (moduleState.translatedWord !== undefined) setTranslatedWord(moduleState.translatedWord);
-      if (moduleState.result !== undefined) setResult(moduleState.result);
-      if (moduleState.twitchCommand !== undefined) setTwitchCommand(moduleState.twitchCommand);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        result?: MorseOutput;
-        isSolved?: boolean;
-      };
-      
-      if (solution.result) {
-        setResult(solution.result);
-        if (solution.isSolved || solution.result.resolved) {
-          setIsSolved(true);
-        }
+  const onRestoreState = useCallback(
+    (state: {
+      morseInput?: string;
+      translatedWord?: string;
+      result?: MorseOutput | null;
+      twitchCommand?: string;
+      input?: { word?: string };
+    }) => {
+      skipClearResultCountRef.current = 2;
+      // Prefer backend shape so reload displays what the user had input
+      if (state.input?.word !== undefined && state.input.word !== "") {
+        const word = state.input.word.toUpperCase();
+        setTranslatedWord(word);
+        const morse = word
+          .split("")
+          .map((c) => LETTER_TO_MORSE[c])
+          .filter(Boolean)
+          .join(" ");
+        setMorseInput(morse);
+      } else {
+        if (state.morseInput !== undefined) setMorseInput(state.morseInput);
+        if (state.translatedWord !== undefined) setTranslatedWord(state.translatedWord);
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: MorseOutput) => {
+      if (!solution || !Array.isArray(solution.candidates)) return;
+      skipClearResultCountRef.current = 2;
+      setResult(solution);
+
+      if (solution.candidates.length > 0) {
+        const bestCandidate = solution.candidates.reduce((prev, current) =>
+          prev.confidence > current.confidence ? prev : current,
+        );
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.MORSE_CODE,
+          result: { word: bestCandidate.word },
+        });
+        setTwitchCommand(command);
+      }
+    },
+  []);
+
+  useSolverModulePersistence<
+    { morseInput: string; translatedWord: string; result: MorseOutput | null; twitchCommand: string },
+    MorseOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    onBeforeRestore: () => {
+      skipClearResultCountRef.current = 2;
+    },
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown; candidates?: unknown };
+        const candidate = anyRaw.output ?? anyRaw.result ?? raw;
+        const obj = (typeof candidate === "object" && candidate !== null ? candidate : raw) as MorseOutput;
+        if (!Array.isArray(obj?.candidates)) return null;
+        return obj;
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   // Translate Morse code to letters
   const translateMorseToWord = (morse: string): string => {
@@ -183,14 +210,20 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
     }
   };
 
-  // Update translated word whenever morse input changes
+  // Update translated word whenever morse input changes (don't clear result/twitch when this change was from restore).
+  // clearError is only invoked here, not depended on — dependency is morseInput only so we don't re-run every render.
   useEffect(() => {
     const translated = translateMorseToWord(morseInput);
     setTranslatedWord(translated);
-    setResult(null);
-    clearError();
-    setTwitchCommand("");
-  }, [morseInput, clearError]);
+    if (skipClearResultCountRef.current > 0) {
+      skipClearResultCountRef.current -= 1;
+    } else {
+      setResult(null);
+      clearError();
+      setTwitchCommand("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- effect intentionally runs only when morseInput changes
+  }, [morseInput]);
 
   const handleMorseInput = (value: string) => {
     // Only allow dots, dashes, and spaces
@@ -221,41 +254,47 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       const response = await solveMorse(round.id, bomb.id, currentModule.id, {
         input: { word: translatedWord }
       });
-      
-      setResult(response.output);
-      
-      // Generate Twitch command for the highest confidence candidate
-      if (response.output.candidates.length > 0) {
-        const bestCandidate = response.output.candidates.reduce((prev, current) => 
+
+      const output = response?.output;
+      if (!output || !Array.isArray(output.candidates)) {
+        setError("Invalid response from server");
+        return;
+      }
+
+      setResult(output);
+
+      // Show Twitch command for best candidate (resolved or suggested when unresolved)
+      if (output.candidates.length > 0) {
+        const bestCandidate = output.candidates.reduce((prev, current) =>
           prev.confidence > current.confidence ? prev : current
         );
-        
         const command = generateTwitchCommand({
           moduleType: ModuleType.MORSE_CODE,
           result: { word: bestCandidate.word },
-          moduleNumber
         });
         setTwitchCommand(command);
+      } else {
+        setTwitchCommand("");
       }
-      
-      // Mark module as solved if resolved
-      if (response.output.resolved) {
+
+      // Mark module as solved only when backend is confident (score ≥ 0.85, clear winner)
+      if (output.resolved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        // Save solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { result: response.output, isSolved: true };
-              }
-            }
-          });
-        }
       }
+
+      // Persist state and solution to the round store so returning to this module shows the solution
+      updateModuleAfterSolve(
+        bomb.id,
+        currentModule.id,
+        { input: { word: translatedWord } },
+        { candidates: output.candidates, resolved: output.resolved },
+        output.resolved
+      );
+
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve morse code");
+      setError(err instanceof Error ? err.message : "Failed to solve Morse Code");
     } finally {
       setIsLoading(false);
     }
@@ -323,34 +362,61 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       </div>
 
       {/* Morse code reference */}
-      <div className="bg-base-200 rounded-lg p-4 mb-4">
-        <h4 className="text-sm font-medium text-base-content/70 mb-2">Morse Code Reference:</h4>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs font-mono">
-          {Object.entries(LETTER_TO_MORSE).map(([letter, morse]) => (
-            <div key={letter} className="flex justify-between">
-              <span className="text-base-content/60">{letter}:</span>
-              <span className="text-base-content/80 ml-2">{morse}</span>
-            </div>
-          ))}
+      <div className="bg-base-200 rounded-lg p-3 mb-4">
+        <h4 className="text-sm font-medium text-base-content mb-1.5">
+          Morse Code Reference <span className="text-base-content/70 font-normal">(· = dot, − = dash)</span>
+        </h4>
+        <div className="overflow-x-auto">
+          <table className="table table-zebra table-sm text-xs font-mono w-full">
+            <thead>
+              <tr>
+                <th className="text-base-content font-semibold py-1 px-2">Letter</th>
+                <th className="text-base-content font-semibold py-1 px-2">Morse</th>
+                <th className="text-base-content font-semibold py-1 px-2">Letter</th>
+                <th className="text-base-content font-semibold py-1 px-2">Morse</th>
+                <th className="text-base-content font-semibold py-1 px-2">Letter</th>
+                <th className="text-base-content font-semibold py-1 px-2">Morse</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                const entries = Object.entries(LETTER_TO_MORSE);
+                const rows: [string, string][][] = [];
+                for (let i = 0; i < entries.length; i += 3) {
+                  rows.push(entries.slice(i, i + 3));
+                }
+                return rows.map((row, i) => (
+                  <tr key={i}>
+                    {row.flatMap(([letter, morse]) => [
+                      <td key={`${letter}-l`} className="font-semibold text-base-content py-0.5 px-2 w-8">{letter}</td>,
+                      <td key={`${letter}-m`} className="text-base-content/90 tracking-wide py-0.5 px-2">{formatMorseForDisplay(morse)}</td>,
+                    ])}
+                    {row.length < 3 && Array.from({ length: (3 - row.length) * 2 }, (_, j) => <td key={`e-${j}`} className="py-0.5 px-2" />)}
+                  </tr>
+                ));
+              })()}
+            </tbody>
+          </table>
         </div>
-        <div className="mt-3 text-xs text-base-content/60">
-          <p>• Use space between letters</p>
-          <p>• No spaces needed between dots/dashes</p>
-        </div>
+        <p className="mt-2 text-xs text-base-content/60">Space between letters; no space between dots/dashes.</p>
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <div className="flex gap-3 mb-4">
         <button
           onClick={solveMorseCode}
           className="btn btn-primary flex-1"
-          disabled={!translatedWord || translatedWord.includes('?') || isLoading}
+          disabled={
+            !translatedWord ||
+            translatedWord.includes("?") ||
+            isLoading ||
+            !round?.id ||
+            !bomb?.id ||
+            !currentModule?.id
+          }
         >
           {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-          {isLoading ? "Solving..." : "Translate"}
+          {isLoading ? "Solving..." : "Solve"}
         </button>
         <button onClick={clearInput} className="btn btn-outline" disabled={isLoading || (result?.resolved)}>
           Clear
@@ -365,7 +431,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
       {/* Results */}
       {result && (
-        <div className={`alert mb-4 ${result.resolved ? "alert-success" : "alert-warning"}`}>
+        <div ref={resultsRef} className={`alert mb-4 ${result.resolved ? "alert-success" : "alert-warning"}`}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="stroke-current shrink-0 h-6 w-6"
@@ -389,7 +455,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
             )}
           </svg>
           <div>
-            {result.resolved ? (
+            {result.resolved && (result.candidates?.length ?? 0) > 0 ? (
               <div>
                 <span className="font-bold">Word identified!</span>
                 <div className="mt-2 flex items-center gap-3">
@@ -403,7 +469,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
               <div>
                 <span className="font-bold">Possible matches:</span>
                 <div className="mt-2 space-y-1">
-                  {result.candidates.slice(0, 3).map((candidate: MorseCandidate, index: number) => (
+                  {(result.candidates ?? []).slice(0, 3).map((candidate: MorseCandidate, index: number) => (
                     <div key={index} className="flex items-center gap-2">
                       <span className="font-mono text-lg">{candidate.word}</span>
                       <span className="text-sm opacity-70">

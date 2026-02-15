@@ -24,7 +24,6 @@ public class PianoKeysSolver extends AbstractModuleSolver<PianoKeysInput, PianoK
 		List<PianoKeysSymbol> symbols = input.symbols();
 
 		// Store symbols in module state
-		storeState(module, "symbols", symbols);
 		storeState(module, "input", input);
 		if(symbols == null || symbols.size() != 3) {
 			return failure("Piano Keys requires exactly 3 symbols");

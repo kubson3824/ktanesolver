@@ -24,7 +24,7 @@ public class SimonSolver extends AbstractModuleSolver<SimonInput, SimonOutput> {
 		int strikes = bomb.getStrikes();
 
 		List<SimonColor> presses = input.flashes().stream().map(color -> mapColor(color, hasVowel, strikes)).toList();
-
+		storeState(module, "input", input);
 		return success(new SimonOutput(presses), input.flashes().size() == presses.size());
 	}
 

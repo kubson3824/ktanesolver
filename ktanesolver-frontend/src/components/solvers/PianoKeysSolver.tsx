@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solvePianoKeys, type PianoKeysSymbol, type PianoKeysNote } from "../../services/pianoKeysService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -67,68 +66,74 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
     reset: resetSolverState,
     currentModule,
     round,
-    markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        selectedSymbols,
-        solution,
-        twitchCommands
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
+  const moduleState = useMemo(
+    () => ({ selectedSymbols, solution, twitchCommands }),
+    [selectedSymbols, solution, twitchCommands],
+  );
+
+  const onRestoreState = useCallback(
+    (state: {
+      selectedSymbols?: PianoKeysSymbol[];
+      input?: { symbols?: PianoKeysSymbol[] };
+      solution?: typeof solution;
+      twitchCommands?: string[];
+    }) => {
+      // Backend stores input as state.input.symbols; frontend uses selectedSymbols
+      const symbols = state.selectedSymbols ?? state.input?.symbols;
+      if (symbols && Array.isArray(symbols)) setSelectedSymbols(symbols);
+      if (state.solution !== undefined) setSolution(state.solution ?? null);
+      if (state.twitchCommands) setTwitchCommands(state.twitchCommands);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (restored: NonNullable<typeof solution>) => {
+      if (restored && Array.isArray(restored.notes)) {
+        setSolution(restored);
+
+        const noteSequence = restored.notes.map(getNoteDisplay).join("-");
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.PIANO_KEYS,
+          result: {
+            notes: noteSequence,
+            count: restored.notes.length,
+          },
+        });
+        setTwitchCommands([command]);
+      }
+    },
+  []);
+
+  useSolverModulePersistence<
+    { selectedSymbols: PianoKeysSymbol[]; solution: typeof solution; twitchCommands: string[] },
+    NonNullable<typeof solution>
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown; solution?: unknown; notes?: unknown };
+        const candidate =
+          (anyRaw.output && typeof anyRaw.output === "object" ? anyRaw.output : undefined) ??
+          (anyRaw.solution && typeof anyRaw.solution === "object" ? anyRaw.solution : undefined) ??
+          (anyRaw.result && typeof anyRaw.result === "object" ? anyRaw.result : undefined) ??
+          raw;
+        // Validate that the candidate actually has a notes array
+        if (candidate && typeof candidate === "object" && Array.isArray((candidate as { notes?: unknown }).notes)) {
+          return candidate as NonNullable<typeof solution>;
         }
-      });
-    }
-  };
-
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [selectedSymbols, solution, twitchCommands]);
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        selectedSymbols?: PianoKeysSymbol[];
-        solution?: {
-          notes: PianoKeysNote[];
-        } | null;
-        twitchCommands?: string[];
-      };
-      
-      if (moduleState.selectedSymbols) setSelectedSymbols(moduleState.selectedSymbols);
-      if (moduleState.solution !== undefined) setSolution(moduleState.solution);
-      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        solution?: {
-          notes: PianoKeysNote[];
-        };
-        isSolved?: boolean;
-      };
-      
-      if (solution.solution) {
-        setSolution(solution.solution);
       }
-      if (solution.isSolved) {
-        setIsSolved(true);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSymbolClick = (symbol: PianoKeysSymbol) => {
     if (isSolved || isLoading) return;
@@ -169,32 +174,13 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
 
       setSolution(response.output);
       
-      // Generate Twitch command for the solution
-      const noteSequence = response.output.notes.map(getNoteDisplay).join("-");
       const command = generateTwitchCommand({
         moduleType: ModuleType.PIANO_KEYS,
-        result: {
-          notes: noteSequence,
-          count: response.output.notes.length
-        },
-        moduleNumber
+        result: response.output,
       });
       setTwitchCommands([command]);
-      
-      // Save solution
-      if (currentModule) {
-        useRoundStore.getState().round?.bombs.forEach(bomb => {
-          if (bomb.id === currentModule.bomb.id) {
-            const module = bomb.modules.find(m => m.id === currentModule.id);
-            if (module) {
-              module.solution = { solution: response.output };
-            }
-          }
-        });
-      }
-      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve Piano Keys");
+      setError(err instanceof Error ? err.message : "Failed to solve piano keys");
     } finally {
       setIsLoading(false);
     }
@@ -362,9 +348,6 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
         )}
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
@@ -383,6 +366,6 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
         <p className="mb-2">The solution will show you which piano keys to press in order.</p>
         <p>Follow the numbered sequence on the highlighted keys.</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

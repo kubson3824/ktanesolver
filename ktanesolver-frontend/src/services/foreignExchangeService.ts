@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api, withErrorWrapping } from "../lib/api";
 
 export interface ForeignExchangeInput {
   baseCurrency: string;
@@ -25,9 +25,11 @@ export async function solveForeignExchange(
   moduleId: string,
   data: ForeignExchangeRequest
 ): Promise<ForeignExchangeResponse> {
-  const response = await api.post<ForeignExchangeResponse>(
-    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-    data
-  );
-  return response.data;
+  return withErrorWrapping(async () => {
+    const response = await api.post<ForeignExchangeResponse>(
+      `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
+      data
+    );
+    return response.data;
+  });
 }

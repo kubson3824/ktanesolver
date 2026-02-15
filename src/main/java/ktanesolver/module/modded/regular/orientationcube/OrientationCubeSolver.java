@@ -35,6 +35,8 @@ public class OrientationCubeSolver extends AbstractModuleSolver<OrientationCubeI
 
 	@Override
 	protected SolveResult<OrientationCubeOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, OrientationCubeInput input) {
+		storeState(module, "initialFace", input.initialFace());
+		storeState(module, "updatedFace", input.updatedFace());
 		RotationResult result = determineRotations(bomb, input);
 		OrientationCubeOutput output = new OrientationCubeOutput(result.rotations().get(input.initialFace()), result.needsUpdatedFace());
 		return success(output);

@@ -31,6 +31,7 @@ export enum ModuleType {
   MORSEMATICS = "MORSEMATICS",
   CONNECTION_CHECK = "CONNECTION_CHECK",
   LETTER_KEYS = "LETTER_KEYS",
+  ASTROLOGY = "ASTROLOGY",
 }
 
 export enum PortType {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { solveWhosOnFirst, type ButtonPosition, type WhosOnFirstSolveRequest } from "../../services/whosOnFirstService";
 import { useRoundStore } from "../../store/useRoundStore";
@@ -6,11 +6,12 @@ import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { ModuleType } from "../../types";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
-  SolverControls
+  SolverControls,
+  SolverResult
 } from "../common";
 
 interface WhosOnFirstSolverProps {
@@ -37,6 +38,66 @@ const COMMON_WORDS = [
   "U", "UH HUH", "UH UH", "UHHH", "WHAT?", "RIGHT", "LEFT", "MIDDLE", "READY", "WAIT",
   "PRESS", "YOU ARE", "SURE", "WHAT", "LIKE"
 ];
+
+const EMPTY_BUTTONS: Record<ButtonPosition, string> = {
+  TOP_LEFT: "",
+  TOP_RIGHT: "",
+  MIDDLE_LEFT: "",
+  MIDDLE_RIGHT: "",
+  BOTTOM_LEFT: "",
+  BOTTOM_RIGHT: "",
+};
+
+/** API state shape from backend (displayHistory, buttonHistory, buttonPressHistory) */
+interface WhosOnFirstApiState {
+  displayHistory: string[];
+  buttonHistory: Record<string, string>[];
+  buttonPressHistory: Record<string, string>[];
+}
+
+function isWhosOnFirstApiState(
+  state: unknown
+): state is WhosOnFirstApiState {
+  if (!state || typeof state !== "object") return false;
+  const s = state as Record<string, unknown>;
+  return (
+    Array.isArray(s.displayHistory) &&
+    Array.isArray(s.buttonHistory) &&
+    Array.isArray(s.buttonPressHistory)
+  );
+}
+
+/** Extract single key/value from a buttonPressHistory entry (position -> buttonText) */
+function entryToPositionAndText(
+  entry: Record<string, string>
+): { position: ButtonPosition; buttonText: string } | null {
+  const keys = Object.keys(entry);
+  if (keys.length !== 1) return null;
+  const pos = keys[0] as ButtonPosition;
+  const text = entry[pos];
+  if (typeof text !== "string") return null;
+  return { position: pos, buttonText: text };
+}
+
+/** Mini 2×3 grid showing which position was pressed (same order as main grid) */
+function MiniPositionGrid({ pressedPosition }: { pressedPosition: ButtonPosition }) {
+  return (
+    <div className="grid grid-cols-2 grid-rows-3 gap-0.5 w-12 h-14 shrink-0" aria-hidden>
+      {BUTTON_POSITIONS.map(({ position }) => (
+        <div
+          key={position}
+          className={`rounded-sm border text-[10px] flex items-center justify-center font-bold ${
+            position === pressedPosition
+              ? "bg-success/30 border-success text-success"
+              : "bg-base-300 border-base-content/20 text-base-content/40"
+          }`}
+        >
+          {position === pressedPosition ? "✓" : ""}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
   const [currentStage, setCurrentStage] = useState(1);
@@ -66,72 +127,104 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        currentStage,
-        displayWord,
-        buttons,
-        solution,
-        twitchCommands,
-        stageHistory
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
+  const moduleState = useMemo(
+    () => ({ currentStage, displayWord, buttons, solution, twitchCommands, stageHistory }),
+    [currentStage, displayWord, buttons, solution, twitchCommands, stageHistory],
+  );
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [currentStage, displayWord, buttons, solution, twitchCommands, stageHistory]);
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        currentStage?: number;
-        displayWord?: string;
-        buttons?: Record<ButtonPosition, string>;
-        solution?: { position: ButtonPosition; buttonText: string } | null;
-        twitchCommands?: string[];
-        stageHistory?: { stage: number; displayWord: string; position: ButtonPosition; buttonText: string }[];
-      };
-      
-      if (moduleState.currentStage !== undefined) setCurrentStage(moduleState.currentStage);
-      if (moduleState.displayWord !== undefined) setDisplayWord(moduleState.displayWord);
-      if (moduleState.buttons) setButtons(moduleState.buttons);
-      if (moduleState.solution !== undefined) setSolution(moduleState.solution);
-      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
-      if (moduleState.stageHistory) setStageHistory(moduleState.stageHistory);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        isSolved?: boolean;
-        finalStage?: number;
-      };
-      
-      if (solution.isSolved) {
-        setIsSolved(true);
-        if (solution.finalStage) {
-          setCurrentStage(solution.finalStage);
+  const onRestoreState = useCallback((state: unknown) => {
+    if (isWhosOnFirstApiState(state)) {
+      const { displayHistory, buttonHistory, buttonPressHistory } = state;
+      const stageCount = displayHistory.length;
+      setCurrentStage(Math.min(stageCount + 1, 3));
+      setDisplayWord("");
+      setButtons(
+        stageCount > 0 && buttonHistory[stageCount - 1]
+          ? { ...EMPTY_BUTTONS, ...buttonHistory[stageCount - 1] }
+          : EMPTY_BUTTONS
+      );
+      const history: { stage: number; displayWord: string; position: ButtonPosition; buttonText: string }[] = [];
+      for (let i = 0; i < stageCount; i++) {
+        const displayWord = displayHistory[i] ?? "";
+        const press = buttonPressHistory[i] ? entryToPositionAndText(buttonPressHistory[i]) : null;
+        if (press) {
+          history.push({
+            stage: i + 1,
+            displayWord: displayWord === " " ? "[BLANK]" : displayWord,
+            position: press.position,
+            buttonText: press.buttonText,
+          });
         }
       }
+      setStageHistory(history);
+      const lastPress =
+        buttonPressHistory.length > 0
+          ? entryToPositionAndText(buttonPressHistory[buttonPressHistory.length - 1])
+          : null;
+      setSolution(lastPress);
+      setTwitchCommands([]);
+      return;
     }
-  }, [currentModule, moduleNumber, setIsSolved]);
+    const frontend = state as {
+      currentStage?: number;
+      displayWord?: string;
+      buttons?: Record<ButtonPosition, string>;
+      solution?: { position: ButtonPosition; buttonText: string } | null;
+      twitchCommands?: string[];
+      stageHistory?: { stage: number; displayWord: string; position: ButtonPosition; buttonText: string }[];
+    };
+    if (frontend.currentStage !== undefined) setCurrentStage(Math.min(frontend.currentStage ?? 1, 3));
+    if (frontend.displayWord !== undefined) setDisplayWord(frontend.displayWord);
+    if (frontend.buttons) setButtons(frontend.buttons);
+    if (frontend.solution !== undefined) setSolution(frontend.solution);
+    if (frontend.twitchCommands) setTwitchCommands(frontend.twitchCommands);
+    if (frontend.stageHistory) setStageHistory(frontend.stageHistory);
+  }, []);
+
+  const onRestoreSolution = useCallback(
+    (restored: { finalStage?: number } | number | { position: ButtonPosition; buttonText: string } | null) => {
+      if (restored && typeof restored === "object" && "position" in restored && "buttonText" in restored) {
+        setSolution(restored as { position: ButtonPosition; buttonText: string });
+      }
+      const finalStage = typeof restored === "number" ? restored : (restored as { finalStage?: number } | null)?.finalStage;
+      if (finalStage) setCurrentStage(Math.min(finalStage, 3));
+    },
+    [],
+  );
+
+  useSolverModulePersistence<
+    {
+      currentStage: number;
+      displayWord: string;
+      buttons: Record<ButtonPosition, string>;
+      solution: { position: ButtonPosition; buttonText: string } | null;
+      twitchCommands: string[];
+      stageHistory: { stage: number; displayWord: string; position: ButtonPosition; buttonText: string }[];
+    },
+    { finalStage?: number } | number | { position: ButtonPosition; buttonText: string }
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { position?: string; buttonText?: string; output?: unknown; finalStage?: unknown };
+        if (typeof anyRaw.position === "string" && typeof anyRaw.buttonText === "string") {
+          return { position: anyRaw.position as ButtonPosition, buttonText: anyRaw.buttonText };
+        }
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { finalStage?: number };
+        if (typeof anyRaw.finalStage === "number") return { finalStage: anyRaw.finalStage };
+      }
+      if (typeof raw === "number") return raw;
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleDisplayWordChange = (value: string) => {
     // Allow empty display (can be " " or empty string)
@@ -194,27 +287,14 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.WHOS_ON_FIRST,
         result: { position: positionName, button: response.output.buttonText },
-        moduleNumber
       });
       setTwitchCommands([command]);
       
       if (response.solved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
-        // Save solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { isSolved: true, finalStage: currentStage };
-              }
-            }
-          });
-        }
-      } else {
-        // Advance to next stage
+      } else if (currentStage < 3) {
+        // Advance to next stage only when below stage 3
         setCurrentStage(currentStage + 1);
         setDisplayWord("");
         setSolution(null);
@@ -247,18 +327,21 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
 
 
   const getButtonHighlight = (position: ButtonPosition) => {
-    if (solution?.position === position) {
-      return "ring-4 ring-green-500 ring-opacity-75 bg-green-600 hover:bg-green-500";
+    if (solution?.position === position && !isSolved) {
+      return "ring-4 ring-success ring-opacity-90 bg-success/20 hover:bg-success/30 border-success motion-safe:animate-pulse-success";
     }
     return "bg-gray-700 hover:bg-gray-600";
   };
+
+  const isSolutionCell = (position: ButtonPosition) =>
+    Boolean(solution?.position === position && !isSolved);
 
   return (
     <SolverLayout>
       {/* Who's On First Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">
-          MODULE VIEW - STAGE {currentStage}/3
+          MODULE VIEW - STAGE {Math.min(currentStage, 3)}/3
         </h3>
         
         {/* Display Screen */}
@@ -276,61 +359,71 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
         </div>
 
         {/* Buttons Grid */}
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-6">
+        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-4">
           {BUTTON_POSITIONS.map(({ position, label, gridClass }) => (
             <div key={position} className={gridClass}>
               <div className="text-xs text-gray-500 mb-1 text-center">{label}</div>
-              <button
-                className={`h-16 rounded-lg border-2 border-gray-600 transition-all duration-200 flex items-center justify-center text-white font-bold text-sm px-2 ${getButtonHighlight(position)}`}
-                disabled={isSolved || isLoading}
+              <div
+                className={`h-16 rounded-lg border-2 transition-all duration-200 flex flex-col items-center justify-center text-white font-bold text-sm px-2 ${
+                  getButtonHighlight(position)
+                } ${solution?.position === position && !isSolved ? "border-success" : "border-gray-600"}`}
               >
+                {isSolutionCell(position) && (
+                  <span className="text-success text-xs font-bold mb-0.5">✓ PRESS THIS</span>
+                )}
                 <input
                   type="text"
                   value={buttons[position]}
                   onChange={(e) => handleButtonTextChange(position, e.target.value)}
                   placeholder="..."
-                  className="w-full bg-transparent text-center outline-none placeholder-gray-500"
+                  className="w-full bg-transparent text-center outline-none placeholder-gray-500 pointer-events-auto"
                   disabled={isSolved || isLoading}
                   onClick={(e) => e.stopPropagation()}
                 />
-              </button>
+              </div>
             </div>
           ))}
         </div>
-
-        {/* Solution */}
-        {solution && !isSolved && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <p className="text-center text-green-400 mb-2 text-sm font-medium">Press:</p>
-            <div className="flex justify-center mb-3">
-              <div className="bg-green-900/50 border border-green-600 rounded-lg px-4 py-3">
-                <p className="text-green-300 text-sm font-bold">
-                  {solution.position.replace('_', ' ')} - "{solution.buttonText}"
-                </p>
-              </div>
-            </div>
-
-            {/* Twitch command display */}
-            <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
-          </div>
-        )}
       </div>
 
-      {/* Stage history */}
+      {/* Stage history with mini position grid per row (shown for current and solved) */}
       {stageHistory.length > 0 && (
         <div className="bg-base-200 rounded-lg p-4 mb-4">
           <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">STAGE HISTORY</h3>
           <div className="space-y-2 text-sm">
             {stageHistory.map((stage, index) => (
-              <div key={index} className="flex justify-between items-center bg-base-100 rounded px-3 py-2">
-                <span className="text-base-content/60">Stage {stage.stage}:</span>
-                <span className="text-base-content">"{stage.displayWord === "[BLANK]" ? "[EMPTY]" : stage.displayWord}" → {stage.position.replace('_', ' ')}</span>
-                <span className="text-base-content/60">("{stage.buttonText}")</span>
+              <div key={index} className="flex items-center gap-3 bg-base-100 rounded px-3 py-2">
+                <MiniPositionGrid pressedPosition={stage.position} />
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+                  <span className="text-base-content/60 shrink-0">Stage {stage.stage}:</span>
+                  <span className="text-base-content">
+                    &quot;{stage.displayWord === "[BLANK]" ? "EMPTY" : stage.displayWord}&quot; → {stage.position.replace("_", " ")}
+                  </span>
+                  <span className="text-base-content/80 font-medium">&quot;{stage.buttonText}&quot;</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* Solved-state summary: full sequence at a glance */}
+      {isSolved && stageHistory.length > 0 && (
+        <div className="bg-success/10 border border-success/30 rounded-lg p-4 mb-4 animate-fade-in">
+          <h3 className="text-center text-success font-medium mb-3 text-sm">SOLVED — Sequence</h3>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+            {stageHistory.map((stage, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <MiniPositionGrid pressedPosition={stage.position} />
+                <span className="text-base-content">
+                  Stage {stage.stage}: {stage.position.replace("_", " ")} (&quot;{stage.buttonText}&quot;)
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Quick Word Reference */}
       {!isSolved && (
         <div className="bg-base-200 rounded p-3 mb-4">
@@ -350,20 +443,30 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
         </div>
       )}
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <SolverControls
         onSolve={handleCheckAnswer}
         onReset={reset}
         isSolveDisabled={Object.values(buttons).some(b => !b.trim())}
         isLoading={isLoading}
-        solveText={isSolved ? "Module Solved" : currentStage === 3 ? "Final Stage" : `Solve Stage ${currentStage}`}
+        solveText={isSolved ? "Module Solved" : Math.min(currentStage, 3) === 3 ? "Final Stage" : `Solve Stage ${Math.min(currentStage, 3)}`}
       />
 
       {/* Error display */}
       <ErrorAlert error={error} />
+
+      {/* Current-stage answer: solution below inputs and controls */}
+      {solution && !isSolved && (
+        <div className="mb-4">
+          <SolverResult
+            variant="success"
+            title={`Press: ${solution.position.replace("_", " ")} — "${solution.buttonText}"`}
+            description={`Stage ${Math.min(currentStage, 3)} of 3`}
+            className="mb-2"
+          />
+          <TwitchCommandDisplay command={twitchCommands} />
+        </div>
+      )}
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
@@ -376,6 +479,6 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
           </p>
         )}
       </div>
-    </div>
+    </SolverLayout>
   );
 }

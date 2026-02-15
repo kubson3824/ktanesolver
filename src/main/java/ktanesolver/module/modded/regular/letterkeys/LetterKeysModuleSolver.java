@@ -18,6 +18,7 @@ public class LetterKeysModuleSolver extends AbstractModuleSolver<LetterKeysInput
 
 	@Override
 	protected SolveResult<LetterKeysOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, LetterKeysInput input) {
+		storeState(module, "input", input);
 		int number = input.number();
 		if(number == 69){
 			return success(new LetterKeysOutput('D'));

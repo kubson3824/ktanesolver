@@ -13,6 +13,7 @@ export interface MemorySolveResponse {
     position: number;
     label: number;
   };
+  solved: boolean;
 }
 
 export const solveMemory = async (

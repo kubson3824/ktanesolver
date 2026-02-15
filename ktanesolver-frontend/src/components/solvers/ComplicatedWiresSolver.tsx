@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { 
   solveComplicatedWires, 
@@ -7,13 +7,12 @@ import {
 } from "../../services/complicatedWiresService";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { useRoundStore } from "../../store/useRoundStore";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -52,46 +51,112 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { wires?: ComplicatedWire[]; wireCount?: number };
-      
-      if (moduleState.wires && Array.isArray(moduleState.wires)) {
-        const restoredWires: WireState[] = moduleState.wires.map((wire, index) => ({
-          ...wire,
-          id: index + 1
-        }));
-        setWires(restoredWires);
-      }
-      if (moduleState.wireCount) {
-        setWireCount(moduleState.wireCount);
-      }
-    }
+  const moduleState = useMemo(
+    () => ({ wires, wireCount, solution, twitchCommands }),
+    [wires, wireCount, solution, twitchCommands],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { cutWires?: number[] };
+  const onRestoreState = useCallback(
+    (state: { wires?: ComplicatedWire[]; wireCount?: number; solution?: number[]; twitchCommands?: string[] } | { input?: {wires?: ComplicatedWire[]; wireCount?: number}}) => {
+      console.log("ComplicatedWiresSolver onRestoreState", state);
       
-      if (solution.cutWires) {
-        setSolution(solution.cutWires);
-        setIsSolved(true);
-
-        // Generate twitch commands from the solution
-        const commands = solution.cutWires.map(wireNum => 
-          generateTwitchCommand({
-            moduleType: ModuleType.COMPLICATED_WIRES,
-            result: { action: "cut", wire: wireNum },
-            moduleNumber
-          })
-        );
-        setTwitchCommands(commands);
+      // Handle input wrapper format (from backend: state.input.wires only, no wireCount)
+      if ('input' in state) {
+        if (state.input?.wires && Array.isArray(state.input.wires)) {
+          const restoredWires: WireState[] = state.input.wires.map((wire, index) => ({
+            ...wire,
+            id: index + 1,
+          }));
+          setWires(restoredWires);
+          // Wire count must match backend: use length of wires array
+          setWireCount(state.input.wires.length);
+        } else if (state.input?.wireCount !== undefined) {
+          setWireCount(state.input.wireCount);
+        }
+      } else if ('wires' in state) {
+        // Handle direct format
+        if (state.wires && Array.isArray(state.wires)) {
+          const restoredWires: WireState[] = state.wires.map((wire, index) => ({
+            ...wire,
+            id: index + 1,
+          }));
+          setWires(restoredWires);
+          // Wire count must match backend: use length of wires array
+          setWireCount(state.wires.length);
+        } else if (state.wireCount !== undefined) {
+          setWireCount(state.wireCount);
+        }
+        // These properties only exist in the full state format
+        if (state.solution && Array.isArray(state.solution)) {
+          setSolution(state.solution);
+        }
+        if (state.twitchCommands && Array.isArray(state.twitchCommands)) {
+          setTwitchCommands(state.twitchCommands);
+        }
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (restored: { cutWires: number[] } | number[]) => {
+      const cutWires = Array.isArray(restored) ? restored : restored.cutWires;
+      if (!cutWires || !Array.isArray(cutWires)) return;
+
+      setSolution(cutWires);
+
+      const commands = cutWires.map((wireNum) =>
+        generateTwitchCommand({
+          moduleType: ModuleType.COMPLICATED_WIRES,
+          result: { action: "cut", wire: wireNum },
+        }),
+      );
+      setTwitchCommands(commands);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { wires: WireState[]; wireCount: number; solution: number[]; twitchCommands: string[] },
+    { cutWires: number[] } | number[]
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      console.log("ComplicatedWiresSolver extractSolution raw:", raw);
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; cutWires?: unknown; solution?: unknown };
+        // Check for direct format first (when state is persisted)
+        if ('solution' in anyRaw && Array.isArray(anyRaw.solution)) {
+          console.log("ComplicatedWiresSolver extractSolution: found direct format");
+          return anyRaw.solution as number[];
+        }
+        // Legacy format support - check for nested output
+        if (anyRaw.output && typeof anyRaw.output === "object") {
+          console.log("ComplicatedWiresSolver extractSolution: found nested output format");
+          return (anyRaw.output as { cutWires: number[] }).cutWires;
+        }
+        // Check for cutWires property
+        if (Array.isArray(anyRaw.cutWires)) {
+          console.log("ComplicatedWiresSolver extractSolution: found cutWires format");
+          return anyRaw.cutWires as number[];
+        }
+        // Fallback to direct array format
+        if (Array.isArray(raw)) {
+          console.log("ComplicatedWiresSolver extractSolution: found direct array format");
+          return raw as number[];
+        }
+      }
+      console.log("ComplicatedWiresSolver extractSolution: no matching format found, returning null");
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const updateWire = (wireId: number, property: keyof ComplicatedWire, value: boolean) => {
     setWires(prev => 
@@ -103,24 +168,6 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
     setSolution([]);
     setTwitchCommands([]);
     setIsSolved(false);
-
-    // Save state to module
-    if (currentModule) {
-      const moduleState = {
-        wires: wires.map(w => ({ red: w.red, blue: w.blue, led: w.led, star: w.star })),
-        wireCount
-      };
-      
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(b => {
-        if (b.id === bomb?.id) {
-          const module = b.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
   };
 
   const handleWireCountChange = (count: number) => {
@@ -130,24 +177,6 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
     setSolution([]);
     setTwitchCommands([]);
     setIsSolved(false);
-
-    // Save state to module
-    if (currentModule) {
-      const moduleState = {
-        wires: DEFAULT_WIRES.slice(0, count).map(w => ({ red: w.red, blue: w.blue, led: w.led, star: w.star })),
-        wireCount: count
-      };
-      
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(b => {
-        if (b.id === bomb?.id) {
-          const module = b.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
   };
 
   const handleSolve = async () => {
@@ -181,7 +210,6 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
         generateTwitchCommand({
           moduleType: ModuleType.COMPLICATED_WIRES,
           result: { action: "cut", wire: wireNum },
-          moduleNumber
         })
       );
       setTwitchCommands(commands);
@@ -364,9 +392,6 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
         )}
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-
       {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
@@ -389,6 +414,6 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
           <li>A wire can have both red and blue colors (creates striped pattern)</li>
         </ul>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

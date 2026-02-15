@@ -1,17 +1,17 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveSimon, type SimonColor } from "../../services/simonService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface SimonSolverProps {
   bomb: BombEntity | null | undefined;
@@ -23,6 +23,7 @@ const SIMON_COLORS: {
   className: string;
   lightClass: string;
   bgClass: string;
+  textClass: string;
   position: string;
 }[] = [
   {
@@ -31,6 +32,7 @@ const SIMON_COLORS: {
     className: "bg-blue-600 hover:bg-blue-500 border-blue-700",
     lightClass: "bg-blue-400 shadow-blue-400",
     bgClass: "bg-blue-900/30 border-blue-800",
+    textClass: "text-blue-300",
     position: "TOP_LEFT"
   },
   {
@@ -39,6 +41,7 @@ const SIMON_COLORS: {
     className: "bg-yellow-500 hover:bg-yellow-400 border-yellow-600",
     lightClass: "bg-yellow-300 shadow-yellow-300",
     bgClass: "bg-yellow-900/30 border-yellow-800",
+    textClass: "text-yellow-300",
     position: "TOP_RIGHT"
   },
   {
@@ -47,6 +50,7 @@ const SIMON_COLORS: {
     className: "bg-green-600 hover:bg-green-500 border-green-700",
     lightClass: "bg-green-400 shadow-green-400",
     bgClass: "bg-green-900/30 border-green-800",
+    textClass: "text-green-300",
     position: "BOTTOM_LEFT"
   },
   {
@@ -55,9 +59,14 @@ const SIMON_COLORS: {
     className: "bg-red-600 hover:bg-red-500 border-red-700",
     lightClass: "bg-red-400 shadow-red-400",
     bgClass: "bg-red-900/30 border-red-800",
+    textClass: "text-red-300",
     position: "BOTTOM_RIGHT"
   }
 ];
+
+function getColorConfig(color: SimonColor) {
+  return SIMON_COLORS.find((c) => c.color === color);
+}
 
 
 export default function SimonSolver({ bomb }: SimonSolverProps) {
@@ -81,64 +90,81 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        flashes,
-        presses,
-        twitchCommands,
-        manuallySolved
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
+  const moduleState = useMemo(
+    () => ({ flashes, presses, twitchCommands, manuallySolved }),
+    [flashes, presses, twitchCommands, manuallySolved],
+  );
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [flashes, presses, twitchCommands, manuallySolved]);
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        flashes?: SimonColor[];
-        presses?: SimonColor[];
-        twitchCommands?: string[];
-        manuallySolved?: boolean;
-      };
-      
-      if (moduleState.flashes) setFlashes(moduleState.flashes);
-      if (moduleState.presses) setPresses(moduleState.presses);
-      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
-      if (moduleState.manuallySolved !== undefined) setManuallySolved(moduleState.manuallySolved);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        isSolved?: boolean;
-        manuallySolved?: boolean;
-      };
-      
-      if (solution.isSolved) {
-        setIsSolved(true);
-        setManuallySolved(solution.manuallySolved || false);
+  const onRestoreState = useCallback(
+    (state: { flashes?: SimonColor[]; presses?: SimonColor[]; twitchCommands?: string[]; manuallySolved?: boolean } | { input?: { flashes?: SimonColor[] } }) => {
+      if ("input" in state && state.input?.flashes) {
+        setFlashes(state.input.flashes);
+      } else if ("flashes" in state && Array.isArray(state.flashes)) {
+        setFlashes(state.flashes);
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      if ("presses" in state && Array.isArray(state.presses)) {
+        setPresses(state.presses);
+      }
+      if ("twitchCommands" in state && Array.isArray(state.twitchCommands)) {
+        setTwitchCommands(state.twitchCommands);
+      }
+      if ("manuallySolved" in state && state.manuallySolved !== undefined) {
+        setManuallySolved(state.manuallySolved);
+      }
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (restored: { presses?: SimonColor[]; manuallySolved?: boolean } | null) => {
+      if (!restored) return;
+      if (restored.presses) {
+        setPresses(restored.presses);
+        
+        // Regenerate Twitch commands from the presses
+        const commands = restored.presses.map((color: SimonColor) => {
+          return generateTwitchCommand({
+            moduleType: ModuleType.SIMON_SAYS,
+            result: { color: color },
+          });
+        });
+        setTwitchCommands(commands);
+      }
+      if (restored.manuallySolved !== undefined) setManuallySolved(restored.manuallySolved);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { flashes: SimonColor[]; presses: SimonColor[]; twitchCommands: string[]; manuallySolved: boolean } | { input?: { flashes?: SimonColor[] } },
+    { presses?: SimonColor[]; manuallySolved?: boolean } | null
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; presses?: unknown; manuallySolved?: unknown };
+        if (Array.isArray(anyRaw.presses)) {
+          return {
+            presses: anyRaw.presses as SimonColor[],
+            manuallySolved: Boolean(anyRaw.manuallySolved),
+          };
+        }
+        if (anyRaw.output && typeof anyRaw.output === "object") {
+          const out = anyRaw.output as { presses?: SimonColor[] };
+          return { presses: out.presses, manuallySolved: Boolean(anyRaw.manuallySolved) };
+        }
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleColorClick = (color: SimonColor) => {
     if (isSolved || isLoading) return;
@@ -191,27 +217,12 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
       
       // Generate Twitch commands for each press in sequence
       const commands = response.output.presses.map((color: SimonColor) => {
-        const colorInfo = SIMON_COLORS.find(c => c.color === color);
-        const positionName = colorInfo?.position || 'UNKNOWN';
         return generateTwitchCommand({
           moduleType: ModuleType.SIMON_SAYS,
-          result: { position: positionName },
-          moduleNumber
+          result: { color: color },
         });
       });
       setTwitchCommands(commands);
-      
-      // Save solution when solved
-      if (presses.length > 0 && currentModule) {
-        useRoundStore.getState().round?.bombs.forEach(bomb => {
-          if (bomb.id === currentModule.bomb.id) {
-            const module = bomb.modules.find(m => m.id === currentModule.id);
-            if (module) {
-              module.solution = { presses, twitchCommands };
-            }
-          }
-        });
-      }
       
       // Animate the press sequence after checking
       if (response.output.presses.length > 0) {
@@ -248,127 +259,119 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
     setIsSolved(true);
     setManuallySolved(true);
     markModuleSolved(bomb.id, currentModule.id);
-    
-    // Save solution
-    if (currentModule) {
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.solution = { isSolved: true, manuallySolved: true };
-          }
-        }
-      });
-    }
   };
 
   return (
     <SolverLayout>
-      
-      {/* Simon Says Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
-        
-        {/* Simon Says Buttons */}
-        <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto mb-6">
-          {SIMON_COLORS.map((color, index) => {
-            const isFlashActive = activeFlash === index;
-            const isPressActive = activePress === index;
-            const isActive = isFlashActive || isPressActive;
-            
-            return (
-              <button
-                key={color.color}
-                className={`h-24 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
-                  isActive
-                    ? `${color.lightClass} shadow-lg scale-95`
-                    : color.className
-                } ${isSolved ? "cursor-not-allowed opacity-75" : "cursor-pointer"}`}
-                onClick={() => handleColorClick(color.color)}
-                disabled={isSolved || isLoading}
-              >
-                <span className="text-white font-bold text-lg">
-                  {color.display}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Flash Sequence */}
-        {flashes.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <p className="text-center text-gray-400 mb-2 text-sm">Flash Sequence:</p>
-            <div className="flex justify-center gap-2 flex-wrap">
-              {flashes.map((color, index) => (
-                <div
-                  key={index}
-                  className={`px-3 py-2 rounded-lg border-2 flex items-center gap-2 ${
-                    SIMON_COLORS.find(c => c.color === color)?.bgClass
-                  }`}
+      {/* 1. Record flash order */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-base-content">
+            Record flash order
+          </CardTitle>
+          <p className="text-sm text-base-content/60">
+            Tap each color in the order the module flashes.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 max-w-[240px] mx-auto">
+            {SIMON_COLORS.map((color, index) => {
+              const isFlashActive = activeFlash === index;
+              const isPressActive = activePress === index;
+              const isActive = isFlashActive || isPressActive;
+              return (
+                <button
+                  key={color.color}
+                  type="button"
+                  className={`min-h-[72px] rounded-xl border-2 transition-all duration-200 flex items-center justify-center ${
+                    isActive ? `${color.lightClass} shadow-lg scale-[0.98]` : color.className
+                  } ${isSolved ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                  onClick={() => handleColorClick(color.color)}
+                  disabled={isSolved || isLoading}
                 >
-                  <span className="text-gray-400 text-xs">#{index + 1}</span>
-                  <span className={`font-bold ${
-                    color === 'YELLOW' ? 'text-yellow-300' : 
-                    color === 'RED' ? 'text-red-400' :
-                    color === 'BLUE' ? 'text-blue-400' :
-                    'text-green-400'
-                  }`}>
-                    {color}
+                  <span className="text-white font-semibold text-base drop-shadow-sm">
+                    {color.display}
                   </span>
-                  {!isSolved && !isLoading && (
-                    <button
-                      onClick={() => handleRemoveFlash(index)}
-                      className="ml-1 text-gray-500 hover:text-red-400 transition-colors"
+                </button>
+              );
+            })}
+          </div>
+
+          {flashes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-base-content/80">
+                Your sequence ({flashes.length} flash{flashes.length !== 1 ? "es" : ""})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {flashes.map((color, index) => {
+                  const config = getColorConfig(color);
+                  return (
+                    <div
+                      key={`${color}-${index}`}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config?.bgClass ?? ""}`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ))}
+                      <span className="text-xs font-medium text-base-content/60">
+                        {index + 1}
+                      </span>
+                      <span className={`font-semibold text-sm ${config?.textClass ?? ""}`}>
+                        {color}
+                      </span>
+                      {!isSolved && !isLoading && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFlash(index)}
+                          className="ml-0.5 p-0.5 rounded text-base-content/50 hover:text-error hover:bg-error/10 transition-colors"
+                          aria-label={`Remove flash ${index + 1}`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Solution */}
-        {presses.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <p className="text-center text-green-400 mb-2 text-sm font-medium">Press Sequence:</p>
-            <div className="flex justify-center gap-2 flex-wrap mb-3">
-              {presses.map((color, index) => (
-                <div
-                  key={index}
-                  className="bg-green-900/50 border border-green-600 rounded px-3 py-2 flex items-center gap-2"
-                >
-                  <span className="text-green-300 text-sm font-bold">{index + 1}.</span>
-                  <span className={`font-bold ${
-                    color === 'YELLOW' ? 'text-yellow-300' : 
-                    color === 'RED' ? 'text-red-300' :
-                    color === 'BLUE' ? 'text-blue-300' :
-                    'text-green-300'
-                  }`}>
-                    {color}
-                  </span>
-                </div>
-              ))}
-            </div>
+      {/* 2. Solution */}
+      {presses.length > 0 && (
+        <Card className="mb-4 border-success/30 bg-success/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium text-success">
+              Press in this order
+            </CardTitle>
+            <p className="text-sm text-base-content/70">
+              Respond with these colors in sequence.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ol className="flex flex-wrap gap-2 list-none p-0 m-0">
+              {presses.map((color, index) => {
+                const config = getColorConfig(color);
+                return (
+                  <li
+                    key={`${color}-${index}`}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200 border border-base-300"
+                  >
+                    <span className="text-sm font-bold text-success tabular-nums">
+                      {index + 1}.
+                    </span>
+                    <span className={`font-semibold text-sm ${config?.textClass ?? ""}`}>
+                      {color}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+            <TwitchCommandDisplay command={twitchCommands} className="mt-1" />
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Twitch Commands */}
-            <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
-          </div>
-        )}
-      </div>
-
-      {/* Bomb Info */}
-      <BombInfoDisplay 
-        bomb={bomb} 
-        showSerial={true}
-        showStrikes={true}
-      />
-
-      {/* Controls */}
       <SolverControls
         onSolve={handleCheckAnswer}
         onReset={reset}
@@ -381,17 +384,20 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
         showManualSolve={true}
       />
 
-      {/* Error */}
       <ErrorAlert error={error} />
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Click the colored buttons in the order they flash on the module.</p>
-        <p className="mb-2">The solution will show you which buttons to press in response. The sequence changes based on strikes and whether the serial number has a vowel.</p>
-        {manuallySolved && (
-          <p className="text-success font-medium">This module was marked as solved manually.</p>
-        )}
-      </div>
+      <Card className="mt-4 border-base-300/50">
+        <CardContent className="pt-4">
+          <p className="text-sm text-base-content/60 mb-2">
+            Click the colored buttons in the order they flash. The solution depends on strikes and whether the serial number contains a vowel.
+          </p>
+          {manuallySolved && (
+            <p className="text-sm text-success font-medium">
+              This module was marked as solved manually.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </SolverLayout>
   );
 }

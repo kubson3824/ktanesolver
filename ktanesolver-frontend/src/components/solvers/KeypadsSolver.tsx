@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BombEntity} from "../../types";
 import { ModuleType } from "../../types";
 import { solveKeypads, type KeypadSymbol } from "../../services/keypadsService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { useRoundStore } from "../../store/useRoundStore";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -73,57 +73,80 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
+  const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
-  // Restore state from module when component loads
+  const moduleState = useMemo(() => ({ selectedSymbols }), [selectedSymbols]);
+
+  const onRestoreState = useCallback((state: { selectedSymbols?: KeypadSymbol[]; symbols?: KeypadSymbol[] }) => {
+    // Backend stores input as state.symbols; frontend also persists selectedSymbols
+    const symbols = state.selectedSymbols ?? state.symbols;
+    if (symbols && Array.isArray(symbols)) {
+      setSelectedSymbols(symbols);
+    }
+  }, []);
+
+  const onRestoreSolution = useCallback(
+    (solution: { pressOrder: KeypadSymbol[]; twitchCommands?: string[] } | KeypadSymbol[]) => {
+      const pressOrder = Array.isArray(solution) ? solution : solution.pressOrder;
+      if (!pressOrder || !Array.isArray(pressOrder)) return;
+
+      setResult(pressOrder);
+
+      // Use persisted Twitch commands when present (position-based); otherwise leave empty and let useEffect regenerate from selectedSymbols + pressOrder
+      if (!Array.isArray(solution) && solution.twitchCommands?.length) {
+        setTwitchCommands(solution.twitchCommands);
+      } else {
+        setTwitchCommands([]);
+      }
+    },
+  []);
+
+  useSolverModulePersistence<
+    { selectedSymbols: KeypadSymbol[] },
+    { pressOrder: KeypadSymbol[]; twitchCommands?: string[] } | KeypadSymbol[]
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; symbols?: unknown; pressOrder?: unknown; twitchCommands?: unknown };
+        const pressOrder =
+          anyRaw.output && typeof anyRaw.output === "object"
+            ? (anyRaw.output as { pressOrder?: KeypadSymbol[] }).pressOrder
+            : Array.isArray(anyRaw.symbols)
+              ? (anyRaw.symbols as KeypadSymbol[])
+              : Array.isArray(anyRaw.pressOrder)
+                ? (anyRaw.pressOrder as KeypadSymbol[])
+                : null;
+        if (!pressOrder) return Array.isArray(raw) ? (raw as KeypadSymbol[]) : null;
+        const twitchCommands = Array.isArray(anyRaw.twitchCommands) ? (anyRaw.twitchCommands as string[]) : undefined;
+        return { pressOrder, twitchCommands };
+      }
+      if (Array.isArray(raw)) return raw as KeypadSymbol[];
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
+
+  // Regenerate position-based Twitch commands when we have result + selectedSymbols but no commands (e.g. restored from backend)
+  const positionNames = useMemo(() => ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"] as const, []);
   useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { selectedSymbols?: KeypadSymbol[] };
-      
-      if (moduleState.selectedSymbols && Array.isArray(moduleState.selectedSymbols)) {
-        setSelectedSymbols(moduleState.selectedSymbols);
-      }
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { symbols?: KeypadSymbol[] };
-      
-      if (solution.symbols && Array.isArray(solution.symbols)) {
-        setResult(solution.symbols);
-        setIsSolved(true);
-
-        // Generate twitch commands from the solution
-        const commands = solution.symbols.map(symbol => 
-          generateTwitchCommand({
-            moduleType: ModuleType.KEYPADS,
-            result: { symbol },
-            moduleNumber
-          })
-        );
-        setTwitchCommands(commands);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
-
-  // Save state when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        selectedSymbols
-      };
-      
-      useRoundStore.getState().round?.bombs.forEach(b => {
-        if (b.id === bomb?.id) {
-          const module = b.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+    if (result.length !== 4 || selectedSymbols.length !== 4 || twitchCommands.length > 0) return;
+    const commands = result.map((symbol: KeypadSymbol) => {
+      const positionIndex = selectedSymbols.indexOf(symbol);
+      const positionName = positionNames[positionIndex];
+      return generateTwitchCommand({
+        moduleType: ModuleType.KEYPADS,
+        result: { position: positionName },
       });
-    }
-  };
+    });
+    setTwitchCommands(commands);
+  }, [result, selectedSymbols, twitchCommands.length, positionNames]);
 
   const handleSymbolClick = (symbol: KeypadSymbol) => {
     if (isSolved) return;
@@ -137,7 +160,6 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
       // Select if we have room
       setSelectedSymbols([...selectedSymbols, symbol]);
     }
-    saveState();
   };
 
   const handleSolve = async () => {
@@ -171,13 +193,19 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
         return generateTwitchCommand({
           moduleType: ModuleType.KEYPADS,
           result: { position: positionName },
-          moduleNumber
         });
       });
       setTwitchCommands(commands);
-      
+
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
+      updateModuleAfterSolve(
+        bomb.id,
+        currentModule.id,
+        { selectedSymbols },
+        { pressOrder: response.output.pressOrder, twitchCommands: commands },
+        true
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve keypads");
     } finally {
@@ -194,7 +222,36 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Module visualization - 2x2 grid showing selected symbols */}
+      {/* Symbol selector grid - inputs first */}
+      <div className="bg-base-200 rounded-lg p-4 mb-4">
+        <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">
+          SELECT SYMBOLS ({selectedSymbols.length}/4)
+        </h3>
+        <div className="grid grid-cols-6 sm:grid-cols-7 md:grid-cols-8 gap-2">
+          {UNIQUE_SYMBOLS.map((symbol) => {
+            const isSelected = selectedSymbols.includes(symbol);
+            return (
+              <button
+                key={symbol}
+                onClick={() => handleSymbolClick(symbol)}
+                disabled={isSolved || (!isSelected && selectedSymbols.length >= 4)}
+                className={`h-12 rounded border-2 transition-all duration-200 flex items-center justify-center text-lg ${
+                  isSelected
+                    ? "bg-primary border-primary text-primary-content"
+                    : selectedSymbols.length >= 4 && !isSelected
+                    ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed"
+                    : "bg-base-100 border-base-300 hover:border-primary hover:bg-primary/10"
+                }`}
+                title={symbol}
+              >
+                {SYMBOL_DISPLAY[symbol].display}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Module visualization - 2x2 grid showing selected symbols and solution */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
         <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
@@ -236,38 +293,6 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
           </div>
         )}
       </div>
-
-      {/* Symbol selector grid */}
-      <div className="bg-base-200 rounded-lg p-4 mb-4">
-        <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">
-          SELECT SYMBOLS ({selectedSymbols.length}/4)
-        </h3>
-        <div className="grid grid-cols-6 sm:grid-cols-7 md:grid-cols-8 gap-2">
-          {UNIQUE_SYMBOLS.map((symbol) => {
-            const isSelected = selectedSymbols.includes(symbol);
-            return (
-              <button
-                key={symbol}
-                onClick={() => handleSymbolClick(symbol)}
-                disabled={isSolved || (!isSelected && selectedSymbols.length >= 4)}
-                className={`h-12 rounded border-2 transition-all duration-200 flex items-center justify-center text-lg ${
-                  isSelected
-                    ? "bg-primary border-primary text-primary-content"
-                    : selectedSymbols.length >= 4 && !isSelected
-                    ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed"
-                    : "bg-base-100 border-base-300 hover:border-primary hover:bg-primary/10"
-                }`}
-                title={symbol}
-              >
-                {SYMBOL_DISPLAY[symbol].display}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-        
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls

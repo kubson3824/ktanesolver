@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api, withErrorWrapping } from '../lib/api';
 
 export interface KnobRequest {
   indicators: boolean[];
@@ -14,9 +14,10 @@ export async function solveKnob(
   moduleId: string,
   request: KnobRequest
 ): Promise<KnobResponse> {
-  const response = await api.post(`/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`, {
-    input: request
+  return withErrorWrapping(async () => {
+    const response = await api.post(`/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`, {
+      input: request
+    });
+    return response.data.output;
   });
-  
-  return response.data.output;
 }

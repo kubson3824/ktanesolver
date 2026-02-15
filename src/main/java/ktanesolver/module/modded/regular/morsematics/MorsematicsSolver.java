@@ -124,6 +124,7 @@ public class MorsematicsSolver extends AbstractModuleSolver<MorsematicsInput, Mo
 
 		char resultChar = valueToChar(resultValue);
 
+		storeState(module, "letters", letters);
 		return success(new MorsematicsOutput(String.valueOf(resultChar)));
 	}
 

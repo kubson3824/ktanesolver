@@ -26,7 +26,7 @@ export default function SolverControls({
   className = ""
 }: SolverControlsProps) {
   return (
-    <div className={`flex gap-3 mb-4 ${className}`}>
+    <div className={`flex flex-wrap gap-3 mb-4 ${className}`}>
       <button
         onClick={onSolve}
         className="btn btn-primary flex-1"

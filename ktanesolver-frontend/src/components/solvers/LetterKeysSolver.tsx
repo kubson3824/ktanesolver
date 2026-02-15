@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveLetterKeys as solveLetterKeysApi } from "../../services/letterKeysService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -35,37 +34,53 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { number?: string };
-      
-      if (moduleState.number) {
-        setNumber(moduleState.number);
-      }
-    }
+  const moduleState = useMemo(
+    () => ({ number, result, twitchCommand }),
+    [number, result, twitchCommand],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { letter?: string };
-      
-      if (solution.letter) {
-        setResult(`Press button ${solution.letter}`);
-        setIsSolved(true);
+  const onRestoreState = useCallback(
+    (state: { number?: string; input?: { number?: number }; result?: string; twitchCommand?: string }) => {
+      const restoredNumber = state.number ?? (state.input?.number !== undefined ? String(state.input.number) : undefined);
+      if (restoredNumber !== undefined) setNumber(restoredNumber);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.LETTER_KEYS,
-          result: { letter: solution.letter },
-          moduleNumber
-        });
-        setTwitchCommand(command);
+  const onRestoreSolution = useCallback(
+    (solution: { letter: string }) => {
+      if (!solution?.letter) return;
+      setResult(`Press button ${solution.letter}`);
+
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.LETTER_KEYS,
+        result: { letter: solution.letter },
+      });
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<{ number: string; result: string; twitchCommand: string }, { letter: string }>({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; letter?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { letter: string };
+        if (typeof anyRaw.letter === "string") return { letter: anyRaw.letter };
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSolve = async () => {
     const numValue = parseInt(number);
@@ -99,7 +114,6 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.LETTER_KEYS,
         result: { letter },
-        moduleNumber
       });
       setTwitchCommand(command);
     } catch (err) {
@@ -114,19 +128,6 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
     if (value === "" || (/^\d{0,2}$/.test(value))) {
       setNumber(value);
       if (error) clearError();
-      
-      // Save state to module
-      if (currentModule) {
-        const moduleState = { number: value };
-        useRoundStore.getState().round?.bombs.forEach(bomb => {
-          if (bomb.id === currentModule.bomb.id) {
-            const module = bomb.modules.find(m => m.id === currentModule.id);
-            if (module) {
-              module.state = moduleState;
-            }
-          }
-        });
-      }
     }
   };
 
@@ -173,9 +174,6 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
         </div>
       </div>
 
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls

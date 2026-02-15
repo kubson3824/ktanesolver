@@ -26,6 +26,7 @@ public class AnagramsSolver extends AbstractModuleSolver<AnagramsInput, Anagrams
 	@Override
 	public SolveResult<AnagramsOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, AnagramsInput input) {
 		List<String> solutions = findAnagrams(input.displayWord());
+		storeState(module, "input", input);
 		AnagramsOutput output = new AnagramsOutput(solutions);
 
 		return success(output);

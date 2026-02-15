@@ -1,23 +1,33 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveEmojiMath, type EmojiMathOutput, type EmojiMathInput } from "../../services/emojiMathService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
+
+function isValidEmojiMathOutput(obj: unknown): obj is EmojiMathOutput {
+  return (
+    obj != null &&
+    typeof obj === "object" &&
+    "result" in obj &&
+    typeof (obj as EmojiMathOutput).result === "number" &&
+    "translatedEquation" in obj &&
+    typeof (obj as EmojiMathOutput).translatedEquation === "string"
+  );
+}
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
-interface EmojiSolverProps {
+interface EmojiMathSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-export default function EmojiSolver({ bomb }: EmojiSolverProps) {
+export default function EmojiMathSolver({ bomb }: EmojiMathSolverProps) {
   const [emojiEquation, setEmojiEquation] = useState<string>("");
   const [result, setResult] = useState<EmojiMathOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
@@ -35,63 +45,67 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        emojiEquation,
-        result,
-        twitchCommand
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+  const moduleState = useMemo(
+    () => ({ emojiEquation, result, twitchCommand }),
+    [emojiEquation, result, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: {
+      emojiEquation?: string;
+      input?: { emojiEquation?: string };
+      result?: EmojiMathOutput | null;
+      twitchCommand?: string;
+    }) => {
+      const equation = state.input?.emojiEquation ?? state.emojiEquation;
+      if (equation !== undefined) setEmojiEquation(equation);
+      if (state.result !== undefined && isValidEmojiMathOutput(state.result)) {
+        setResult(state.result);
+        if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+      } else {
+        if (state.result !== undefined) setResult(null);
+        setTwitchCommand("");
+      }
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: EmojiMathOutput) => {
+      if (!isValidEmojiMathOutput(solution)) return;
+      setResult(solution);
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.EMOJI_MATH,
+        result: { answer: String(solution.result) },
       });
-    }
-  };
+      setTwitchCommand(command);
+    },
+  []);
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [emojiEquation, result, twitchCommand]);
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        emojiEquation?: string;
-        result?: EmojiMathOutput | null;
-        twitchCommand?: string;
-      };
-      
-      if (moduleState.emojiEquation !== undefined) setEmojiEquation(moduleState.emojiEquation);
-      if (moduleState.result !== undefined) setResult(moduleState.result);
-      if (moduleState.twitchCommand) setTwitchCommand(moduleState.twitchCommand);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        result?: EmojiMathOutput;
-        isSolved?: boolean;
-      };
-      
-      if (solution.result) {
-        setResult(solution.result);
-      }
-      if (solution.isSolved) {
-        setIsSolved(true);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+  useSolverModulePersistence<
+    { emojiEquation: string; result: EmojiMathOutput | null; twitchCommand: string },
+    EmojiMathOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw !== "object") return null;
+      const anyRaw = raw as { output?: unknown; result?: unknown; solution?: unknown };
+      let candidate: unknown = null;
+      if (anyRaw.output && typeof anyRaw.output === "object") candidate = anyRaw.output;
+      else if (anyRaw.result && typeof anyRaw.result === "object") candidate = anyRaw.result;
+      else if (anyRaw.solution && typeof anyRaw.solution === "object") candidate = anyRaw.solution;
+      else candidate = raw;
+      return isValidEmojiMathOutput(candidate) ? candidate : null;
+    },
+    inferSolved: (_solution, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleEmojiEquationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -121,33 +135,21 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
       
       const response = await solveEmojiMath(round.id, bomb.id, currentModule.id, { input });
       
-      setResult(response.output);
-      
-      if (response.output) {
+      if (response.output && isValidEmojiMathOutput(response.output)) {
+        setResult(response.output);
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
         const command = generateTwitchCommand({
           moduleType: ModuleType.EMOJI_MATH,
-          result: { answer: response.output.result.toString() },
-          moduleNumber
+          result: { answer: String(response.output.result) },
         });
         setTwitchCommand(command);
-        
-        // Save solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { result: response.output };
-              }
-            }
-          });
-        }
+      } else {
+        setResult(null);
+        setTwitchCommand("");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve emoji equation");
+      setError(err instanceof Error ? err.message : "Failed to solve emoji math");
     } finally {
       setIsLoading(false);
     }
@@ -277,9 +279,6 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
         </div>
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <SolverControls
         onSolve={solveEmojiMathModule}
@@ -293,7 +292,7 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
       <ErrorAlert error={error} />
 
       {/* Results */}
-      {result && (
+      {result && isValidEmojiMathOutput(result) && (
         <div className="alert alert-success mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -318,7 +317,7 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
       )}
 
       {/* Twitch command display */}
-      {twitchCommand && result && (
+      {twitchCommand && result && isValidEmojiMathOutput(result) && (
         <TwitchCommandDisplay command={twitchCommand} />
       )}
 
@@ -329,6 +328,6 @@ export default function EmojiSolver({ bomb }: EmojiSolverProps) {
         <p>• Emoji mapping: :)0 =(1 (:2 )=3 :(4 ):5 =)6 (=7 :|8 |:9</p>
         <p>• Press Enter or click "Press OK" to calculate</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

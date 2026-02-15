@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveOrientationCube as solveOrientationCubeApi } from "../../services/orientationCubeService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { useRoundStore } from "../../store/useRoundStore";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -62,63 +62,70 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
+  const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        initialFace?: OrientationCubeFace;
-        updatedFace?: OrientationCubeFace;
-        needsUpdatedFace?: boolean;
-      };
-      
-      if (moduleState.initialFace !== undefined) setInitialFace(moduleState.initialFace);
-      if (moduleState.updatedFace !== undefined) setUpdatedFace(moduleState.updatedFace);
-      if (moduleState.needsUpdatedFace !== undefined) setNeedsUpdatedFace(moduleState.needsUpdatedFace);
-    }
+  const moduleState = useMemo(
+    () => ({ initialFace, updatedFace, needsUpdatedFace, result, twitchCommand }),
+    [initialFace, updatedFace, needsUpdatedFace, result, twitchCommand],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { rotations: OrientationCubeRotation[]; needsUpdatedFace: boolean };
-      
-      if (solution.rotations) {
-        setResult(solution.rotations);
-        setNeedsUpdatedFace(solution.needsUpdatedFace);
-        
-        // Only mark as solved if we don't need updated face
-        if (!solution.needsUpdatedFace) {
-          setIsSolved(true);
+  const onRestoreState = useCallback(
+    (state: {
+      initialFace?: OrientationCubeFace;
+      updatedFace?: OrientationCubeFace;
+      needsUpdatedFace?: boolean;
+      result?: OrientationCubeRotation[];
+      twitchCommand?: string;
+    }) => {
+      if (state.initialFace !== undefined) setInitialFace(state.initialFace);
+      if (state.updatedFace !== undefined) setUpdatedFace(state.updatedFace);
+      if (state.needsUpdatedFace !== undefined) setNeedsUpdatedFace(state.needsUpdatedFace);
+      if (state.result && Array.isArray(state.result)) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-          // Generate twitch command from the solution
-          const command = generateTwitchCommand({
-            moduleType: ModuleType.ORIENTATION_CUBE,
-            result: solution,
-            moduleNumber
-          });
-          setTwitchCommand(command);
-        }
+  const onRestoreSolution = useCallback(
+    (solution: { rotations: OrientationCubeRotation[]; needsUpdatedFace: boolean }) => {
+      if (!solution?.rotations) return;
+      setResult(solution.rotations);
+      setNeedsUpdatedFace(solution.needsUpdatedFace);
+
+      if (!solution.needsUpdatedFace) {
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.ORIENTATION_CUBE,
+          result: solution,
+        });
+        setTwitchCommand(command);
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+    },
+  []);
 
-  // Save state when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = { initialFace, updatedFace, needsUpdatedFace };
-      // Update the module in the store
-      const { round } = useRoundStore.getState();
-      round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
+  useSolverModulePersistence<
+    { initialFace: OrientationCubeFace; updatedFace: OrientationCubeFace; needsUpdatedFace: boolean; result: OrientationCubeRotation[]; twitchCommand: string },
+    { rotations: OrientationCubeRotation[]; needsUpdatedFace: boolean }
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; rotations?: unknown; needsUpdatedFace?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { rotations: OrientationCubeRotation[]; needsUpdatedFace: boolean };
+        if (Array.isArray(anyRaw.rotations) && typeof anyRaw.needsUpdatedFace === "boolean") {
+          return { rotations: anyRaw.rotations as OrientationCubeRotation[], needsUpdatedFace: anyRaw.needsUpdatedFace };
         }
-      });
-    }
-  };
+        return raw as { rotations: OrientationCubeRotation[]; needsUpdatedFace: boolean };
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSolve = async () => {
     if (!initialFace) {
@@ -150,20 +157,40 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
       setResult(response.output.rotations);
       setNeedsUpdatedFace(response.output.needsUpdatedFace);
 
+      if (response.output.needsUpdatedFace) {
+        setTwitchCommand("");
+      }
+
       // Only mark as solved and generate commands if we don't need updated face
       if (!response.output.needsUpdatedFace) {
         // Generate Twitch command
         const command = generateTwitchCommand({
           moduleType: ModuleType.ORIENTATION_CUBE,
           result: response.output,
-          moduleNumber
         });
         setTwitchCommand(command);
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
+        // Persist state and solution so returning to this module shows initial face and sequence
+        updateModuleAfterSolve(
+          bomb.id,
+          currentModule.id,
+          {
+            initialFace,
+            updatedFace: updatedFace ?? undefined,
+            needsUpdatedFace: response.output.needsUpdatedFace,
+            result: response.output.rotations,
+            twitchCommand: command,
+          },
+          {
+            rotations: response.output.rotations,
+            needsUpdatedFace: response.output.needsUpdatedFace,
+          },
+          true
+        );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve orientation cube");
+      setError(err instanceof Error ? err.message : "Failed to solve Orientation Cube");
     } finally {
       setIsLoading(false);
     }
@@ -173,7 +200,6 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
     const currentIndex = FACES.findIndex((f) => f.face === initialFace);
     const nextIndex = (currentIndex + 1) % FACES.length;
     setInitialFace(FACES[nextIndex].face);
-    saveState();
     reset();
   };
 
@@ -181,7 +207,6 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
     const currentIndex = FACES.findIndex((f) => f.face === updatedFace);
     const nextIndex = (currentIndex + 1) % FACES.length;
     setUpdatedFace(FACES[nextIndex].face);
-    saveState();
   };
 
   const reset = () => {
@@ -189,7 +214,6 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
     setNeedsUpdatedFace(false);
     setUpdatedFace(null);
     setTwitchCommand("");
-    saveState();
   };
 
   const fullReset = () => {
@@ -249,9 +273,6 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
         </div>
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-
       {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
@@ -266,32 +287,36 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
 
       {/* Result - only show when fully solved */}
       {result.length > 0 && isSolved && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div>
-            <span className="font-bold mb-2 block">Rotation Sequence:</span>
-            <div className="flex flex-wrap gap-2">
-              {result.map((rotation, index) => (
-                <span
-                  key={index}
-                  className={`text-lg font-mono font-bold ${ROTATION_COLORS[rotation]}`}
-                >
-                  {ROTATION_DISPLAY[rotation]}
-                  {index < result.length - 1 && <span className="text-gray-400 mx-1">→</span>}
-                </span>
-              ))}
+        <div className="rounded-lg border border-success/30 bg-success/10 text-success p-4 mb-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-current shrink-0 h-6 w-6 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="min-w-0">
+              <p className="font-bold mb-1">Rotation Sequence</p>
+              <p className="text-sm opacity-90 mb-3">
+                Initial face: {FACES.find((f) => f.face === initialFace)?.display ?? "?"}
+              </p>
+              <ol className="list-decimal list-inside space-y-2">
+                {result.map((rotation, index) => (
+                  <li
+                    key={index}
+                    className={`text-lg font-mono font-bold ${ROTATION_COLORS[rotation]}`}
+                  >
+                    {ROTATION_DISPLAY[rotation]}
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </div>

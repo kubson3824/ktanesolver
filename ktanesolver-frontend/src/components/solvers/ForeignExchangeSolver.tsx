@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
@@ -6,10 +6,10 @@ import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveForeignExchange, type ForeignExchangeInput, type ForeignExchangeOutput } from "../../services/foreignExchangeService";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -38,60 +38,65 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        baseCurrency?: string;
-        targetCurrency?: string;
-        amount?: string;
-        hasGreenLights?: boolean;
-      };
-      
-      if (moduleState.baseCurrency !== undefined) setBaseCurrency(moduleState.baseCurrency);
-      if (moduleState.targetCurrency !== undefined) setTargetCurrency(moduleState.targetCurrency);
-      if (moduleState.amount !== undefined) setAmount(moduleState.amount);
-      if (moduleState.hasGreenLights !== undefined) setHasGreenLights(moduleState.hasGreenLights);
-    }
+  const moduleState = useMemo(
+    () => ({ baseCurrency, targetCurrency, amount, hasGreenLights, result, twitchCommand }),
+    [baseCurrency, targetCurrency, amount, hasGreenLights, result, twitchCommand],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as ForeignExchangeOutput;
-      
-      if (solution.keyPosition !== undefined) {
-        setResult(solution);
-        setIsSolved(true);
+  const onRestoreState = useCallback(
+    (state: {
+      baseCurrency?: string;
+      targetCurrency?: string;
+      amount?: string;
+      hasGreenLights?: boolean;
+      result?: ForeignExchangeOutput | null;
+      twitchCommand?: string;
+    }) => {
+      if (state.baseCurrency !== undefined) setBaseCurrency(state.baseCurrency);
+      if (state.targetCurrency !== undefined) setTargetCurrency(state.targetCurrency);
+      if (state.amount !== undefined) setAmount(state.amount);
+      if (state.hasGreenLights !== undefined) setHasGreenLights(state.hasGreenLights);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
-          result: solution,
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+  const onRestoreSolution = useCallback(
+    (solution: ForeignExchangeOutput) => {
+      if (solution?.keyPosition === undefined) return;
+      setResult(solution);
 
-  // Save state when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = { baseCurrency, targetCurrency, amount, hasGreenLights };
-      // Update the module in the store
-      const { round } = useRoundStore.getState();
-      round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
+        result: solution,
       });
-    }
-  };
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { baseCurrency: string; targetCurrency: string; amount: string; hasGreenLights: boolean; result: ForeignExchangeOutput | null; twitchCommand: string },
+    ForeignExchangeOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as ForeignExchangeOutput;
+        return raw as ForeignExchangeOutput;
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const solveForeignExchangeModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -140,7 +145,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
       const command = generateTwitchCommand({
         moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
         result: response.output,
-        moduleNumber
       });
       setTwitchCommand(command);
       
@@ -159,7 +163,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
     setHasGreenLights(true);
     setResult(null);
     setTwitchCommand("");
-    saveState();
     resetSolverState();
   };
 
@@ -180,7 +183,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
                     checked={hasGreenLights}
                     onChange={() => {
                       setHasGreenLights(true);
-                      saveState();
                     }}
                     className="mr-2"
                   />
@@ -192,7 +194,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
                     checked={!hasGreenLights}
                     onChange={() => {
                       setHasGreenLights(false);
-                      saveState();
                     }}
                     className="mr-2"
                   />
@@ -209,7 +210,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
                   value={baseCurrency}
                   onChange={(e) => {
                     setBaseCurrency(e.target.value.toUpperCase());
-                    saveState();
                   }}
                   placeholder="e.g., USD"
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
@@ -226,7 +226,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
                   value={targetCurrency}
                   onChange={(e) => {
                     setTargetCurrency(e.target.value.toUpperCase());
-                    saveState();
                   }}
                   placeholder="e.g., EUR"
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
@@ -244,7 +243,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
                 value={amount}
                 onChange={(e) => {
                   setAmount(e.target.value);
-                  saveState();
                 }}
                 placeholder="Enter 3-digit amount..."
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
@@ -279,9 +277,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
           </div>
         )}
       </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls

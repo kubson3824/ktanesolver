@@ -25,6 +25,10 @@ public class WhosOnFirstSolver extends AbstractModuleSolver<WhosOnFirstInput, Wh
 	public SolveResult<WhosOnFirstOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, WhosOnFirstInput input) {
 		WhosOnFirstState state = module.getStateAs(WhosOnFirstState.class, () -> new WhosOnFirstState(new ArrayList<>(), new ArrayList<>(), new ArrayList<>()));
 
+		if (state.buttonPressHistory().size() >= 3) {
+			return failure("Module already completed (maximum 3 stages).");
+		}
+
 		String display = normalize(input.displayWord());
 		ButtonPosition pos = WhosOnFirstDisplayTable.DISPLAY_MAP.get(display);
 		if(pos == null) {
@@ -51,7 +55,7 @@ public class WhosOnFirstSolver extends AbstractModuleSolver<WhosOnFirstInput, Wh
 					List<Map<ButtonPosition, String>> newButtonPositions = new ArrayList<>(state.buttonPressHistory());
 					newButtonPositions.add(Map.of(buttonPosition.get().getKey(), buttonPosition.get().getValue()));
 
-					storeTypedState(module, new WhosOnFirstState(newDisplayHistory, newButtonHistory, newButtonPositions));
+					module.setState(new WhosOnFirstState(newDisplayHistory, newButtonHistory, newButtonPositions));
 
 					WhosOnFirstOutput whosOnFirstOutput = new WhosOnFirstOutput(buttonPosition.get().getKey(), buttonPosition.get().getValue());
 					return success(whosOnFirstOutput, newButtonPositions.size() == 3);

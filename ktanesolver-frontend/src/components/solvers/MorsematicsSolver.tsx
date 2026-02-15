@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMorsematics as solveMorsematicsApi } from "../../services/morsematicsService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -64,52 +63,52 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { letters?: string };
-      
-      if (moduleState.letters !== undefined) setLetters(moduleState.letters);
-    }
+  const moduleState = useMemo(
+    () => ({ letters, result, twitchCommand }),
+    [letters, result, twitchCommand],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { letter: string };
-      
-      if (solution.letter) {
-        setResult(solution.letter);
-        setIsSolved(true);
+  const onRestoreState = useCallback(
+    (state: { letters?: string; result?: string; twitchCommand?: string }) => {
+      if (state.letters !== undefined) setLetters(state.letters);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.MORSEMATICS,
-          result: solution,
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+  const onRestoreSolution = useCallback(
+    (solution: { letter: string }) => {
+      if (!solution?.letter) return;
+      setResult(solution.letter);
 
-  // Save state when inputs change
-  const saveState = (value: string) => {
-    if (currentModule) {
-      const moduleState = { letters: value };
-      // Update the module in the store
-      const { round } = useRoundStore.getState();
-      round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.MORSEMATICS,
+        result: solution,
       });
-    }
-  };
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<{ letters: string; result: string; twitchCommand: string }, { letter: string }>({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; letter?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { letter: string };
+        if (typeof anyRaw.letter === "string") return { letter: anyRaw.letter };
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSolve = async () => {
     if (!letters || letters.length !== 3) {
@@ -143,7 +142,6 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.MORSEMATICS,
         result: response.output,
-        moduleNumber
       });
       setTwitchCommand(command);
       setIsSolved(true);
@@ -158,7 +156,6 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
   const handleLetterChange = (value: string) => {
     const filtered = value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 3);
     setLetters(filtered);
-    saveState(filtered);
     if (isSolved) {
       reset();
     }
@@ -171,7 +168,6 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
 
   const fullReset = () => {
     setLetters("");
-    saveState("");
     reset();
     resetSolverState();
   };
@@ -215,9 +211,6 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
           </div>
         )}
       </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls

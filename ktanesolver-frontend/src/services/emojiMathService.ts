@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api, withErrorWrapping } from "../lib/api";
 
 export interface EmojiMathInput {
   emojiEquation: string;
@@ -15,9 +15,11 @@ export async function solveEmojiMath(
   moduleId: string,
   data: { input: EmojiMathInput }
 ) {
-  const response = await api.post<{ output: EmojiMathOutput }>(
-    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-    data
-  );
-  return response.data;
+  return withErrorWrapping(async () => {
+    const response = await api.post<{ output: EmojiMathOutput }>(
+      `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
+      data
+    );
+    return response.data;
+  });
 }

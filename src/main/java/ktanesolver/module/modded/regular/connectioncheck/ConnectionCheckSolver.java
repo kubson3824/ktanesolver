@@ -120,6 +120,7 @@ public class ConnectionCheckSolver extends AbstractModuleSolver<ConnectionCheckI
 		boolean led3 = hasConnection(input.pairs().get(2).one(), input.pairs().get(2).two(), connections);
 		boolean led4 = hasConnection(input.pairs().get(3).one(), input.pairs().get(3).two(), connections);
 
+		storeState(module, "input", input);
 		ConnectionCheckOutput output = new ConnectionCheckOutput(led1, led2, led3, led4);
 		return success(output);
 	}

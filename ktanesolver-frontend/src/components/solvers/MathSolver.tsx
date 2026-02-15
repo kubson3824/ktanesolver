@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMath, type MathOutput, type MathInput } from "../../services/mathService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -35,63 +34,61 @@ export default function MathSolver({ bomb }: MathSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        equation,
-        result,
-        twitchCommand
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
+  const moduleState = useMemo(
+    () => ({ equation, result, twitchCommand }),
+    [equation, result, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: { equation?: string; input?: { equation?: string }; result?: MathOutput | null; twitchCommand?: string }) => {
+      const equationToRestore = state.equation ?? (state.input && typeof state.input.equation === "string" ? state.input.equation : undefined);
+      if (equationToRestore !== undefined) setEquation(equationToRestore);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: MathOutput) => {
+      if (solution && typeof solution.result === "number") {
+        setResult(solution);
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.MATH,
+          result: { answer: String(solution.result) },
+        });
+        setTwitchCommand(command);
+      }
+    },
+  []);
+
+  useSolverModulePersistence<
+    { equation: string; result: MathOutput | null; twitchCommand: string },
+    MathOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      const asMathOutput = (obj: unknown): MathOutput | null => {
+        if (obj && typeof obj === "object" && typeof (obj as MathOutput).result === "number") {
+          return obj as MathOutput;
         }
-      });
-    }
-  };
-
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [equation, result, twitchCommand]);
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        equation?: string;
-        result?: MathOutput | null;
-        twitchCommand?: string;
+        return null;
       };
-      
-      if (moduleState.equation !== undefined) setEquation(moduleState.equation);
-      if (moduleState.result !== undefined) setResult(moduleState.result);
-      if (moduleState.twitchCommand) setTwitchCommand(moduleState.twitchCommand);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        result?: MathOutput;
-        isSolved?: boolean;
-      };
-      
-      if (solution.result) {
-        setResult(solution.result);
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown; solution?: unknown };
+        return asMathOutput(anyRaw.output) ?? asMathOutput(anyRaw.result) ?? asMathOutput(anyRaw.solution) ?? asMathOutput(raw);
       }
-      if (solution.isSolved) {
-        setIsSolved(true);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_solution, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleEquationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -125,28 +122,14 @@ export default function MathSolver({ bomb }: MathSolverProps) {
       
       setResult(response.output);
       
-      if (response.output) {
+      if (response.output && typeof response.output.result === "number") {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
         const command = generateTwitchCommand({
           moduleType: ModuleType.MATH,
-          result: { answer: response.output.result.toString() },
-          moduleNumber
+          result: { answer: String(response.output.result) },
         });
         setTwitchCommand(command);
-        
-        // Save solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { result: response.output };
-              }
-            }
-          });
-        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve equation");
@@ -194,9 +177,6 @@ export default function MathSolver({ bomb }: MathSolverProps) {
         </div>
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <SolverControls
         onSolve={solveMathModule}
@@ -210,7 +190,7 @@ export default function MathSolver({ bomb }: MathSolverProps) {
       <ErrorAlert error={error} />
 
       {/* Results */}
-      {result && (
+      {result != null && typeof result.result === "number" && (
         <div className="alert alert-success mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -233,7 +213,7 @@ export default function MathSolver({ bomb }: MathSolverProps) {
       )}
 
       {/* Twitch command display */}
-      {twitchCommand && result && (
+      {twitchCommand && result != null && typeof result.result === "number" && (
         <TwitchCommandDisplay command={twitchCommand} />
       )}
 
@@ -243,6 +223,6 @@ export default function MathSolver({ bomb }: MathSolverProps) {
         <p>• Use the format: number [+,-,*,/] number</p>
         <p>• Press Enter or click "Press OK" to calculate</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

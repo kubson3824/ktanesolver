@@ -1,52 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRoundStore } from "../store/useRoundStore";
-import type {ModuleEntity} from "../types";
-import WireSolver from "../components/solvers/WireSolver";
-import ButtonSolver from "../components/solvers/ButtonSolver";
-import KeypadsSolver from "../components/solvers/KeypadsSolver";
-import MazeSolver from "../components/solvers/MazeSolver";
-import MemorySolver from "../components/solvers/MemorySolver";
-import MorseCodeSolver from "../components/solvers/MorseCodeSolver";
-import PasswordSolver from "../components/solvers/PasswordSolver";
-import SimonSolver from "../components/solvers/SimonSolver";
-import WhosOnFirstSolver from "../components/solvers/WhosOnFirstSolver";
-import ComplicatedWiresSolver from "../components/solvers/ComplicatedWiresSolver";
-import WireSequencesSolver from "../components/solvers/WireSequencesSolver";
-import ColorFlashSolver from "../components/solvers/ColorFlashSolver";
-import PianoKeysSolver from "../components/solvers/PianoKeysSolver";
-import SemaphoreSolver from "../components/solvers/SemaphoreSolver";
-import MathSolver from "../components/solvers/MathSolver";
-import EmojiSolver from "../components/solvers/EmojiSolver";
-import SwitchesSolver from "../components/solvers/SwitchesSolver";
-import TwoBitsSolver from "../components/solvers/TwoBitsSolver";
-import WordScrambleSolver from "../components/solvers/WordScrambleSolver";
-import AnagramsSolver from "../components/solvers/AnagramsSolver";
-import CombinationLockSolver from "../components/solvers/CombinationLockSolver";
-import RoundKeypadSolver from "../components/solvers/RoundKeypadSolver";
-import ListeningSolver from "../components/solvers/ListeningSolver";
-import ForeignExchangeSolver from "../components/solvers/ForeignExchangeSolver";
-import OrientationCubeSolver from "../components/solvers/OrientationCubeSolver";
-import MorsematicsSolver from "../components/solvers/MorsematicsSolver";
-import ConnectionCheckSolver from "../components/solvers/ConnectionCheckSolver";
-import LetterKeysSolver from "../components/solvers/LetterKeysSolver";
-import ForgetMeNotSolver from "../components/solvers/ForgetMeNotSolver";
-import { StrikeButton } from "../components/StrikeButton";
-import { StrikeIndicator } from "../components/StrikeIndicator";
+import type { ModuleEntity, ModuleType } from "../types";
+import { getLazySolver } from "../components/solvers/registry";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
-
-const formatModuleName = (type: string) =>
-  type
-    .toLowerCase()
-    .split("_")
-    .map((chunk) => chunk[0].toUpperCase() + chunk.slice(1))
-    .join(" ");
+import PageContainer from "../components/layout/PageContainer";
+import ModuleGrid from "../features/solve/ModuleGrid";
+import ManualPanel from "../features/solve/ManualPanel";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcut";
+import { formatModuleName } from "../lib/utils";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 
 export default function SolvePage() {
   const { roundId } = useParams();
   const navigate = useNavigate();
   const round = useRoundStore((state) => state.round);
-  const fetchRound = useRoundStore((state) => state.fetchRound);
+  const refreshRound = useRoundStore((state) => state.refreshRound);
   const loading = useRoundStore((state) => state.loading);
   const currentBomb = useRoundStore((state) => state.currentBomb);
   const currentModule = useRoundStore((state) => state.currentModule);
@@ -57,10 +27,25 @@ export default function SolvePage() {
   const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
 
   useEffect(() => {
-    if (roundId && round?.id !== roundId) {
-      void fetchRound(roundId);
-    }
-  }, [roundId, round?.id, fetchRound]);
+    if (!roundId) return;
+    let cancelled = false;
+
+    const sync = async (attempt: number) => {
+      try {
+        await refreshRound(roundId);
+      } catch {
+        if (cancelled) return;
+        if (attempt >= 1) return;
+        window.setTimeout(() => {
+          if (cancelled) return;
+          void sync(attempt + 1);
+        }, 1500);
+      }
+    };
+
+    void sync(0);
+    return () => { cancelled = true; };
+  }, [roundId, refreshRound]);
 
   useEffect(() => {
     if (!currentBomb && round?.bombs.length) {
@@ -76,276 +61,182 @@ export default function SolvePage() {
   const { regularModules, needyModules } = useMemo(() => {
     const regular: ModuleEntity[] = [];
     const needy: ModuleEntity[] = [];
-    
-    modules.forEach((module) => {
-      // Check if module type is needy
-      const isNeedy = ["VENTING_GAS", "CAPACITOR_DISCHARGE", "KNOBS"].includes(module.type);
-      if (isNeedy) {
-        needy.push(module);
+    modules.forEach((m) => {
+      if (["VENTING_GAS", "CAPACITOR_DISCHARGE", "KNOBS"].includes(m.type)) {
+        needy.push(m);
       } else {
-        regular.push(module);
+        regular.push(m);
       }
     });
-    
     return { regularModules: regular, needyModules: needy };
   }, [modules]);
+
+  const SolverComponent = useMemo(() => {
+    if (!currentModule?.moduleType) return null;
+    return getLazySolver(currentModule.moduleType as ModuleType);
+  }, [currentModule?.moduleType]);
 
   const handleModuleClick = (module: ModuleEntity) => {
     if (!currentBomb) return;
     selectModuleById(currentBomb.id, module.id);
   };
 
-  const handleBack = () => {
-    clearModule();
+  const handleBack = useCallback(() => clearModule(), [clearModule]);
+
+  // Keyboard shortcuts: Escape to go back to module grid
+  useKeyboardShortcuts(
+    useMemo(
+      () => [
+        {
+          key: "Escape",
+          handler: handleBack,
+          enabled: !!currentModule,
+        },
+      ],
+      [handleBack, currentModule]
+    )
+  );
+
+  const handleRefresh = async () => {
+    if (!roundId) return;
+    await refreshRound(roundId);
   };
 
+  // --- Early returns ---
   if (!roundId) {
     return (
-      <div className="min-h-screen p-10 lg:p-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-            <div className="card-body text-center">
-              <p className="text-base-content/70 mb-4">No round selected. Return to setup.</p>
-              <button className="btn btn-primary" onClick={() => navigate("/setup")}>
-                Back to setup
-              </button>
+      <PageContainer>
+        <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
+          <CardContent className="text-center pt-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-300 mb-4" aria-hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-          </div>
-        </div>
-      </div>
+            <p className="text-body text-base-content/70 mb-2">No round selected.</p>
+            <p className="text-caption text-base-content/60 mb-6">Return to setup to create or choose a round.</p>
+            <button className="btn btn-primary" onClick={() => navigate("/setup")}>
+              Back to setup
+            </button>
+          </CardContent>
+        </Card>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen p-10 lg:p-16">
-      <div className="max-w-7xl mx-auto grid gap-5">
-        <header className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-          <div className="card-body">
-            <div className="flex justify-between items-start">
-              <div>
+    <PageContainer>
+      <div className="grid gap-5">
+        {/* Header */}
+        <Card className="animate-fade-in border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
+          <CardHeader className="space-y-1">
+            <div className="flex flex-row flex-wrap justify-between items-start gap-4">
+              <div className="min-w-0">
                 <p className="text-sm text-secondary font-medium uppercase tracking-wider">Round #{round?.id?.slice(0, 8)}</p>
-                <h1 className="text-3xl font-bold mt-2 mb-4">Live defusal</h1>
-                <p className="text-base-content/70">
-                  Tabs for each bomb below. Pick the module you&apos;re defusing,
-                  study the binder on the left, drive the solver on the right.
+                <h1 className="text-page-title mt-2 mb-2">Live defusal</h1>
+                <p className="text-caption text-base-content/70 mb-2">
+                  Pick the module you&apos;re defusing, study the manual on the left, drive the solver on the right.
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <StrikeIndicator />
-                <div className="flex gap-2">
-                  <StrikeButton className="btn-sm" />
-                  <button className="btn btn-outline btn-sm" onClick={() => navigate("/rounds")}>
-                    All Rounds
-                  </button>
-                  <button className="btn btn-outline btn-sm" onClick={() => navigate("/setup")}>
-                    Back to setup
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {!currentModule ? (
-          <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-            <div className="card-body">
-              <div className="tabs tabs-boxed mb-6">
-                {round?.bombs.map((bomb) => (
-                  <button
-                    key={bomb.id}
-                    className={`tab ${
-                      currentBomb?.id === bomb.id ? "tab-active" : ""
-                    }`}
-                    onClick={() => selectBomb(bomb.id)}
-                  >
-                    <div className="text-left">
-                      <div className="font-medium">{bomb.serialNumber || "Unknown serial"}</div>
-                      <div className="text-xs text-base-content/50">{bomb.modules.length} modules</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {regularModules.length === 0 && (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-base-content/50">No regular modules assigned to this bomb.</p>
-                  </div>
-                )}
-                {regularModules.map((module) => (
-                  <div key={module.id} className="card bg-base-100 border border-base-300 hover:border-primary transition-colors">
-                    <div className="card-body">
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="card-title">{formatModuleName(module.type)}</h3>
-                        <span
-                          className={`badge ${
-                            module.solved ? "badge-success" : "badge-warning"
-                          }`}
-                        >
-                          {module.solved ? "Solved" : "Awaiting"}
-                        </span>
-                      </div>
-                      <p className="text-sm text-base-content/70 mb-4">
-                        {module.solved
-                          ? "This module has been cleared. Tap to review."
-                          : "Tap to open the live solving cockpit."}
-                      </p>
-                      <div className="card-actions">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleModuleClick(module)}
-                        >
-                          {module.solved ? "Review Module" : "Solve module"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        ) : (
-          <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-            <div className="card-body">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <p className="text-sm text-secondary font-medium uppercase tracking-wider">Currently solving</p>
-                  <h2 className="text-2xl font-bold mt-1">
-                    {formatModuleName(currentModule.moduleType)}
-                    <span className="badge badge-primary ml-2">
-                      {currentBomb?.serialNumber ?? "Unknown serial"}
-                    </span>
-                  </h2>
-                </div>
-                <button className="btn btn-outline btn-sm" onClick={handleBack}>
-                  Back to modules
+              <div className="flex gap-2 shrink-0">
+                <button className="btn btn-outline btn-sm" onClick={() => void handleRefresh()}>
+                  Refresh
                 </button>
               </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="card bg-base-100 border border-base-300 h-full">
-                  <div className="card-body h-full flex flex-col">
-                    <h3 className="card-title text-lg mb-4">Manual</h3>
-                    <div className="flex-1 min-h-0">
-                      {manualUrl ? (
-                        <iframe
-                          src={manualUrl}
-                          title={`${currentModule.moduleType} manual`}
-                          className="w-full h-full rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-base-content/50">
-                          Manual loading...
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="card bg-base-100 border border-base-300 h-full">
-                  <div className="card-body h-full flex flex-col">
-                    <h3 className="card-title text-lg mb-4">Solver UI</h3>
-                    <div className="flex-1">
-                      {currentModule.moduleType === "WIRES" ? (
-                        <WireSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "BUTTON" ? (
-                        <ButtonSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "KEYPADS" ? (
-                        <KeypadsSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "MAZES" ? (
-                        <MazeSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "MEMORY" ? (
-                        <MemorySolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "MORSE_CODE" ? (
-                        <MorseCodeSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "PASSWORDS" ? (
-                        <PasswordSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "SIMON_SAYS" ? (
-                        <SimonSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "WHOS_ON_FIRST" ? (
-                        <WhosOnFirstSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "COMPLICATED_WIRES" ? (
-                        <ComplicatedWiresSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "WIRE_SEQUENCES" ? (
-                        <WireSequencesSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "COLOR_FLASH" ? (
-                        <ColorFlashSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "PIANO_KEYS" ? (
-                        <PianoKeysSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "SEMAPHORE" ? (
-                        <SemaphoreSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "MATH" ? (
-                        <MathSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "EMOJI_MATH" ? (
-                        <EmojiSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "SWITCHES" ? (
-                        <SwitchesSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "TWO_BITS" ? (
-                        <TwoBitsSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "WORD_SCRAMBLE" ? (
-                        <WordScrambleSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "ANAGRAMS" ? (
-                        <AnagramsSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "COMBINATION_LOCK" ? (
-                        <CombinationLockSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "ROUND_KEYPAD" ? (
-                        <RoundKeypadSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "LISTENING" ? (
-                        <ListeningSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "FOREIGN_EXCHANGE_RATES" ? (
-                        <ForeignExchangeSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "ORIENTATION_CUBE" ? (
-                        <OrientationCubeSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "MORSEMATICS" ? (
-                        <MorsematicsSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "CONNECTION_CHECK" ? (
-                        <ConnectionCheckSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "LETTER_KEYS" ? (
-                        <LetterKeysSolver bomb={currentBomb} />
-                      ) : currentModule.moduleType === "FORGET_ME_NOT" ? (
-                        <ForgetMeNotSolver bomb={currentBomb} />
-                      ) : (
-                        <div className="text-center py-12">
-                          <p className="text-sm text-secondary mb-2">Coming soon</p>
-                          <p className="text-base-content/70 mb-6">
-                            This is where module-specific solver components will live. Hook
-                            up forms, logic helpers, or real-time instructions while
-                            referencing the manual.
-                          </p>
-                          <div className="flex justify-center gap-2">
-                            <button className="btn btn-primary" disabled>
-                              Submit
-                            </button>
-                            <button className="btn btn-outline" onClick={handleBack}>
-                              Back
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Module grid or active solver */}
+        {!currentModule ? (
+          <ModuleGrid
+            bombs={round?.bombs ?? []}
+            currentBomb={currentBomb}
+            regularModules={regularModules}
+            onSelectBomb={selectBomb}
+            onSelectModule={handleModuleClick}
+          />
+        ) : (
+          <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-3 pb-2">
+              <div>
+                <p className="text-sm text-secondary font-medium uppercase tracking-wider">
+                  Currently solving
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <CardTitle className="text-section-title">
+                    {formatModuleName(currentModule.moduleType)}
+                  </CardTitle>
+                  <Badge variant="outline" className="text-caption">
+                    {currentBomb?.serialNumber ?? "Unknown serial"}
+                  </Badge>
                 </div>
               </div>
-            </div>
-          </section>
+              <button className="btn btn-outline btn-sm shrink-0" onClick={handleBack}>
+                Back to modules
+              </button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid gap-5 lg:grid-cols-2">
+                <ManualPanel
+                  manualUrl={manualUrl}
+                  moduleType={currentModule.moduleType}
+                />
+
+                <Card className="h-full flex flex-col border-panel-border bg-base-200/90 backdrop-blur-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-card-title">Solver</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col flex-1 min-h-0">
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center py-12 gap-2">
+                          <span className="loading loading-spinner loading-md text-primary"></span>
+                          <span className="text-body text-base-content/70">Loading solver...</span>
+                        </div>
+                      }
+                    >
+                      {SolverComponent ? (
+                        <SolverComponent bomb={currentBomb} />
+                      ) : (
+                        <div className="text-center py-12">
+                          <p className="text-body text-base-content/70 mb-2">Coming soon</p>
+                          <p className="text-caption text-base-content/60 mb-6">
+                            No solver available for this module type yet.
+                          </p>
+                          <button className="btn btn-outline" onClick={handleBack}>
+                            Back
+                          </button>
+                        </div>
+                      )}
+                    </Suspense>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
+
+      {/* Loading overlay */}
       {loading && (
-        <div className="fixed inset-0 bg-base-300/80 flex items-center justify-center z-50">
-          <div className="flex flex-col items-center gap-4">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
-            <p className="text-base-content">Syncing round...</p>
+        <div className="fixed inset-0 bg-base-300/80 backdrop-blur-sm flex items-center justify-center z-50" aria-live="polite" aria-busy="true">
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-panel-border bg-panel-bg/90 backdrop-blur-xl px-8 py-6 shadow-lg">
+            <span className="loading loading-spinner loading-lg text-primary" aria-hidden></span>
+            <p className="text-body font-medium text-base-content">Syncing round...</p>
           </div>
         </div>
       )}
-      
+
       {/* Needy Modules Panel */}
       <NeedyModulesPanel
         needyModules={needyModules}
         bomb={currentBomb}
-        roundId={roundId || ''}
-        bombId={currentBomb?.id || ''}
+        roundId={roundId || ""}
+        bombId={currentBomb?.id || ""}
         isOpen={isNeedyPanelOpen}
         onToggle={() => setIsNeedyPanelOpen(!isNeedyPanelOpen)}
       />
-    </div>
+    </PageContainer>
   );
 }

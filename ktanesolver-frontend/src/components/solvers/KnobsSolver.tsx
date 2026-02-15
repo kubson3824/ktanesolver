@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveKnob } from "../../services/knobsService";
@@ -6,10 +6,10 @@ import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -35,57 +35,65 @@ export default function KnobsSolver({ bomb }: KnobsSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
+
+  const moduleState = useMemo(
+    () => ({ indicators, result, twitchCommand }),
+    [indicators, result, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: { indicators?: boolean[]; result?: string; twitchCommand?: string }) => {
+      if (state.indicators && Array.isArray(state.indicators)) {
+        setIndicators(state.indicators);
+      }
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: { position: string }) => {
+      if (!solution?.position) return;
+      const display = solution.position === "Unknown configuration" ? solution.position : `Turn knob ${solution.position}`;
+      setResult(display);
+
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.KNOBS,
+        result: { position: solution.position },
+      });
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { indicators: boolean[]; result: string; twitchCommand: string },
+    { position: string }
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; position?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { position: string };
+        if (typeof anyRaw.position === "string") return { position: anyRaw.position };
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleIndicatorChange = (index: number, checked: boolean) => {
     const newIndicators = [...indicators];
     newIndicators[index] = checked;
     setIndicators(newIndicators);
     setResult("");
-    
-    // Save state to module
-    if (currentModule) {
-      const moduleState = { indicators: newIndicators };
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
   };
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { indicators?: boolean[] };
-      
-      if (moduleState.indicators) {
-        setIndicators(moduleState.indicators);
-      }
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { position?: string };
-      
-      if (solution.position) {
-        setResult(solution.position === "Unknown configuration" ? solution.position : `Turn knob ${solution.position}`);
-        setIsSolved(true);
-
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.KNOBS,
-          result: { position: solution.position },
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
 
   const handleSolve = async () => {
     if (isSolved) return;
@@ -109,11 +117,9 @@ export default function KnobsSolver({ bomb }: KnobsSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.KNOBS,
         result: { position },
-        moduleNumber
       });
       setTwitchCommand(command);
 
-      // Mark module as solved
       markModuleSolved(bomb.id, currentModule.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve module");
@@ -157,9 +163,6 @@ export default function KnobsSolver({ bomb }: KnobsSolverProps) {
           ))}
         </div>
       </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls

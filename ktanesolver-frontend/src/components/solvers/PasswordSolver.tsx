@@ -1,17 +1,20 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solvePassword, type PasswordOutput } from "../../services/passwordService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
-  SolverControls
+  SolverControls,
+  SolverResult,
 } from "../common";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
 
 interface PasswordSolverProps {
   bomb: BombEntity | null | undefined;
@@ -36,64 +39,79 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-
   // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        columnLetters,
-        result,
-        twitchCommand
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [columnLetters, result, twitchCommand]);
+  const moduleState = useMemo(
+    () => ({ columnLetters, result, twitchCommand }),
+    [columnLetters, result, twitchCommand],
+  );
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        columnLetters?: Record<number, string[]>;
-        result?: PasswordOutput | null;
-        twitchCommand?: string;
-      };
-      
-      if (moduleState.columnLetters) setColumnLetters(moduleState.columnLetters);
-      if (moduleState.result !== undefined) setResult(moduleState.result);
-      if (moduleState.twitchCommand !== undefined) setTwitchCommand(moduleState.twitchCommand);
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        result?: PasswordOutput;
-        isSolved?: boolean;
-      };
-      
-      if (solution.result) {
-        setResult(solution.result);
-        if (solution.isSolved || solution.result.resolved) {
-          setIsSolved(true);
-        }
+  const onRestoreState = useCallback(
+    (state: { 
+      columnLetters?: Record<number, string[]>; 
+      result?: PasswordOutput | null; 
+      twitchCommand?: string;
+      input?: { letters?: Record<number, string[]> };
+    }) => {
+      // Prioritize the backend format (input.letters) over the local format
+      if (state.input?.letters) {
+        setColumnLetters(state.input.letters);
+      } else if (state.columnLetters) {
+        setColumnLetters(state.columnLetters);
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: PasswordOutput) => {
+      if (!solution || !solution.possibleWords) return;
+      setResult(solution);
+
+      // Generate Twitch command when solution is restored
+      if (solution.possibleWords.length === 1) {
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.PASSWORDS,
+          result: { password: solution.possibleWords[0] },
+        });
+        setTwitchCommand(command);
+      }
+
+      // Mark as solved if the solution is resolved
+      if (solution.resolved) {
+        setIsSolved(true);
+      }
+    },
+    [setIsSolved],
+  );
+
+  useSolverModulePersistence<
+    { columnLetters: Record<number, string[]>; result: PasswordOutput | null; twitchCommand: string },
+    PasswordOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as PasswordOutput;
+        if (anyRaw.result && typeof anyRaw.result === "object") return anyRaw.result as PasswordOutput;
+        return raw as PasswordOutput;
+      }
+      return null;
+    },
+    inferSolved: (sol, currentModule) => 
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved) || Boolean(sol?.resolved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleColumnChange = (column: number, value: string) => {
     // Filter to keep only uppercase letters and convert to array
@@ -119,34 +137,19 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
       const response = await solvePassword(round.id, bomb.id, currentModule.id, { input });
       setResult(response.output);
       
+      // Generate Twitch command if resolved
       if (response.output.resolved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         
-        if (response.output.possibleWords.length === 1) {
-          const command = generateTwitchCommand({
-            moduleType: ModuleType.PASSWORDS,
-            result: { password: response.output.possibleWords[0] },
-            moduleNumber: moduleNumber
-          });
-          setTwitchCommand(command);
-        }
-        
-        // Save solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { result: response.output, isSolved: true };
-              }
-            }
-          });
-        }
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.PASSWORDS,
+          result: { password: response.output.possibleWords[0] },
+        });
+        setTwitchCommand(command);
       }
     } catch (err) {
-      setError("Failed to solve password module");
-      console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to solve password");
     } finally {
       setIsLoading(false);
     }
@@ -160,94 +163,85 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   };
 
 
+  const hasAnyLetters = Object.values(columnLetters).some((arr) => arr.length > 0);
+
   return (
     <SolverLayout>
-      {/* Password Module Display */}
-      <div className="bg-base-200 p-6 rounded-lg">
-        <h3 className="text-lg font-semibold mb-4 text-center">Password Module</h3>
-        
-        {/* 5 Columns Input */}
-        <div className="flex justify-center gap-3 mb-6">
-          {[1, 2, 3, 4, 5].map(col => (
-            <div key={col} className="flex flex-col items-center">
-              <div className="text-xs text-center mb-1 font-bold">Column {col}</div>
-              <input
-                type="text"
-                className="input input-bordered text-center font-bold text-lg w-20"
-                placeholder="ABC"
-                value={(columnLetters[col] || []).join('')}
-                onChange={(e) => handleColumnChange(col, e.target.value.toUpperCase())}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Instructions */}
-        <div className="text-sm text-base-content/70 text-center mb-4">
-          Enter the full name of the letters in each column (e.g., ABCDE)
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-2">
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleSolve}
-            disabled={isLoading || Object.values(columnLetters).every(arr => arr.length === 0)}
-          >
-            {isLoading ? <span className="loading loading-spinner loading-xs"></span> : null}
-            Solve
-          </button>
-          <button className="btn btn-outline btn-sm" onClick={handleReset}>
-            Reset
-          </button>
-        </div>
-      </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
-      {/* Error display */}
-      <ErrorAlert error={error} />
-
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
-
-      {/* Results */}
-      {result && (
-        <div className="bg-base-100 p-4 rounded-lg flex-1 overflow-auto">
-          <h4 className="font-semibold mb-3">
-            Possible Words ({result.possibleWords.length})
-          </h4>
-          
-          {result.resolved ? (
-            <div className="alert alert-success mb-4">
-              <span className="font-bold">Solution Found: {result.possibleWords[0]}</span>
-            </div>
-          ) : (
-            <div className="alert alert-warning mb-4">
-              <span>Multiple possibilities remain. Enter more letters to narrow down.</span>
-            </div>
-          )}
-
-          {/* Possible Words List */}
-          <div className="space-y-2">
-            {result.possibleWords.map(word => (
-              <div
-                key={word}
-                className={`
-                  p-3 rounded text-center font-mono text-lg font-bold
-                  ${result.resolved && result.possibleWords.length === 1
-                    ? 'bg-success text-neutral-content border-2 border-success shadow-lg shadow-success/25'
-                    : 'bg-warning text-warning-content'
-                  }
-                `}
-              >
-                {word}
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-center">Password Module</CardTitle>
+          <p className="text-sm text-base-content/70 text-center">
+            Enter the letters in each column (e.g. ABC). Up to 6 letters per column.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap justify-center gap-4">
+            {[1, 2, 3, 4, 5].map((col) => (
+              <div key={col} className="flex flex-col items-center">
+                <label htmlFor={`password-column-${col}`} className="text-xs font-semibold text-base-content/80 mb-1.5">
+                  Column {col}
+                </label>
+                <Input
+                  id={`password-column-${col}`}
+                  type="text"
+                  className="text-center font-mono font-semibold text-lg w-24"
+                  placeholder="ABC"
+                  maxLength={6}
+                  value={(columnLetters[col] || []).join("")}
+                  onChange={(e) => handleColumnChange(col, e.target.value.toUpperCase())}
+                  disabled={isLoading}
+                  aria-label={`Column ${col} letters`}
+                />
               </div>
             ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={handleReset}
+        isSolveDisabled={!hasAnyLetters}
+        isLoading={isLoading}
+        solveText="Solve"
+      />
+
+      <ErrorAlert error={error} />
+
+      {result && (
+        <>
+          {result.resolved && result.possibleWords.length === 1 ? (
+            <SolverResult
+              variant="success"
+              title={`Solution: ${result.possibleWords[0]}`}
+            />
+          ) : (
+            <SolverResult
+              variant="warning"
+              title="Multiple possibilities"
+              description="Enter more letters to narrow down."
+            />
+          )}
+          <div className="mb-4">
+            <h4 className="font-semibold mb-2 text-sm text-base-content/80">
+              Possible words ({result.possibleWords.length})
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {result.possibleWords.map((word) => (
+                <Badge
+                  key={word}
+                  variant={result.resolved && result.possibleWords[0] === word ? "success" : "secondary"}
+                  className="font-mono text-sm py-1 px-3"
+                >
+                  {word}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </>
       )}
+
+      <TwitchCommandDisplay command={twitchCommand} />
     </SolverLayout>
   );
 }

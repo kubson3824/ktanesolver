@@ -9,7 +9,7 @@ import {
     type RoundEntity,
 
 } from "../types";
-import {api, withErrorWrapping} from "../lib/api";
+import {api, debugModuleSync, withErrorWrapping} from "../lib/api";
 
 type RoundStoreState = {
     round?: RoundEntity;
@@ -22,12 +22,12 @@ type RoundStoreState = {
     manualUrl?: string;
     loading: boolean;
     error?: string;
-    moduleNumber: number;
 };
 
 type RoundStoreActions = {
     createRound: () => Promise<RoundEntity>;
     fetchRound: (roundId: string) => Promise<RoundEntity>;
+    refreshRound: (roundId: string) => Promise<RoundEntity>;
     fetchAllRounds: () => Promise<RoundEntity[]>;
     deleteRound: (roundId: string) => Promise<void>;
     addBomb: (payload: CreateBombRequest) => Promise<BombEntity>;
@@ -46,7 +46,14 @@ type RoundStoreActions = {
     clearModule: () => void;
     setManualUrl: (url: string) => void;
     markModuleSolved: (bombId: string, moduleId: string) => void;
-    setModuleNumber: (number: number) => void;
+    /** Update a module's state and solution in the round (and currentModule if selected) so returning to the module shows the solution. */
+    updateModuleAfterSolve: (
+        bombId: string,
+        moduleId: string,
+        state: Record<string, unknown>,
+        solution: Record<string, unknown>,
+        solved?: boolean
+    ) => void;
     addStrike: (bombId: string) => Promise<BombEntity>;
 };
 
@@ -82,6 +89,7 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.MORSEMATICS]: "Morsematics",
     [ModuleType.CONNECTION_CHECK]: "Connection Check",
     [ModuleType.LETTER_KEYS]: "Letter Keys",
+    [ModuleType.ASTROLOGY]: "Astrology",
 };
 
 const attachManualUrl = (moduleType: ModuleType) => {
@@ -103,7 +111,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             manualUrl: undefined,
             loading: false,
             error: undefined,
-            moduleNumber: 1,
 
             createRound: async () => {
                 set({loading: true, error: undefined});
@@ -115,6 +122,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                     set({round, loading: false, currentBomb: undefined, currentModule: undefined, manualUrl: undefined});
                     return round;
                 } catch (error) {
+                    debugModuleSync("createRound:error", {error});
                     set({
                         loading: false,
                         error: error instanceof Error ? error.message : "Unknown error",
@@ -124,13 +132,96 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             },
 
             fetchRound: async (roundId: string) => {
+                debugModuleSync("fetchRound:start", {roundId});
                 set({loading: true, error: undefined});
                 try {
                     const round = await withErrorWrapping(async () => {
                         const {data} = await api.get<RoundEntity>(`/rounds/${roundId}`);
                         return data;
                     });
+                    debugModuleSync("fetchRound:success", {
+                        roundId,
+                        bombs: round.bombs.length,
+                        modulesTotal: round.bombs.reduce((acc, b) => acc + b.modules.length, 0),
+                    });
                     set({round, loading: false, currentBomb: undefined, currentModule: undefined, manualUrl: undefined});
+                    return round;
+                } catch (error) {
+                    debugModuleSync("fetchRound:error", {roundId, error});
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
+
+            refreshRound: async (roundId: string) => {
+                const prevBombId = get().currentBomb?.id;
+                const prevModuleId = get().currentModule?.id;
+                const prevModuleType = get().currentModule?.moduleType;
+
+                debugModuleSync("refreshRound:start", {
+                    roundId,
+                    prevBombId,
+                    prevModuleId,
+                    prevModuleType,
+                });
+
+                set({loading: true, error: undefined});
+                try {
+                    const round = await withErrorWrapping(async () => {
+                        const {data} = await api.get<RoundEntity>(`/rounds/${roundId}`);
+                        return data;
+                    });
+
+                    debugModuleSync("refreshRound:fetched", {
+                        roundId,
+                        bombs: round.bombs.length,
+                        modulesTotal: round.bombs.reduce((acc, b) => acc + b.modules.length, 0),
+                    });
+
+                    const nextBomb = prevBombId
+                        ? round.bombs.find((b) => b.id === prevBombId)
+                        : undefined;
+
+                    let nextModule:
+                        | (ModuleEntity & { bomb: BombEntity; moduleType: ModuleType })
+                        | undefined;
+
+                    if (nextBomb && prevModuleId) {
+                        const module = nextBomb.modules.find((m) => m.id === prevModuleId);
+                        if (module) {
+                            const moduleType = module.type as ModuleType;
+                            nextModule = { ...module, bomb: nextBomb, moduleType };
+                        }
+                    }
+
+                    debugModuleSync("refreshRound:reselect", {
+                        roundId,
+                        nextBombId: nextBomb?.id,
+                        nextModuleId: nextModule?.id,
+                        nextModuleType: nextModule?.moduleType,
+                        nextModuleSolved: (nextModule as { solved?: boolean } | undefined)?.solved,
+                        hasState: Boolean((nextModule as { state?: unknown } | undefined)?.state),
+                        hasSolution:
+                            (nextModule as { solution?: unknown } | undefined)?.solution !== undefined,
+                    });
+
+                    const nextManualUrl = nextModule
+                        ? attachManualUrl(nextModule.moduleType)
+                        : prevModuleType
+                          ? attachManualUrl(prevModuleType)
+                          : undefined;
+
+                    set({
+                        round,
+                        loading: false,
+                        currentBomb: nextBomb,
+                        currentModule: nextModule,
+                        manualUrl: nextModule ? nextManualUrl : undefined,
+                    });
+
                     return round;
                 } catch (error) {
                     set({
@@ -332,6 +423,14 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 if (!bomb) return;
                 const module = bomb.modules.find((m) => m.type === moduleType);
                 if (!module) return;
+                debugModuleSync("selectModule", {
+                    bombId,
+                    moduleType,
+                    moduleId: module.id,
+                    solved: (module as { solved?: boolean } | undefined)?.solved,
+                    hasState: Boolean((module as { state?: unknown } | undefined)?.state),
+                    hasSolution: (module as { solution?: unknown } | undefined)?.solution !== undefined,
+                });
                 set({
                     currentModule: {...module, bomb, moduleType},
                     manualUrl: attachManualUrl(moduleType),
@@ -343,33 +442,57 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 if (!round) return;
                 const bomb = round.bombs.find((b) => b.id === bombId);
                 if (!bomb) return;
-                
-                // Try to find module in local state first
-                let module = bomb.modules.find((m) => m.id === moduleId);
-                
-                // If not found locally, fetch from API
-                if (!module) {
-                    try {
-                        const fetchedModule = await withErrorWrapping(async () => {
-                            const {data} = await api.get<ModuleEntity>(
-                                `/bombs/${bombId}/modules/${moduleId}`
-                            );
-                            return data;
+
+                debugModuleSync("selectModuleById:start", {bombId, moduleId});
+
+                let module: ModuleEntity;
+                try {
+                    module = await withErrorWrapping(async () => {
+                        debugModuleSync("selectModuleById:fetch", {
+                            url: `/bombs/${bombId}/modules/${moduleId}`,
                         });
-                        module = fetchedModule;
-                    } catch (error) {
-                        console.error("Failed to fetch module:", error);
-                        return;
-                    }
+                        const {data} = await api.get<ModuleEntity>(
+                            `/bombs/${bombId}/modules/${moduleId}`
+                        );
+                        return data;
+                    });
+                } catch (error) {
+                    debugModuleSync("selectModuleById:error", {bombId, moduleId, error});
+                    console.error("Failed to fetch module:", error);
+                    return;
                 }
-                
-                if (!module) return;
-                
+
                 const moduleType = module.type as ModuleType;
-                set({
-                    currentModule: {...module, bomb, moduleType},
-                    manualUrl: attachManualUrl(moduleType),
+
+                debugModuleSync("selectModuleById:set", {
+                    bombId,
+                    moduleId: module.id,
+                    moduleType,
+                    solved: (module as { solved?: boolean } | undefined)?.solved,
+                    hasState: Boolean((module as { state?: unknown } | undefined)?.state),
+                    hasSolution: (module as { solution?: unknown } | undefined)?.solution !== undefined,
                 });
+
+                // Merge fetched module into round and currentBomb so list view stays in sync
+                const updatedBomb: BombEntity = {
+                    ...bomb,
+                    modules: bomb.modules.map((m) => (m.id === moduleId ? module : m)),
+                };
+                const roundHasModule = round.bombs.some((b) => b.id === bombId && b.modules.some((m) => m.id === moduleId));
+                const nextRound = roundHasModule
+                    ? {
+                          ...round,
+                          bombs: round.bombs.map((b) => (b.id === bombId ? updatedBomb : b)),
+                      }
+                    : round;
+
+                set((state) => ({
+                    ...state,
+                    round: nextRound,
+                    currentBomb: state.currentBomb?.id === bombId ? updatedBomb : state.currentBomb,
+                    currentModule: {...module, bomb: updatedBomb, moduleType},
+                    manualUrl: attachManualUrl(moduleType),
+                }));
             },
 
             clearModule: () => set({currentModule: undefined, manualUrl: undefined}),
@@ -379,6 +502,8 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             markModuleSolved: (bombId, moduleId) => {
                 set((state) => {
                     if (!state.round) return state;
+                    const isCurrentModule =
+                        state.currentModule?.id === moduleId && state.currentBomb?.id === bombId;
                     return {
                         round: {
                             ...state.round,
@@ -403,11 +528,50 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                       }),
                                   }
                                 : state.currentBomb,
+                        currentModule: isCurrentModule && state.currentModule
+                            ? {...state.currentModule, solved: true}
+                            : state.currentModule,
                     };
                 });
             },
 
-            setModuleNumber: (number) => set({moduleNumber: Math.max(1, Math.min(99, number))}),
+            updateModuleAfterSolve: (bombId, moduleId, state, solution, solved) => {
+                set((prev) => {
+                    if (!prev.round) return prev;
+                    const isCurrentModule =
+                        prev.currentModule?.id === moduleId && prev.currentBomb?.id === bombId;
+                    const merge = (m: ModuleEntity) =>
+                        m.id !== moduleId
+                            ? m
+                            : {
+                                  ...m,
+                                  state: {...m.state, ...state},
+                                  solution: {...m.solution, ...solution},
+                                  ...(solved !== undefined && {solved}),
+                              };
+                    return {
+                        round: {
+                            ...prev.round,
+                            bombs: prev.round.bombs.map((b) =>
+                                b.id !== bombId ? b : {...b, modules: b.modules.map(merge)},
+                            ),
+                        },
+                        currentBomb:
+                            prev.currentBomb?.id === bombId
+                                ? {...prev.currentBomb, modules: prev.currentBomb.modules.map(merge)}
+                                : prev.currentBomb,
+                        currentModule:
+                            isCurrentModule && prev.currentModule
+                                ? {
+                                      ...prev.currentModule,
+                                      state: {...prev.currentModule.state, ...state},
+                                      solution: {...prev.currentModule.solution, ...solution},
+                                      ...(solved !== undefined && {solved}),
+                                  }
+                                : prev.currentModule,
+                    };
+                });
+            },
 
             addStrike: async (bombId) => {
                 set({loading: true, error: undefined});

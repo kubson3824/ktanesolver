@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
@@ -6,10 +6,10 @@ import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveListening, type ListeningInput, type ListeningOutput } from "../../services/listeningService";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -31,8 +31,6 @@ const SOUND_OPTIONS = [
 
 export default function ListeningSolver({ bomb }: ListeningSolverProps) {
   const [selectedSound, setSelectedSound] = useState<string>("");
-  const [customSound, setCustomSound] = useState<string>("");
-  const [useCustom, setUseCustom] = useState<boolean>(false);
   const [result, setResult] = useState<ListeningOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
@@ -49,58 +47,56 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        selectedSound?: string;
-        customSound?: string;
-        useCustom?: boolean;
-      };
-      
-      if (moduleState.selectedSound !== undefined) setSelectedSound(moduleState.selectedSound);
-      if (moduleState.customSound !== undefined) setCustomSound(moduleState.customSound);
-      if (moduleState.useCustom !== undefined) setUseCustom(moduleState.useCustom);
-    }
+  const moduleState = useMemo(
+    () => ({ selectedSound, result, twitchCommand }),
+    [selectedSound, result, twitchCommand],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as ListeningOutput;
-      
-      if (solution.code) {
-        setResult(solution);
-        setIsSolved(true);
+  const onRestoreState = useCallback(
+    (state: { selectedSound?: string; result?: ListeningOutput | null; twitchCommand?: string }) => {
+      if (state.selectedSound !== undefined) setSelectedSound(state.selectedSound);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.LISTENING,
-          result: { code: solution.code },
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+  const onRestoreSolution = useCallback(
+    (solution: ListeningOutput) => {
+      if (!solution?.code) return;
+      setResult(solution);
 
-  // Save state when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = { selectedSound, customSound, useCustom };
-      // Update the module in the store
-      const { round } = useRoundStore.getState();
-      round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.LISTENING,
+        result: { code: solution.code },
       });
-    }
-  };
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { selectedSound: string; result: ListeningOutput | null; twitchCommand: string },
+    ListeningOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; code?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as ListeningOutput;
+        if (typeof anyRaw.code === "string") return raw as ListeningOutput;
+        return raw as ListeningOutput;
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const solveListeningModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -108,10 +104,8 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
       return;
     }
 
-    const soundDescription = useCustom ? customSound.trim() : selectedSound;
-    
-    if (!soundDescription) {
-      setError("Please select or enter a sound description");
+    if (!selectedSound) {
+      setError("Please select a sound");
       return;
     }
 
@@ -120,7 +114,7 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
 
     try {
       const input: ListeningInput = {
-        soundDescription: soundDescription
+        soundDescription: selectedSound,
       };
       
       const response = await solveListening(round.id, bomb.id, currentModule.id, {
@@ -135,13 +129,12 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
         
         const command = generateTwitchCommand({
           moduleType: ModuleType.LISTENING,
-          result: { code: response.output.code },
-          moduleNumber
+          result: response.output,
         });
         setTwitchCommand(command);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve listening module");
+      setError(err instanceof Error ? err.message : "Failed to solve Listening");
     } finally {
       setIsLoading(false);
     }
@@ -149,15 +142,10 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
 
   const reset = () => {
     setSelectedSound("");
-    setCustomSound("");
-    setUseCustom(false);
     setResult(null);
     setTwitchCommand("");
-    saveState();
     resetSolverState();
   };
-
-  const currentSound = useCustom ? customSound : selectedSound;
 
   return (
     <SolverLayout>
@@ -166,110 +154,27 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">LISTENING MODULE</h3>
         
         {/* Sound Selection */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                checked={!useCustom}
-                onChange={() => {
-                  setUseCustom(false);
-                  saveState();
-                }}
-                className="radio radio-sm"
-                disabled={isLoading || isSolved}
-              />
-              <span className="text-sm">Select from list</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                checked={useCustom}
-                onChange={() => {
-                  setUseCustom(true);
-                  saveState();
-                }}
-                className="radio radio-sm"
-                disabled={isLoading || isSolved}
-              />
-              <span className="text-sm">Enter custom sound</span>
-            </label>
-          </div>
-
-          {!useCustom ? (
-            <select
-              value={selectedSound}
-              onChange={(e) => {
-                setSelectedSound(e.target.value);
-                saveState();
-              }}
-              className="select select-bordered w-full"
-              disabled={isLoading || isSolved}
-            >
-              <option value="">Select a sound...</option>
-              {SOUND_OPTIONS.map((sound) => (
-                <option key={sound} value={sound}>{sound}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={customSound}
-              onChange={(e) => {
-                setCustomSound(e.target.value);
-                saveState();
-              }}
-              placeholder="Enter sound description..."
-              className="input input-bordered w-full"
-              disabled={isLoading || isSolved}
-            />
-          )}
-        </div>
-
-        {/* Play Button Visualization */}
-        <div className="bg-black rounded-lg p-8 mb-6 flex justify-center">
-          <button
-            className="btn btn-circle btn-lg bg-green-600 hover:bg-green-700 border-green-700"
+        <div className="mb-4">
+          <p className="text-sm text-gray-400 mb-2">Play the sound on the module, then select it below.</p>
+          <select
+            value={selectedSound}
+            onChange={(e) => setSelectedSound(e.target.value)}
+            className="select select-bordered w-full"
             disabled={isLoading || isSolved}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* Symbol Buttons Display */}
-        <div className="mb-4">
-          <h4 className="text-sm text-gray-400 mb-2 text-center">Code Entry Buttons:</h4>
-          <div className="flex justify-center gap-4">
-            {["$", "*", "&", "#"].map((symbol) => (
-              <button
-                key={symbol}
-                className="btn btn-lg btn-circle bg-gray-700 hover:bg-gray-600 border-gray-600 text-2xl font-mono"
-                disabled
-              >
-                {symbol}
-              </button>
+            <option value="">Select a sound...</option>
+            {SOUND_OPTIONS.map((sound) => (
+              <option key={sound} value={sound}>{sound}</option>
             ))}
-          </div>
+          </select>
         </div>
-
-        {/* Current Selection */}
-        {currentSound && (
-          <div className="text-center text-sm text-gray-400 mb-4">
-            Selected Sound: <span className="text-white font-medium">{currentSound}</span>
-          </div>
-        )}
       </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls
         onSolve={solveListeningModule}
         onReset={reset}
-        isSolveDisabled={!currentSound}
+        isSolveDisabled={!selectedSound}
         isLoading={isLoading}
         solveText="Get Code"
       />
@@ -319,9 +224,8 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">
-        <p className="mb-2">Press the play button on the module to hear a sound, then select or enter that sound.</p>
-        <p>• Select the sound from the dropdown list or enter a custom description</p>
-        <p>• The solver will provide the 4-symbol code to enter</p>
+        <p className="mb-2">Play the sound on the module, then select it from the list above.</p>
+        <p>• The solver will provide the code to enter</p>
         <p>• Enter the code using the $ * & # buttons on the module</p>
         <p>• Pressing play on the module clears any previously entered code</p>
       </div>

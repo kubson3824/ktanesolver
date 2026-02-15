@@ -23,7 +23,7 @@ public class ColorFlashSolver extends AbstractModuleSolver<ColorFlashInput, Colo
 	public SolveResult<ColorFlashOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ColorFlashInput input) {
 		List<ColorFlashEntry> sequence = input.sequence();
 
-		storeState(module, "sequence", sequence);
+		storeState(module, "input", input);
 
 		if(sequence == null || sequence.size() != 8) {
 			return failure("Color Flash requires exactly 8 word/color pairs");

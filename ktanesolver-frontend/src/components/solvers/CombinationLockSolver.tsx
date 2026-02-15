@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveCombinationLock, type CombinationLockInput, type CombinationLockOutput } from "../../services/combinationLockService";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -33,31 +33,47 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore solution if module was solved
-  useEffect(() => {
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as CombinationLockOutput;
-      
-      if (solution.instruction) {
-        setResult(solution);
-        setIsSolved(true);
+  const moduleState = useMemo(() => ({}), []);
 
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.COMBINATION_LOCK,
-          result: { 
-            combination: [solution.firstNumber, solution.secondNumber, solution.thirdNumber],
-            instruction: solution.instruction
-          },
-          moduleNumber
-        });
-        setTwitchCommand(command);
+  const onRestoreState = useCallback((_state: Record<string, never>) => {}, []);
+
+  const onRestoreSolution = useCallback(
+    (solution: CombinationLockOutput) => {
+      if (!solution?.instruction) return;
+
+      setResult(solution);
+
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.COMBINATION_LOCK,
+        result: {
+          combination: [solution.firstNumber, solution.secondNumber, solution.thirdNumber],
+          instruction: solution.instruction,
+        },
+      });
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<Record<string, never>, CombinationLockOutput>({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    persistState: false,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as CombinationLockOutput;
+        return raw as CombinationLockOutput;
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const solveCombinationLockModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -82,11 +98,7 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
       
       const command = generateTwitchCommand({
         moduleType: ModuleType.COMBINATION_LOCK,
-        result: { 
-          combination: [response.output.firstNumber, response.output.secondNumber, response.output.thirdNumber],
-          instruction: response.output.instruction
-        },
-        moduleNumber
+        result: response.output,
       });
       setTwitchCommand(command);
     } catch (err) {
@@ -108,9 +120,6 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">COMBINATION LOCK MODULE</h3>
       </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
 
       {/* Controls */}
       <SolverControls

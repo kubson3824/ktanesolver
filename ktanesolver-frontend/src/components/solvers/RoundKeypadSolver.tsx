@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { BombEntity } from '../../types';
 import { ModuleType } from '../../types';
 import { useRoundStore } from '../../store/useRoundStore';
@@ -6,12 +6,13 @@ import { generateTwitchCommand } from '../../utils/twitchCommands';
 import { solveRoundKeypad, type RoundKeypadInput, type RoundKeypadOutput, type RoundKeypadSymbol } from '../../services/roundKeypadService';
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from '../common';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 
 // Symbol display configuration - same as Keypads component
 const SYMBOL_DISPLAY: Record<RoundKeypadSymbol, { display: string; className?: string }> = {
@@ -73,54 +74,59 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { selectedSymbols?: RoundKeypadSymbol[] };
-      
-      if (moduleState.selectedSymbols) {
-        setSelectedSymbols(moduleState.selectedSymbols);
+  const moduleState = useMemo(
+    () => ({ selectedSymbols, solution, twitchCommand }),
+    [selectedSymbols, solution, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: { selectedSymbols?: RoundKeypadSymbol[]; symbols?: RoundKeypadSymbol[]; solution?: RoundKeypadOutput | null; twitchCommand?: string }) => {
+      // Backend stores input as state.symbols; frontend also persists selectedSymbols
+      const symbols = state.selectedSymbols ?? state.symbols;
+      if (symbols && Array.isArray(symbols)) {
+        setSelectedSymbols(symbols);
       }
-    }
+      if (state.solution !== undefined) setSolution(state.solution);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as RoundKeypadOutput;
-      
-      if (solution.symbolsToPress) {
-        setSolution(solution);
-        setIsSolved(true);
+  const onRestoreSolution = useCallback(
+    (restored: RoundKeypadOutput) => {
+      if (!restored?.symbolsToPress) return;
+      setSolution(restored);
 
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.ROUND_KEYPAD,
-          result: solution,
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
-
-  // Save state when symbols change
-  const saveState = (symbols: RoundKeypadSymbol[]) => {
-    if (currentModule) {
-      const moduleState = { selectedSymbols: symbols };
-      // Update the module in the store
-      const { round } = useRoundStore.getState();
-      round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.ROUND_KEYPAD,
+        result: restored,
       });
-    }
-  };
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { selectedSymbols: RoundKeypadSymbol[]; solution: RoundKeypadOutput | null; twitchCommand: string },
+    RoundKeypadOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === 'object') {
+        const anyRaw = raw as { output?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === 'object') return anyRaw.output as RoundKeypadOutput;
+        return raw as RoundKeypadOutput;
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSymbolClick = (symbol: RoundKeypadSymbol) => {
     if (isLoading || isSolved) return;
@@ -135,7 +141,6 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
     }
     
     setSelectedSymbols(newSymbols);
-    saveState(newSymbols);
     clearError();
   };
 
@@ -164,7 +169,6 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.ROUND_KEYPAD,
         result: response.output,
-        moduleNumber
       });
       setTwitchCommand(command);
     } catch (err) {
@@ -178,7 +182,6 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
     setSelectedSymbols([]);
     setSolution(null);
     setTwitchCommand("");
-    saveState([]);
     resetSolverState();
   };
 
@@ -186,109 +189,124 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
     return SYMBOL_DISPLAY[symbol].display;
   };
 
+  const slotRadius = 120;
+  const slotAngle = (index: number) => (index * 360) / 8 - 90;
+  const slotPosition = (index: number) => {
+    const angle = slotAngle(index);
+    const rad = (angle * Math.PI) / 180;
+    return {
+      x: Math.cos(rad) * slotRadius,
+      y: Math.sin(rad) * slotRadius,
+    };
+  };
+
   return (
     <SolverLayout>
-      {/* Round Keypad Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">ROUND KEYPAD MODULE</h3>
-        
-        {!isSolved ? (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-lg font-semibold text-gray-200">Selected Symbols ({selectedSymbols.length}/8)</h4>
-            </div>
-            
-            {/* Circular layout for selected symbols */}
+      {/* Symbol selector grid - first (match Keypads order) */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-center text-base-content/70 text-sm font-medium">
+            SELECT SYMBOLS ({selectedSymbols.length}/8)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-6 sm:grid-cols-7 md:grid-cols-8 gap-2">
+            {ROUND_KEYPAD_SYMBOLS.map((symbol) => {
+              const isSelected = selectedSymbols.includes(symbol);
+              return (
+                <button
+                  key={symbol}
+                  onClick={() => handleSymbolClick(symbol)}
+                  disabled={isSolved || (!isSelected && selectedSymbols.length >= 8)}
+                  className={`h-12 rounded border-2 transition-all duration-200 flex items-center justify-center text-lg ${
+                    isSelected
+                      ? "bg-primary border-primary text-primary-content"
+                      : selectedSymbols.length >= 8 && !isSelected
+                      ? "bg-base-300 border-base-300 text-base-content/50 cursor-not-allowed"
+                      : "bg-base-100 border-base-300 hover:border-primary hover:bg-primary/10"
+                  }`}
+                  title={symbol}
+                >
+                  {SYMBOL_DISPLAY[symbol].display}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Round Keypad Module Visualization - 8 slots in circle */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-center text-base-content/70 text-sm font-medium">
+            ROUND KEYPAD MODULE
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {!isSolved ? (
             <div className="relative mx-auto w-80 h-80">
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-32 h-32 bg-gray-900 rounded-full flex items-center justify-center">
-                  <span className="text-gray-500 text-sm">Press symbols in order</span>
+                <div className="w-32 h-32 bg-base-300 rounded-full flex items-center justify-center border border-base-300">
+                  <span className="text-base-content/60 text-sm">Round Keypad</span>
                 </div>
               </div>
-              {selectedSymbols.map((symbol, index) => {
-                const angle = (index * 360) / 8 - 90;
-                const radius = 120;
-                const x = Math.cos((angle * Math.PI) / 180) * radius;
-                const y = Math.sin((angle * Math.PI) / 180) * radius;
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => {
+                const { x, y } = slotPosition(index);
+                const symbol = selectedSymbols[index];
+                const style = {
+                  transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`,
+                  left: '50%',
+                  top: '50%',
+                };
+                if (symbol) {
+                  return (
+                    <button
+                      key={`${index}-${symbol}`}
+                      type="button"
+                      className="absolute w-16 h-16 bg-base-300 border-2 border-base-300 rounded-lg flex items-center justify-center text-2xl font-bold hover:border-primary transition-all duration-200"
+                      style={style}
+                      onClick={() => handleSymbolClick(symbol)}
+                    >
+                      {getSymbolDisplay(symbol)}
+                    </button>
+                  );
+                }
                 return (
-                  <button
-                    key={symbol}
-                    className="absolute w-16 h-16 bg-gray-700 border-2 border-gray-600 rounded-lg flex items-center justify-center text-2xl font-bold hover:border-gray-500 transition-all duration-200"
-                    style={{
-                      transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`,
-                      left: '50%',
-                      top: '50%'
-                    }}
-                    onClick={() => handleSymbolClick(symbol)}
-                  >
-                    {getSymbolDisplay(symbol)}
-                  </button>
+                  <div
+                    key={`empty-${index}`}
+                    className="absolute w-16 h-16 rounded-lg border-2 border-dashed border-base-300 bg-base-100/50 flex items-center justify-center"
+                    style={style}
+                    aria-hidden
+                  />
                 );
               })}
             </div>
-
-            <button 
-              onClick={handleSolve} 
-              disabled={selectedSymbols.length !== 8 || isLoading || isSolved}
-              className="btn btn-primary w-full"
-            >
-              {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-              {isLoading ? 'Solving...' : 'Solve'}
-            </button>
-          </div>
-        ) : (
-          <div className="bg-green-900/50 border border-green-600 rounded-lg p-4">
-            <h3 className="font-bold text-lg mb-2 text-green-300">Solution</h3>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-100 mb-2">Press these symbols:</p>
-              <div className="flex flex-wrap gap-2">
-                {solution?.symbolsToPress?.map((symbol) => (
-                  <span key={symbol} className="badge badge-success">
-                    {SYMBOL_DISPLAY[symbol].display}
-                  </span>
-                ))}
+          ) : (
+            <div className="bg-success/10 border border-success rounded-lg p-4">
+              <h3 className="font-bold text-lg mb-2 text-success-content">Solution</h3>
+              <div className="space-y-3">
+                {solution?.symbolsToPress && solution.symbolsToPress.length > 0 ? (
+                  <>
+                    <p className="text-sm text-base-content mb-2">Press in order:</p>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {solution.symbolsToPress.map((symbol, i) => (
+                        <span key={`${i}-${symbol}`} className="inline-flex items-center gap-1 bg-success/20 border border-success rounded px-3 py-1.5">
+                          <span className="text-success-content font-semibold">{i + 1}.</span>
+                          <span className="text-lg">{SYMBOL_DISPLAY[symbol].display}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-success-content">All symbols are in the correct column. No buttons need to be pressed.</p>
+                )}
               </div>
-              {solution?.symbolsToPress?.length === 0 && (
-                <p className="text-green-300">All symbols are in the correct column. No buttons need to be pressed.</p>
-              )}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Symbol selector grid */}
-      <div className="bg-base-200 rounded-lg p-4 mb-4">
-        <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">
-          SELECT SYMBOLS ({selectedSymbols.length}/8)
-        </h3>
-        <div className="grid grid-cols-6 sm:grid-cols-7 md:grid-cols-8 gap-2">
-          {ROUND_KEYPAD_SYMBOLS.map((symbol) => {
-            const isSelected = selectedSymbols.includes(symbol);
-            return (
-              <button
-                key={symbol}
-                onClick={() => handleSymbolClick(symbol)}
-                disabled={isSolved || (!isSelected && selectedSymbols.length >= 8)}
-                className={`h-12 rounded border-2 transition-all duration-200 flex items-center justify-center text-lg ${
-                  isSelected
-                    ? "bg-primary border-primary text-primary-content"
-                    : selectedSymbols.length >= 8 && !isSelected
-                    ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed"
-                    : "bg-base-100 border-base-300 hover:border-primary hover:bg-primary/10"
-                }`}
-                title={symbol}
-              >
-                {SYMBOL_DISPLAY[symbol].display}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-
-      {/* Controls */}
+      {/* Controls - single Solve/Reset */}
       <SolverControls
         onSolve={handleSolve}
         onReset={handleReset}
@@ -297,16 +315,13 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
         solveText="Solve"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Twitch command display */}
       <TwitchCommandDisplay command={twitchCommand} />
 
-      {/* Instructions */}
       <div className="text-sm text-base-content/60">
         <p className="mb-2">Select the 8 symbols visible on the circular keypad.</p>
-        <p>• The solver will identify the column with the most matches (rightmost on tie)</p>
+        <p>• The solver identifies the column with the most matches (rightmost on tie)</p>
         <p>• Press the symbols in the order shown in the solution</p>
       </div>
     </SolverLayout>

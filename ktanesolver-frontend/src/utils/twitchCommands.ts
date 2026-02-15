@@ -3,25 +3,26 @@ import { ModuleType } from "../types";
 export interface TwitchCommandData {
   moduleType: ModuleType;
   result: unknown;
-  moduleNumber: number;
 }
 
+const TWITCH_PLACEHOLDER = "number";
+
 export function generateTwitchCommand(data: TwitchCommandData): string {
-  const { moduleType, result, moduleNumber } = data;
+  const { moduleType, result } = data;
   
   switch (moduleType) {
     case ModuleType.WIRES:
-      return `!${moduleNumber} cut ${(result as { wirePosition: number }).wirePosition + 1}`;
+      return `!${TWITCH_PLACEHOLDER} cut ${(result as { wirePosition: number }).wirePosition + 1}`;
     
     case ModuleType.BUTTON:
       if ((result as { hold: boolean }).hold) {
-        return `!${moduleNumber} hold`;
+        return `!${TWITCH_PLACEHOLDER} hold`;
       } else {
-        return `!${moduleNumber} press`;
+        return `!${TWITCH_PLACEHOLDER} press`;
       }
     
     case ModuleType.MEMORY:
-      return `!${moduleNumber} press ${(result as { position: string }).position}`;
+      return `!${TWITCH_PLACEHOLDER} press ${(result as { position: string }).position}`;
     
     case ModuleType.KEYPADS:
       // Assuming result has the button to press - convert position to TL TR BL BR format
@@ -41,54 +42,70 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
           '3': 'BR'
         };
         const position = positionMap[(result as { position: string }).position.toString().toUpperCase()] || (result as { position: string }).position;
-        return `!${moduleNumber} press ${position}`;
+        return `!${TWITCH_PLACEHOLDER} press ${position}`;
       }
       // Fallback to label if position not available
-      return `!${moduleNumber} press ${(result as { label?: string; button?: string }).label || (result as { label?: string; button?: string }).button || 'unknown'}`;
-    
+      return `!${TWITCH_PLACEHOLDER} press ${(result as { label?: string; button?: string }).label || (result as { label?: string; button?: string }).button || 'unknown'}`;
+
     case ModuleType.SIMON_SAYS:
-      // Assuming result has the sequence or color to press
-      if ((result as { sequence: string[] }).sequence) {
-        return `!${moduleNumber} sequence ${(result as { sequence: string[] }).sequence.join(' ')}`;
-      } else {
-        return `!${moduleNumber} press ${(result as { color: string }).color}`;
+      // Handle color-based input (e.g., "RED", "BLUE", "GREEN", "YELLOW")
+      if ((result as { color: string }).color) {
+        return `!${TWITCH_PLACEHOLDER} press ${(result as { color: string }).color.toUpperCase()}`;
       }
-    
+      // Handle position-based input and convert to color
+      else if ((result as { position: string }).position) {
+        // Map positions to colors
+        const positionToColor: Record<string, string> = {
+          'TOP_LEFT': 'BLUE',
+          'TOP_RIGHT': 'YELLOW',
+          'BOTTOM_LEFT': 'GREEN',
+          'BOTTOM_RIGHT': 'RED'
+        };
+        const position = (result as { position: string }).position.toUpperCase();
+        const color = positionToColor[position] || position;
+        return `!${TWITCH_PLACEHOLDER} press ${color}`;
+      }
+      // Fallback to sequence if available
+      else if ((result as { sequence: string[] }).sequence) {
+        return `!${TWITCH_PLACEHOLDER} sequence ${(result as { sequence: string[] }).sequence.join(' ')}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} action unknown`;
+
     case ModuleType.MORSE_CODE:
       // Assuming result has the word to transmit
-      return `!${moduleNumber} transmit ${(result as { word: string }).word}`;
+      return `!${TWITCH_PLACEHOLDER} transmit ${(result as { word: string }).word}`;
     
     case ModuleType.FORGET_ME_NOT:
       // Assuming result has the action and parameter
       if (result.action === 'display') {
-        return `!${moduleNumber} display ${result.value}`;
+        return `!${TWITCH_PLACEHOLDER} display ${result.value}`;
       } else if (result.action === 'press') {
-        return `!${moduleNumber} press ${result.label}`;
+        return `!${TWITCH_PLACEHOLDER} press ${result.label}`;
       }
-      return `!${moduleNumber} ${result.action}`;
+      return `!${TWITCH_PLACEHOLDER} ${result.action}`;
     
     case ModuleType.WHOS_ON_FIRST:
       // Assuming result has the button to press
-      return `!${moduleNumber} press ${result.button}`;
+      return `!${TWITCH_PLACEHOLDER} press ${result.button}`;
     
     case ModuleType.VENTING_GAS:
       // Assuming result has the action
-      return `!${moduleNumber} ${result.action}`;
+      return `!${TWITCH_PLACEHOLDER} ${result.action}`;
     
     case ModuleType.CAPACITOR_DISCHARGE:
       // Assuming result has the action
-      return `!${moduleNumber} ${result.action}`;
+      return `!${TWITCH_PLACEHOLDER} ${result.action}`;
     
     case ModuleType.COMPLICATED_WIRES:
-      return `!${moduleNumber} cut ${result.wire}`;
+      return `!${TWITCH_PLACEHOLDER} cut ${result.wire}`;
     
     case ModuleType.WIRE_SEQUENCES:
       // Assuming result has the wire to cut
-      return `!${moduleNumber} cut ${result.wirePosition}`;
+      return `!${TWITCH_PLACEHOLDER} cut ${result.wirePosition}`;
     
     case ModuleType.PASSWORDS:
       // Assuming result has the password
-      return `!${moduleNumber} submit ${result.password}`;
+      return `!${TWITCH_PLACEHOLDER} submit ${result.password}`;
     
     case ModuleType.MAZES:
       // Assuming result has the directions - convert to first letters
@@ -107,56 +124,56 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
           };
           return directionMap[dir.toUpperCase()] || dir;
         });
-        return `!${moduleNumber} ${directionLetters.join(' ')}`;
+        return `!${TWITCH_PLACEHOLDER} ${directionLetters.join(' ')}`;
       }
-      return `!${moduleNumber} ${result.action || 'unknown'}`;
+      return `!${TWITCH_PLACEHOLDER} ${result.action || 'unknown'}`;
     
     case ModuleType.EMOJI_MATH:
-      return `!${moduleNumber} answer ${result.answer}`;
+      return `!${TWITCH_PLACEHOLDER} answer ${result.answer}`;
     
     case ModuleType.SWITCHES:
       // For switches, we'll provide the instruction as is
-      return `!${moduleNumber} ${result.instruction}`;
+      return `!${TWITCH_PLACEHOLDER} ${result.instruction}`;
     
     case ModuleType.TWO_BITS:
       // For Two Bits, we provide the letters to display
-      return `!${moduleNumber} display ${result.letters}`;
+      return `!${TWITCH_PLACEHOLDER} display ${result.letters}`;
     
     case ModuleType.WORD_SCRAMBLE:
       // For Word Scramble, we provide the solution word
-      return `!${moduleNumber} word ${result.solution || 'unknown'}`;
+      return `!${TWITCH_PLACEHOLDER} word ${result.solution || 'unknown'}`;
     
     case ModuleType.ANAGRAMS:
       // For Anagrams, we provide the possible solutions
       if (result.possibleSolutions && result.possibleSolutions.length > 0) {
-        return `!${moduleNumber} anagrams ${result.possibleSolutions.join(', ')}`;
+        return `!${TWITCH_PLACEHOLDER} anagrams ${result.possibleSolutions.join(', ')}`;
       }
-      return `!${moduleNumber} anagrams no solution`;
+      return `!${TWITCH_PLACEHOLDER} anagrams no solution`;
     
     case ModuleType.COMBINATION_LOCK:
       // For Combination Lock, we provide the combination numbers
       if (result.combination && Array.isArray(result.combination)) {
-        return `!${moduleNumber} combo ${result.combination.join(' ')}`;
+        return `!${TWITCH_PLACEHOLDER} combo ${result.combination.join(' ')}`;
       }
-      return `!${moduleNumber} combo ${result.firstNumber || '0'} ${result.secondNumber || '0'} ${result.thirdNumber || '0'}`;
+      return `!${TWITCH_PLACEHOLDER} combo ${result.firstNumber || '0'} ${result.secondNumber || '0'} ${result.thirdNumber || '0'}`;
     
     case ModuleType.ROUND_KEYPAD:
       // For Round Keypad, we provide the symbols to press
       if (result.symbolsToPress && Array.isArray(result.symbolsToPress)) {
-        return `!${moduleNumber} press ${result.symbolsToPress.join(' ')}`;
+        return `!${TWITCH_PLACEHOLDER} press ${result.symbolsToPress.join(' ')}`;
       }
-      return `!${moduleNumber} press none`;
+      return `!${TWITCH_PLACEHOLDER} press none`;
     
     case ModuleType.LISTENING:
       // For Listening, we provide the 4-symbol code to enter
       if (result.code) {
-        return `!${moduleNumber} code ${result.code}`;
+        return `!${TWITCH_PLACEHOLDER} code ${result.code}`;
       }
-      return `!${moduleNumber} code unknown`;
+      return `!${TWITCH_PLACEHOLDER} code unknown`;
 
     case ModuleType.FOREIGN_EXCHANGE_RATES:
       // For Foreign Exchange, we provide the key position
-      return `!${moduleNumber} key ${result.keyPosition}`;
+      return `!${TWITCH_PLACEHOLDER} key ${result.keyPosition}`;
 
     case ModuleType.ORIENTATION_CUBE:
       // For Orientation Cube, we provide the rotation sequence
@@ -168,16 +185,29 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
           'ROTATE_COUNTERCLOCKWISE': 'CCW'
         };
         const rotations = result.rotations.map((rot: string) => rotationMap[rot] || rot).join(' ');
-        return `!${moduleNumber} rotate ${rotations}`;
+        return `!${TWITCH_PLACEHOLDER} rotate ${rotations}`;
       }
-      return `!${moduleNumber} rotate unknown`;
+      return `!${TWITCH_PLACEHOLDER} rotate unknown`;
 
     case ModuleType.LETTER_KEYS:
       // For Letter Keys, we provide the letter to press
-      return `!${moduleNumber} press ${result.letter}`;
+      return `!${TWITCH_PLACEHOLDER} press ${result.letter}`;
+
+    case ModuleType.ASTROLOGY:
+      // For Astrology, we provide the computed omen score
+      return `!${TWITCH_PLACEHOLDER} omen ${result.omenScore}`;
+
+    case ModuleType.CONNECTION_CHECK:
+      // For Connection Check, result has ledStates array
+      if ((result as { ledStates: boolean[] }).ledStates) {
+        const ledStates = (result as { ledStates: boolean[] }).ledStates;
+        const ledPattern = ledStates.map(led => led ? 'ON' : 'OFF').join(' ');
+        return `!${TWITCH_PLACEHOLDER} leds ${ledPattern}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} leds unknown`;
 
     default:
-      return `!${moduleNumber} action ${result.action || 'unknown'}`;
+      return `!${TWITCH_PLACEHOLDER} action ${result.action || 'unknown'}`;
   }
 }
 
@@ -207,6 +237,8 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.LISTENING]: "Listening",
     [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
     [ModuleType.LETTER_KEYS]: "Letter Keys",
+    [ModuleType.ASTROLOGY]: "Astrology",
+    [ModuleType.CONNECTION_CHECK]: "Connection Check",
   };
   
   return displayNames[moduleType] || moduleType;

@@ -7,6 +7,8 @@ export interface TwoBitsInput {
 
 export interface TwoBitsOutput {
   letters: string;
+  /** Completed stages (input number → result letters). Omitted in older backend responses. */
+  stages?: { number: number; letters: string }[];
 }
 
 export interface TwoBitsSolveRequest {
@@ -15,6 +17,7 @@ export interface TwoBitsSolveRequest {
 
 export interface TwoBitsSolveResponse {
   output: TwoBitsOutput;
+  solved: boolean;
 }
 
 export const solveTwoBits = async (

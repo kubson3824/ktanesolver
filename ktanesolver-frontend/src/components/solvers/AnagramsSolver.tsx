@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveAnagrams, type AnagramsSolveRequest, type AnagramsSolveResponse } from "../../services/anagramsService";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
-  BombInfoDisplay,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay
@@ -22,73 +21,92 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
   const [result, setResult] = useState<AnagramsSolveResponse["output"] | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const round = useRoundStore((state) => state.round);
-  const markModuleSolved = useRoundStore((state) => state.markModuleSolved);
-  const moduleNumber = useRoundStore((state) => state.moduleNumber);
-
-  const { 
-    isLoading, 
-    error, 
-    isSolved, 
-    setIsLoading, 
-    setError, 
-    setIsSolved, 
-    clearError, 
-    reset: resetSolverState 
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
   } = useSolver();
+
+  const moduleState = useMemo(
+    () => ({ displayWord, result, twitchCommand }),
+    [displayWord, result, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: { displayWord?: string; result?: AnagramsSolveResponse["output"] | null; twitchCommand?: string } | { input?: {displayWord?: string}}) => {
+      // Handle both formats: with or without input wrapper (backend uses input.displayWord)
+      if ('input' in state && state.input?.displayWord) {
+        setDisplayWord(state.input.displayWord);
+      } else if ('displayWord' in state && state.displayWord !== undefined) {
+        setDisplayWord(state.displayWord);
+      }
+
+      if ('result' in state && state.result !== undefined) {
+        setResult(state.result);
+      }
+      if ('twitchCommand' in state && state.twitchCommand !== undefined) {
+        setTwitchCommand(state.twitchCommand);
+      }
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: AnagramsSolveResponse["output"]) => {
+      if (!solution || !solution.possibleSolutions) return;
+      setResult(solution);
+
+      if (solution.possibleSolutions.length > 0) {
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.ANAGRAMS,
+          result: { possibleSolutions: solution.possibleSolutions },
+        });
+        setTwitchCommand(command);
+      }
+    },
+  []);
+
+  useSolverModulePersistence<
+    { displayWord: string; result: AnagramsSolveResponse["output"] | null; twitchCommand: string },
+    AnagramsSolveResponse["output"]
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown };
+        if ('result' in anyRaw) {
+          return anyRaw.result as AnagramsSolveResponse["output"];
+        }
+        if (anyRaw.output && typeof anyRaw.output === "object") {
+          return anyRaw.output as AnagramsSolveResponse["output"];
+        }
+        return raw as AnagramsSolveResponse["output"];
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleDisplayWordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
     if (value.length <= 6) {
       setDisplayWord(value);
       if (error) clearError();
-      
-      // Save state to module
-      if (currentModule) {
-        const moduleState = { displayWord: value };
-        useRoundStore.getState().round?.bombs.forEach(bomb => {
-          if (bomb.id === currentModule.bomb.id) {
-            const module = bomb.modules.find(m => m.id === currentModule.id);
-            if (module) {
-              module.state = moduleState;
-            }
-          }
-        });
-      }
     }
   };
-
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { displayWord?: string };
-      
-      if (moduleState.displayWord) {
-        setDisplayWord(moduleState.displayWord);
-      }
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as AnagramsSolveResponse["output"];
-      
-      if (solution) {
-        setResult(solution);
-        setIsSolved(true);
-
-        if (solution.possibleSolutions.length > 0) {
-          // Generate twitch command from the solution
-          const command = generateTwitchCommand({
-            moduleType: ModuleType.ANAGRAMS,
-            result: { possibleSolutions: solution.possibleSolutions },
-            moduleNumber
-          });
-          setTwitchCommand(command);
-        }
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
 
   const solveAnagramsModule = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -121,8 +139,7 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
         
         const command = generateTwitchCommand({
           moduleType: ModuleType.ANAGRAMS,
-          result: { possibleSolutions: response.output.possibleSolutions },
-          moduleNumber
+          result: response.output,
         });
         setTwitchCommand(command);
       }
@@ -142,8 +159,6 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
 
   return (
     <SolverLayout>
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Anagrams Module Visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">ANAGRAMS MODULE</h3>
@@ -249,6 +264,6 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
         <p>• Letters are automatically converted to uppercase</p>
         <p>• Minimum 3 letters required to find solutions</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

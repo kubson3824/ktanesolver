@@ -12,6 +12,7 @@ import ktanesolver.utils.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import ktanesolver.dto.ModuleCatalogDto;
 
@@ -87,7 +88,7 @@ public class TwoBitsSolver extends AbstractModuleSolver<TwoBitsInput, TwoBitsOut
 		state.stages().add(new TwoBitsStage(number, letters));
 		storeTypedState(module, state);
 
-		TwoBitsOutput output = new TwoBitsOutput(letters);
+		TwoBitsOutput output = new TwoBitsOutput(letters, List.copyOf(state.stages()));
 
 		return success(output, isFinalStage);
 	}

@@ -174,27 +174,25 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
 
       {/* Selected Modules Summary */}
       {totalCount > 0 && (
-        <div className="card bg-base-100 border border-base-300">
-          <div className="card-body p-4">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold">Selected: {totalCount} modules</span>
-              <button className="btn btn-xs btn-ghost" onClick={clearAll}>
-                Clear all
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {Object.entries(selectedModules).filter(([, count]) => count > 0).map(([type, count]) => (
-                <span key={type} className="badge badge-info gap-1">
-                  {type.replace(/_/g, " ")} × {count}
-                  <button
-                    className="btn btn-ghost btn-xs p-0 h-4 min-h-4"
-                    onClick={() => updateModuleCount(type, -count)}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
+        <div className="rounded-lg border border-panel-border bg-base-200/90 p-4">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">Selected: {totalCount} modules</span>
+            <button className="btn btn-xs btn-ghost" onClick={clearAll}>
+              Clear all
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {Object.entries(selectedModules).filter(([, count]) => count > 0).map(([type, count]) => (
+              <span key={type} className="badge badge-info gap-1">
+                {type.replace(/_/g, " ")} × {count}
+                <button
+                  className="btn btn-ghost btn-xs p-0 h-4 min-h-4"
+                  onClick={() => updateModuleCount(type, -count)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
           </div>
         </div>
       )}
@@ -213,12 +211,12 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
             return (
               <div
                 key={module.id}
-                className={`card bg-base-100 border border-base-300 cursor-pointer hover:border-primary transition-colors ${
+                className={`rounded-lg border border-panel-border bg-base-200/90 cursor-pointer hover:border-primary transition-colors ${
                   isRecent ? "ring-2 ring-primary/20" : ""
                 }`}
                 onClick={() => handleModuleClick(module)}
               >
-                <div className="card-body p-3">
+                <div className="p-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">

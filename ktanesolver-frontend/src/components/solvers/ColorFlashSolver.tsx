@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { solveColorFlash, type ColorFlashEntry, type ColorFlashColor } from "../../services/colorFlashService";
 import { useRoundStore } from "../../store/useRoundStore";
+import { solveColorFlash, type ColorFlashEntry, type ColorFlashColor } from "../../services/colorFlashService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -69,6 +69,7 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
   
   // Use the common solver hook for shared state
+  const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
   const {
     isLoading,
     error,
@@ -81,73 +82,63 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        sequence,
-        solution,
-        twitchCommands
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
+  const moduleState = useMemo(
+    () => ({ sequence, solution, twitchCommands }),
+    [sequence, solution, twitchCommands],
+  );
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [sequence, solution, twitchCommands]);
+  const onRestoreState = useCallback(
+    (state: { sequence?: ColorFlashEntry[]; solution?: typeof solution; twitchCommands?: string[]; input?: { sequence?: ColorFlashEntry[] } }) => {
+      if (state.sequence) setSequence(state.sequence);
+      else if (state.input?.sequence) setSequence(state.input.sequence);
+      if (state.solution !== undefined) setSolution(state.solution ?? null);
+      if (state.twitchCommands) setTwitchCommands(state.twitchCommands);
+    },
+    [],
+  );
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        sequence?: ColorFlashEntry[];
-        solution?: {
-          pressYes: boolean;
-          pressNo: boolean;
-          instruction: string;
-          position: number;
-        } | null;
-        twitchCommands?: string[];
-      };
-      
-      if (moduleState.sequence) setSequence(moduleState.sequence);
-      if (moduleState.solution !== undefined) setSolution(moduleState.solution);
-      if (moduleState.twitchCommands) setTwitchCommands(moduleState.twitchCommands);
-    }
+  const onRestoreSolution = useCallback(
+    (restored: NonNullable<typeof solution>) => {
+      if (restored) {
+        setSolution(restored);
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        solution?: {
-          pressYes: boolean;
-          pressNo: boolean;
-          instruction: string;
-          position: number;
-        };
-        isSolved?: boolean;
-      };
-      
-      if (solution.solution) {
-        setSolution(solution.solution);
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.COLOR_FLASH,
+          result: {
+            action: restored.pressYes ? "YES" : "NO",
+            position: restored.position,
+            instruction: restored.instruction,
+          },
+        });
+        setTwitchCommands([command]);
       }
-      if (solution.isSolved) {
-        setIsSolved(true);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { sequence: ColorFlashEntry[]; solution: typeof solution; twitchCommands: string[] },
+    NonNullable<typeof solution>
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown; solution?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as NonNullable<typeof solution>;
+        if (anyRaw.solution && typeof anyRaw.solution === "object") return anyRaw.solution as NonNullable<typeof solution>;
+        if (anyRaw.result && typeof anyRaw.result === "object") return anyRaw.result as NonNullable<typeof solution>;
+        return raw as NonNullable<typeof solution>;
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleAddEntry = (word: ColorFlashColor, color: ColorFlashColor) => {
     if (isSolved || isLoading || sequence.length >= 8) return;
@@ -190,8 +181,7 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
       });
 
       setSolution(response.output);
-      
-      // Generate Twitch command for the solution
+
       const command = generateTwitchCommand({
         moduleType: ModuleType.COLOR_FLASH,
         result: {
@@ -199,22 +189,20 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
           position: response.output.position,
           instruction: response.output.instruction
         },
-        moduleNumber
       });
       setTwitchCommands([command]);
-      
-      // Save solution
-      if (currentModule) {
-        useRoundStore.getState().round?.bombs.forEach(bomb => {
-          if (bomb.id === currentModule.bomb.id) {
-            const module = bomb.modules.find(m => m.id === currentModule.id);
-            if (module) {
-              module.solution = { solution: response.output };
-            }
-          }
-        });
-      }
-      
+
+      updateModuleAfterSolve(
+        bomb.id,
+        currentModule.id,
+        { sequence },
+        {
+          pressYes: response.output.pressYes,
+          pressNo: response.output.pressNo,
+          instruction: response.output.instruction,
+          position: response.output.position,
+        }
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve Color Flash");
     } finally {
@@ -322,9 +310,6 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
         )}
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <SolverControls
         onSolve={handleCheckAnswer}
@@ -343,6 +328,6 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
         <p className="mb-2">Click the small buttons to quickly add word/color combinations, or use the larger buttons to select individually.</p>
         <p>The solution depends on the color of the 8th display in the sequence.</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

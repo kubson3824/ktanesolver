@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveWires as solveWiresApi } from "../../services/wiresService";
@@ -6,10 +6,10 @@ import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -46,60 +46,63 @@ export default function WireSolver({ bomb }: WireSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads or currentModule changes
-  useEffect(() => {
-    console.log('WireSolver: currentModule changed', currentModule);
+  const moduleState = useMemo(
+    () => ({ wires, result, wireToCut, twitchCommand }),
+    [wires, result, wireToCut, twitchCommand],
+  );
 
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { wires?: string[] };
-      console.log('WireSolver: moduleState', moduleState);
+  const onRestoreState = useCallback(
+    (state: { wires?: WireColor[]; result?: string; wireToCut?: number; twitchCommand?: string }) => {
+      if (state.wires && Array.isArray(state.wires)) setWires(state.wires);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.wireToCut !== undefined) setWireToCut(state.wireToCut);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    },
+    [],
+  );
 
-      // Restore wire configuration
-      if (moduleState.wires && Array.isArray(moduleState.wires)) {
-        const restoredWires: WireColor[] = Array(6).fill(null);
-        moduleState.wires.forEach((color: string, index: number) => {
-          if (index < 6 && color) {
-            // Ensure the color is valid
-            if (["RED", "BLUE", "BLACK", "YELLOW", "WHITE"].includes(color)) {
-              restoredWires[index] = color as WireColor;
-            }
-          }
-        });
-        setWires(restoredWires);
-        console.log('WireSolver: Restored wires', restoredWires);
+  const onRestoreSolution = useCallback(
+    (solution: { instruction: string; wirePosition: number }) => {
+      if (!solution) return;
+
+      setResult(solution.instruction);
+      setWireToCut(solution.wirePosition);
+
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.WIRES,
+        result: {
+          instruction: solution.instruction,
+          wirePosition: solution.wirePosition,
+        },
+      });
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { wires: WireColor[]; result: string; wireToCut: number; twitchCommand: string },
+    { instruction: string; wirePosition: number }
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; instruction?: unknown; wirePosition?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { instruction: string; wirePosition: number };
+        if (typeof anyRaw.instruction === "string" && typeof anyRaw.wirePosition === "number") {
+          return { instruction: anyRaw.instruction, wirePosition: anyRaw.wirePosition };
+        }
       }
-    }
-
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { instruction?: string; wirePosition?: number };
-      console.log('WireSolver: solution', solution);
-
-      if (solution.instruction) {
-        setResult(solution.instruction);
-      }
-      if (solution.wirePosition !== undefined) {
-        setWireToCut(solution.wirePosition);
-      }
-      if (solution.instruction || solution.wirePosition !== undefined) {
-        setIsSolved(true);
-
-        // Generate twitch command from the solution
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.WIRES,
-          result: {
-            instruction: solution.instruction,
-            wirePosition: solution.wirePosition
-          },
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const solveWires = async () => {
     const activeWires = wires.filter((w) => w !== null);
@@ -130,11 +133,9 @@ export default function WireSolver({ bomb }: WireSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.WIRES,
         result: response.output,
-        moduleNumber
       });
       setTwitchCommand(command);
 
-      // Mark module as solved in the store
       markModuleSolved(bomb.id, currentModule.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve wires");
@@ -154,23 +155,6 @@ export default function WireSolver({ bomb }: WireSolverProps) {
     setResult("");
     setWireToCut(-1);
     setError("");
-
-    // Save current wire configuration to module state
-    if (currentModule && newWires.some(w => w !== null)) {
-      const moduleState = {
-        wires: newWires.filter(w => w !== null)
-      };
-
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
   };
 
 
@@ -217,9 +201,6 @@ export default function WireSolver({ bomb }: WireSolverProps) {
               ))}
             </div>
           </div>
-
-          {/* Serial number display */}
-          <BombInfoDisplay bomb={bomb}/>
 
           {/* Controls */}
           <SolverControls

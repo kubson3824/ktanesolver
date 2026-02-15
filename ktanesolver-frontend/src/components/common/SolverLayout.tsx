@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import ModuleNumberInput from "../ModuleNumberInput";
+import { CardTitle } from "../ui/card";
 
 interface SolverLayoutProps {
   children: ReactNode;
@@ -10,9 +10,8 @@ interface SolverLayoutProps {
 export default function SolverLayout({ children, title, className = "" }: SolverLayoutProps) {
   return (
     <div className={`w-full ${className}`}>
-      <ModuleNumberInput />
       {title && (
-        <h2 className="text-xl font-bold mb-4 text-center">{title}</h2>
+        <CardTitle className="text-xl font-bold mb-4 text-center">{title}</CardTitle>
       )}
       {children}
     </div>

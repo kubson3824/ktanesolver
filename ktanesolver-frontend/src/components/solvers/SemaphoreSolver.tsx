@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { solveSemaphore, type SemaphoreOutput, type SemaphoreInput } from "../../services/semaphoreService";
-import { useRoundStore } from "../../store/useRoundStore";
+import { solveSemaphore, getDisplayLabel, type SemaphoreOutput, type SemaphoreInput } from "../../services/semaphoreService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 import SemaphoreFlagSelector from "../SemaphoreFlagSelector";
@@ -42,63 +41,64 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        sequence,
-        result,
-        twitchCommand
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
+  const moduleState = useMemo(
+    () => ({ sequence, result, twitchCommand }),
+    [sequence, result, twitchCommand],
+  );
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [sequence, result, twitchCommand]);
+  const onRestoreState = useCallback(
+    (state: { sequence?: FlagAngles[]; result?: SemaphoreOutput | null; twitchCommand?: string; input?: { sequence?: FlagAngles[] } }) => {
+      const enrich = (seq: FlagAngles[]) =>
+        seq.map((pos) => ({
+          ...pos,
+          character: pos.character ?? getDisplayLabel(pos.leftFlagAngle, pos.rightFlagAngle),
+        }));
+      if (state.sequence) setSequence(enrich(state.sequence));
+      if (state.result !== undefined) setResult(state.result ?? null);
+      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
+      if (state.input?.sequence) setSequence(enrich(state.input.sequence));
+    },
+    [],
+  );
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        sequence?: FlagAngles[];
-        result?: SemaphoreOutput | null;
-        twitchCommand?: string;
-      };
-      
-      if (moduleState.sequence) setSequence(moduleState.sequence);
-      if (moduleState.result !== undefined) setResult(moduleState.result);
-      if (moduleState.twitchCommand) setTwitchCommand(moduleState.twitchCommand);
-    }
+  const onRestoreSolution = useCallback(
+    (restored: SemaphoreOutput) => {
+      if (restored) {
+        setResult(restored);
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        result?: SemaphoreOutput;
-        isSolved?: boolean;
-      };
-      
-      if (solution.result) {
-        setResult(solution.result);
+        const command = generateTwitchCommand({
+          moduleType: ModuleType.SEMAPHORE,
+          result: { character: restored.missingCharacter },
+        });
+        setTwitchCommand(command);
       }
-      if (solution.isSolved) {
-        setIsSolved(true);
+    },
+  []);
+
+  useSolverModulePersistence<
+    { sequence: FlagAngles[]; result: SemaphoreOutput | null; twitchCommand: string },
+    SemaphoreOutput
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; result?: unknown; solution?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as SemaphoreOutput;
+        if (anyRaw.result && typeof anyRaw.result === "object") return anyRaw.result as SemaphoreOutput;
+        if (anyRaw.solution && typeof anyRaw.solution === "object") return anyRaw.solution as SemaphoreOutput;
+        return raw as SemaphoreOutput;
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const addPosition = (character: string, leftFlagAngle: number, rightFlagAngle: number) => {
     setSequence(prev => [...prev, { leftFlagAngle, rightFlagAngle, character }]);
@@ -133,33 +133,20 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
       const input: SemaphoreInput = {
         sequence
       };
-      
+
       const response = await solveSemaphore(round.id, bomb.id, currentModule.id, { input });
-      
+
       setResult(response.output);
-      
+
       if (response.output.resolved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
+
         const command = generateTwitchCommand({
           moduleType: ModuleType.SEMAPHORE,
-          result: { character: response.output.missingCharacter },
-          moduleNumber
+          result: response.output,
         });
         setTwitchCommand(command);
-        
-        // Save solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { result: response.output };
-              }
-            }
-          });
-        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve semaphore");
@@ -176,16 +163,16 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
   return (
     <SolverLayout>
       {/* Semaphore Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">SEMAPHORE MODULE</h3>
-        
+      <div className="bg-gray-800 rounded-lg p-6 mb-4 flex flex-col min-h-0">
+        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium flex-shrink-0">SEMAPHORE MODULE</h3>
+
         {/* Display area */}
-        <div className="bg-black rounded-lg p-4 mb-4 min-h-[120px] flex flex-col items-center justify-center">
+        <div className="bg-black rounded-lg p-4 mb-4 min-h-[120px] flex flex-col items-center justify-center flex-shrink-0">
           <div className="text-center">
             <div className="text-sm text-gray-400 mb-2">Sequence Builder</div>
             <div className="text-lg font-mono text-gray-300 mb-4">
-              {sequence.length > 0 ? sequence.map(pos => 
-                pos.character ? pos.character : `(${pos.leftFlagAngle}°, ${pos.rightFlagAngle}°)`
+              {sequence.length > 0 ? sequence.map(pos =>
+                pos.character ?? getDisplayLabel(pos.leftFlagAngle, pos.rightFlagAngle)
               ).join(' ') : 'No positions entered'}
             </div>
             {sequence.length > 0 && (
@@ -196,14 +183,14 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
           </div>
         </div>
 
-        {/* Flag selector - always visible */}
-        <div className="mb-4">
+        {/* Flag selector - fills available space */}
+        <div className="mb-4 flex-1 min-h-0 flex flex-col">
           <SemaphoreFlagSelector
             onPositionSelect={addPosition}
             disabled={isLoading || isSolved}
           />
         </div>
-        
+
         {/* Sequence controls */}
         <div className="flex gap-2">
           <button
@@ -223,9 +210,6 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
         </div>
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
       {/* Controls */}
       <SolverControls
         onSolve={solveSemaphoreModule}
@@ -290,6 +274,6 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
         <p>• Select positions in order from left to right</p>
         <p>• The system will automatically find which character is missing from the serial number</p>
       </div>
-    </div>
+    </SolverLayout>
   );
 }

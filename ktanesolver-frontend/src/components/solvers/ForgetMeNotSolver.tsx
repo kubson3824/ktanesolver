@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveForgetMeNot as solveForgetMeNotApi } from "../../services/forgetMeNotService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
   SolverControls
 } from "../common";
 
@@ -32,7 +31,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
   const [twitchCommand, setTwitchCommand] = useState<string>("");
   const [reminderShown, setReminderShown] = useState<boolean>(false);
 
-  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved, moduleNumber } = useSolver();
+  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
 
   // Show reminder when component mounts
   useEffect(() => {
@@ -41,77 +40,100 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
     }
   }, [reminderShown]);
 
-  // Restore state from module when component loads or currentModule changes
-  useEffect(() => {
-    console.log('ForgetMeNot: currentModule changed', currentModule);
-    
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as any;
-      console.log('ForgetMeNot: moduleState', moduleState);
-      
-      // The state might be stored as a ForgetMeNotState object with displayNumbers and calculatedNumbers
-      // or it might be stored differently. Let's handle both cases.
-      let displayNumbers: number[] = [];
-      let calculatedNumbers: number[] = [];
-      
-      if (moduleState.displayNumbers && moduleState.calculatedNumbers) {
-        // Direct properties
-        displayNumbers = moduleState.displayNumbers as number[];
-        calculatedNumbers = moduleState.calculatedNumbers as number[];
-      } else if (Array.isArray(moduleState)) {
-        // If state is an array, maybe it's stored differently
-        console.log('ForgetMeNot: State is an array', moduleState);
-      } else {
-        // Try to find numbers in the state object
-        console.log('ForgetMeNot: Checking state keys', Object.keys(moduleState));
-        
-        // The state might be flattened or have different structure
-        // Let's check if there are any arrays in the state
-        for (const [key, value] of Object.entries(moduleState)) {
-          if (Array.isArray(value)) {
-            if (key.includes('display') || key.includes('Display')) {
-              displayNumbers = value as number[];
-            } else if (key.includes('calculated') || key.includes('Calculated')) {
-              calculatedNumbers = value as number[];
-            }
-          }
-        }
+  const moduleState = useMemo(
+    () => ({ display, stage, stages, sequence, showSequence, allModulesCompleted, twitchCommand }),
+    [display, stage, stages, sequence, showSequence, allModulesCompleted, twitchCommand],
+  );
+
+  const onRestoreState = useCallback(
+    (state: {
+      display?: string;
+      stage?: number;
+      stages?: Stage[];
+      sequence?: number[];
+      showSequence?: boolean;
+      allModulesCompleted?: boolean;
+      twitchCommand?: string;
+      displayNumbers?: number[];
+      calculatedNumbers?: number[];
+    }) => {
+      if (state.display !== undefined) setDisplay(state.display);
+      if (state.stage !== undefined) setStage(state.stage);
+      if (state.showSequence !== undefined) setShowSequence(state.showSequence);
+      if (state.allModulesCompleted !== undefined) setAllModulesCompleted(state.allModulesCompleted);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+
+      if (state.stages && Array.isArray(state.stages)) {
+        setStages(state.stages);
       }
-      
-      if (displayNumbers.length > 0 && calculatedNumbers.length > 0) {
-        console.log('ForgetMeNot: Restoring state', { displayNumbers, calculatedNumbers });
-        
-        // Restore stages
-        const restoredStages: Stage[] = displayNumbers.map((display, index) => ({
-          display,
-          calculated: calculatedNumbers[index] || 0
+      if (state.sequence && Array.isArray(state.sequence)) {
+        setSequence(state.sequence);
+      }
+
+      if (
+        (!state.stages || state.stages.length === 0) &&
+        Array.isArray(state.displayNumbers) &&
+        Array.isArray(state.calculatedNumbers) &&
+        state.displayNumbers.length > 0
+      ) {
+        const restoredStages: Stage[] = state.displayNumbers.map((d, index) => ({
+          display: d,
+          calculated: state.calculatedNumbers[index] ?? 0,
         }));
         setStages(restoredStages);
-        
-        // Restore sequence
-        setSequence(calculatedNumbers);
-        
-        // Set current stage
-        setStage(displayNumbers.length + 1);
-        
-        // Check if all modules were completed
-        if (displayNumbers.length > 0 && displayNumbers[displayNumbers.length - 1] === -1) {
-          setAllModulesCompleted(true);
-          setShowSequence(true);
-          setIsSolved(true);
-          setTwitchCommand(generateTwitchCommand({
-            moduleType: ModuleType.FORGET_ME_NOT,
-            result: { sequence: calculatedNumbers },
-            moduleNumber
-          }));
-        }
-      } else {
-        console.log('ForgetMeNot: No valid displayNumbers or calculatedNumbers found');
+        setSequence(state.calculatedNumbers);
+        setStage(state.displayNumbers.length + 1);
       }
-    } else {
-      console.log('ForgetMeNot: No state found on module');
-    }
-  }, [currentModule, moduleNumber]);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: { sequence: number[] } | number[]) => {
+      const seq = Array.isArray(solution) ? solution : solution.sequence;
+      if (!seq || !Array.isArray(seq) || seq.length === 0) return;
+      setSequence(seq);
+      setShowSequence(true);
+      setAllModulesCompleted(true);
+      setTwitchCommand(
+        generateTwitchCommand({
+          moduleType: ModuleType.FORGET_ME_NOT,
+          result: { sequence: seq },
+        }),
+      );
+    },
+  []);
+
+  useSolverModulePersistence<
+    {
+      display: string;
+      stage: number;
+      stages: Stage[];
+      sequence: number[];
+      showSequence: boolean;
+      allModulesCompleted: boolean;
+      twitchCommand: string;
+    },
+    { sequence: number[] } | number[]
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; sequence?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { sequence: number[] };
+        if (Array.isArray(anyRaw.sequence)) return { sequence: anyRaw.sequence as number[] };
+      }
+      if (Array.isArray(raw)) return raw as number[];
+      return null;
+    },
+    inferSolved: (_solution, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    onlyRestoreSolutionWhenSolved: true,
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSolve = async () => {
     const displayValue = parseInt(display);
@@ -154,8 +176,11 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         setTwitchCommand(generateTwitchCommand({
           moduleType: ModuleType.FORGET_ME_NOT,
           result: { sequence: newSequence },
-          moduleNumber
         }));
+
+        if (bomb?.id && currentModule?.id) {
+          markModuleSolved(bomb.id, currentModule.id);
+        }
       } else {
         // Move to next stage
         setStage(stage + 1);
@@ -209,8 +234,11 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       setTwitchCommand(generateTwitchCommand({
         moduleType: ModuleType.FORGET_ME_NOT,
         result: { sequence: newSequence },
-        moduleNumber
       }));
+
+      if (bomb?.id && currentModule?.id) {
+        markModuleSolved(bomb.id, currentModule.id);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to get final sequence");
     } finally {
@@ -277,16 +305,38 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         {/* Stage history */}
         {stages.length > 0 && (
           <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-400 mb-2">Stage History:</h4>
-            <div className="space-y-1">
-              {stages.map((s, index) => (
-                <div key={index} className="flex justify-center gap-4 text-sm">
-                  <span className="text-gray-400">Stage {index + 1}:</span>
-                  <span className="text-green-400">Display: {s.display}</span>
-                  <span className="text-blue-400">Calculated: {s.calculated}</span>
+            {stages.length > 10 ? (
+              <details className="group" defaultOpen={false}>
+                <summary className="text-sm font-medium text-gray-400 cursor-pointer list-none flex items-center gap-1">
+                  <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                  Stage history ({stages.length})
+                </summary>
+                <div className="mt-2 max-h-48 overflow-y-auto rounded border border-gray-600 p-2 space-y-0.5">
+                  {stages.map((s, index) => (
+                    <div key={index} className="flex justify-center gap-2 text-xs">
+                      <span className="text-gray-500">{index + 1}:</span>
+                      <span className="text-green-400">{s.display}</span>
+                      <span className="text-gray-500">→</span>
+                      <span className="text-blue-400">{s.calculated}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </details>
+            ) : (
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-2">Stage history:</h4>
+                <div className="max-h-48 overflow-y-auto rounded border border-gray-600 p-2 space-y-0.5">
+                  {stages.map((s, index) => (
+                    <div key={index} className="flex justify-center gap-2 text-xs">
+                      <span className="text-gray-500">{index + 1}:</span>
+                      <span className="text-green-400">{s.display}</span>
+                      <span className="text-gray-500">→</span>
+                      <span className="text-blue-400">{s.calculated}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -294,11 +344,13 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         {showSequence && sequence.length > 0 && (
           <div className="mt-6 p-4 bg-green-900/30 rounded-lg border border-green-500">
             <h4 className="text-lg font-bold text-green-400 mb-2 text-center">Final Sequence</h4>
-            <div className="flex justify-center gap-1">
+            <div className="grid grid-cols-10 gap-1 justify-center mx-auto w-fit">
               {sequence.map((num, index) => (
                 <div
                   key={index}
-                  className="w-10 h-10 bg-green-500 rounded flex items-center justify-center text-white font-bold text-lg"
+                  className={`bg-green-500 rounded flex items-center justify-center text-white font-bold ${
+                    sequence.length > 20 ? "w-7 h-7 text-sm" : "w-10 h-10 text-lg"
+                  }`}
                 >
                   {num}
                 </div>
@@ -308,13 +360,6 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
           </div>
         )}
       </div>
-
-      {/* Serial number and batteries display */}
-      <BombInfoDisplay 
-        bomb={bomb} 
-        showBatteries={true}
-        showIndicators={true}
-      />
 
       {/* Controls */}
       <SolverControls

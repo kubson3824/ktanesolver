@@ -1,4 +1,4 @@
-import {type FormEvent, useMemo, useState, useCallback} from "react";
+import {type FormEvent, useState, useCallback} from "react";
 import {useNavigate} from "react-router-dom";
 import {useRoundStore} from "../store/useRoundStore";
 import {
@@ -7,7 +7,24 @@ import {
     PortType,
     RoundStatus,
 } from "../types";
+import BombCard from "../features/setup/BombCard";
 import ModuleSelector from "../components/ModuleSelector";
+import PageContainer from "../components/layout/PageContainer";
+import { getRoundStatusLabel } from "../lib/utils";
+import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose,
+} from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { cn } from "../lib/cn";
 
 type IndicatorInput = {
     id: string;
@@ -62,6 +79,7 @@ export default function SetupPage() {
         name: string;
         lit: boolean;
     }>({name: "", lit: true});
+    const [noticeCollapsed, setNoticeCollapsed] = useState(true);
     const [moduleTarget, setModuleTarget] = useState<BombEntity | undefined>();
     const [moduleDraft, setModuleDraft] = useState<Record<string, number>>(
         () =>
@@ -205,21 +223,7 @@ export default function SetupPage() {
         setModuleTarget(undefined);
     };
 
-    const roundStatusLabel = useMemo(() => {
-        if (!round) return "No round";
-        switch (round.status) {
-            case RoundStatus.SETUP:
-                return "Setup";
-            case RoundStatus.ACTIVE:
-                return "Active";
-            case RoundStatus.COMPLETED:
-                return "Completed";
-            case RoundStatus.FAILED:
-                return "Failed";
-            default:
-                return "Unknown";
-        }
-    }, [round]);
+    const roundStatusLabel = round ? getRoundStatusLabel(round.status) : "No round";
 
     const handleModuleSelectionChange = useCallback((selectedModules: Record<string, number>) => {
         setFormState(prev => ({
@@ -240,340 +244,329 @@ export default function SetupPage() {
     };
 
     return (
-        <div className="min-h-screen p-10 lg:p-16">
-            <div className="max-w-7xl mx-auto grid gap-5">
-                <div className="alert alert-warning mb-5">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <PageContainer>
+            <div className="grid gap-5">
+                <Alert variant="warning" className="mb-5 flex items-center gap-3 [&>svg]:!relative [&>svg]:!left-0 [&>svg]:!top-0 [&>svg+div]:!translate-y-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 -translate-y-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <div>
-                        <h3 className="font-bold">Important Notice</h3>
-                        <div className="text-sm">
-                            This solver is intended for educational purposes to help learn algorithms and problem-solving techniques. 
-                            The creator does not condone using solvers during actual Keep Talking and Nobody Explodes gameplay. 
-                            The game is designed to be fun and challenging - mistakes are part of the experience!
-                        </div>
+                    <div className="flex-1 min-w-0 pt-0 !pl-0">
+                        <button
+                            type="button"
+                            className="flex items-center gap-2 w-full text-left"
+                            onClick={() => setNoticeCollapsed((c) => !c)}
+                            aria-expanded={!noticeCollapsed}
+                        >
+                            <AlertTitle className="mb-0">Important Notice</AlertTitle>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className={cn("h-4 w-4 shrink-0 transition-transform ml-auto", !noticeCollapsed && "rotate-180")}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        {!noticeCollapsed && (
+                            <AlertDescription className="mt-2">
+                                This solver is intended for educational purposes to help learn algorithms and problem-solving techniques.
+                                The creator does not condone using solvers during actual Keep Talking and Nobody Explodes gameplay.
+                                The game is designed to be fun and challenging—mistakes are part of the experience!
+                            </AlertDescription>
+                        )}
                     </div>
-                </div>
-                <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-                    <div className="card-body">
-                        <div className="flex flex-col lg:flex-row gap-8 items-center">
-                            <div className="flex-1">
-                                <p className="text-sm text-secondary font-medium uppercase tracking-wider">Round preparation</p>
-                                <h1 className="text-4xl font-bold mt-2 mb-4">Build your bomb roster</h1>
-                                <p className="text-base-content/70 mb-6">
-                                    Capture edgework, curate modules, and hand off the binder to the
-                                    expert team before the timer even starts ticking.
-                                </p>
-                                <div className="flex flex-wrap gap-3">
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={openCreateForm}
-                                        disabled={loading}
-                                    >
-                                        Add Bomb
-                                    </button>
-                                    <button
-                                        className="btn btn-outline"
-                                        onClick={() => navigate("/rounds")}
-                                    >
-                                        View All Rounds
-                                    </button>
-                                    {round && (
-                                        <span className="badge badge-outline gap-2">
-                    Round status:&nbsp;
-                                        <strong>{roundStatusLabel}</strong>
-                  </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="stat">
-                                    <span className="stat-title text-secondary">Total bombs</span>
-                                    <div className="stat-value text-3xl font-bold">{round?.bombs.length ?? 0}</div>
-                                </div>
-                                <div className="stat">
-                                    <span className="stat-title text-secondary">Modules queued</span>
-                                    <div className="stat-value text-3xl font-bold">
-                                        {round?.bombs.reduce(
-                                            (sum, bomb) => sum + (bomb.modules?.length ?? 0),
-                                            0,
-                                        ) ?? 0}
-                                    </div>
-                                </div>
-                                <div className="stat">
-                                    <span className="stat-title text-secondary">Ready checks</span>
-                                    <div className={`stat-value text-3xl font-bold ${canStartRound ? "text-success" : "text-warning"}`}>
-                                        {canStartRound ? "All green" : "Pending"}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                </Alert>
 
-                {error && <div className="alert alert-error mb-5">Error: {error}</div>}
-
-                <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-                    <div className="card-body">
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <p className="text-sm text-secondary font-medium uppercase tracking-wider">Current round</p>
-                                <h2 className="text-2xl font-bold mt-1">Bomb manifest</h2>
-                            </div>
-                            <div className="flex gap-2">
+                <Card className="animate-fade-in border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
+                    <CardHeader className="space-y-6 pb-6">
+                        <section className="w-full min-w-0">
+                            <p className="text-sm text-secondary font-medium uppercase tracking-wider">Round preparation</p>
+                            <h1 className="text-page-title mt-2 mb-2">Build your bomb roster</h1>
+                            <p className="text-caption text-base-content/70 mb-2">
+                                Add bombs → Set edgework → Add modules → Start round
+                            </p>
+                            <p className="text-body text-base-content/70 max-w-xl mb-6">
+                                Capture edgework, curate modules, and hand off the binder to the
+                                expert team before the timer even starts ticking.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3">
                                 <button
-                                    className="btn btn-outline btn-sm"
+                                    className="btn btn-primary"
                                     onClick={openCreateForm}
                                     disabled={loading}
                                 >
                                     Add Bomb
                                 </button>
-                                <button
-                                    className="btn btn-primary btn-sm"
-                                    disabled={!canStartRound || loading}
-                                    onClick={round?.status === RoundStatus.ACTIVE ? handleContinueRound : handleStartRound}
-                                >
-                                    {round?.status === RoundStatus.ACTIVE ? "Continue Round" : "Start Round"}
-                                </button>
+                                {round && (
+                                    <span className="badge badge-outline gap-2">
+                                        Round status:&nbsp;
+                                        <strong>{roundStatusLabel}</strong>
+                                    </span>
+                                )}
                             </div>
-                        </div>
+                        </section>
+                        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full border-t border-base-300 pt-6">
+                            <div className="flex flex-col gap-1 bg-base-300/50 rounded-lg px-4 py-3 border border-base-300 min-w-0">
+                                <div className="flex items-center gap-2 text-secondary shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    <span className="text-xs font-medium uppercase tracking-wider truncate">Total bombs</span>
+                                </div>
+                                <div className="text-2xl font-bold tabular-nums truncate">{round?.bombs.length ?? 0}</div>
+                            </div>
+                            <div className="flex flex-col gap-1 bg-base-300/50 rounded-lg px-4 py-3 border border-base-300 min-w-0">
+                                <div className="flex items-center gap-2 text-secondary shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                    </svg>
+                                    <span className="text-xs font-medium uppercase tracking-wider truncate">Modules queued</span>
+                                </div>
+                                <div className="text-2xl font-bold tabular-nums truncate">
+                                    {round?.bombs.reduce(
+                                        (sum, bomb) => sum + (bomb.modules?.length ?? 0),
+                                        0,
+                                    ) ?? 0}
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1 bg-base-300/50 rounded-lg px-4 py-3 border border-base-300 min-w-0">
+                                <div className="flex items-center gap-2 text-secondary shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-xs font-medium uppercase tracking-wider truncate">Ready checks</span>
+                                </div>
+                                <div className={cn("text-2xl font-bold truncate", canStartRound ? "text-success" : "text-warning")}>
+                                    {canStartRound ? "All green" : "Pending"}
+                                </div>
+                            </div>
+                        </section>
+                    </CardHeader>
+                </Card>
 
+                {error && (
+                    <Alert variant="error">
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+
+                <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
+                    <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-secondary font-medium uppercase tracking-wider">Current round</p>
+                            <CardTitle className="text-section-title mt-1">Bomb manifest</CardTitle>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                className="btn btn-outline btn-sm"
+                                onClick={openCreateForm}
+                                disabled={loading}
+                            >
+                                Add Bomb
+                            </button>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                disabled={!canStartRound || loading}
+                                onClick={round?.status === RoundStatus.ACTIVE ? handleContinueRound : handleStartRound}
+                            >
+                                {round?.status === RoundStatus.ACTIVE ? "Continue Round" : "Start Round"}
+                            </button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
                         {round?.bombs.length ? (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {round.bombs.map((bomb) => (
-                                    <div key={bomb.id} className="card bg-base-100 border border-base-300">
-                                        <div className="card-body">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div>
-                                                    <p className="text-xs text-secondary uppercase tracking-wider">Serial</p>
-                                                    <h3 className="card-title text-lg">{bomb.serialNumber || "Unknown"}</h3>
-                                                </div>
-                                                <span className="badge badge-outline">{bomb.status}</span>
-                                            </div>
-                                            <div className="space-y-3 mb-4">
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-secondary">AA / D batteries</span>
-                                                    <span className="font-mono font-bold">
-                                                        {bomb.aaBatteryCount} / {bomb.dBatteryCount}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-sm text-secondary block mb-2">Indicators</span>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {Object.entries(bomb.indicators ?? {}).map(
-                                                            ([name, lit]) => (
-                                                                <span
-                                                                    key={`${bomb.id}-${name}`}
-                                                                    className={`badge ${
-                                                                        lit ? "badge-success" : "badge-neutral"
-                                                                    } badge-sm`}
-                                                                >
-                              {name}
-                            </span>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <span className="text-sm text-secondary block mb-2">Port plates</span>
-                                                    <span className="text-xs">
-                                                        {bomb.portPlates.length === 0
-                                                            ? "—"
-                                                            : bomb.portPlates
-                                                                .map((plate, index) => {
-                                                                    const ports = plate.ports.join(", ");
-                                                                    return `Plate ${index + 1}: ${ports || "Empty"}`;
-                                                                })
-                                                                .join(" • ")}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="divider my-2"></div>
-                                            <div className="flex flex-wrap gap-1 mb-4">
-                                                {moduleTypes.map((type) => {
-                                                    const count =
-                                                        bomb.modules?.filter((module) => module.type === type)
-                                                            .length ?? 0;
-                                                    if (count === 0) return null;
-                                                    return (
-                                                        <span key={type} className="badge badge-info badge-sm">
-                          {type.replaceAll("_", " ")} ({count})
-                        </span>
-                                                    );
-                                                })}
-                                                {bomb.modules.length === 0 && (
-                                                    <p className="text-sm text-base-content/50 italic">No modules yet</p>
-                                                )}
-                                            </div>
-                                            <div className="card-actions justify-end gap-2">
-                                                <button
-                                                    className="btn btn-outline btn-sm"
-                                                    onClick={() => openEditForm(bomb)}
-                                                >
-                                                    Adjust edgework
-                                                </button>
-                                                <button
-                                                    className="btn btn-primary btn-sm"
-                                                    onClick={() => openModulePanel(bomb)}
-                                                >
-                                                    Add modules
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                {round.bombs.map((bomb, index) => (
+                                    <BombCard
+                                        key={bomb.id}
+                                        bomb={bomb}
+                                        onEditEdgework={openEditForm}
+                                        onAddModules={openModulePanel}
+                                        animationDelay={index * 50}
+                                    />
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-12">
-                                <p className="text-base-content/70">No bombs configured yet. Start by adding edgework.</p>
-                            </div>
-                        )}
-                    </div>
-                </section>
-
-                {isFormOpen && (
-                    <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-                        <div className="card-body">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <p className="text-sm text-secondary font-medium uppercase tracking-wider">
-                                        {isEditing ? "Update" : "Configure"} bomb
-                                    </p>
-                                    <h2 className="text-2xl font-bold mt-1">{isEditing ? "Edgework adjustments" : "New bomb setup"}</h2>
+                            <div className="text-center py-12 px-4">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-300 mb-4" aria-hidden>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
                                 </div>
-                                <button className="btn btn-outline btn-sm" onClick={() => setIsFormOpen(false)}>
-                                    Close
+                                <p className="text-body text-base-content/70 mb-2">No bombs configured yet.</p>
+                                <p className="text-caption text-base-content/60 mb-6">
+                                    1. Click Add Bomb → 2. Enter serial and edgework → 3. Add modules → 4. Start round
+                                </p>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={openCreateForm}
+                                    disabled={loading}
+                                >
+                                    Add your first bomb
                                 </button>
                             </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-                            <form className="space-y-6" onSubmit={handleFormSubmit}>
-                                <div className="grid gap-6 md:grid-cols-2">
-                                    <label className="form-control w-full">
-                                        <span className="label-text">Serial number</span>
-                                        <input
-                                            type="text"
-                                            className="input input-bordered w-full"
-                                            value={formState.serialNumber}
-                                            onChange={(event) =>
-                                                setFormState((prev) => ({
-                                                    ...prev,
-                                                    serialNumber: event.target.value.toUpperCase(),
-                                                }))
-                                            }
-                                            required
-                                        />
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <label className="form-control w-full">
-                                            <span className="label-text">AA batteries</span>
-                                            <input
-                                                type="number"
-                                                step={2}
-                                                min={0}
-                                                className="input input-bordered w-full"
-                                                value={formState.aaBatteryCount}
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogContent className="max-h-[90vh] flex flex-col gap-0 p-0">
+                        <DialogHeader className="flex flex-row items-start justify-between gap-4">
+                            <div>
+                                <p className="text-caption text-secondary font-medium uppercase tracking-wider">
+                                    {isEditing ? "Update" : "Configure"} bomb
+                                </p>
+                                <DialogTitle className="text-section-title mt-1">
+                                    {isEditing ? "Edgework adjustments" : "New bomb setup"}
+                                </DialogTitle>
+                            </div>
+                            <DialogClose asChild>
+                                <button type="button" className="btn btn-outline btn-sm">
+                                    Close
+                                </button>
+                            </DialogClose>
+                        </DialogHeader>
+                        <form className="flex flex-col flex-1 min-h-0 overflow-hidden" onSubmit={handleFormSubmit}>
+                            <div className="overflow-y-auto px-4 sm:px-6 space-y-6 pb-4">
+                                <div className="rounded-lg border border-base-300 bg-base-200/50 p-4 space-y-4">
+                                    <h3 className="text-card-title font-semibold">Serial & batteries</h3>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <label className="flex flex-col gap-1.5 w-full">
+                                            <span className="text-caption text-secondary">Serial number</span>
+                                            <Input
+                                                type="text"
+                                                value={formState.serialNumber}
                                                 onChange={(event) =>
                                                     setFormState((prev) => ({
                                                         ...prev,
-                                                        aaBatteryCount: Number(event.target.value),
+                                                        serialNumber: event.target.value.toUpperCase(),
                                                     }))
                                                 }
+                                                required
                                             />
                                         </label>
-                                        <label className="form-control w-full">
-                                            <span className="label-text">D batteries</span>
-                                            <input
-                                                type="number"
-                                                min={0}
-                                                className="input input-bordered w-full"
-                                                value={formState.dBatteryCount}
-                                                onChange={(event) =>
-                                                    setFormState((prev) => ({
-                                                        ...prev,
-                                                        dBatteryCount: Number(event.target.value),
-                                                    }))
-                                                }
-                                            />
-                                        </label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label className="flex flex-col gap-1.5 w-full">
+                                                <span className="text-caption text-secondary">AA batteries</span>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    step={2}
+                                                    value={formState.aaBatteryCount}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({
+                                                            ...prev,
+                                                            aaBatteryCount: Number(event.target.value),
+                                                        }))
+                                                    }
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-1.5 w-full">
+                                                <span className="text-caption text-secondary">D batteries</span>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    value={formState.dBatteryCount}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({
+                                                            ...prev,
+                                                            dBatteryCount: Number(event.target.value),
+                                                        }))
+                                                    }
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="text-lg font-semibold">Indicators</h3>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                className="input input-bordered input-sm"
-                                                placeholder="Label"
-                                                value={indicatorDraft.name}
-                                                onChange={(event) =>
-                                                    setIndicatorDraft((prev) => ({
-                                                        ...prev,
-                                                        name: event.target.value,
-                                                    }))
-                                                }
-                                            />
-                                            <select
-                                                className="select select-bordered select-sm"
-                                                value={indicatorDraft.lit ? "lit" : "unlit"}
-                                                onChange={(event) =>
-                                                    setIndicatorDraft((prev) => ({
-                                                        ...prev,
-                                                        lit: event.target.value === "lit",
-                                                    }))
-                                                }
-                                            >
-                                                <option value="lit">Lit</option>
-                                                <option value="unlit">Unlit</option>
-                                            </select>
-                                            <button
+                                <div className="rounded-lg border border-base-300 bg-base-200/50 p-4 space-y-4">
+                                    <h3 className="text-card-title font-semibold">Indicators</h3>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Input
+                                            type="text"
+                                            placeholder="Label"
+                                            className="w-24 h-8"
+                                            value={indicatorDraft.name}
+                                            onChange={(event) =>
+                                                setIndicatorDraft((prev) => ({
+                                                    ...prev,
+                                                    name: event.target.value,
+                                                }))
+                                            }
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Button
                                                 type="button"
-                                                className="btn btn-outline btn-sm"
-                                                onClick={addIndicator}
+                                                variant={indicatorDraft.lit ? "success" : "outline"}
+                                                size="sm"
+                                                className="gap-1.5"
+                                                onClick={() => setIndicatorDraft((p) => ({ ...p, lit: true }))}
                                             >
-                                                Add
-                                            </button>
+                                                <span className="h-2 w-2 rounded-full bg-current opacity-90" aria-hidden />
+                                                Lit
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={!indicatorDraft.lit ? "ghost" : "outline"}
+                                                size="sm"
+                                                className={cn("gap-1.5", !indicatorDraft.lit && "bg-base-300")}
+                                                onClick={() => setIndicatorDraft((p) => ({ ...p, lit: false }))}
+                                            >
+                                                <span className="h-2 w-2 rounded-full bg-base-content/40" aria-hidden />
+                                                Unlit
+                                            </Button>
                                         </div>
+                                        <Button type="button" variant="outline" size="sm" onClick={addIndicator}>
+                                            Add
+                                        </Button>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {formState.indicators.map((indicator) => (
-                                            <span
+                                            <Badge
                                                 key={indicator.id}
-                                                className={`badge ${
-                                                    indicator.lit ? "badge-success" : "badge-neutral"
-                                                } gap-2`}
+                                                variant={indicator.lit ? "success" : "outline"}
+                                                className="gap-2 pr-1"
                                             >
-                      {indicator.name}
-                                            <button
-                                                type="button"
-                                                className="btn btn-ghost btn-xs p-0 h-4 min-h-4"
-                                                onClick={() =>
-                                                    setFormState((prev) => ({
-                                                        ...prev,
-                                                        indicators: prev.indicators.filter(
-                                                            (entry) => entry.id !== indicator.id,
-                                                        ),
-                                                    }))
-                                                }
-                                            >
-                        ×
-                      </button>
-                    </span>
+                                                <span
+                                                    className={cn(
+                                                        "h-2 w-2 rounded-full shrink-0",
+                                                        indicator.lit ? "bg-success-content/80" : "bg-base-content/50"
+                                                    )}
+                                                    aria-hidden
+                                                />
+                                                {indicator.name}
+                                                <button
+                                                    type="button"
+                                                    className="p-0 h-4 min-h-4 w-4 inline-flex items-center justify-center rounded hover:bg-base-content/10 text-base-content/80"
+                                                    onClick={() =>
+                                                        setFormState((prev) => ({
+                                                            ...prev,
+                                                            indicators: prev.indicators.filter(
+                                                                (entry) => entry.id !== indicator.id,
+                                                            ),
+                                                        }))
+                                                    }
+                                                    aria-label={`Remove ${indicator.name}`}
+                                                >
+                                                    ×
+                                                </button>
+                                            </Badge>
                                         ))}
                                         {formState.indicators.length === 0 && (
-                                            <p className="text-sm text-base-content/50 italic">No indicators yet.</p>
+                                            <p className="text-caption text-base-content/50 italic">No indicators yet.</p>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="rounded-lg border border-base-300 bg-base-200/50 p-4 space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="text-lg font-semibold">Port plates</h3>
-                                        <button
+                                        <h3 className="text-card-title font-semibold">Port plates</h3>
+                                        <Button
                                             type="button"
-                                            className="btn btn-outline btn-sm"
+                                            variant="outline"
+                                            size="sm"
                                             onClick={() =>
                                                 setFormState((prev) => ({
                                                     ...prev,
@@ -585,20 +578,21 @@ export default function SetupPage() {
                                             }
                                         >
                                             Add plate
-                                        </button>
+                                        </Button>
                                     </div>
-                                    <div className="space-y-4">
-                                        {formState.portPlates.length === 0 && (
-                                            <p className="text-sm text-base-content/50 italic">No plates configured.</p>
-                                        )}
+                                    {formState.portPlates.length === 0 && (
+                                        <p className="text-caption text-base-content/50 italic">No plates configured.</p>
+                                    )}
+                                    <div className="space-y-3">
                                         {formState.portPlates.map((plate, index) => (
-                                            <div key={plate.id} className="card bg-base-100 border border-base-300">
-                                                <div className="card-body p-4">
+                                            <Card key={plate.id} className="bg-base-200/80">
+                                                <CardContent className="p-4">
                                                     <div className="flex justify-between items-center mb-3">
-                                                        <strong className="text-sm">Plate {index + 1}</strong>
-                                                        <button
+                                                        <strong className="text-caption">Plate {index + 1}</strong>
+                                                        <Button
                                                             type="button"
-                                                            className="btn btn-ghost btn-xs"
+                                                            variant="ghost"
+                                                            size="xs"
                                                             onClick={() =>
                                                                 setFormState((prev) => ({
                                                                     ...prev,
@@ -609,98 +603,125 @@ export default function SetupPage() {
                                                             }
                                                         >
                                                             Remove
-                                                        </button>
+                                                        </Button>
                                                     </div>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                    <div className="flex flex-wrap gap-2">
                                                         {portTypes.map((port) => (
-                                                            <label key={port} className="flex items-center gap-2 cursor-pointer">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="checkbox checkbox-sm"
-                                                                    checked={plate.ports.includes(port)}
-                                                                    onChange={() => updatePlate(plate.id, port)}
-                                                                />
-                                                                <span className="text-sm">{port}</span>
-                                                            </label>
+                                                            <Button
+                                                                key={port}
+                                                                type="button"
+                                                                variant={plate.ports.includes(port) ? "primary" : "outline"}
+                                                                size="sm"
+                                                                onClick={() => updatePlate(plate.id, port)}
+                                                            >
+                                                                {port}
+                                                            </Button>
                                                         ))}
                                                     </div>
-                                                </div>
-                                            </div>
+                                                </CardContent>
+                                            </Card>
                                         ))}
                                     </div>
                                 </div>
 
                                 {!isEditing && (
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Modules for this bomb</h3>
+                                    <div className="rounded-lg border border-base-300 bg-base-200/50 p-4 space-y-4">
+                                        <h3 className="text-card-title font-semibold">Modules for this bomb</h3>
                                         <ModuleSelector
                                             onSelectionChange={handleModuleSelectionChange}
                                             initialCounts={formState.modules}
                                         />
                                     </div>
                                 )}
+                            </div>
+                            <DialogFooter className="border-t border-base-300 bg-base-200/80">
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    disabled={loading}
+                                    loading={loading}
+                                >
+                                    {isEditing ? "Save changes" : "Save bomb"}
+                                </Button>
+                                <DialogClose asChild>
+                                    <Button type="button" variant="outline">
+                                        Cancel
+                                    </Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
 
-                                <div className="flex justify-end gap-2 pt-4">
+                {moduleTarget && (
+                    <>
+                        <div
+                            className="fixed inset-0 z-40 bg-base-content/20 backdrop-blur-sm animate-fade-in"
+                            aria-hidden
+                            onClick={() => setModuleTarget(undefined)}
+                        />
+                        <aside
+                            className="fixed top-0 right-0 z-50 h-full w-full max-w-lg border-panel-border bg-base-200/90 backdrop-blur-xl shadow-xl animate-slide-in-right flex flex-col border-l"
+                            role="dialog"
+                            aria-labelledby="module-drawer-title"
+                            aria-modal="true"
+                        >
+                            <Card className="rounded-none border-0 flex-1 flex flex-col min-h-0 bg-transparent shadow-none">
+                                <CardHeader className="flex flex-row items-start justify-between gap-4 shrink-0">
+                                    <div>
+                                        <p className="text-sm text-secondary font-medium uppercase tracking-wider">Module injection</p>
+                                        <CardTitle id="module-drawer-title" className="text-section-title mt-1">
+                                            Add modules to {moduleTarget.serialNumber}
+                                        </CardTitle>
+                                    </div>
                                     <button
-                                        type="submit"
+                                        type="button"
+                                        className="btn btn-ghost btn-sm btn-square"
+                                        onClick={() => setModuleTarget(undefined)}
+                                        aria-label="Close"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </CardHeader>
+                                <CardContent className="flex-1 overflow-y-auto pt-0">
+                                    <ModuleSelector
+                                        onSelectionChange={(selectedModules) => {
+                                            setModuleDraft(selectedModules as Record<ModuleType, number>);
+                                        }}
+                                        initialCounts={moduleDraft}
+                                    />
+                                </CardContent>
+                                <CardFooter className="flex justify-end gap-2 shrink-0 border-t border-base-300">
+                                    <button
+                                        type="button"
                                         className="btn btn-primary"
+                                        onClick={submitModuleDraft}
                                         disabled={loading}
                                     >
-                                        {isEditing ? "Save changes" : "Save bomb"}
+                                        {loading ? (
+                                            <>
+                                                <span className="loading loading-spinner loading-sm" />
+                                                Saving…
+                                            </>
+                                        ) : (
+                                            "Save modules"
+                                        )}
                                     </button>
                                     <button
                                         type="button"
                                         className="btn btn-outline"
-                                        onClick={() => setIsFormOpen(false)}
+                                        onClick={() => setModuleTarget(undefined)}
                                     >
                                         Cancel
                                     </button>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
-                )}
-
-                {moduleTarget && (
-                    <section className="card bg-base-200 border border-base-300 shadow-2xl backdrop-blur-xl">
-                        <div className="card-body">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <p className="text-sm text-secondary font-medium uppercase tracking-wider">Module injection</p>
-                                    <h2 className="text-2xl font-bold mt-1">Add modules to {moduleTarget.serialNumber}</h2>
-                                </div>
-                                <button
-                                    className="btn btn-outline btn-sm"
-                                    onClick={() => setModuleTarget(undefined)}
-                                >
-                                    Close
-                                </button>
-                            </div>
-                            <ModuleSelector
-                                onSelectionChange={(selectedModules) => {
-                                    setModuleDraft(selectedModules as Record<ModuleType, number>);
-                                }}
-                                initialCounts={moduleDraft}
-                            />
-                            <div className="flex justify-end gap-2 pt-4">
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={submitModuleDraft}
-                                    disabled={loading}
-                                >
-                                    Save modules
-                                </button>
-                                <button
-                                    className="btn btn-outline"
-                                    onClick={() => setModuleTarget(undefined)}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </section>
+                                </CardFooter>
+                            </Card>
+                        </aside>
+                    </>
                 )}
             </div>
-        </div>
+        </PageContainer>
     );
 }

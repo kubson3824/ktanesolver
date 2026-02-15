@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api, withErrorWrapping } from "../lib/api";
 
 export interface MathInput {
   equation: string;
@@ -14,9 +14,11 @@ export async function solveMath(
   moduleId: string,
   data: { input: MathInput }
 ) {
-  const response = await api.post<{ output: MathOutput }>(
-    `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-    data
-  );
-  return response.data;
+  return withErrorWrapping(async () => {
+    const response = await api.post<{ output: MathOutput }>(
+      `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
+      data
+    );
+    return response.data;
+  });
 }

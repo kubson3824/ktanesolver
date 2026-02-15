@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMemory } from "../../services/memoryService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
-  SolverControls
+  SolverControls,
+  SolverResult
 } from "../common";
 
 interface MemorySolverProps {
@@ -22,6 +22,26 @@ interface StageResult {
   display: number;
   position: number;
   label: number;
+}
+
+/** Mini 4-cell grid for Memory: positions 1–4, one cell highlighted with its label. */
+function MemoryMiniGrid({ position, label }: { position: number; label: number }) {
+  return (
+    <div className="flex gap-0.5 w-24 h-8 shrink-0" aria-hidden>
+      {[1, 2, 3, 4].map((pos) => (
+        <div
+          key={pos}
+          className={`flex-1 rounded border text-sm font-bold flex items-center justify-center ${
+            pos === position
+              ? "bg-success/30 border-success text-success"
+              : "bg-base-300 border-base-content/20 text-base-content/40"
+          }`}
+        >
+          {pos === position ? label : ""}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function MemorySolver({ bomb }: MemorySolverProps) {
@@ -45,73 +65,101 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Save state to module when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        currentStage,
-        displayNumber,
-        buttonLabels,
-        stageHistory,
-        result,
-        twitchCommand
-      };
-      // Update the module in the store
-      useRoundStore.getState().round?.bombs.forEach(bomb => {
-        if (bomb.id === currentModule.bomb.id) {
-          const module = bomb.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
-      });
-    }
-  };
+  const moduleState = useMemo(
+    () => ({ currentStage, displayNumber, buttonLabels, stageHistory, result, twitchCommand }),
+    [currentStage, displayNumber, buttonLabels, stageHistory, result, twitchCommand],
+  );
 
-  // Update state when inputs change
-  useEffect(() => {
-    saveState();
-  }, [currentStage, displayNumber, buttonLabels, stageHistory, result, twitchCommand]);
+  // One Twitch command per stage: from completed stageHistory + current stage if we have result/twitchCommand
+  const displayTwitchCommands = useMemo(() => {
+    const list = stageHistory.map((s) =>
+      generateTwitchCommand({
+        moduleType: ModuleType.MEMORY,
+        result: { position: s.position, label: s.label },
+      })
+    );
+    if (result && twitchCommand) list.push(twitchCommand);
+    return list;
+  }, [stageHistory, result, twitchCommand]);
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        currentStage?: number;
-        displayNumber?: number | null;
-        buttonLabels?: number[];
-        stageHistory?: StageResult[];
-        result?: { position: number; label: number } | null;
-        twitchCommand?: string;
-      };
-      
-      if (moduleState.currentStage !== undefined) setCurrentStage(moduleState.currentStage);
-      if (moduleState.displayNumber !== undefined) setDisplayNumber(moduleState.displayNumber);
-      if (moduleState.buttonLabels) setButtonLabels(moduleState.buttonLabels);
-      if (moduleState.stageHistory) setStageHistory(moduleState.stageHistory);
-      if (moduleState.result !== undefined) setResult(moduleState.result);
-      if (moduleState.twitchCommand !== undefined) setTwitchCommand(moduleState.twitchCommand);
-    }
+  const onRestoreState = useCallback(
+    (state: {
+      currentStage?: number;
+      displayNumber?: number | null;
+      buttonLabels?: number[];
+      stageHistory?: StageResult[];
+      result?: { position: number; label: number } | null;
+      twitchCommand?: string;
+      displayHistory?: number[];
+      solutionHistory?: { position: number; label: number }[];
+    }) => {
+      const raw = state as Record<string, unknown>;
+      const hasBackendShape =
+        Array.isArray(raw.displayHistory) && Array.isArray(raw.solutionHistory);
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        isSolved?: boolean;
-        finalResult?: { position: number; label: number };
-      };
-      
-      if (solution.isSolved) {
-        setIsSolved(true);
-        if (solution.finalResult) {
-          setResult(solution.finalResult);
-          setCurrentStage(5);
-        }
+      if (hasBackendShape) {
+        const displayHistory = raw.displayHistory as number[];
+        const solutionHistory = raw.solutionHistory as { position: number; label: number }[];
+        const stage = Math.min((displayHistory.length || 0) + 1, 5);
+        setCurrentStage(stage);
+        setStageHistory(
+          solutionHistory.map((step, i) => ({
+            stage: i + 1,
+            display: displayHistory[i] ?? 0,
+            position: step.position,
+            label: step.label,
+          }))
+        );
+        setDisplayNumber(null);
+        setResult(null);
+        setTwitchCommand("");
+        if (state.buttonLabels && state.buttonLabels.length === 4) setButtonLabels(state.buttonLabels);
+      } else {
+        if (state.currentStage !== undefined)
+          setCurrentStage(Math.min(state.currentStage, 5));
+        if (state.displayNumber !== undefined) setDisplayNumber(state.displayNumber);
+        if (state.buttonLabels) setButtonLabels(state.buttonLabels);
+        if (state.stageHistory) setStageHistory(state.stageHistory);
+        if (state.result !== undefined) setResult(state.result);
+        if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
       }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+    },
+    [],
+  );
+
+  const onRestoreSolution = useCallback(
+    (solution: { position: number; label: number }) => {
+      if (!solution) return;
+      setResult(solution);
+      setCurrentStage(5); // Final stage; never > 5
+    },
+    [],
+  );
+
+  useSolverModulePersistence<
+    { currentStage: number; displayNumber: number | null; buttonLabels: number[]; stageHistory: StageResult[]; result: { position: number; label: number } | null; twitchCommand: string },
+    { position: number; label: number }
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; finalResult?: unknown; position?: number; label?: number };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { position: number; label: number };
+        if (anyRaw.finalResult && typeof anyRaw.finalResult === "object") return anyRaw.finalResult as { position: number; label: number };
+        // Backend stores MemoryOutput as flat map: { position, label }
+        if (typeof anyRaw.position === "number" && typeof anyRaw.label === "number") return { position: anyRaw.position, label: anyRaw.label };
+      }
+      return null;
+    },
+    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleLabelChange = (position: number, label: number) => {
     if (isSolved) return;
@@ -136,6 +184,11 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       return;
     }
 
+    if (currentStage > 5) {
+      setError("Memory module has only 5 stages. Please reset and try again.");
+      return;
+    }
+
     setIsLoading(true);
     clearError();
 
@@ -154,7 +207,6 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.MEMORY,
         result: response.output,
-        moduleNumber
       });
       setTwitchCommand(command);
       
@@ -168,27 +220,18 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       const newHistory = [...stageHistory, stageResult];
       setStageHistory(newHistory);
 
-      if (currentStage === 5) {
+      if (response.solved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        // Save final solution
-        if (currentModule) {
-          useRoundStore.getState().round?.bombs.forEach(bomb => {
-            if (bomb.id === currentModule.bomb.id) {
-              const module = bomb.modules.find(m => m.id === currentModule.id);
-              if (module) {
-                module.solution = { isSolved: true, finalResult: response.output };
-              }
-            }
-          });
-        }
+        setDisplayNumber(null);
+        // Keep result and twitchCommand visible when solved so user can see/copy the final answer
       } else {
-        setCurrentStage(currentStage + 1);
+        setCurrentStage(Math.min(currentStage + 1, 5));
         setDisplayNumber(null);
         setResult(null); // Clear result when advancing to next stage
         setTwitchCommand(""); // Clear Twitch command for next stage
-        // Keep the same labels as they don't change between stages
       }
+      // Keep the same labels as they don't change between stages
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to solve memory module";
       
@@ -267,7 +310,7 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
         </div>
       </div>
 
-      {/* Display number input */}
+      {/* Display number input - inputs first */}
       <div className="bg-base-200 rounded-lg p-4 mb-4">
         <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">
           DISPLAY NUMBER
@@ -290,62 +333,13 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
         </div>
       </div>
 
-      {/* Module visualization - 4 buttons */}
+      {/* Module visualization - 4 buttons (input only; solution shown below) */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
         <div className="flex justify-center gap-4">
           {[0, 1, 2, 3].map(position => renderButton(position))}
         </div>
-        {result && !isSolved && (
-          <div className="mt-4 text-center">
-            <p className="text-green-400 text-sm font-medium">
-              Press button at position {result.position} (label: {result.label})
-            </p>
-          </div>
-        )}
       </div>
-
-      {/* Twitch Command */}
-      {twitchCommand && result && !isSolved && (
-        <div className="bg-purple-900/20 border border-purple-500 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-medium text-purple-400 mb-1">Twitch Chat Command:</h4>
-              <code className="text-lg font-mono text-purple-200">{twitchCommand}</code>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(twitchCommand);
-              }}
-              className="btn btn-sm btn-outline btn-purple"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-      
-      {/* Stage history */}
-      {stageHistory.length > 0 && (
-        <div className="bg-base-200 rounded-lg p-4 mb-4">
-          <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">STAGE HISTORY</h3>
-          <div className="space-y-2 text-sm">
-            {stageHistory.map((stage, index) => (
-              <div key={index} className="flex justify-between items-center bg-base-100 rounded px-3 py-2">
-                <span className="text-base-content/60">Stage {stage.stage}:</span>
-                <span className="text-base-content">Display {stage.display} → Press position {stage.position}</span>
-                <span className="text-base-content/60">(label {stage.label})</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Controls */}
       <SolverControls
@@ -359,8 +353,54 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {/* Stage history - output below inputs */}
+      {stageHistory.length > 0 && (
+        <div className="bg-base-200 rounded-lg p-4 mb-4">
+          <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">STAGE HISTORY</h3>
+          <div className="space-y-2 text-sm">
+            {stageHistory.map((stage, index) => (
+              <div key={index} className="flex flex-wrap items-center gap-3 bg-base-100 rounded-lg px-3 py-2">
+                <span className="shrink-0 font-medium text-base-content/70">Stage {stage.stage}</span>
+                <span className="shrink-0 text-base-content/60">Display <strong className="text-base-content">{stage.display}</strong></span>
+                <MemoryMiniGrid position={stage.position} label={stage.label} />
+                <span className="shrink-0 text-base-content/60">Position <strong className="text-base-content">{stage.position}</strong>, label <strong className="text-base-content">{stage.label}</strong></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Solution - which button to press */}
+      {result && !isSolved && (
+        <SolverResult
+          variant="success"
+          title="Press this button"
+          description={`Position ${result.position}, label ${result.label}`}
+          className="mb-4"
+        />
+      )}
+
+      {/* Twitch command display - one command per stage, all in one block */}
+      {displayTwitchCommands.length > 0 && (
+        <TwitchCommandDisplay command={displayTwitchCommands} />
+      )}
+
+      {/* Solved-state summary - full sequence at a glance */}
+      {isSolved && stageHistory.length > 0 && (
+        <div className="bg-success/10 border border-success/30 rounded-lg p-4 mb-4 animate-fade-in">
+          <h3 className="text-center text-success font-medium mb-3 text-sm">SOLVED — Sequence</h3>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+            {stageHistory.map((stage, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <MemoryMiniGrid position={stage.position} label={stage.label} />
+                <span className="text-base-content">
+                  Stage {stage.stage}: position {stage.position}, label {stage.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Instructions */}
       <div className="text-sm text-base-content/60">

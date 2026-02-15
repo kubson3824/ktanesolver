@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveButton as solveButtonApi } from "../../services/buttonService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { 
   useSolver,
+  useSolverModulePersistence,
   SolverLayout,
   ErrorAlert,
   TwitchCommandDisplay,
-  BombInfoDisplay,
-  SolverControls
+  SolverControls,
+  SolverResult
 } from "../common";
 
 type ButtonColor = "RED" | "BLUE" | "WHITE" | "YELLOW" | "OTHER" | null;
@@ -68,72 +68,111 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     currentModule,
     round,
     markModuleSolved,
-    moduleNumber
   } = useSolver();
 
-  // Restore state from module when component loads
-  useEffect(() => {
-    if (currentModule?.state && typeof currentModule.state === 'object') {
-      const moduleState = currentModule.state as { 
-        buttonColor?: ButtonColor; 
-        buttonLabel?: ButtonLabel; 
-        stripColor?: StripColor;
-        showStripColor?: boolean;
-      };
-      
-      if (moduleState.buttonColor) setButtonColor(moduleState.buttonColor);
-      if (moduleState.buttonLabel) setButtonLabel(moduleState.buttonLabel);
-      if (moduleState.stripColor) setStripColor(moduleState.stripColor);
-      if (moduleState.showStripColor) setShowStripColor(moduleState.showStripColor);
-    }
+  const moduleState = useMemo(
+    () => ({
+      buttonColor,
+      buttonLabel,
+      stripColor,
+      showStripColor,
+      result,
+      releaseDigit,
+      shouldHold,
+      twitchCommand,
+    }),
+    [buttonColor, buttonLabel, stripColor, showStripColor, result, releaseDigit, shouldHold, twitchCommand],
+  );
 
-    // Restore solution if module was solved
-    if (currentModule?.solution && typeof currentModule.solution === 'object') {
-      const solution = currentModule.solution as { 
-        instruction?: string; 
-        releaseDigit?: number; 
-        hold?: boolean;
-      };
-      
-      if (solution.instruction) {
-        setResult(solution.instruction);
-        setIsSolved(true);
+  const onRestoreState = useCallback(
+    (state: {
+      buttonColor?: ButtonColor;
+      buttonLabel?: ButtonLabel;
+      stripColor?: StripColor;
+      showStripColor?: boolean;
+      result?: string;
+      releaseDigit?: number | null;
+      shouldHold?: boolean;
+      twitchCommand?: string;
+      color?: ButtonColor;
+      label?: ButtonLabel;
+      strip?: StripColor;
+      instruction?: string;
+    }) => {
+      const restoredButtonColor = state.buttonColor !== undefined ? state.buttonColor : state.color;
+      const restoredButtonLabel = state.buttonLabel !== undefined ? state.buttonLabel : state.label;
+      const restoredStripColor = state.stripColor !== undefined ? state.stripColor : state.strip;
+
+      if (restoredButtonColor !== undefined) setButtonColor(restoredButtonColor);
+      if (restoredButtonLabel !== undefined) setButtonLabel(restoredButtonLabel);
+      if (restoredStripColor !== undefined) setStripColor(restoredStripColor);
+      if (state.showStripColor !== undefined) setShowStripColor(state.showStripColor);
+      if (state.result !== undefined) setResult(state.result);
+      if (state.instruction !== undefined && state.result === undefined) setResult(state.instruction);
+      if (state.releaseDigit !== undefined) setReleaseDigit(state.releaseDigit);
+      if (state.shouldHold !== undefined) setShouldHold(state.shouldHold);
+      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+
+      if (restoredStripColor != null) {
+        setShowStripColor(true);
       }
-      if (solution.releaseDigit) setReleaseDigit(solution.releaseDigit);
-      if (solution.hold !== undefined) setShouldHold(solution.hold);
+    },
+    [],
+  );
 
-      // Generate twitch command from the solution
-      if (solution.instruction) {
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.BUTTON,
-          result: solution,
-          moduleNumber
-        });
-        setTwitchCommand(command);
-      }
-    }
-  }, [currentModule, moduleNumber, setIsSolved]);
+  const onRestoreSolution = useCallback(
+    (solution: { instruction: string; releaseDigit?: number | null; hold: boolean }) => {
+      if (!solution?.instruction) return;
 
-  // Save state when inputs change
-  const saveState = () => {
-    if (currentModule) {
-      const moduleState = {
-        buttonColor,
-        buttonLabel,
-        stripColor,
-        showStripColor
-      };
-      
-      useRoundStore.getState().round?.bombs.forEach(b => {
-        if (b.id === bomb?.id) {
-          const module = b.modules.find(m => m.id === currentModule.id);
-          if (module) {
-            module.state = moduleState;
-          }
-        }
+      setResult(solution.instruction);
+      setReleaseDigit(solution.releaseDigit ?? null);
+      setShouldHold(Boolean(solution.hold));
+      setShowStripColor(Boolean(solution.hold));
+
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.BUTTON,
+        result: solution,
       });
-    }
-  };
+      setTwitchCommand(command);
+    },
+  []);
+
+  useSolverModulePersistence<
+    {
+      buttonColor: ButtonColor;
+      buttonLabel: ButtonLabel;
+      stripColor: StripColor;
+      showStripColor: boolean;
+      result: string;
+      releaseDigit: number | null;
+      shouldHold: boolean;
+      twitchCommand: string;
+    },
+    { instruction: string; releaseDigit?: number | null; hold: boolean }
+  >({
+    state: moduleState,
+    onRestoreState,
+    onRestoreSolution,
+    extractSolution: (raw) => {
+      if (raw == null) return null;
+      if (typeof raw === "object") {
+        const anyRaw = raw as { output?: unknown; instruction?: unknown; releaseDigit?: unknown; hold?: unknown };
+        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { instruction: string; releaseDigit?: number | null; hold: boolean };
+        if (typeof anyRaw.instruction === "string" && typeof anyRaw.hold === "boolean") {
+          return {
+            instruction: anyRaw.instruction,
+            releaseDigit: typeof anyRaw.releaseDigit === "number" ? anyRaw.releaseDigit : null,
+            hold: anyRaw.hold,
+          };
+        }
+      }
+      return null;
+    },
+    inferSolved: (sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved) || Boolean(sol),
+    currentModule,
+    setIsSolved,
+  });
 
   const handleSolveButton = async (includeStrip = false) => {
     if (!buttonColor || !buttonLabel) {
@@ -164,11 +203,6 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
         }
       });
 
-      // Debug: log the actual response structure
-      console.log('Full response:', response);
-      console.log('Response output:', response.output);
-      console.log('Hold value:', response.output.hold);
-
       setResult(response.output.instruction);
       setReleaseDigit(response.output.releaseDigit);
       setShouldHold(response.output.hold);
@@ -177,7 +211,6 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
       const command = generateTwitchCommand({
         moduleType: ModuleType.BUTTON,
         result: response.output,
-        moduleNumber
       });
       setTwitchCommand(command);
 
@@ -186,10 +219,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
         setShowStripColor(true);
       } else {
         setIsSolved(true);
-        // Mark module as solved if it's an immediate press or we've completed the hold sequence
-        if (!response.output.hold || includeStrip) {
-          markModuleSolved(bomb.id, currentModule.id);
-        }
+        markModuleSolved(bomb.id, currentModule.id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve button");
@@ -206,7 +236,6 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     if (!showStripColor) {
       reset();
     }
-    saveState();
   };
 
   const cycleButtonLabel = () => {
@@ -217,14 +246,12 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     if (!showStripColor) {
       reset();
     }
-    saveState();
   };
 
   const cycleStripColor = () => {
     const currentIndex = STRIP_COLORS.findIndex((c) => c.color === stripColor);
     const nextIndex = (currentIndex + 1) % STRIP_COLORS.length;
     setStripColor(STRIP_COLORS[nextIndex].color);
-    saveState();
   };
 
   const reset = () => {
@@ -277,7 +304,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
           </div>
 
           {/* Strip color selector - shown after holding */}
-          {showStripColor && (
+          {(showStripColor || stripColor != null || shouldHold) && (
             <div className="mt-6 pt-6 border-t border-gray-700">
               <p className="text-center text-gray-400 mb-3">Strip color:</p>
               <div className="flex justify-center">
@@ -297,9 +324,6 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
         </div>
       </div>
 
-      {/* Bomb info display */}
-      <BombInfoDisplay bomb={bomb} />
-
       {/* Controls */}
       <SolverControls
         onSolve={() => showStripColor ? handleSolveButton(true) : handleSolveButton(false)}
@@ -312,58 +336,13 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
       {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Result */}
-      {result && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span className="font-bold">{result}</span>
-        </div>
-      )}
-
-      {/* Result */}
+      {/* Solution - single block to avoid duplicate boxes for "Press and immediately release" */}
       {result && (isSolved || !showStripColor) && (
-        <div className={`alert mb-4 ${shouldHold ? "alert-warning" : "alert-success"}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            {shouldHold ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            )}
-          </svg>
-          <div>
-            <span className="font-bold">{result}</span>
-            {releaseDigit && (
-              <p className="text-sm mt-1">Release when timer has a <span className="font-bold text-lg">{releaseDigit}</span> in any position</p>
-            )}
-          </div>
-        </div>
+        <SolverResult
+          variant={shouldHold ? "warning" : "success"}
+          title={result}
+          description={releaseDigit != null ? `Release when timer has a ${releaseDigit} in any position` : undefined}
+        />
       )}
 
       {/* Twitch Command */}

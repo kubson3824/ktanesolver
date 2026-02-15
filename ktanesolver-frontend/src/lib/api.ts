@@ -1,5 +1,12 @@
 import axios from "axios";
 
+export const DEBUG_MODULE_SYNC = import.meta.env.VITE_DEBUG_MODULE_SYNC === "true";
+
+export const debugModuleSync = (...args: unknown[]) => {
+  if (!DEBUG_MODULE_SYNC) return;
+  console.debug("[module-sync]", ...args);
+};
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080",
   headers: {

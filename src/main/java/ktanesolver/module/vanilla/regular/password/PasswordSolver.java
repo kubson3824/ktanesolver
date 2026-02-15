@@ -26,7 +26,7 @@ public class PasswordSolver extends AbstractModuleSolver<PasswordInput, Password
 		List<String> possible = Arrays.stream(PasswordWord.values()).map(Enum::name).filter(word -> matches(word, columns)).toList();
 
 		boolean solved = possible.size() == 1;
-
+		storeState(module, "input", input);
 		return success(new PasswordOutput(possible, solved), solved);
 	}
 
