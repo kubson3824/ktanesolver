@@ -4,6 +4,10 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    // Libraries like @stomp/stompjs expect Node's `global`; in the browser use globalThis.
+    global: 'globalThis',
+  },
   plugins: [
     react(),
     // Bundle analysis: generates stats.html in dist/ on build

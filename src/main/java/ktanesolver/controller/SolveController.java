@@ -18,7 +18,12 @@ public class SolveController {
 	private final ModuleService moduleService;
 
 	@PostMapping ("/{moduleId}/solve")
-	public SolveResult<?> solve(@PathVariable UUID roundId, @PathVariable UUID bombId, @PathVariable UUID moduleId, @RequestBody SolveModuleRequest req) {
+	public SolveResult<?> solve(
+		@PathVariable UUID roundId,
+		@PathVariable UUID bombId,
+		@PathVariable UUID moduleId,
+		@RequestBody SolveModuleRequest req
+	) {
 		return moduleService.solveModule(roundId, bombId, moduleId, req.input());
 	}
 }

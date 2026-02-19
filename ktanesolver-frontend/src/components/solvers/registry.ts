@@ -37,8 +37,20 @@ export const solverRegistry: Partial<Record<ModuleType, SolverLoader>> = {
   [ModuleType.MORSEMATICS]: () => import("./MorsematicsSolver"),
   [ModuleType.CONNECTION_CHECK]: () => import("./ConnectionCheckSolver"),
   [ModuleType.LETTER_KEYS]: () => import("./LetterKeysSolver"),
+  [ModuleType.LOGIC]: () => import("./LogicSolver"),
   [ModuleType.FORGET_ME_NOT]: () => import("./ForgetMeNotSolver"),
   [ModuleType.ASTROLOGY]: () => import("./AstrologySolver"),
+  [ModuleType.MYSTIC_SQUARE]: () => import("./MysticSquareSolver"),
+  [ModuleType.CRAZY_TALK]: () => import("./CrazyTalkSolver"),
+  [ModuleType.ADVENTURE_GAME]: () => import("./AdventureGameSolver"),
+  [ModuleType.PLUMBING]: () => import("./PlumbingSolver"),
+  [ModuleType.CRUEL_PIANO_KEYS]: () => import("./CruelPianoKeysSolver"),
+  [ModuleType.SAFETY_SAFE]: () => import("./SafetySafeSolver"),
+  [ModuleType.CRYPTOGRAPHY]: () => import("./CryptographySolver"),
+  [ModuleType.TURN_THE_KEY]: () => import("./TurnTheKeySolver"),
+  [ModuleType.TURN_THE_KEYS]: () => import("./TurnTheKeysSolver"),
+  [ModuleType.CHESS]: () => import("./ChessSolver"),
+  [ModuleType.MOUSE_IN_THE_MAZE]: () => import("./MouseInTheMazeSolver"),
 };
 
 /**

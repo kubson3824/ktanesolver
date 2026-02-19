@@ -27,4 +27,6 @@ public @interface ModuleInfo {
 	boolean hasInput() default true;
 
 	boolean hasOutput() default true;
+
+	boolean checkFirst() default false;
 }

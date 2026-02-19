@@ -1,5 +1,7 @@
-import {type FormEvent, useState, useCallback} from "react";
-import {useNavigate} from "react-router-dom";
+import {type FormEvent, useRef, useState, useCallback, useEffect} from "react";
+import {Link, useNavigate, useParams} from "react-router-dom";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 import {useRoundStore} from "../store/useRoundStore";
 import {
     type BombEntity,
@@ -61,10 +63,14 @@ const initialFormState = (): BombFormState => ({
 
 const randomId = () => Math.random().toString(36).slice(2, 10);
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+
 export default function SetupPage() {
+    const { roundId } = useParams<{ roundId: string }>();
     const navigate = useNavigate();
     const round = useRoundStore((state) => state.round);
-    const createRound = useRoundStore((state) => state.createRound);
+    const fetchRound = useRoundStore((state) => state.fetchRound);
+    const refreshRound = useRoundStore((state) => state.refreshRound);
     const addBomb = useRoundStore((state) => state.addBomb);
     const configureBomb = useRoundStore((state) => state.configureBomb);
     const addModules = useRoundStore((state) => state.addModules);
@@ -91,18 +97,50 @@ export default function SetupPage() {
                 {} as Record<ModuleType, number>,
             ),
     );
+    const stompClientRef = useRef<Client | null>(null);
 
     const isEditing = Boolean(editingBomb);
     const canStartRound = round && round.bombs.length > 0;
 
-    const ensureRound = async () => {
-        if (!round) {
-            await createRound();
-        }
-    };
+    useEffect(() => {
+        if (!roundId) return;
+        if (round?.id === roundId) return;
+        let cancelled = false;
+        fetchRound(roundId).catch(() => {
+            if (!cancelled) void 0;
+        });
+        return () => { cancelled = true; };
+    }, [roundId, round?.id, fetchRound]);
+
+    // Subscribe to round topic so we refresh when another user updates bombs/modules during setup
+    useEffect(() => {
+        if (!roundId) return;
+        const client = new Client({
+            webSocketFactory: () => new SockJS(`${API_BASE}/ws`) as unknown as WebSocket,
+            connectHeaders: {},
+            onConnect: () => {
+                client.subscribe(`/topic/rounds/${roundId}`, (message) => {
+                    try {
+                        const body = JSON.parse(message.body) as { type?: string };
+                        if (body.type === "ROUND_UPDATED") {
+                            void refreshRound(roundId);
+                        }
+                    } catch {
+                        // ignore parse errors
+                    }
+                });
+            },
+        });
+        client.activate();
+        stompClientRef.current = client;
+        return () => {
+            client.deactivate();
+            stompClientRef.current = null;
+        };
+    }, [roundId, refreshRound]);
 
     const openCreateForm = async () => {
-        await ensureRound();
+        if (!round) return;
         setEditingBomb(undefined);
         setFormState(initialFormState());
         setIsFormOpen(true);
@@ -243,6 +281,15 @@ export default function SetupPage() {
         navigate(`/solve/${round.id}`);
     };
 
+    const roundNotYetLoaded = roundId && (!round || round.id !== roundId);
+    if (roundId && (roundNotYetLoaded || loading) && !round) {
+        return (
+            <PageContainer className="flex items-center justify-center min-h-[60vh]">
+                <span className="loading loading-spinner loading-lg text-primary" />
+            </PageContainer>
+        );
+    }
+
     return (
         <PageContainer>
             <div className="grid gap-5">
@@ -298,6 +345,12 @@ export default function SetupPage() {
                                 >
                                     Add Bomb
                                 </button>
+                                <Link
+                                    to="/rounds"
+                                    className="btn btn-ghost btn-sm text-base-content/70 hover:text-base-content"
+                                >
+                                    Previous rounds
+                                </Link>
                                 {round && (
                                     <span className="badge badge-outline gap-2">
                                         Round status:&nbsp;

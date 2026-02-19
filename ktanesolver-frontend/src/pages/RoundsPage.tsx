@@ -22,8 +22,8 @@ export default function RoundsPage() {
     }, [fetchAllRounds]);
 
     const handleCreateNewRound = async () => {
-        await createRound();
-        navigate("/setup");
+        const round = await createRound();
+        navigate(`/round/${round.id}/setup`);
     };
 
     const handleDeleteRound = async (roundId: string) => {
@@ -94,7 +94,7 @@ export default function RoundsPage() {
                         <RoundCard
                             key={round.id}
                             round={round}
-                            onNavigate={(id) => navigate(`/solve/${id}`)}
+                            onNavigate={(id) => navigate(`/round/${id}/setup`)}
                             onDelete={handleDeleteRound}
                             loading={loading}
                         />

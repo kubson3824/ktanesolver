@@ -39,7 +39,7 @@ public abstract class AbstractModuleSolver<I extends ModuleInput, O extends Modu
 		if(info == null) {
 			throw new IllegalStateException("ModuleSolver must be annotated with @ModuleInfo");
 		}
-		return new ModuleCatalogDto(info.id(), info.name(), info.category(), info.type().name(), List.of(info.tags()), info.description(), info.hasInput(), info.hasOutput());
+		return new ModuleCatalogDto(info.id(), info.name(), info.category(), info.type().name(), List.of(info.tags()), info.description(), info.hasInput(), info.hasOutput(), info.checkFirst());
 	}
 
 	@Override

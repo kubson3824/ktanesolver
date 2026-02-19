@@ -8,4 +8,8 @@ public final class SolveFailure<O extends ModuleOutput> implements SolveResult<O
 	public SolveFailure(String reason) {
 		this.reason = reason;
 	}
+
+	public String getReason() {
+		return reason;
+	}
 }

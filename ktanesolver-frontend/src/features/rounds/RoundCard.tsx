@@ -1,5 +1,6 @@
 import { type RoundEntity, RoundStatus } from "../../types";
 import {
+  formatRoundLabel,
   getRoundStatusLabel,
   getRoundStatusBadgeVariant,
   getBombStatusBadgeVariant,
@@ -30,7 +31,7 @@ export default function RoundCard({ round, onNavigate, onDelete, loading }: Roun
             <CardHeader className="p-0 pb-4">
               <div className="flex items-center gap-3">
                 <CardTitle className="text-2xl font-bold mt-0">
-                  Round {round.id.slice(-8)}
+                  {formatRoundLabel(round.id)}
                 </CardTitle>
                 <Badge
                   variant={getRoundStatusBadgeVariant(round.status)}

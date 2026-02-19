@@ -3,7 +3,7 @@ import type { BombEntity, ModuleEntity } from "../types";
 import KnobsSolver from "./solvers/KnobsSolver";
 import CapacitorDischargeSolver from "./solvers/CapacitorDischargeSolver";
 import VentingGasSolver from "./solvers/VentingGasSolver";
-import { formatModuleName } from "../lib/utils";
+import { formatModuleDisplayName } from "../lib/utils";
 
 interface NeedyModulesPanelProps {
     needyModules: ModuleEntity[];
@@ -137,7 +137,9 @@ export default function NeedyModulesPanel({
                                     </div>
                                 ) : (
                                     <div className="space-y-2" role="list" aria-label="Needy modules list">
-                                        {needyModules.map((module) => (
+                                        {needyModules.map((module) => {
+                                            const displayName = formatModuleDisplayName(module.type, module.id);
+                                            return (
                                             <div
                                                 key={module.id}
                                                 role="listitem"
@@ -147,14 +149,15 @@ export default function NeedyModulesPanel({
                                                     if (e.key === "Enter" || e.key === " ") handleModuleClick(module);
                                                 }}
                                                 tabIndex={0}
-                                                aria-label={`${formatModuleName(module.type)} — Click to open solver`}
+                                                aria-label={`${displayName} — Click to open solver`}
                                             >
                                                 <div className="card-body p-4">
-                                                    <h3 className="font-medium">{formatModuleName(module.type)}</h3>
+                                                    <h3 className="font-medium">{displayName}</h3>
                                                     <p className="text-sm text-base-content/70">Click to open solver</p>
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -170,7 +173,9 @@ export default function NeedyModulesPanel({
                                         >
                                             \u25C0
                                         </button>
-                                        <h3 className="font-medium">{formatModuleName(selectedModule.type)}</h3>
+                                        <h3 className="font-medium">
+                                    {formatModuleDisplayName(selectedModule.type, selectedModule.id)}
+                                </h3>
                                     </div>
                                 </div>
 

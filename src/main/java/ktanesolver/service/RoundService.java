@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.RoundStatus;
+import ktanesolver.repository.RoundEventRepository;
 import ktanesolver.repository.RoundRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class RoundService {
 
 	private final RoundRepository roundRepo;
+	private final RoundEventRepository roundEventRepo;
 
 	@Transactional
 	public RoundEntity createRound() {
@@ -73,6 +75,7 @@ public class RoundService {
 	@Transactional
 	public void deleteRound(UUID roundId) {
 		RoundEntity round = getRound(roundId);
+		roundEventRepo.deleteByRound_Id(roundId);
 		roundRepo.delete(round);
 	}
 }

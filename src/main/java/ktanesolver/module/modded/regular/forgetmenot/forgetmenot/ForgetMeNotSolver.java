@@ -18,7 +18,7 @@ import ktanesolver.logic.SolveResult;
 
 @Service
 @ModuleInfo (type = ModuleType.FORGET_ME_NOT, id = "forgetmenot", name = "Forget Me Not", category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR, description = "Remember the calculated numbers and press them in order", tags = {
-	"needy", "display", "keypad", "sequence"})
+	"needy", "display", "keypad", "sequence"}, checkFirst = true)
 public class ForgetMeNotSolver extends AbstractModuleSolver<ForgetMeNotInput, ForgetMeNotOutput> {
 
 	@Override

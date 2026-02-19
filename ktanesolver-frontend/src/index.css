@@ -56,6 +56,29 @@
   }
 }
 
+/* Cruel Piano Keys / manual-style music symbols (from ktane.timwi.de) */
+@font-face {
+  font-family: "OpusStd";
+  src: url("/font/OpusStd.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "OpusChordsSansStd";
+  src: url("/font/OpusChordsSansStd.otf") format("opentype");
+}
+
+.music-symbol {
+  font-family: "OpusStd", sans-serif;
+  font-size: 1.6em;
+  position: relative;
+  top: -0.2em;
+}
+
+.music-chord {
+  font-family: "OpusChordsSansStd", sans-serif;
+  word-spacing: 0.3em;
+}
+
 @layer utilities {
   /* Skip link utility */
   .skip-link {

@@ -4,6 +4,7 @@ import AppShell from "./components/layout/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Route-level code splitting
+const MainPage = lazy(() => import("./pages/MainPage"));
 const SetupPage = lazy(() => import("./pages/SetupPage"));
 const SolvePage = lazy(() => import("./pages/SolvePage"));
 const RoundsPage = lazy(() => import("./pages/RoundsPage"));
@@ -25,9 +26,18 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/" element={<Navigate to="/setup" replace />} />
             <Route
-              path="/setup"
+              path="/"
+              element={
+                <ErrorBoundary>
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <MainPage />
+                  </Suspense>
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/round/:roundId/setup"
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<PageLoadingFallback />}>
@@ -35,6 +45,10 @@ export default function App() {
                   </Suspense>
                 </ErrorBoundary>
               }
+            />
+            <Route
+              path="/setup"
+              element={<Navigate to="/" replace />}
             />
             <Route
               path="/rounds"
@@ -56,7 +70,7 @@ export default function App() {
                 </ErrorBoundary>
               }
             />
-            <Route path="*" element={<Navigate to="/setup" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>

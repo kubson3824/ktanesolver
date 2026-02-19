@@ -1,4 +1,11 @@
-import { BombStatus, RoundStatus } from "../types";
+import { BombStatus, type RoundEventType, RoundStatus } from "../types";
+
+/**
+ * Returns a short label for a round ID for display in breadcrumbs and cards (e.g. "Round #2131678").
+ */
+export function formatRoundLabel(roundId: string): string {
+  return `Round #${roundId.slice(-8)}`;
+}
 
 /**
  * Converts an enum-style string like "WIRE_SEQUENCES" to title case "Wire Sequences".
@@ -9,6 +16,19 @@ export function formatModuleName(type: string): string {
     .split("_")
     .map((chunk) => chunk[0].toUpperCase() + chunk.slice(1))
     .join(" ");
+}
+
+/**
+ * Display name for a module in lists/breadcrumbs. When moduleId is provided, appends a shortened
+ * id (e.g. "Wires a1b2c3d4") so every module is identifiable.
+ */
+export function formatModuleDisplayName(type: string, moduleId?: string): string {
+  const base = formatModuleName(type);
+  if (moduleId != null && moduleId.length > 0) {
+    const shortId = moduleId.replace(/-/g, "").slice(-8);
+    return `${base} ${shortId}`;
+  }
+  return base;
 }
 
 /**
@@ -93,5 +113,31 @@ export function getBombStatusBadgeVariant(
       return "error";
     default:
       return "outline";
+  }
+}
+
+/**
+ * Human-readable message for a round event (solve, strike, etc.).
+ */
+export function formatRoundEventMessage(msg: {
+  type: RoundEventType;
+  payload?: Record<string, unknown>;
+}): string {
+  const p = msg.payload ?? {};
+  switch (msg.type) {
+    case "MODULE_SOLVED": {
+      const moduleType = (p.moduleType as string) ?? "module";
+      const moduleId = p.moduleId as string | undefined;
+      return `Solved ${formatModuleDisplayName(moduleType, moduleId)}`;
+    }
+    case "ROUND_STRIKE":
+    case "MODULE_STRIKE": {
+      const strikes = p.strikes as number | undefined;
+      return strikes != null ? `Strike (${strikes} total)` : "Strike on bomb";
+    }
+    case "ROUND_UPDATED":
+      return "Round setup updated";
+    default:
+      return msg.type;
   }
 }

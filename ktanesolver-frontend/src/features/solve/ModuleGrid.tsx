@@ -1,5 +1,5 @@
 import type { BombEntity, ModuleEntity } from "../../types";
-import { formatModuleName } from "../../lib/utils";
+import { formatModuleDisplayName } from "../../lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { cn } from "../../lib/cn";
@@ -10,6 +10,8 @@ interface ModuleGridProps {
   regularModules: ModuleEntity[];
   onSelectBomb: (bombId: string) => void;
   onSelectModule: (module: ModuleEntity) => void;
+  /** Module ID currently being opened; show loading and ignore further clicks. */
+  openingModuleId?: string | null;
 }
 
 function SolvedIcon() {
@@ -34,6 +36,7 @@ export default function ModuleGrid({
   regularModules,
   onSelectBomb,
   onSelectModule,
+  openingModuleId,
 }: ModuleGridProps) {
   return (
     <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
@@ -78,45 +81,78 @@ export default function ModuleGrid({
               </p>
             </div>
           )}
-          {regularModules.map((module, index) => (
+          {regularModules.map((module, index) => {
+            const displayName = formatModuleDisplayName(module.type, module.id);
+            const isOpening = openingModuleId === module.id;
+            const disabled = isOpening;
+            return (
             <Card
               key={module.id}
               className={cn(
-                "animate-fade-in cursor-pointer transition-colors border-panel-border bg-base-200/90 backdrop-blur-sm",
-                "hover:border-panel-border hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200",
-                module.solved && "border-l-2 border-l-success"
+                "animate-fade-in transition-colors border-panel-border bg-base-200/90 backdrop-blur-sm",
+                module.solved && "border-l-2 border-l-success",
+                disabled
+                  ? "cursor-not-allowed opacity-80"
+                  : "cursor-pointer hover:border-panel-border hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200"
               )}
               style={{ animationDelay: `${index * 50}ms`, animationFillMode: "backwards" }}
-              tabIndex={0}
+              tabIndex={disabled ? -1 : 0}
               role="button"
-              onClick={() => onSelectModule(module)}
+              title={isOpening ? "Opening…" : undefined}
+              onClick={() => !disabled && onSelectModule(module)}
               onKeyDown={(e) => {
+                if (disabled) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   onSelectModule(module);
                 }
               }}
-              aria-label={`${formatModuleName(module.type)} — ${module.solved ? "Solved" : "Awaiting"}`}
+              aria-label={
+                disabled
+                  ? `${displayName} — Opening…`
+                  : `${displayName} — ${module.solved ? "Solved" : "Awaiting"}`
+              }
+              aria-disabled={disabled}
+              aria-busy={isOpening}
             >
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0 flex-1 border-l-2 border-primary/40 pl-2 rounded pr-2 py-1">
                     <p className="text-xs text-secondary uppercase tracking-wider">Module</p>
-                    <p className="text-card-title font-semibold mt-1 truncate">{formatModuleName(module.type)}</p>
+                    <p className="text-card-title font-semibold mt-1 truncate">{displayName}</p>
                   </div>
-                  <Badge variant={module.solved ? "success" : "warning"} className="shrink-0 text-caption">
-                    {module.solved ? "Solved" : "Awaiting"}
-                  </Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isOpening && (
+                      <span className="loading loading-spinner loading-sm text-primary" aria-hidden />
+                    )}
+                    <Badge
+                      variant={module.solved ? "success" : "warning"}
+                      className="text-caption"
+                    >
+                      {module.solved ? "Solved" : isOpening ? "Opening…" : "Awaiting"}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0 flex flex-row items-start gap-2">
-                {module.solved ? <SolvedIcon /> : <AwaitingIcon />}
+                {module.solved ? (
+                  <SolvedIcon />
+                ) : isOpening ? (
+                  <span className="loading loading-spinner loading-sm text-primary shrink-0" aria-hidden />
+                ) : (
+                  <AwaitingIcon />
+                )}
                 <p className="text-caption text-base-content/70">
-                  {module.solved ? "Cleared. Click to review." : "Click to open solver."}
+                  {module.solved
+                    ? "Cleared. Click to review."
+                    : isOpening
+                      ? "Opening…"
+                      : "Click to open solver."}
                 </p>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
       </CardContent>
     </Card>

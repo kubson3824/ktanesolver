@@ -76,7 +76,7 @@ public class TwoBitsSolver extends AbstractModuleSolver<TwoBitsInput, TwoBitsOut
 	}
 
 	private int extractFirstLetterValue(String serialNumber) {
-		return serialNumber.chars().filter(Character::isLetter).mapToObj(c -> (char)c).map(Character::toUpperCase).findFirst().map(StringUtils::upperLetterToNumber).orElse(0);
+		return serialNumber.chars().filter(Character::isLetter).mapToObj(c -> (char)c).map(Character::toUpperCase).findFirst().map(StringUtils::upperLetterToNumber1Based).orElse(0);
 	}
 
 	private boolean shouldDoubleNumber(BombEntity bomb) {

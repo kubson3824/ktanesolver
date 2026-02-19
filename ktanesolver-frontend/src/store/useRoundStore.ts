@@ -22,6 +22,8 @@ type RoundStoreState = {
     manualUrl?: string;
     loading: boolean;
     error?: string;
+    /** Module ID currently being opened (enter + fetch in progress); used to show loading and prevent double-clicks. */
+    openingModuleId?: string | null;
 };
 
 type RoundStoreActions = {
@@ -89,7 +91,19 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.MORSEMATICS]: "Morsematics",
     [ModuleType.CONNECTION_CHECK]: "Connection Check",
     [ModuleType.LETTER_KEYS]: "Letter Keys",
+    [ModuleType.LOGIC]: "Logic",
     [ModuleType.ASTROLOGY]: "Astrology",
+    [ModuleType.MYSTIC_SQUARE]: "Mystic Square",
+    [ModuleType.CRAZY_TALK]: "Crazy Talk",
+    [ModuleType.ADVENTURE_GAME]: "Adventure Game",
+    [ModuleType.PLUMBING]: "Plumbing",
+    [ModuleType.CRUEL_PIANO_KEYS]: "Cruel Piano Keys",
+    [ModuleType.SAFETY_SAFE]: "Safety Safe",
+    [ModuleType.CRYPTOGRAPHY]: "Cryptography",
+    [ModuleType.TURN_THE_KEY]: "Turn The Key",
+    [ModuleType.TURN_THE_KEYS]: "Turn The Keys",
+    [ModuleType.CHESS]: "Chess",
+    [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
 };
 
 const attachManualUrl = (moduleType: ModuleType) => {
@@ -111,6 +125,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             manualUrl: undefined,
             loading: false,
             error: undefined,
+            openingModuleId: undefined,
 
             createRound: async () => {
                 set({loading: true, error: undefined});
@@ -181,7 +196,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         modulesTotal: round.bombs.reduce((acc, b) => acc + b.modules.length, 0),
                     });
 
-                    const nextBomb = prevBombId
+                    let nextBomb = prevBombId
                         ? round.bombs.find((b) => b.id === prevBombId)
                         : undefined;
 
@@ -194,6 +209,20 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         if (module) {
                             const moduleType = module.type as ModuleType;
                             nextModule = { ...module, bomb: nextBomb, moduleType };
+                        }
+                    }
+
+                    // Preserve a module selection made while this refresh was in flight
+                    if (!prevModuleId) {
+                        const currentNow = get().currentModule;
+                        if (currentNow) {
+                            const bombInRound = round.bombs.find((b) => b.id === currentNow.bomb?.id);
+                            const moduleInBomb = bombInRound?.modules.find((m) => m.id === currentNow.id);
+                            if (bombInRound && moduleInBomb) {
+                                const moduleType = moduleInBomb.type as ModuleType;
+                                nextModule = { ...moduleInBomb, bomb: bombInRound, moduleType };
+                                nextBomb = bombInRound;
+                            }
                         }
                     }
 
@@ -294,6 +323,8 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                             currentBomb: bomb,
                         };
                     });
+                    const roundId = get().round?.id;
+                    if (roundId) void get().refreshRound(roundId);
                     return bomb;
                 } catch (error) {
                     set({
@@ -331,6 +362,8 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                 state.currentBomb?.id === bombId ? updated : state.currentBomb,
                         };
                     });
+                    const roundIdAfterConfig = get().round?.id;
+                    if (roundIdAfterConfig) void get().refreshRound(roundIdAfterConfig);
                     return updated;
                 } catch (error) {
                     set({
@@ -375,6 +408,8 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                 state.currentBomb?.id === bombId ? updatedBomb : state.currentBomb,
                         };
                     });
+                    const roundIdAfterModules = get().round?.id;
+                    if (roundIdAfterModules) void get().refreshRound(roundIdAfterModules);
                     return modules;
                 } catch (error) {
                     set({
@@ -444,13 +479,11 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 if (!bomb) return;
 
                 debugModuleSync("selectModuleById:start", {bombId, moduleId});
+                set({openingModuleId: moduleId, error: undefined});
 
                 let module: ModuleEntity;
                 try {
                     module = await withErrorWrapping(async () => {
-                        debugModuleSync("selectModuleById:fetch", {
-                            url: `/bombs/${bombId}/modules/${moduleId}`,
-                        });
                         const {data} = await api.get<ModuleEntity>(
                             `/bombs/${bombId}/modules/${moduleId}`
                         );
@@ -458,7 +491,10 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                     });
                 } catch (error) {
                     debugModuleSync("selectModuleById:error", {bombId, moduleId, error});
-                    console.error("Failed to fetch module:", error);
+                    set({
+                        openingModuleId: null,
+                        error: "Failed to open module. Please try again.",
+                    });
                     return;
                 }
 
@@ -473,7 +509,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                     hasSolution: (module as { solution?: unknown } | undefined)?.solution !== undefined,
                 });
 
-                // Merge fetched module into round and currentBomb so list view stays in sync
                 const updatedBomb: BombEntity = {
                     ...bomb,
                     modules: bomb.modules.map((m) => (m.id === moduleId ? module : m)),
@@ -492,10 +527,13 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                     currentBomb: state.currentBomb?.id === bombId ? updatedBomb : state.currentBomb,
                     currentModule: {...module, bomb: updatedBomb, moduleType},
                     manualUrl: attachManualUrl(moduleType),
+                    openingModuleId: null,
                 }));
             },
 
-            clearModule: () => set({currentModule: undefined, manualUrl: undefined}),
+            clearModule: () => {
+                set({currentModule: undefined, manualUrl: undefined});
+            },
 
             setManualUrl: (url) => set({manualUrl: url}),
 

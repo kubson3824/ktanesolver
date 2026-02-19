@@ -31,7 +31,19 @@ export enum ModuleType {
   MORSEMATICS = "MORSEMATICS",
   CONNECTION_CHECK = "CONNECTION_CHECK",
   LETTER_KEYS = "LETTER_KEYS",
+  LOGIC = "LOGIC",
   ASTROLOGY = "ASTROLOGY",
+  MYSTIC_SQUARE = "MYSTIC_SQUARE",
+  CRAZY_TALK = "CRAZY_TALK",
+  ADVENTURE_GAME = "ADVENTURE_GAME",
+  PLUMBING = "PLUMBING",
+  CRUEL_PIANO_KEYS = "CRUEL_PIANO_KEYS",
+  SAFETY_SAFE = "SAFETY_SAFE",
+  CRYPTOGRAPHY = "CRYPTOGRAPHY",
+  TURN_THE_KEY = "TURN_THE_KEY",
+  TURN_THE_KEYS = "TURN_THE_KEYS",
+  CHESS = "CHESS",
+  MOUSE_IN_THE_MAZE = "MOUSE_IN_THE_MAZE",
 }
 
 export enum PortType {
@@ -117,6 +129,7 @@ export interface ModuleCatalogItem {
   description: string;
   isSolvable: boolean;
   hasSolver: boolean;  // Indicates if this module has a solver implementation
+  checkFirst?: boolean;  // Show in "check these first" strip on Solve page
 }
 
 export enum ModuleCategory {
@@ -129,4 +142,18 @@ export enum ModuleCategory {
 export interface AddModulesRequest {
   type: ModuleType;
   count: number;
+}
+
+export type RoundEventType =
+  | "MODULE_SOLVED"
+  | "MODULE_STRIKE"
+  | "ROUND_STRIKE"
+  | "MEMORY_STAGE_COMPLETED"
+  | "ROUND_UPDATED";
+
+export interface RoundEventMessage {
+  type: RoundEventType;
+  timestamp?: string;
+  id?: string;
+  payload: Record<string, unknown>;
 }

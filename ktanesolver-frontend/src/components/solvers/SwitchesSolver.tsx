@@ -36,14 +36,22 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
     [currentSwitches, ledPositions, result, twitchCommand],
   );
 
+  const defaultSwitches = useMemo(() => [false, false, false, false, false] as boolean[], []);
+
   const onRestoreState = useCallback(
-    (state: { currentSwitches: boolean[]; ledPositions: boolean[]; result: SwitchesOutput | null; twitchCommand: string }) => {
-      setCurrentSwitches(state.currentSwitches);
-      setLedPositions(state.ledPositions);
-      setResult(state.result);
-      setTwitchCommand(state.twitchCommand);
+    (state: { currentSwitches?: boolean[]; ledPositions?: boolean[]; result?: SwitchesOutput | null; twitchCommand?: string }) => {
+      const switches = Array.isArray(state.currentSwitches) && state.currentSwitches.length === 5
+        ? state.currentSwitches
+        : defaultSwitches;
+      const leds = Array.isArray(state.ledPositions) && state.ledPositions.length === 5
+        ? state.ledPositions
+        : defaultSwitches;
+      setCurrentSwitches(switches);
+      setLedPositions(leds);
+      setResult(state.result ?? null);
+      setTwitchCommand(typeof state.twitchCommand === "string" ? state.twitchCommand : "");
     },
-    [],
+    [defaultSwitches],
   );
 
   const onRestoreSolution = useCallback(
@@ -168,8 +176,9 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
   };
 
   const isForbiddenResult = result && !result.solved && result.instruction?.includes(FORBIDDEN_MESSAGE);
-  const currentStepSwitch = result?.solutionSteps?.length
-    ? result.solutionSteps[Math.min(currentStepIndex, result.solutionSteps.length - 1)]
+  const solutionSteps = Array.isArray(result?.solutionSteps) ? result.solutionSteps : [];
+  const currentStepSwitch = solutionSteps.length
+    ? solutionSteps[Math.min(currentStepIndex, solutionSteps.length - 1)]
     : null;
 
   return (
@@ -182,7 +191,7 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
         <CardContent>
           <div className="rounded-lg border border-base-300 bg-base-300/50 p-6">
             <div className="grid grid-cols-5 gap-4">
-              {currentSwitches.map((isUp, index) => {
+              {(currentSwitches ?? defaultSwitches).map((isUp, index) => {
                 const switchNum = index + 1;
                 const isCurrentStep = currentStepSwitch === switchNum;
                 return (
@@ -192,9 +201,9 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
                       type="button"
                       onClick={() => setLedLitTop(index)}
                       disabled={isLoading || isSolved}
-                      aria-label={`Switch ${switchNum}, LED top, ${ledPositions[index] ? "lit" : "unlit"}`}
+                      aria-label={`Switch ${switchNum}, LED top, ${(ledPositions ?? defaultSwitches)[index] ? "lit" : "unlit"}`}
                       className={`mb-2 h-4 w-4 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200 disabled:pointer-events-none disabled:opacity-50 ${
-                        ledPositions[index]
+                        (ledPositions ?? defaultSwitches)[index]
                           ? "border-success/50 bg-success shadow-[0_0_8px_rgba(91,231,169,0.5)]"
                           : "border-base-400 bg-base-300"
                       } ${!(isLoading || isSolved) ? "hover:opacity-90" : ""}`}
@@ -227,9 +236,9 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
                       type="button"
                       onClick={() => setLedLitBottom(index)}
                       disabled={isLoading || isSolved}
-                      aria-label={`Switch ${switchNum}, LED bottom, ${!ledPositions[index] ? "lit" : "unlit"}`}
+                      aria-label={`Switch ${switchNum}, LED bottom, ${!(ledPositions ?? defaultSwitches)[index] ? "lit" : "unlit"}`}
                       className={`mt-2 h-4 w-4 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200 disabled:pointer-events-none disabled:opacity-50 ${
-                        !ledPositions[index]
+                        !(ledPositions ?? defaultSwitches)[index]
                           ? "border-success/50 bg-success shadow-[0_0_8px_rgba(91,231,169,0.5)]"
                           : "border-base-400 bg-base-300"
                       } ${!(isLoading || isSolved) ? "hover:opacity-90" : ""}`}
@@ -269,13 +278,13 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
       {result && result.solved && !isForbiddenResult && (
         <>
           <SolverResult variant="success" title="Solved!" description={result.instruction} />
-          {result.solutionSteps.length > 0 && (
+          {solutionSteps.length > 0 && (
             <div className="mb-4 space-y-2">
               <p className="text-sm font-medium text-base-content/90">
-                Step {currentStepIndex + 1} of {result.solutionSteps.length}: Flip switch {result.solutionSteps[currentStepIndex]}
+                Step {currentStepIndex + 1} of {solutionSteps.length}: Flip switch {solutionSteps[currentStepIndex]}
               </p>
               <div className="flex flex-wrap gap-2">
-                {result.solutionSteps.map((switchNum, idx) => (
+                {solutionSteps.map((switchNum, idx) => (
                   <span
                     key={idx}
                     className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
@@ -288,11 +297,11 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
                   </span>
                 ))}
               </div>
-              {currentStepIndex < result.solutionSteps.length - 1 && (
+              {currentStepIndex < solutionSteps.length - 1 && (
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setCurrentStepIndex((i) => Math.min(i + 1, result.solutionSteps.length - 1))}
+                  onClick={() => setCurrentStepIndex((i) => Math.min(i + 1, solutionSteps.length - 1))}
                 >
                   Next step
                 </Button>

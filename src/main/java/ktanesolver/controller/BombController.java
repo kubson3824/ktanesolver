@@ -13,6 +13,7 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.BombStatus;
 import ktanesolver.repository.BombRepository;
 import ktanesolver.repository.RoundRepository;
+import ktanesolver.service.RoundEventBroadcastService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -22,6 +23,7 @@ public class BombController {
 
 	private final RoundRepository roundRepo;
 	private final BombRepository bombRepo;
+	private final RoundEventBroadcastService roundEventBroadcastService;
 
 	@PostMapping
 	public BombEntity createBomb(@PathVariable UUID roundId, @RequestBody CreateBombRequest req) {
@@ -36,6 +38,8 @@ public class BombController {
 		bomb.replacePortPlates(req.portPlates());
 		bomb.setStatus(BombStatus.ACTIVE);
 
-		return bombRepo.save(bomb);
+		bomb = bombRepo.save(bomb);
+		roundEventBroadcastService.broadcastRoundUpdated(roundId);
+		return bomb;
 	}
 }

@@ -206,6 +206,106 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${TWITCH_PLACEHOLDER} leds unknown`;
 
+    case ModuleType.LOGIC:
+      // Logic: result has answers (boolean[]) per row
+      if ((result as { answers: boolean[] }).answers) {
+        const answers = (result as { answers: boolean[] }).answers;
+        const parts = answers.map((a, i) => `Row${i + 1}:${a ? "T" : "F"}`);
+        return `!${TWITCH_PLACEHOLDER} logic ${parts.join(" ")}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} logic unknown`;
+
+    case ModuleType.MYSTIC_SQUARE:
+      if (typeof (result as { skullPosition?: number }).skullPosition === "number") {
+        const r = result as { skullPosition: number };
+        const row = Math.floor(r.skullPosition / 3) + 1;
+        const col = (r.skullPosition % 3) + 1;
+        return `!${TWITCH_PLACEHOLDER} mystic skull row${row} col${col}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} mystic unknown`;
+
+    case ModuleType.CRAZY_TALK:
+      if (typeof (result as { downAt?: number }).downAt === "number" && typeof (result as { upAt?: number }).upAt === "number") {
+        const r = result as { downAt: number; upAt: number };
+        return `!${TWITCH_PLACEHOLDER} crazytalk down ${r.downAt} up ${r.upAt}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} crazytalk unknown`;
+
+    case ModuleType.ADVENTURE_GAME:
+      if (Array.isArray((result as { itemsToUse?: string[] }).itemsToUse) && typeof (result as { weaponToUse?: string }).weaponToUse === "string") {
+        const r = result as { itemsToUse: string[]; weaponToUse: string };
+        const itemsPart = r.itemsToUse.length ? ` items ${r.itemsToUse.join(" ")}` : "";
+        return `!${TWITCH_PLACEHOLDER} adventure${itemsPart} weapon ${r.weaponToUse}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} adventure unknown`;
+
+    case ModuleType.PLUMBING:
+      if (Array.isArray((result as { activeInputs?: boolean[] }).activeInputs) && Array.isArray((result as { activeOutputs?: boolean[] }).activeOutputs)) {
+        const r = result as { activeInputs: boolean[]; activeOutputs: boolean[] };
+        const colors = ["Red", "Yellow", "Green", "Blue"];
+        const ins = r.activeInputs.map((a, i) => (a ? colors[i] : null)).filter(Boolean).join(",");
+        const outs = r.activeOutputs.map((a, i) => (a ? colors[i] : null)).filter(Boolean).join(",");
+        return `!${TWITCH_PLACEHOLDER} plumbing inputs ${ins} outputs ${outs}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} plumbing unknown`;
+
+    case ModuleType.CRUEL_PIANO_KEYS:
+      if ((result as { notes?: string[] }).notes && Array.isArray((result as { notes: string[] }).notes)) {
+        const noteStr = (result as { notes: string[] }).notes
+          .map((n) => n.replace("_SHARP", "#"))
+          .join(" ");
+        return `!${TWITCH_PLACEHOLDER} sequence ${noteStr}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} cruel piano keys unknown`;
+
+    case ModuleType.SAFETY_SAFE:
+      if ((result as { dialTurns?: number[] }).dialTurns && Array.isArray((result as { dialTurns: number[] }).dialTurns)) {
+        const turns = (result as { dialTurns: number[] }).dialTurns.join(" ");
+        return `!${TWITCH_PLACEHOLDER} dials ${turns}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} safety safe unknown`;
+
+    case ModuleType.CRYPTOGRAPHY:
+      if ((result as { keyOrder?: string[] }).keyOrder && Array.isArray((result as { keyOrder: string[] }).keyOrder)) {
+        const order = (result as { keyOrder: string[] }).keyOrder.join(" ");
+        return `!${TWITCH_PLACEHOLDER} keys ${order}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} cryptography unknown`;
+
+    case ModuleType.CHESS:
+      if ((result as { coordinate?: string }).coordinate) {
+        return `!${TWITCH_PLACEHOLDER} submit ${(result as { coordinate: string }).coordinate}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} chess unknown`;
+
+    case ModuleType.MOUSE_IN_THE_MAZE: {
+      const r = result as { targetSphereColor?: string; moves?: string[] };
+      const target = r?.targetSphereColor ?? "unknown";
+      const moves = r?.moves?.length ? ` — ${r.moves.join(" ")}` : "";
+      return `!${TWITCH_PLACEHOLDER} go to ${target}${moves}`;
+    }
+
+    case ModuleType.TURN_THE_KEY: {
+      const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
+      const instr = (result as { instruction?: string }).instruction;
+      if (instr) return `!${TWITCH_PLACEHOLDER} ${instr}`;
+      if (typeof sec === "number") {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        const ss = s < 10 ? "0" + s : String(s);
+        return `!${TWITCH_PLACEHOLDER} turn when timer shows ${m}:${ss}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} turn when timer shows time`;
+    }
+
+    case ModuleType.TURN_THE_KEYS: {
+      const priority = (result as { priority?: number }).priority;
+      if (typeof priority === "number") {
+        return `!${TWITCH_PLACEHOLDER} Turn The Keys priority ${priority}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} Turn The Keys`;
+    }
+
     default:
       return `!${TWITCH_PLACEHOLDER} action ${result.action || 'unknown'}`;
   }
@@ -227,6 +327,11 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.WIRE_SEQUENCES]: "Wire Sequences",
     [ModuleType.PASSWORDS]: "Passwords",
     [ModuleType.MAZES]: "Mazes",
+    [ModuleType.KNOBS]: "Knobs",
+    [ModuleType.COLOR_FLASH]: "Color Flash",
+    [ModuleType.PIANO_KEYS]: "Piano Keys",
+    [ModuleType.SEMAPHORE]: "Semaphore",
+    [ModuleType.MATH]: "Math",
     [ModuleType.EMOJI_MATH]: "Emoji Math",
     [ModuleType.SWITCHES]: "Switches",
     [ModuleType.TWO_BITS]: "Two Bits",
@@ -235,11 +340,25 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.COMBINATION_LOCK]: "Combination Lock",
     [ModuleType.ROUND_KEYPAD]: "Round Keypad",
     [ModuleType.LISTENING]: "Listening",
+    [ModuleType.FOREIGN_EXCHANGE_RATES]: "Foreign Exchange Rates",
     [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
+    [ModuleType.MORSEMATICS]: "Morsematics",
     [ModuleType.LETTER_KEYS]: "Letter Keys",
+    [ModuleType.LOGIC]: "Logic",
     [ModuleType.ASTROLOGY]: "Astrology",
     [ModuleType.CONNECTION_CHECK]: "Connection Check",
+    [ModuleType.MYSTIC_SQUARE]: "Mystic Square",
+    [ModuleType.CRAZY_TALK]: "Crazy Talk",
+    [ModuleType.ADVENTURE_GAME]: "Adventure Game",
+    [ModuleType.PLUMBING]: "Plumbing",
+    [ModuleType.CRUEL_PIANO_KEYS]: "Cruel Piano Keys",
+    [ModuleType.SAFETY_SAFE]: "Safety Safe",
+    [ModuleType.CRYPTOGRAPHY]: "Cryptography",
+    [ModuleType.TURN_THE_KEY]: "Turn The Key",
+    [ModuleType.TURN_THE_KEYS]: "Turn The Keys",
+    [ModuleType.CHESS]: "Chess",
+    [ModuleType.MOUSE_IN_THE_MAZE]: "Mouse In The Maze",
   };
-  
+
   return displayNames[moduleType] || moduleType;
 }
