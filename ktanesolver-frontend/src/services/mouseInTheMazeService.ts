@@ -18,10 +18,16 @@ export interface MouseInTheMazeMaze {
 
 export interface MouseInTheMazeSolveRequest {
   input: {
-    mazeIndex: number;
+    /** Legacy: maze 1–6. Omit when using sphere identification. */
+    mazeIndex?: number;
     torusColor: SphereColor;
-    start: Cell;
+    /** Legacy: start position. Omit when using sphere identification. */
+    start?: Cell;
     startDirection?: Direction;
+    /** Sphere colour at current position (go to nearest sphere first). */
+    sphereColorAtPosition?: SphereColor;
+    /** Four distances to nearest wall in any order (solver tries all 24 permutations). */
+    stepsToWall?: [number, number, number, number];
   };
 }
 
@@ -31,6 +37,8 @@ export interface MouseInTheMazeSolveResponse {
     targetCell: Cell;
     moves: MouseMove[];
     maze?: MouseInTheMazeMaze;
+    /** Start cell used (included when maze was identified from sphere + distances). */
+    startCell?: Cell;
   };
   solved?: boolean;
   reason?: string;

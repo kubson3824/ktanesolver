@@ -10,6 +10,8 @@ public record MouseInTheMazeOutput(
 	SphereColor targetSphereColor,
 	Cell targetCell,
 	List<MouseMove> moves,
-	MouseInTheMazeMaze maze
+	MouseInTheMazeMaze maze,
+	/** Start cell used for pathfinding (enables path display when maze was identified from sphere + distances). */
+	Cell startCell
 ) implements ModuleOutput {
 }

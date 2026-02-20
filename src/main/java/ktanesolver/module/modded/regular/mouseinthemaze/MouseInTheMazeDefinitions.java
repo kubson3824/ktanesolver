@@ -1,11 +1,12 @@
 
 package ktanesolver.module.modded.regular.mouseinthemaze;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import ktanesolver.module.vanilla.regular.maze.Cell;
 
 /**
@@ -533,6 +534,126 @@ public final class MouseInTheMazeDefinitions {
 
 	public static SphereColor getTargetSphere(int mazeIndex, SphereColor torusColor) {
 		return TORUS_TO_SPHERE.get(mazeIndex - 1).get(torusColor);
+	}
+
+	// --- Sphere + wall-steps identification (user at sphere, reports colour and four distances in any order) ---
+
+	private static final int GRID_SIZE = 10;
+
+	/** Ordered (stepsUp, stepsDown, stepsLeft, stepsRight) for lookup key. */
+	public record WallStepsKey(SphereColor sphereColor, int stepsUp, int stepsDown, int stepsLeft, int stepsRight) {
+	}
+
+	/** Result of resolving sphere + four unordered distances: maze index (1–6) and current cell. */
+	public record SphereIdentificationResult(int mazeIndex, Cell cell) {
+	}
+
+	/**
+	 * Number of steps (cell moves) from the given cell in each direction before hitting a wall or grid edge.
+	 * Uses same wall semantics as the solver (horizontalWalls / verticalWalls).
+	 */
+	public static int[] stepsToWallInEachDirection(MouseInTheMazeMaze maze, Cell cell) {
+		int row = cell.row();
+		int col = cell.col();
+		boolean[][] h = maze.horizontalWalls();
+		boolean[][] v = maze.verticalWalls();
+		int stepsUp = 0;
+		for (int r = row - 1; r >= 1; r--) {
+			if (h[r - 1][col - 1]) break;
+			stepsUp++;
+		}
+		int stepsDown = 0;
+		for (int r = row + 1; r <= GRID_SIZE; r++) {
+			if (h[r - 2][col - 1]) break;
+			stepsDown++;
+		}
+		int stepsLeft = 0;
+		for (int c = col - 1; c >= 1; c--) {
+			if (v[row - 1][c - 1]) break;
+			stepsLeft++;
+		}
+		int stepsRight = 0;
+		for (int c = col + 1; c <= GRID_SIZE; c++) {
+			if (v[row - 1][c - 2]) break; // wall between (c-1) and c
+			stepsRight++;
+		}
+		return new int[] { stepsUp, stepsDown, stepsLeft, stepsRight };
+	}
+
+	private static final Map<WallStepsKey, SphereIdentificationResult> SPHERE_WALL_STEPS_LOOKUP = buildSphereWallStepsLookup();
+
+	private static Map<WallStepsKey, SphereIdentificationResult> buildSphereWallStepsLookup() {
+		Map<WallStepsKey, SphereIdentificationResult> map = new LinkedHashMap<>();
+		for (int mazeIndex = 1; mazeIndex <= 6; mazeIndex++) {
+			MouseInTheMazeMaze maze = getMaze(mazeIndex);
+			for (Map.Entry<SphereColor, Cell> e : maze.spherePositions().entrySet()) {
+				SphereColor color = e.getKey();
+				Cell cell = e.getValue();
+				int[] steps = stepsToWallInEachDirection(maze, cell);
+				WallStepsKey key = new WallStepsKey(color, steps[0], steps[1], steps[2], steps[3]);
+				SphereIdentificationResult existing = map.put(key, new SphereIdentificationResult(mazeIndex, cell));
+				if (existing != null) {
+					throw new IllegalStateException("Duplicate lookup key: " + key + " for mazes " + existing.mazeIndex() + " and " + mazeIndex);
+				}
+			}
+		}
+		if (map.size() != 24) {
+			throw new IllegalStateException("Expected 24 lookup entries, got " + map.size());
+		}
+		return map;
+	}
+
+	/** All 24 permutations of indices 0,1,2,3 for assigning four values to (up, down, left, right). */
+	private static final int[][] PERMUTATIONS_4 = buildPermutations4();
+
+	private static int[][] buildPermutations4() {
+		List<int[]> list = new ArrayList<>();
+		int[] a = { 0, 1, 2, 3 };
+		permute(a, 0, list);
+		if (list.size() != 24) throw new IllegalStateException("Expected 24 permutations, got " + list.size());
+		return list.toArray(new int[0][]);
+	}
+
+	private static void permute(int[] a, int start, List<int[]> out) {
+		if (start == a.length) {
+			out.add(a.clone());
+			return;
+		}
+		for (int i = start; i < a.length; i++) {
+			swap(a, start, i);
+			permute(a, start + 1, out);
+			swap(a, start, i);
+		}
+	}
+
+	private static void swap(int[] a, int i, int j) {
+		int t = a[i];
+		a[i] = a[j];
+		a[j] = t;
+	}
+
+	/**
+	 * Resolve maze and cell from sphere colour and four unordered distances (steps to wall).
+	 * Tries all 24 permutations of (d1,d2,d3,d4) as (stepsUp, stepsDown, stepsLeft, stepsRight).
+	 * Returns the list of (mazeIndex, cell) that match; caller should require exactly one.
+	 */
+	public static List<SphereIdentificationResult> resolveFromSphereAndDistances(SphereColor sphereColor, int d1, int d2, int d3, int d4) {
+		int[] dist = { d1, d2, d3, d4 };
+		List<SphereIdentificationResult> matches = new ArrayList<>();
+		for (int[] perm : PERMUTATIONS_4) {
+			WallStepsKey key = new WallStepsKey(
+				sphereColor,
+				dist[perm[0]],
+				dist[perm[1]],
+				dist[perm[2]],
+				dist[perm[3]]
+			);
+			SphereIdentificationResult res = SPHERE_WALL_STEPS_LOOKUP.get(key);
+			if (res != null) {
+				matches.add(res);
+			}
+		}
+		return matches;
 	}
 
 	private MouseInTheMazeDefinitions() {

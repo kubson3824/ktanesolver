@@ -4,6 +4,7 @@ package ktanesolver.module.modded.regular.mouseinthemaze;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,14 +41,31 @@ public class MouseInTheMazeSolver extends AbstractModuleSolver<MouseInTheMazeInp
 
 	@Override
 	protected SolveResult<MouseInTheMazeOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, MouseInTheMazeInput input) {
-		int mazeIndex = input.mazeIndex();
-		if (mazeIndex < 1 || mazeIndex > 6) {
-			return failure("mazeIndex must be 1–6");
-		}
+		int mazeIndex;
+		Cell start;
 
-		Cell start = input.start();
-		if (start == null || !inBounds(start)) {
-			return failure("Start position must be row and column 1–10");
+		if (input.useSphereIdentification()) {
+			int[] d = input.stepsToWall();
+			List<MouseInTheMazeDefinitions.SphereIdentificationResult> matches = new ArrayList<>(
+				new LinkedHashSet<>(MouseInTheMazeDefinitions.resolveFromSphereAndDistances(
+					input.sphereColorAtPosition(), d[0], d[1], d[2], d[3])));
+			if (matches.isEmpty()) {
+				return failure("Cannot identify maze; check sphere colour and the four distances.");
+			}
+			if (matches.size() > 1) {
+				return failure("Ambiguous; multiple mazes match. Re-check the four distances.");
+			}
+			mazeIndex = matches.get(0).mazeIndex();
+			start = matches.get(0).cell();
+		} else {
+			if (input.mazeIndex() == null || input.mazeIndex() < 1 || input.mazeIndex() > 6) {
+				return failure("mazeIndex must be 1–6");
+			}
+			mazeIndex = input.mazeIndex();
+			start = input.start();
+			if (start == null || !inBounds(start)) {
+				return failure("Start position must be row and column 1–10");
+			}
 		}
 
 		Direction startDir = input.startDirection() != null ? input.startDirection() : Direction.UP;
@@ -65,7 +83,7 @@ public class MouseInTheMazeSolver extends AbstractModuleSolver<MouseInTheMazeInp
 		}
 
 		storeState(module, "input", input);
-		return success(new MouseInTheMazeOutput(targetSphere, targetCell, path, maze));
+		return success(new MouseInTheMazeOutput(targetSphere, targetCell, path, maze, start));
 	}
 
 	private boolean inBounds(Cell c) {

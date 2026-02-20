@@ -23,15 +23,6 @@ import { useRoundStore } from "../../store/useRoundStore";
 import { cn } from "../../lib/cn";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
-const MAZE_OPTIONS = [
-  { value: 1, label: "1 (GBWY)" },
-  { value: 2, label: "2 (WYBG)" },
-  { value: 3, label: "3 (GBYW)" },
-  { value: 4, label: "4 (YWGB)" },
-  { value: 5, label: "5 (YGBW)" },
-  { value: 6, label: "6 (BYGW)" },
-] as const;
-
 const SPHERE_OPTIONS: { value: SphereColor; label: string }[] = [
   { value: "GREEN", label: "Green" },
   { value: "BLUE", label: "Blue" },
@@ -50,11 +41,12 @@ interface MouseInTheMazeSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
+const STEPS_TO_WALL_INITIAL = [0, 0, 0, 0] as const;
+
 export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps) {
-  const [mazeIndex, setMazeIndex] = useState<number>(1);
+  const [sphereColorAtPosition, setSphereColorAtPosition] = useState<SphereColor>("GREEN");
+  const [stepsToWall, setStepsToWall] = useState<[number, number, number, number]>([...STEPS_TO_WALL_INITIAL]);
   const [torusColor, setTorusColor] = useState<SphereColor>("GREEN");
-  const [startRow, setStartRow] = useState<number>(1);
-  const [startCol, setStartCol] = useState<number>(1);
   const [startDirection, setStartDirection] = useState<Direction>("UP");
   const [result, setResult] = useState<MouseInTheMazeSolveResponse["output"] | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
@@ -76,36 +68,44 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
 
   const moduleState = useMemo(
     () => ({
-      mazeIndex,
+      sphereColorAtPosition,
+      stepsToWall,
       torusColor,
-      startRow,
-      startCol,
       startDirection,
       result,
       twitchCommand,
     }),
-    [mazeIndex, torusColor, startRow, startCol, startDirection, result, twitchCommand]
+    [sphereColorAtPosition, stepsToWall, torusColor, startDirection, result, twitchCommand]
   );
 
   const onRestoreState = useCallback(
     (state: {
-      mazeIndex?: number;
+      sphereColorAtPosition?: SphereColor;
+      stepsToWall?: number[];
       torusColor?: SphereColor;
-      startRow?: number;
-      startCol?: number;
       startDirection?: Direction;
       result?: MouseInTheMazeSolveResponse["output"] | null;
       twitchCommand?: string;
-      input?: { mazeIndex?: number; torusColor?: SphereColor; start?: { row?: number; col?: number }; startDirection?: Direction };
+      input?: {
+        sphereColorAtPosition?: SphereColor;
+        stepsToWall?: number[];
+        torusColor?: SphereColor;
+        startDirection?: Direction;
+      };
     }) => {
-      const mazeIdx = state.mazeIndex ?? state.input?.mazeIndex;
-      if (mazeIdx != null) setMazeIndex(Number(mazeIdx));
+      const sphere = state.sphereColorAtPosition ?? state.input?.sphereColorAtPosition;
+      if (sphere != null && SPHERE_OPTIONS.some((o) => o.value === sphere)) setSphereColorAtPosition(sphere);
+      const steps = state.stepsToWall ?? state.input?.stepsToWall;
+      if (Array.isArray(steps) && steps.length >= 4) {
+        setStepsToWall([
+          clampStep(steps[0]),
+          clampStep(steps[1]),
+          clampStep(steps[2]),
+          clampStep(steps[3]),
+        ]);
+      }
       const torus = state.torusColor ?? state.input?.torusColor;
       if (torus != null && SPHERE_OPTIONS.some((o) => o.value === torus)) setTorusColor(torus);
-      const row = state.startRow ?? state.input?.start?.row;
-      if (row != null) setStartRow(Math.min(10, Math.max(1, Number(row))));
-      const col = state.startCol ?? state.input?.start?.col;
-      if (col != null) setStartCol(Math.min(10, Math.max(1, Number(col))));
       const dir = state.startDirection ?? state.input?.startDirection;
       if (dir != null && DIRECTION_OPTIONS.some((o) => o.value === dir)) setStartDirection(dir);
       if (state.result !== undefined) setResult(state.result);
@@ -113,6 +113,10 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
     },
     []
   );
+
+  function clampStep(n: number): number {
+    return Math.min(9, Math.max(0, Number(n) || 0));
+  }
 
   const onRestoreSolution = useCallback(
     (solution: MouseInTheMazeSolveResponse["output"]) => {
@@ -150,10 +154,6 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
       setError("Missing round, bomb, or module");
       return;
     }
-    if (startRow < 1 || startRow > 10 || startCol < 1 || startCol > 10) {
-      setError("Start row and column must be 1–10");
-      return;
-    }
 
     setIsLoading(true);
     clearError();
@@ -165,10 +165,10 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
         currentModule.id,
         {
           input: {
-            mazeIndex,
             torusColor,
-            start: { row: startRow, col: startCol },
             startDirection,
+            sphereColorAtPosition,
+            stepsToWall: [...stepsToWall],
           },
         }
       );
@@ -188,10 +188,9 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         updateModuleAfterSolve(bomb.id, currentModule.id, {
-          mazeIndex,
+          sphereColorAtPosition,
+          stepsToWall,
           torusColor,
-          startRow,
-          startCol,
           startDirection,
           result: response.output,
           twitchCommand: command,
@@ -205,10 +204,9 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
   };
 
   const reset = () => {
-    setMazeIndex(1);
+    setSphereColorAtPosition("GREEN");
+    setStepsToWall([...STEPS_TO_WALL_INITIAL]);
     setTorusColor("GREEN");
-    setStartRow(1);
-    setStartCol(1);
     setStartDirection("UP");
     setResult(null);
     setTwitchCommand("");
@@ -261,9 +259,12 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
     }
   };
 
+  /** Start cell for path display: from result when using sphere identification, else not applicable. */
+  const startCellForPath = result?.startCell ?? null;
+
   /** Compute path cells and direction from start by applying moves. 1-based row/col. */
   const pathCells = useMemo(() => {
-    if (!result?.moves?.length) return new Map<string, { stepIndex: number; outgoingDir: Direction | null }>();
+    if (!result?.moves?.length || !startCellForPath) return new Map<string, { stepIndex: number; outgoingDir: Direction | null }>();
     const turnLeft = (d: Direction): Direction =>
       d === "UP" ? "LEFT" : d === "LEFT" ? "DOWN" : d === "DOWN" ? "RIGHT" : "UP";
     const turnRight = (d: Direction): Direction =>
@@ -272,8 +273,8 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
       d === "UP" ? [-1, 0] : d === "DOWN" ? [1, 0] : d === "LEFT" ? [0, -1] : [0, 1];
 
     const map = new Map<string, { stepIndex: number; outgoingDir: Direction | null }>();
-    let r = startRow;
-    let c = startCol;
+    let r = startCellForPath.row;
+    let c = startCellForPath.col;
     let dir = startDirection;
     map.set(`${r},${c}`, { stepIndex: 0, outgoingDir: null });
 
@@ -297,7 +298,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
       }
     }
     return map;
-  }, [result?.moves, startRow, startCol, startDirection]);
+  }, [result?.moves, startCellForPath, startDirection]);
 
   const renderMazeGrid = (maze: MouseInTheMazeMaze) => {
     const grid = [];
@@ -311,7 +312,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
         const hasTopWall = row > 0 && maze.horizontalWalls[row - 1]?.[col];
         const hasLeftWall = col > 0 && maze.verticalWalls[row]?.[col - 1];
 
-        const isStart = startRow === r && startCol === c;
+        const isStart = startCellForPath != null && startCellForPath.row === r && startCellForPath.col === c;
         const isTarget = result?.targetCell && result.targetCell.row === r && result.targetCell.col === c;
         const pathInfo = pathCells.get(`${r},${c}`);
         const isOnPath = pathInfo !== undefined;
@@ -368,7 +369,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             aria-colindex={c}
             aria-label={
               isStart
-                ? `Start, row ${r}, column ${c}, facing ${startDirection}`
+                ? `Start (detected), row ${r}, column ${c}, facing ${startDirection}`
                 : isTarget
                   ? `Target sphere, row ${r}, column ${c}`
                   : isOnPath
@@ -429,31 +430,61 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
         <CardHeader>
           <CardTitle>Mouse In The Maze</CardTitle>
           <CardDescription>
-            Select maze, torus color, start position (1–10), and start direction. Solve to get the target sphere and move sequence.
+            Go to the nearest sphere, report its colour and the four distances to the nearest wall (in any order — you don’t need to know which way is “up”). Enter the four distances in any order; the solver will try all combinations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="form-control">
             <label className="label">
-              <span className="label-text">Maze</span>
+              <span className="label-text">Sphere colour at your position</span>
             </label>
-            <select
-              className="select select-bordered w-full max-w-xs"
-              value={mazeIndex}
-              onChange={(e) => setMazeIndex(Number(e.target.value))}
-              disabled={isSolved}
-            >
-              {MAZE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+            <div className="flex flex-wrap gap-2">
+              {SPHERE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSphereColorAtPosition(opt.value)}
+                  disabled={isSolved}
+                  className={`btn btn-sm ${sphereColorAtPosition === opt.value ? "btn-primary" : "btn-outline"}`}
+                >
                   {opt.label}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text">Torus color</span>
+              <span className="label-text">Steps to wall (four distances, any order)</span>
+            </label>
+            <p className="text-sm text-base-content/70 mb-1">Number of moves before hitting a wall or edge in each direction. Enter in any order.</p>
+            <div className="flex flex-wrap gap-2 items-center">
+              {([0, 1, 2, 3] as const).map((i) => (
+                <input
+                  key={i}
+                  type="number"
+                  min={0}
+                  max={9}
+                  className="input input-bordered w-16 text-center"
+                  value={stepsToWall[i]}
+                  onChange={(e) => {
+                    const v = clampStep(Number(e.target.value));
+                    setStepsToWall((prev) => {
+                      const next = [...prev] as [number, number, number, number];
+                      next[i] = v;
+                      return next;
+                    });
+                  }}
+                  disabled={isSolved}
+                  aria-label={`Distance ${i + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Torus colour</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {SPHERE_OPTIONS.map((opt) => (
@@ -467,37 +498,6 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
                   {opt.label}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 max-w-xs">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Start row (1–10)</span>
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                className="input input-bordered w-full"
-                value={startRow}
-                onChange={(e) => setStartRow(Number(e.target.value) || 1)}
-                disabled={isSolved}
-              />
-            </div>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Start col (1–10)</span>
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                className="input input-bordered w-full"
-                value={startCol}
-                onChange={(e) => setStartCol(Number(e.target.value) || 1)}
-                disabled={isSolved}
-              />
             </div>
           </div>
 
