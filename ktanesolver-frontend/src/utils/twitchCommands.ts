@@ -285,6 +285,17 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} go to ${target}${moves}`;
     }
 
+    case ModuleType.THREE_D_MAZE: {
+      const r = result as { goalRow?: number; goalCol?: number; goalDirection?: string | null; moves?: string[]; phase?: string };
+      const row = r?.goalRow ?? "?";
+      const col = r?.goalCol ?? "?";
+      const moves = r?.moves?.length ? ` — ${r.moves.join(" ")}` : "";
+      if (r?.phase === "go_to_star") {
+        return `!${TWITCH_PLACEHOLDER} follow path to star${moves}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} go to (${row},${col}), follow the moves so you face the exit, then go forward${moves}`;
+    }
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;
@@ -358,6 +369,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.TURN_THE_KEYS]: "Turn The Keys",
     [ModuleType.CHESS]: "Chess",
     [ModuleType.MOUSE_IN_THE_MAZE]: "Mouse In The Maze",
+    [ModuleType.THREE_D_MAZE]: "3D Maze",
   };
 
   return displayNames[moduleType] || moduleType;

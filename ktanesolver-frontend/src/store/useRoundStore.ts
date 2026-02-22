@@ -104,6 +104,8 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.TURN_THE_KEYS]: "Turn The Keys",
     [ModuleType.CHESS]: "Chess",
     [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
+    [ModuleType.MOUSE_IN_THE_MAZE]: "Mouse In The Maze",
+    [ModuleType.THREE_D_MAZE]: "3D Maze",
 };
 
 const attachManualUrl = (moduleType: ModuleType) => {

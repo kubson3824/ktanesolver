@@ -51,6 +51,7 @@ export const solverRegistry: Partial<Record<ModuleType, SolverLoader>> = {
   [ModuleType.TURN_THE_KEYS]: () => import("./TurnTheKeysSolver"),
   [ModuleType.CHESS]: () => import("./ChessSolver"),
   [ModuleType.MOUSE_IN_THE_MAZE]: () => import("./MouseInTheMazeSolver"),
+  [ModuleType.THREE_D_MAZE]: () => import("./ThreeDMazeSolver"),
 };
 
 /**
