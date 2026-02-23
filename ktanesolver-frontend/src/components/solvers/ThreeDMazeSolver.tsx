@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   solveThreeDMaze,
   type ThreeDMazeOutput,
+  type ThreeDMazeMaze,
   type ThreeDMazeSolveRequest,
   type ThreeDMazeSolveResponse,
   type MarkerLetter,
@@ -19,6 +20,8 @@ import {
   TwitchCommandDisplay,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { cn } from "../../lib/cn";
 
 const MARKER_LETTERS: MarkerLetter[] = ["A", "B", "C", "D", "H"];
 const GOAL_DIRECTIONS: { value: GoalDirection; label: string }[] = [
@@ -200,6 +203,197 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
     W: "West",
   };
 
+  type Dir = "N" | "S" | "E" | "W";
+  const turnLeft = (d: Dir): Dir =>
+    d === "N" ? "W" : d === "W" ? "S" : d === "S" ? "E" : "N";
+  const turnRight = (d: Dir): Dir =>
+    d === "N" ? "E" : d === "E" ? "S" : d === "S" ? "W" : "N";
+  const delta = (d: Dir): [number, number] =>
+    d === "N" ? [-1, 0] : d === "S" ? [1, 0] : d === "E" ? [0, 1] : [0, -1];
+  const SIZE = 8;
+
+  const pathCells = useMemo(() => {
+    if (
+      !result?.moves?.length ||
+      result.startRow == null ||
+      result.startCol == null ||
+      !result.startFacing
+    )
+      return new Map<string, { stepIndex: number; outgoingDir: Dir | null }>();
+    const dir = result.startFacing as Dir;
+    if (!["N", "S", "E", "W"].includes(dir)) return new Map();
+    const map = new Map<string, { stepIndex: number; outgoingDir: Dir | null }>();
+    let r = result.startRow;
+    let c = result.startCol;
+    let d = dir;
+    map.set(`${r},${c}`, { stepIndex: 0, outgoingDir: null });
+    for (let i = 0; i < result.moves.length; i++) {
+      const move = result.moves[i];
+      if (move === "TURN_LEFT") {
+        d = turnLeft(d);
+      } else if (move === "TURN_RIGHT") {
+        d = turnRight(d);
+      } else if (move === "FORWARD") {
+        const [dr, dc] = delta(d);
+        r = (r + dr + SIZE) % SIZE;
+        c = (c + dc + SIZE) % SIZE;
+        map.set(`${r},${c}`, { stepIndex: i + 1, outgoingDir: d });
+      }
+    }
+    return map;
+  }, [result?.moves, result?.startRow, result?.startCol, result?.startFacing]);
+
+  const DirectionArrow = ({ direction, className }: { direction: Dir; className?: string }) => {
+    const path =
+      direction === "N"
+        ? "M12 4l-8 8h5v8h6v-8h5L12 4z"
+        : direction === "S"
+          ? "M12 20l8-8h-5V4h-6v8H4l8 8z"
+          : direction === "W"
+            ? "M4 12l8 8v-5h8v-6h-8V4L4 12z"
+            : "M20 12l-8-8v5H4v6h8v5l8-8z";
+    return (
+      <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+        <path d={path} />
+      </svg>
+    );
+  };
+
+  const isStarCell = (maze: ThreeDMazeMaze, row: number, col: number): boolean => {
+    const stars = maze.starPositions;
+    if (!stars) return false;
+    return stars.some((s) => s[0] === row && s[1] === col);
+  };
+
+  const renderMazeGrid = (maze: ThreeDMazeMaze) => {
+    const grid: React.ReactNode[] = [];
+    for (let row = 0; row < SIZE; row++) {
+      for (let col = 0; col < SIZE; col++) {
+        const hasBottomWall =
+          row < SIZE - 1 ? maze.horizontalWalls[row]?.[col] : maze.horizontalWalls[7]?.[col];
+        const hasRightWall =
+          col < SIZE - 1 ? maze.verticalWalls[row]?.[col] : maze.verticalWalls[row]?.[7];
+        const hasTopWall =
+          row > 0 ? maze.horizontalWalls[row - 1]?.[col] : maze.horizontalWalls[7]?.[col];
+        const hasLeftWall =
+          col > 0 ? maze.verticalWalls[row]?.[col - 1] : maze.verticalWalls[row]?.[7];
+
+        const isStart =
+          result?.startRow === row && result?.startCol === col;
+        const isGoal = result && result.goalRow === row && result.goalCol === col;
+        const pathInfo = pathCells.get(`${row},${col}`);
+        const isOnPath = pathInfo !== undefined;
+        const isStar = isStarCell(maze, row, col);
+        const letter = maze.letterGrid?.[row]?.[col] ?? null;
+
+        const symbols: React.ReactNode[] = [];
+        const startFacing = result?.startFacing as Dir | undefined;
+        if (isStart && startFacing != null) {
+          symbols.push(
+            <DirectionArrow
+              key="start"
+              direction={startFacing}
+              className="h-6 w-6 shrink-0 text-success-content"
+            />
+          );
+        } else if (isOnPath && pathInfo?.outgoingDir != null) {
+          symbols.push(
+            <DirectionArrow
+              key="path"
+              direction={pathInfo.outgoingDir}
+              className="h-4 w-4 shrink-0 text-success/90"
+            />
+          );
+        }
+        if (isStar) {
+          symbols.push(
+            <span key="star" className="text-amber-400 font-bold text-sm" title="Direction marker">
+              *
+            </span>
+          );
+        }
+        if (letter != null && letter !== "") {
+          symbols.push(
+            <span key="letter" className="text-base-content/90 text-xs font-medium">
+              {letter}
+            </span>
+          );
+        }
+        if (isGoal && result) {
+          symbols.push(
+            <span
+              key="goal"
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-error bg-error/40 text-error-content text-xs font-bold"
+              title="Goal"
+            >
+              ✓
+            </span>
+          );
+        }
+
+        grid.push(
+          <div
+            key={`${row}-${col}`}
+            role="gridcell"
+            aria-rowindex={row}
+            aria-colindex={col}
+            aria-label={
+              isStart
+                ? `Start, row ${row}, column ${col}, facing ${result?.startFacing}`
+                : isGoal
+                  ? `Goal, row ${row}, column ${col}`
+                  : isOnPath
+                    ? `Path step, row ${row}, column ${col}`
+                    : isStar
+                      ? `Direction marker, row ${row}, column ${col}`
+                      : `Cell row ${row}, column ${col}`
+            }
+            className={cn(
+              "relative min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 border border-base-content/25",
+              "flex items-center justify-center",
+              !isStart && !isGoal && !isStar && !isOnPath && "bg-base-300",
+              isStart && "bg-success/40 border-success/50",
+              isGoal && "bg-error/30 border-error/50",
+              isOnPath && !isStart && !isGoal && "bg-success/25 border-success/40",
+              isStar && !isGoal && !isOnPath && "bg-base-200"
+            )}
+          >
+            {(hasRightWall || hasBottomWall || hasLeftWall || hasTopWall) && (
+              <svg
+                viewBox="0 0 1 1"
+                className="absolute pointer-events-none text-base-content"
+                style={{
+                  left: -1,
+                  top: -1,
+                  width: "calc(100% + 2px)",
+                  height: "calc(100% + 2px)",
+                }}
+                preserveAspectRatio="none"
+                stroke="currentColor"
+                strokeWidth={0.12}
+                strokeLinecap="square"
+              >
+                {hasRightWall && <line x1={1} y1={0} x2={1} y2={1} />}
+                {hasBottomWall && <line x1={0} y1={1} x2={1} y2={1} />}
+                {hasLeftWall && <line x1={0} y1={0} x2={0} y2={1} />}
+                {hasTopWall && <line x1={0} y1={0} x2={1} y2={0} />}
+              </svg>
+            )}
+            {symbols.length > 0 && (
+              <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-0.5 p-0.5">
+                {symbols}
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+    return grid;
+  };
+
+  const mazeGridId = "threed-maze-grid";
+  const mazeGridDescId = "threed-maze-grid-desc";
+
   return (
     <SolverLayout>
       <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
@@ -318,6 +512,54 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
       </div>
 
       <ErrorAlert error={error} />
+
+      {result?.maze && (
+        <Card className="mb-4 mt-6">
+          <CardHeader>
+            <CardTitle className="text-center">Maze</CardTitle>
+            <CardDescription id={mazeGridDescId} className="text-center">
+              8×8 grid: start (arrow), path (green), stars (*), letters, goal (✓). Rows and columns wrap.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div
+              id={mazeGridId}
+              role="grid"
+              aria-label="Maze grid, 8 by 8 cells"
+              aria-describedby={mazeGridDescId}
+              className="relative inline-grid max-w-2xl mx-auto border-2 border-base-content/40 rounded overflow-hidden bg-base-content/10"
+              style={{
+                gridTemplateColumns: "auto repeat(8, 1fr)",
+                gridTemplateRows: "auto repeat(8, 1fr)",
+              }}
+            >
+              <div className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 bg-base-300" aria-hidden />
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((c) => (
+                <div
+                  key={`col-${c}`}
+                  className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 flex items-center justify-center bg-base-300 text-xs text-base-content/70 font-medium"
+                  aria-hidden
+                >
+                  {c}
+                </div>
+              ))}
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((row) => (
+                <Fragment key={`row-${row}`}>
+                  <div
+                    className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 flex items-center justify-center bg-base-300 text-xs text-base-content/70 font-medium"
+                    aria-hidden
+                  >
+                    {row}
+                  </div>
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((col) =>
+                    renderMazeGrid(result.maze!)[row * SIZE + col]
+                  )}
+                </Fragment>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {result && (
         <div className="rounded-xl border-2 border-green-700/50 bg-neutral-700/95 shadow-lg p-5 text-neutral-100 mt-6">

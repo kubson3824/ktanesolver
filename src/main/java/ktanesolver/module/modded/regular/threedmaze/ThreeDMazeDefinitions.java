@@ -170,24 +170,165 @@ public final class ThreeDMazeDefinitions {
 		// Override cells that differ from the default in the module's letter layout (if any are documented)
 		letters[0][5] = "A";
 		letters[1][2] = "A";
+		letters[1][7] = "B";
 		letters[2][0] = "A";
 		letters[2][3] = "B";
+		letters[2][5] = "C";
+		letters[3][1] = "C";
+		letters[3][7] = "B";
 		letters[4][4] = "A";
-		// (5,1) and (7,4) share the same distance signature as (2,3); use different letters so B at (2,3) is unique
-		letters[5][1] = "A";
-		letters[7][4] = "C";
+		letters[5][1] = "B";
+		letters[5][3] = "C";
+		letters[5][6] = "B";
+		letters[6][2] = "C";
+		letters[7][4] = "A";
+		letters[7][6] = "C";
 
 		return new ThreeDMazeMaze(horizontalWalls, verticalWalls, stars, letters);
 	}
 
 	private static ThreeDMazeMaze abdMaze() {
-		int[][] stars = new int[][] {{0, 5}, {4, 3}, {7, 4}};
-		return randomMaze(0xABD, stars, createDefaultLetterGrid("A,B,D", stars));
+		int[][] stars = new int[][] {{0, 7}, {4, 2}, {7, 4}};
+		boolean[][] horizontalWalls = createHorizontalWalls();
+		boolean[][] verticalWalls = createVerticalWalls();
+
+		//Walls looped around
+		wallBetweenRows(horizontalWalls, 7, 0);
+		wallBetweenRows(horizontalWalls, 7, 2);
+		wallBetweenRows(horizontalWalls, 7, 6, 7);
+		//Walls looped sideways
+		wallBetweenCols(verticalWalls, 7, 0, 1);
+		wallBetweenCols(verticalWalls, 7, 4);
+
+		wallBetweenRows(horizontalWalls, 0, 1, 2);
+		wallBetweenRows(horizontalWalls, 0, 5);
+
+		wallBetweenRows(horizontalWalls, 1, 3, 4);
+		wallBetweenRows(horizontalWalls, 1, 6);
+
+		wallBetweenRows(horizontalWalls, 2, 2);
+
+		wallBetweenRows(horizontalWalls, 3, 0, 2);
+		wallBetweenRows(horizontalWalls, 3, 5, 6);
+
+		wallBetweenRows(horizontalWalls, 4, 3);
+		wallBetweenRows(horizontalWalls, 4, 5);
+
+		wallBetweenRows(horizontalWalls, 5, 0);
+		wallBetweenRows(horizontalWalls, 5, 2);
+		wallBetweenRows(horizontalWalls, 5, 7);
+
+		wallBetweenRows(horizontalWalls, 6, 3, 1);
+
+		wallBetweenCols(verticalWalls, 0, 1);
+		wallBetweenCols(verticalWalls, 0, 3);
+		wallBetweenCols(verticalWalls, 0, 6);
+		
+		wallBetweenCols(verticalWalls, 2, 2);
+		wallBetweenCols(verticalWalls, 2, 4, 5);
+		wallBetweenCols(verticalWalls, 2, 7);
+
+		wallBetweenCols(verticalWalls, 4, 1);
+		wallBetweenCols(verticalWalls, 4, 3);
+		wallBetweenCols(verticalWalls, 4, 5, 7);
+		wallBetweenCols(verticalWalls, 5, 0);
+		wallBetweenCols(verticalWalls, 6, 2);
+		wallBetweenCols(verticalWalls, 6, 4);
+		wallBetweenCols(verticalWalls, 6, 6);
+
+		// Stars (direction markers) and floor letters for this maze (full grid so position-from-distances works)
+		String[][] letters = new String[SIZE][SIZE];
+		// Override cells that differ from the default in the module's letter layout (if any are documented)
+		letters[0][0] = "A";
+		letters[0][3] = "B";
+		letters[0][6] = "A";
+		letters[1][2] = "D";
+		letters[2][5] = "D";
+		letters[2][7] = "B";
+		letters[3][1] = "A";
+		letters[3][3] = "B";
+		letters[4][6] = "A";
+		letters[5][0] = "D";
+		letters[5][4] = "A";
+		letters[6][2] = "B";
+		letters[6][5] = "D";
+		letters[7][1] = "D";
+		letters[7][7] = "B";
+
+		return new ThreeDMazeMaze(horizontalWalls, verticalWalls, stars, letters);
 	}
 
+	//TODO: ABH, ACD, ACH, ADH, BCD, BCH, BDH, CDH
 	private static ThreeDMazeMaze abhMaze() {
-		int[][] stars = new int[][] {{1, 1}, {3, 3}, {6, 4}};
-		return randomMaze(0xABA, stars, createDefaultLetterGrid("A,B,H", stars));
+		int[][] stars = new int[][] {{1, 0}, {3, 4}, {6, 5}};
+
+		boolean[][] horizontalWalls = createHorizontalWalls();
+		boolean[][] verticalWalls = createVerticalWalls();
+
+		//Walls looped around
+		wallBetweenRows(horizontalWalls, 7, 0, 2);
+		wallBetweenRows(horizontalWalls, 7, 4);
+		wallBetweenRows(horizontalWalls, 7, 6, 7);
+		//Walls looped sideways
+		wallBetweenCols(verticalWalls, 7, 0);
+		wallBetweenCols(verticalWalls, 7, 3, 5);
+
+		wallBetweenRows(horizontalWalls, 0, 1, 2);
+		wallBetweenRows(horizontalWalls, 0, 5);
+
+		wallBetweenRows(horizontalWalls, 1, 3, 4);
+		wallBetweenRows(horizontalWalls, 1, 6);
+
+		wallBetweenRows(horizontalWalls, 2, 2);
+
+		wallBetweenRows(horizontalWalls, 3, 0, 2);
+		wallBetweenRows(horizontalWalls, 3, 5, 6);
+
+		wallBetweenRows(horizontalWalls, 4, 3);
+		wallBetweenRows(horizontalWalls, 4, 5);
+
+		wallBetweenRows(horizontalWalls, 5, 0);
+		wallBetweenRows(horizontalWalls, 5, 2);
+		wallBetweenRows(horizontalWalls, 5, 7);
+
+		wallBetweenRows(horizontalWalls, 6, 3, 1);
+
+		wallBetweenCols(verticalWalls, 0, 1);
+		wallBetweenCols(verticalWalls, 0, 3);
+		wallBetweenCols(verticalWalls, 0, 6);
+
+		wallBetweenCols(verticalWalls, 2, 2);
+		wallBetweenCols(verticalWalls, 2, 4, 5);
+		wallBetweenCols(verticalWalls, 2, 7);
+
+		wallBetweenCols(verticalWalls, 4, 1);
+		wallBetweenCols(verticalWalls, 4, 3);
+		wallBetweenCols(verticalWalls, 4, 5, 7);
+		wallBetweenCols(verticalWalls, 5, 0);
+		wallBetweenCols(verticalWalls, 6, 2);
+		wallBetweenCols(verticalWalls, 6, 4);
+		wallBetweenCols(verticalWalls, 6, 6);
+
+		// Stars (direction markers) and floor letters for this maze (full grid so position-from-distances works)
+		String[][] letters = new String[SIZE][SIZE];
+		// Override cells that differ from the default in the module's letter layout (if any are documented)
+		letters[0][0] = "A";
+		letters[0][3] = "B";
+		letters[0][6] = "A";
+		letters[1][2] = "D";
+		letters[2][5] = "D";
+		letters[2][7] = "B";
+		letters[3][1] = "A";
+		letters[3][3] = "B";
+		letters[4][6] = "A";
+		letters[5][0] = "D";
+		letters[5][4] = "A";
+		letters[6][2] = "B";
+		letters[6][5] = "D";
+		letters[7][1] = "D";
+		letters[7][7] = "B";
+
+		return new ThreeDMazeMaze(horizontalWalls, verticalWalls, stars, letters);
 	}
 
 	private static ThreeDMazeMaze acdMaze() {

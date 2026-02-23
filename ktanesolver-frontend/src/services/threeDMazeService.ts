@@ -5,6 +5,14 @@ export type GoalDirection = "N" | "S" | "E" | "W";
 
 export type ThreeDMazeMove = "FORWARD" | "TURN_LEFT" | "TURN_RIGHT";
 
+/** 8×8 maze: walls, star positions [row,col] 0-based, optional letter per cell. Used for finished maze display. */
+export interface ThreeDMazeMaze {
+  horizontalWalls: boolean[][];
+  verticalWalls: boolean[][];
+  starPositions: number[][];
+  letterGrid: (string | null)[][] | null;
+}
+
 export interface ThreeDMazeInput {
   /** Three marker letters (A/B/C/D/H) the defuser sees at the three star positions; order does not matter. */
   starLetters: [string, string, string];
@@ -29,6 +37,8 @@ export interface ThreeDMazeOutput {
   /** "go_to_star" = path to nearest direction marker; "go_to_goal" = path to goal wall. */
   phase?: string;
   message?: string;
+  /** Maze layout when a path was returned; for UI grid display. */
+  maze?: ThreeDMazeMaze;
 }
 
 export interface ThreeDMazeSolveRequest {

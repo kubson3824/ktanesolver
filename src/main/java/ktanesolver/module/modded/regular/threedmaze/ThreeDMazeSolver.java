@@ -153,7 +153,8 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 				goalRow, goalCol, null,
 				bestPath, startRow, startCol, startFacing,
 				"go_to_star",
-				"Report the direction (N/S/E/W) when you reach the star, then solve again with that direction."
+				"Report the direction (N/S/E/W) when you reach the star, then solve again with that direction.",
+				maze
 			));
 		}
 
@@ -165,7 +166,8 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 		return success(new ThreeDMazeOutput(
 			goalRow, goalCol, goalDirection, moves, startRow, startCol, startFacing,
 			"go_to_goal",
-			"Follow the moves to the goal cell (you will end facing the exit); then go forward through the wall."
+			"Follow the moves to the goal cell (you will end facing the exit); then go forward through the wall.",
+			maze
 		));
 	}
 
