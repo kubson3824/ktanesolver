@@ -105,6 +105,7 @@ const moduleManualNames: Record<ModuleType, string> = {
     [ModuleType.CHESS]: "Chess",
     [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
     [ModuleType.MOUSE_IN_THE_MAZE]: "Mouse In The Maze",
+    [ModuleType.SILLY_SLOTS]: "Silly Slots",
     [ModuleType.THREE_D_MAZE]: "3D Maze",
 };
 
@@ -114,7 +115,7 @@ const attachManualUrl = (moduleType: ModuleType) => {
         console.warn(`No manual name found for module type: ${moduleType}`);
         return undefined;
     }
-    return `https://ktane.timwi.de/html/${moduleName.replaceAll(" ", "%20")}.html`;
+    return `https://ktane.timwi.de/HTML/${moduleName.replaceAll(" ", "%20")}.html`;
 };
 
 export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
