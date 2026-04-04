@@ -296,6 +296,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} go to (${row},${col}), follow the moves so you face the exit, then go forward${moves}`;
     }
 
+    case ModuleType.SIMON_STATES:
+      return `!${TWITCH_PLACEHOLDER} press ${(result as { press: string }).press}`;
+
     case ModuleType.SILLY_SLOTS: {
       const legal = (result as { legal?: boolean }).legal;
       return legal ? `!${TWITCH_PLACEHOLDER} press KEEP` : `!${TWITCH_PLACEHOLDER} pull lever`;
@@ -376,6 +379,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.MOUSE_IN_THE_MAZE]: "Mouse In The Maze",
     [ModuleType.SILLY_SLOTS]: "Silly Slots",
     [ModuleType.THREE_D_MAZE]: "3D Maze",
+    [ModuleType.SIMON_STATES]: "Simon States",
   };
 
   return displayNames[moduleType] || moduleType;

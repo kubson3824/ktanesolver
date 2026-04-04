@@ -46,6 +46,7 @@ export enum ModuleType {
   MOUSE_IN_THE_MAZE = "MOUSE_IN_THE_MAZE",
   SILLY_SLOTS = "SILLY_SLOTS",
   THREE_D_MAZE = "THREE_D_MAZE",
+  SIMON_STATES = "SIMON_STATES",
 }
 
 export enum PortType {
