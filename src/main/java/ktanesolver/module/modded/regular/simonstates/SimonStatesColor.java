@@ -1,5 +1,5 @@
 
-package ktanesolver.module.vanilla.regular.simonstates;
+package ktanesolver.module.modded.regular.simonstates;
 
 public enum SimonStatesColor {
 	RED, BLUE, GREEN, YELLOW

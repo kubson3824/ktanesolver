@@ -1,5 +1,5 @@
 
-package ktanesolver.module.vanilla.regular.simonstates;
+package ktanesolver.module.modded.regular.simonstates;
 
 import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.dto.ModuleCatalogDto;
@@ -21,9 +21,9 @@ import java.util.Set;
 	type = ModuleType.SIMON_STATES,
 	id = "simon_states",
 	name = "Simon States",
-	category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR,
+	category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
 	description = "Four-stage colour sequence puzzle using a priority table based on the top-left button colour",
-	tags = {"blue", "red", "yellow", "green", "blinking", "stages", "priority"}
+	tags = {"blue", "red", "yellow", "green", "blinking", "stages", "priority", "modded"}
 )
 public class SimonStatesSolver extends AbstractModuleSolver<SimonStatesInput, SimonStatesOutput> {
 
