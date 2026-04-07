@@ -49,6 +49,11 @@ public class ModuleController {
 
 	@GetMapping("/{moduleId}")
 	public ModuleEntity getModule(@PathVariable UUID bombId, @PathVariable UUID moduleId) {
-		return moduleRepo.findById(moduleId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));
+		ModuleEntity module = moduleRepo.findByIdWithBomb(moduleId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));
+		if (!module.getBomb().getId().equals(bombId)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+		}
+		return module;
 	}
 }
