@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { type ModuleCatalogItem, ModuleCategory } from "../types";
+import { useCatalogStore } from "../store/useCatalogStore";
 
 interface ModuleSelectorProps {
   onSelectionChange: (selectedModules: Record<string, number>) => void;
@@ -21,8 +22,10 @@ const categoryColors = {
 };
 
 export default function ModuleSelector({ onSelectionChange, initialCounts = {} }: ModuleSelectorProps) {
-  const [modules, setModules] = useState<ModuleCatalogItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const modules = useCatalogStore((state) => state.catalog);
+  const catalogLoaded = useCatalogStore((state) => state.loaded);
+  const catalogLoading = useCatalogStore((state) => state.loading);
+  const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ModuleCategory | "ALL">("ALL");
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
@@ -30,20 +33,10 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "category">("name-asc");
 
   useEffect(() => {
-    fetchModules();
-  }, []);
-
-  const fetchModules = async () => {
-    try {
-      const response = await fetch("/api/modules");
-      const data = await response.json();
-      setModules(data);
-    } catch (error) {
-      console.error("Failed to fetch modules:", error);
-    } finally {
-      setLoading(false);
+    if (!catalogLoaded && !catalogLoading) {
+      void fetchCatalog();
     }
-  };
+  }, [catalogLoaded, catalogLoading, fetchCatalog]);
 
   const filteredModules = useMemo(() => {
     let filtered = modules;
@@ -122,7 +115,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
 
   const totalCount = Object.values(selectedModules).reduce((sum, count) => sum + count, 0);
 
-  if (loading) {
+  if (catalogLoading && modules.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="loading loading-spinner loading-lg"></span>

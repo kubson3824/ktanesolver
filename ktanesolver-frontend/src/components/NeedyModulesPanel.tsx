@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { BombEntity, ModuleEntity } from "../types";
-import KnobsSolver from "./solvers/KnobsSolver";
-import CapacitorDischargeSolver from "./solvers/CapacitorDischargeSolver";
-import VentingGasSolver from "./solvers/VentingGasSolver";
 import { formatModuleDisplayName } from "../lib/utils";
+import { lazySolverRegistry } from "./solvers/registry";
 
 interface NeedyModulesPanelProps {
     needyModules: ModuleEntity[];
@@ -59,23 +57,30 @@ export default function NeedyModulesPanel({
     const renderModuleSolver = () => {
         if (!selectedModule) return null;
 
-        switch (selectedModule.type) {
-            case "KNOBS":
-                return <KnobsSolver bomb={bomb} />;
-            case "CAPACITOR_DISCHARGE":
-                return <CapacitorDischargeSolver />;
-            case "VENTING_GAS":
-                return <VentingGasSolver />;
-            default:
-                return (
-                    <div className="text-center py-12">
-                        <p className="text-sm text-secondary mb-2">Coming soon</p>
-                        <p className="text-base-content/70">
-                            This needy module solver is not yet implemented.
-                        </p>
-                    </div>
-                );
+        const SolverComponent = lazySolverRegistry[selectedModule.type] ?? null;
+        if (!SolverComponent) {
+            return (
+                <div className="text-center py-12">
+                    <p className="text-sm text-secondary mb-2">Coming soon</p>
+                    <p className="text-base-content/70">
+                        This needy module solver is not yet implemented.
+                    </p>
+                </div>
+            );
         }
+
+        return (
+            <Suspense
+                fallback={
+                    <div className="flex items-center justify-center py-12 gap-2">
+                        <span className="loading loading-spinner loading-md text-primary"></span>
+                        <span className="text-sm text-base-content/70">Loading solver...</span>
+                    </div>
+                }
+            >
+                <SolverComponent bomb={bomb} />
+            </Suspense>
+        );
     };
 
     return (
