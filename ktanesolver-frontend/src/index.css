@@ -72,6 +72,9 @@
   .font-display {
     font-family: 'Oswald', sans-serif;
   }
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
 
   /* ── Section divider (horizontal rule with thick top line) */
   .section-divider {
