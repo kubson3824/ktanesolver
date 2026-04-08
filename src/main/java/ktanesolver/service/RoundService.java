@@ -48,7 +48,7 @@ public class RoundService {
 		return roundRepo.save(round);
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public RoundEntity getRound(UUID roundId) {
 		return roundRepo.findById(roundId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Round not found"));
 	}
@@ -73,7 +73,7 @@ public class RoundService {
 		roundRepo.save(round);
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public List<RoundEntity> getAllRounds() {
 		return roundRepo.findAll();
 	}
