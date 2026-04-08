@@ -1,14 +1,27 @@
 import { forwardRef, type HTMLAttributes } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/cn";
 
-const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+const cardVariants = cva("rounded-sm", {
+  variants: {
+    variant: {
+      default: "bg-white border border-base-content shadow-card",
+      flat:    "bg-white border border-base-300",
+      inset:   "bg-base-200 border border-base-300",
+    }
+  },
+  defaultVariants: { variant: "default" }
+});
+
+export interface CardProps
+  extends HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        "rounded-lg border border-base-300 bg-base-200 shadow-sm",
-        className
-      )}
+      className={cn(cardVariants({ variant }), className)}
       {...props}
     />
   )
@@ -19,7 +32,7 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex flex-col space-y-1.5 p-4 sm:p-6", className)}
+      className={cn("bg-base-200 border-b border-base-300 px-4 py-3", className)}
       {...props}
     />
   )
@@ -30,7 +43,7 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+      className={cn("font-semibold text-base text-base-content", className)}
       {...props}
     />
   )
@@ -50,7 +63,7 @@ CardDescription.displayName = "CardDescription";
 
 const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-4 sm:p-6 pt-0", className)} {...props} />
+    <div ref={ref} className={cn("p-4", className)} {...props} />
   )
 );
 CardContent.displayName = "CardContent";
@@ -59,11 +72,11 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex items-center p-4 sm:p-6 pt-0", className)}
+      className={cn("bg-base-200 border-t border-base-300 px-4 py-3 flex justify-end gap-2", className)}
       {...props}
     />
   )
 );
 CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, cardVariants };

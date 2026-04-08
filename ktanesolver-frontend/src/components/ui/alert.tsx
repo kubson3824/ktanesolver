@@ -2,23 +2,18 @@ import { forwardRef, type HTMLAttributes } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/cn";
 
-const alertVariants = cva(
-  "relative w-full rounded-lg border p-4 text-sm [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-current",
-  {
-    variants: {
-      variant: {
-        default: "bg-base-200 border-base-300 text-base-content",
-        error: "bg-error/10 border-error/30 text-error",
-        success: "bg-success/10 border-success/30 text-success",
-        warning: "bg-warning/10 border-warning/30 text-warning",
-        info: "bg-info/10 border-info/30 text-info",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+const alertVariants = cva("callout rounded-sm", {
+  variants: {
+    variant: {
+      default:     "callout-info",
+      destructive: "callout-error",
+      error:       "callout-error",
+      warning:     "callout-warning",
+      success:     "callout-success",
+    }
+  },
+  defaultVariants: { variant: "default" }
+});
 
 const Alert = forwardRef<
   HTMLDivElement,
@@ -37,7 +32,7 @@ const AlertTitle = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLHeadingEl
   ({ className, ...props }, ref) => (
     <h5
       ref={ref}
-      className={cn("mb-1 font-medium leading-none tracking-tight", className)}
+      className={cn("mb-1 font-semibold leading-none", className)}
       {...props}
     />
   )
