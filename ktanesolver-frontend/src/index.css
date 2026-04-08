@@ -1,87 +1,187 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Music notation fonts (for Cruel Piano Keys module) */
+@font-face {
+  font-family: "OpusStd";
+  src: url("/font/OpusStd.otf") format("opentype");
+}
+@font-face {
+  font-family: "OpusChordsSansStd";
+  src: url("/font/OpusChordsSansStd.otf") format("opentype");
+}
+
 @layer base {
   :root {
-    font-family: "Space Grotesk", sans-serif;
-    color: theme("colors.base-content");
+    font-family: 'Inter', sans-serif;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   * {
-    @apply border-neutral;
+    box-sizing: border-box;
   }
 
   body {
-    @apply min-h-screen bg-gradient-radial text-base-content m-0;
+    background-color: #F9F6EE;
+    color: #1C1917;
+    min-height: 100vh;
+    margin: 0;
   }
 
   #root {
-    @apply min-h-screen;
+    min-height: 100vh;
+  }
+
+  h1, h2 {
+    font-family: 'Oswald', sans-serif;
   }
 
   a {
-    @apply text-base-content no-underline;
+    color: inherit;
+    text-decoration: none;
   }
 
   button {
-    @apply font-sans;
+    font-family: 'Inter', sans-serif;
   }
 
-  /* Smooth scroll for better UX */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Focus-visible for keyboard navigation */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-base-100;
-    --tw-ring-opacity: 0.5;
+    outline: 2px solid #C41230;
+    outline-offset: 2px;
   }
 
-  /* Reduce motion when user prefers */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
     }
   }
 }
 
-/* Cruel Piano Keys / manual-style music symbols (from ktane.timwi.de) */
-@font-face {
-  font-family: "OpusStd";
-  src: url("/font/OpusStd.otf") format("opentype");
-}
+@layer components {
+  /* ── Typography utilities ──────────────────────────────── */
+  .font-display {
+    font-family: 'Oswald', sans-serif;
+  }
 
-@font-face {
-  font-family: "OpusChordsSansStd";
-  src: url("/font/OpusChordsSansStd.otf") format("opentype");
-}
+  /* ── Section divider (horizontal rule with thick top line) */
+  .section-divider {
+    border-top: 2px solid #1C1917;
+    margin-bottom: 1.5rem;
+    padding-top: 0.25rem;
+  }
 
-.music-symbol {
-  font-family: "OpusStd", sans-serif;
-  font-size: 1.6em;
-  position: relative;
-  top: -0.2em;
-}
+  /* ── Stamp label (uppercase tight tracking, bordered) ─── */
+  .stamp {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: 1px solid currentColor;
+    line-height: 1.4;
+  }
 
-.music-chord {
-  font-family: "OpusChordsSansStd", sans-serif;
-  word-spacing: 0.3em;
-}
+  /* ── Card with offset shadow (main card style) ──────────── */
+  .card-manual {
+    background-color: #FFFFFF;
+    border: 1px solid #1C1917;
+    border-radius: 2px;
+    box-shadow: 2px 2px 0 #1C1917;
+  }
 
-@layer utilities {
-  /* Skip link utility */
+  /* ── Alert / callout box (KTANE manual style) ────────────── */
+  .callout {
+    border-left-width: 4px;
+    border-left-style: solid;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .callout-error {
+    background-color: #FEF2F2;
+    border-left-color: #C41230;
+    color: #7F1D1D;
+  }
+  .callout-warning {
+    background-color: #FFFBEB;
+    border-left-color: #B45309;
+    color: #78350F;
+  }
+  .callout-success {
+    background-color: #F0FDF4;
+    border-left-color: #15803D;
+    color: #14532D;
+  }
+  .callout-info {
+    background-color: #EFF6FF;
+    border-left-color: #1D4ED8;
+    color: #1E3A8A;
+  }
+
+  /* ── Page title (Oswald bold + uppercase) ────────────────── */
+  .page-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    color: #1C1917;
+  }
+
+  /* ── Section heading (Oswald small caps) ────────────────── */
+  .section-heading {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #1C1917;
+  }
+
+  /* ── Skip link for keyboard navigation ──────────────────── */
   .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-content focus:rounded-md focus:shadow-lg;
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .skip-link:focus {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 9999;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 1rem;
+    background: #C41230;
+    color: white;
+    font-weight: 600;
+    border-radius: 2px;
+  }
+
+  /* ── Music notation ──────────────────────────────────────── */
+  .music-symbol {
+    font-family: 'OpusStd', sans-serif;
+    font-size: 1.6em;
+    position: relative;
+    top: -0.2em;
+  }
+  .music-chord {
+    font-family: 'OpusChordsSansStd', sans-serif;
+    word-spacing: 0.3em;
   }
 }
