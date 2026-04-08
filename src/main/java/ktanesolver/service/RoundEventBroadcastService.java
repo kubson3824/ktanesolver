@@ -11,7 +11,6 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import ktanesolver.dto.RoundEventDto;
-import ktanesolver.enums.EventType;
 import ktanesolver.event.RoundStateChangedEvent;
 import lombok.RequiredArgsConstructor;
 
