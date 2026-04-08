@@ -28,7 +28,7 @@ public class RoundController {
 
 	@GetMapping ("/{roundId}")
 	public RoundEntity getRound(@PathVariable UUID roundId) {
-		return roundService.getRound(roundId);
+		return roundService.getRoundWithDetails(roundId);
 	}
 
 	@GetMapping ("/{roundId}/events")

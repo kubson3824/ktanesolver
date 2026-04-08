@@ -53,6 +53,12 @@ public class RoundService {
 		return roundRepo.findById(roundId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Round not found"));
 	}
 
+	@Transactional(readOnly = true)
+	public RoundEntity getRoundWithDetails(UUID roundId) {
+		return roundRepo.findByIdWithDetails(roundId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Round not found"));
+	}
+
 	@Transactional
 	public void completeRound(UUID roundId) {
 		RoundEntity round = getRound(roundId);
