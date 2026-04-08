@@ -10,6 +10,7 @@ import {
 
 } from "../types";
 import {api, debugModuleSync, withErrorWrapping} from "../lib/api";
+import {useCatalogStore} from "./useCatalogStore";
 
 type RoundStoreState = {
     round?: RoundEntity;
@@ -59,63 +60,14 @@ type RoundStoreActions = {
     addStrike: (bombId: string) => Promise<BombEntity>;
 };
 
-const moduleManualNames: Record<ModuleType, string> = {
-    [ModuleType.WIRES]: "Wires",
-    [ModuleType.BUTTON]: "The Button",
-    [ModuleType.KEYPADS]: "Keypad",
-    [ModuleType.MEMORY]: "Memory",
-    [ModuleType.SIMON_SAYS]: "Simon Says",
-    [ModuleType.MORSE_CODE]: "Morse Code",
-    [ModuleType.FORGET_ME_NOT]: "Forget Me Not",
-    [ModuleType.WHOS_ON_FIRST]: "Who's on First",
-    [ModuleType.VENTING_GAS]: "Venting Gas",
-    [ModuleType.CAPACITOR_DISCHARGE]: "Capacitor Discharge",
-    [ModuleType.COMPLICATED_WIRES]: "Complicated Wires",
-    [ModuleType.WIRE_SEQUENCES]: "Wire Sequence",
-    [ModuleType.PASSWORDS]: "Password",
-    [ModuleType.MAZES]: "Maze",
-    [ModuleType.KNOBS]: "Knobs",
-    [ModuleType.COLOR_FLASH]: "Colour Flash",
-    [ModuleType.PIANO_KEYS]: "Piano Keys",
-    [ModuleType.SEMAPHORE]: "Semaphore",
-    [ModuleType.MATH]: "Math",
-    [ModuleType.EMOJI_MATH]: "Emoji Math",
-    [ModuleType.SWITCHES]: "Switches",
-    [ModuleType.TWO_BITS]: "Two Bits",
-    [ModuleType.WORD_SCRAMBLE]: "Word Scramble",
-    [ModuleType.ROUND_KEYPAD]: "Round Keypad",
-    [ModuleType.ANAGRAMS]: "Anagrams",
-    [ModuleType.COMBINATION_LOCK]: "Combination Lock",
-    [ModuleType.LISTENING]: "Listening",
-    [ModuleType.FOREIGN_EXCHANGE_RATES]: "Foreign Exchange Rates",
-    [ModuleType.MORSEMATICS]: "Morsematics",
-    [ModuleType.CONNECTION_CHECK]: "Connection Check",
-    [ModuleType.LETTER_KEYS]: "Letter Keys",
-    [ModuleType.LOGIC]: "Logic",
-    [ModuleType.ASTROLOGY]: "Astrology",
-    [ModuleType.MYSTIC_SQUARE]: "Mystic Square",
-    [ModuleType.CRAZY_TALK]: "Crazy Talk",
-    [ModuleType.ADVENTURE_GAME]: "Adventure Game",
-    [ModuleType.PLUMBING]: "Plumbing",
-    [ModuleType.CRUEL_PIANO_KEYS]: "Cruel Piano Keys",
-    [ModuleType.SAFETY_SAFE]: "Safety Safe",
-    [ModuleType.CRYPTOGRAPHY]: "Cryptography",
-    [ModuleType.TURN_THE_KEY]: "Turn The Key",
-    [ModuleType.TURN_THE_KEYS]: "Turn The Keys",
-    [ModuleType.CHESS]: "Chess",
-    [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",
-    [ModuleType.MOUSE_IN_THE_MAZE]: "Mouse In The Maze",
-    [ModuleType.SILLY_SLOTS]: "Silly Slots",
-    [ModuleType.THREE_D_MAZE]: "3D Maze",
-};
-
-const attachManualUrl = (moduleType: ModuleType) => {
-    const moduleName = moduleManualNames[moduleType];
-    if (!moduleName) {
-        console.warn(`No manual name found for module type: ${moduleType}`);
+const attachManualUrl = (moduleType: ModuleType): string | undefined => {
+    const { catalog } = useCatalogStore.getState();
+    const item = catalog.find((m) => m.type === moduleType);
+    if (!item) {
+        console.warn(`No catalog entry found for module type: ${moduleType}`);
         return undefined;
     }
-    return `https://ktane.timwi.de/HTML/${moduleName.replaceAll(" ", "%20")}.html`;
+    return `https://ktane.timwi.de/HTML/${item.name.replaceAll(" ", "%20")}.html`;
 };
 
 export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(

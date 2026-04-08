@@ -1,7 +1,8 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { useCatalogStore } from "./store/useCatalogStore";
 
 // Route-level code splitting
 const MainPage = lazy(() => import("./pages/MainPage"));
@@ -21,6 +22,12 @@ function PageLoadingFallback() {
 }
 
 export default function App() {
+  const fetchCatalog = useCatalogStore((s) => s.fetchCatalog);
+
+  useEffect(() => {
+    fetchCatalog();
+  }, [fetchCatalog]);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
