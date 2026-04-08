@@ -81,24 +81,22 @@ public class BombEntity {
 
 	@JsonIgnore
 	public boolean isIndicatorLit(String indicator) {
-		Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
-		return indicatorStatus != null && indicatorStatus;
+		return Boolean.TRUE.equals(indicators.get(indicator));
 	}
 
 	@JsonIgnore
 	public boolean isIndicatorUnlit(String indicator) {
-		Boolean indicatorStatus = indicators.getOrDefault(indicator, null);
-		return indicatorStatus != null && !indicatorStatus;
+		return Boolean.FALSE.equals(indicators.get(indicator));
 	}
 
 	@JsonIgnore
 	public boolean isLastDigitOdd() {
-		return serialNumber.chars().filter(Character::isDigit).map(c -> c - '0').reduce((a, b) -> b).orElse(0) % 2 == 1;
+		return getLastDigit() % 2 == 1;
 	}
 
 	@JsonIgnore
 	public boolean isLastDigitEven() {
-		return !isLastDigitOdd();
+		return getLastDigit() % 2 == 0;
 	}
 
 	@JsonIgnore
