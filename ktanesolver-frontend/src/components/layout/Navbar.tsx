@@ -4,7 +4,7 @@ import { useRoundStore } from "../../store/useRoundStore";
 import { StrikeIndicator } from "../StrikeIndicator";
 import { StrikeButton } from "../StrikeButton";
 import Breadcrumb from "./Breadcrumb";
-import { formatModuleName, formatRoundLabel, formatModuleDisplayName } from "../../lib/utils";
+import { formatRoundLabel, formatModuleDisplayName } from "../../lib/utils";
 
 export default function Navbar() {
   const location = useLocation();
@@ -43,7 +43,6 @@ export default function Navbar() {
         clearModule();
         setMobileOpen(false);
       };
-      const modules = currentBomb?.modules ?? [];
       const currentModuleLabel = currentModule
         ? formatModuleDisplayName(currentModule.moduleType, currentModule.id)
         : "";
@@ -61,13 +60,19 @@ export default function Navbar() {
   })();
 
   return (
-    <nav className="sticky top-0 z-40 bg-base-200/90 backdrop-blur-lg border-b border-base-300" role="navigation" aria-label="Main navigation">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav
+      className="sticky top-0 z-40 bg-white border-b-2 border-base-content"
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center justify-between h-14">
-          {/* Left: logo + breadcrumb or Setup */}
+          {/* Left: logo */}
           <div className="flex items-center gap-4 min-w-0">
-            <Link to="/" className="text-lg font-bold tracking-tight text-primary shrink-0" aria-label="KTANE Solver home">
-              KTANE Solver
+            <Link to="/" aria-label="KTANE Solver home" className="shrink-0">
+              <span className="font-display text-2xl font-bold uppercase tracking-tight text-base-content">
+                KTANE<span className="text-primary">·</span>SOLVER
+              </span>
             </Link>
 
             {/* Desktop: breadcrumb */}
@@ -106,7 +111,7 @@ export default function Navbar() {
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="sm:hidden pb-4 border-t border-base-300 mt-2 pt-3 space-y-1">
+          <div className="sm:hidden pb-4 border-t border-base-content/20 mt-2 pt-3 space-y-1">
             {breadcrumbSegments ? (
               <div className="px-3 py-2">
                 <Breadcrumb segments={breadcrumbSegments} />
@@ -115,7 +120,7 @@ export default function Navbar() {
               <Link
                 to="/"
                 onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-md text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-300/50"
+                className="block px-3 py-2 rounded-md text-sm font-medium text-ink-muted hover:text-ink"
               >
                 Home
               </Link>
