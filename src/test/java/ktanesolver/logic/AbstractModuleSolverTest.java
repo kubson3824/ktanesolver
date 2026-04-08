@@ -43,9 +43,9 @@ class AbstractModuleSolverTest {
     }
 
     @Test
-    void getType_calledMultipleTimes_returnsConsistentResult() {
+    void getType_calledMultipleTimes_returnsSameInstance() {
         AnnotatedSolver solver = new AnnotatedSolver();
-        assertThat(solver.getType()).isEqualTo(solver.getType());
+        assertThat(solver.getType()).isSameAs(solver.getType());
     }
 
     @Test
