@@ -117,7 +117,7 @@ public class SimonStatesSolver extends AbstractModuleSolver<SimonStatesInput, Si
 	// Stage 3
 	private SimonStatesColor solveStage3(Set<SimonStatesColor> flashed, List<SimonStatesColor> p, SimonStatesColor press1, SimonStatesColor press2) {
 		int count = flashed.size();
-		Set<SimonStatesColor> prevPressed = new HashSet<>(Set.of(press1, press2));
+		Set<SimonStatesColor> prevPressed = new HashSet<>(List.of(press1, press2));
 
 		if (count == 3) {
 			boolean anyPrevPressed = flashed.stream().anyMatch(prevPressed::contains);
@@ -144,7 +144,7 @@ public class SimonStatesSolver extends AbstractModuleSolver<SimonStatesInput, Si
 	// Stage 4
 	private SimonStatesColor solveStage4(Set<SimonStatesColor> flashed, List<SimonStatesColor> p, SimonStatesColor press1, SimonStatesColor press2, SimonStatesColor press3) {
 		int count = flashed.size();
-		Set<SimonStatesColor> prevPressed = new HashSet<>(Set.of(press1, press2, press3));
+		Set<SimonStatesColor> prevPressed = new HashSet<>(List.of(press1, press2, press3));
 
 		if (prevPressed.size() == 3) {
 			for (SimonStatesColor color : SimonStatesColor.values()) {

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/Users/Ja/IdeaProjects/ktanesolver/gradlew*)",
+      "Bash(./gradlew build:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
