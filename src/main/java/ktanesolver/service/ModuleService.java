@@ -25,7 +25,6 @@ import ktanesolver.logic.SolveResult;
 import ktanesolver.registry.ModuleSolverRegistry;
 import ktanesolver.repository.BombRepository;
 import ktanesolver.repository.ModuleRepository;
-import ktanesolver.repository.RoundRepository;
 import ktanesolver.utils.Json;
 import lombok.RequiredArgsConstructor;
 
@@ -33,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ModuleService {
 
-    private final RoundRepository roundRepo;
     private final BombRepository bombRepo;
     private final ModuleRepository moduleRepo;
     private final ModuleSolverRegistry registry;
@@ -64,16 +62,16 @@ public class ModuleService {
 
     @Transactional
     public SolveResult<?> solveModule(UUID roundId, UUID bombId, UUID moduleId, Map<String, Object> rawInput) {
-        RoundEntity round = roundRepo.findById(roundId).orElseThrow();
-        BombEntity bomb = bombRepo.findById(bombId).orElseThrow();
-        ModuleEntity module = moduleRepo.findById(moduleId).orElseThrow();
+        ModuleEntity module = moduleRepo.findByIdWithBombAndRound(moduleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));
+        BombEntity bomb = module.getBomb();
+        RoundEntity round = bomb.getRound();
         ensureModuleInBombAndRound(module, bombId, roundId);
         ModuleSolver<?, ?> solver = registry.get(module.getType());
         ModuleInput input = Json.mapper().convertValue(rawInput, solver.inputType());
         SolveResult<?> result = invokeSolver(solver, round, bomb, module, input);
         moduleRepo.save(module);
-        roundRepo.save(round);
-        eventPublisher.publishEvent(new BombModuleUpdatedEvent(this, roundId, bombId, module.getId(), module.getType(), module.isSolved()));
+        eventPublisher.publishEvent(new BombModuleUpdatedEvent(this, round.getId(), bombId, module.getId(), module.getType(), module.isSolved()));
         return result;
     }
 

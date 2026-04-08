@@ -14,4 +14,12 @@ public interface ModuleRepository extends JpaRepository<ModuleEntity, UUID> {
 
     @Query("SELECT m FROM ModuleEntity m JOIN FETCH m.bomb WHERE m.id = :id")
     Optional<ModuleEntity> findByIdWithBomb(@Param("id") UUID id);
+
+    @Query("""
+            SELECT m FROM ModuleEntity m
+            JOIN FETCH m.bomb b
+            JOIN FETCH b.round
+            WHERE m.id = :id
+            """)
+    Optional<ModuleEntity> findByIdWithBombAndRound(@Param("id") UUID id);
 }
