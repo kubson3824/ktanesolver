@@ -18,13 +18,19 @@ import ktanesolver.utils.Json;
 
 public abstract class AbstractModuleSolver<I extends ModuleInput, O extends ModuleOutput> implements ModuleSolver<I, O> {
 
+	private final ModuleInfo moduleInfo;
+
+	protected AbstractModuleSolver() {
+		ModuleInfo info = getClass().getAnnotation(ModuleInfo.class);
+		if (info == null) {
+			throw new IllegalStateException("ModuleSolver must be annotated with @ModuleInfo: " + getClass().getName());
+		}
+		this.moduleInfo = info;
+	}
+
 	@Override
 	public ModuleType getType() {
-		ModuleInfo info = getClass().getAnnotation(ModuleInfo.class);
-		if(info == null) {
-			throw new IllegalStateException("ModuleSolver must be annotated with @ModuleInfo");
-		}
-		return info.type();
+		return moduleInfo.type();
 	}
 
 	@Override
@@ -35,11 +41,17 @@ public abstract class AbstractModuleSolver<I extends ModuleInput, O extends Modu
 
 	@Override
 	public ModuleCatalogDto getCatalogInfo() {
-		ModuleInfo info = getClass().getAnnotation(ModuleInfo.class);
-		if(info == null) {
-			throw new IllegalStateException("ModuleSolver must be annotated with @ModuleInfo");
-		}
-		return new ModuleCatalogDto(info.id(), info.name(), info.category(), info.type().name(), List.of(info.tags()), info.description(), info.hasInput(), info.hasOutput(), info.checkFirst());
+		return new ModuleCatalogDto(
+			moduleInfo.id(),
+			moduleInfo.name(),
+			moduleInfo.category(),
+			moduleInfo.type().name(),
+			List.of(moduleInfo.tags()),
+			moduleInfo.description(),
+			moduleInfo.hasInput(),
+			moduleInfo.hasOutput(),
+			moduleInfo.checkFirst()
+		);
 	}
 
 	@Override
