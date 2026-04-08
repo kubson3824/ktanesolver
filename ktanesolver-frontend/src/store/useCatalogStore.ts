@@ -15,7 +15,11 @@ export const useCatalogStore = create<CatalogStoreState & CatalogStoreActions>()
     catalog: [],
     loaded: false,
     fetchCatalog: async () => {
-        const { data } = await api.get<ModuleCatalogItem[]>("/modules");
-        set({ catalog: data, loaded: true });
+        try {
+            const { data } = await api.get<ModuleCatalogItem[]>("/modules");
+            set({ catalog: data, loaded: true });
+        } catch (err) {
+            console.error("Failed to load module catalog:", err);
+        }
     },
 }));
