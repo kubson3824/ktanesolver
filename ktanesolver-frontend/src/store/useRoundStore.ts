@@ -326,8 +326,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                             currentBomb: bomb,
                         };
                     });
-                    const roundId = get().round?.id;
-                    if (roundId) void get().refreshRound(roundId);
                     return bomb;
                 } catch (error) {
                     set({
@@ -365,8 +363,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                 state.currentBomb?.id === bombId ? updated : state.currentBomb,
                         };
                     });
-                    const roundIdAfterConfig = get().round?.id;
-                    if (roundIdAfterConfig) void get().refreshRound(roundIdAfterConfig);
                     return updated;
                 } catch (error) {
                     set({
@@ -411,8 +407,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                 state.currentBomb?.id === bombId ? updatedBomb : state.currentBomb,
                         };
                     });
-                    const roundIdAfterModules = get().round?.id;
-                    if (roundIdAfterModules) void get().refreshRound(roundIdAfterModules);
                     return modules;
                 } catch (error) {
                     set({
