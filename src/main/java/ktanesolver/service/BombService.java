@@ -10,10 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import ktanesolver.dto.BombConfig;
+import ktanesolver.dto.CreateBombRequest;
 import ktanesolver.entity.BombEntity;
+import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.BombStatus;
 import ktanesolver.event.StrikeAddedEvent;
 import ktanesolver.repository.BombRepository;
+import ktanesolver.repository.RoundRepository;
 import ktanesolver.service.RoundEventBroadcastService;
 import lombok.RequiredArgsConstructor;
 
@@ -22,8 +25,26 @@ import lombok.RequiredArgsConstructor;
 public class BombService {
 
 	private final BombRepository bombRepo;
+	private final RoundRepository roundRepo;
 	private final ApplicationEventPublisher eventPublisher;
 	private final RoundEventBroadcastService roundEventBroadcastService;
+
+	@Transactional
+	public BombEntity createBomb(UUID roundId, CreateBombRequest req) {
+		RoundEntity round = roundRepo.findById(roundId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Round not found"));
+		BombEntity bomb = new BombEntity();
+		bomb.setRound(round);
+		bomb.setSerialNumber(req.serialNumber());
+		bomb.setAaBatteryCount(req.aaBatteryCount());
+		bomb.setDBatteryCount(req.dBatteryCount());
+		bomb.setIndicators(req.indicators());
+		bomb.replacePortPlates(req.portPlates());
+		bomb.setStatus(BombStatus.ACTIVE);
+		bomb = bombRepo.save(bomb);
+		roundEventBroadcastService.broadcastRoundUpdated(roundId);
+		return bomb;
+	}
 
 	@Transactional
 	public BombEntity configureBomb(UUID bombId, BombConfig config) {
