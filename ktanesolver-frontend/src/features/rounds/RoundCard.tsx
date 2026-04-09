@@ -79,7 +79,6 @@ export default function RoundCard({ round, onNavigate, onDelete, loading }: Roun
             size="sm"
             onClick={() => onDelete(round.id)}
             disabled={loading}
-            className="text-error hover:text-error hover:bg-red-50"
           >
             Delete
           </Button>
