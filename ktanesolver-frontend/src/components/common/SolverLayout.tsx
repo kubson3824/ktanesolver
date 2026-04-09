@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 
 interface SolverLayoutProps {
   children: ReactNode;
-  title?: string;
   className?: string;
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRoundStore } from '../store/useRoundStore';
 import { BombStatus } from '../types';
 
@@ -12,19 +12,10 @@ export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({
   className = ''
 }) => {
   const { round, currentBomb } = useRoundStore();
-  const [previousStrikes, setPreviousStrikes] = useState(0);
 
   const bomb = bombId
     ? round?.bombs.find(b => b.id === bombId)
     : currentBomb;
-
-  useEffect(() => {
-    if (bomb && bomb.strikes > previousStrikes) {
-      setPreviousStrikes(bomb.strikes);
-      const timer = setTimeout(() => setPreviousStrikes(bomb.strikes), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [bomb, previousStrikes]);
 
   if (!bomb) return null;
 

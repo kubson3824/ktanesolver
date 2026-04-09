@@ -48,9 +48,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <Button
                 variant="secondary"
                 size="sm"
+                onClick={this.handleReset}
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => window.location.reload()}
               >
-                Reload
+                Reload Page
               </Button>
             </div>
           </div>

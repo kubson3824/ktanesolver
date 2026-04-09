@@ -39,6 +39,7 @@ export default function TwitchCommandDisplay({ command, className = "" }: Twitch
             size="xs"
             onClick={() => copyToClipboard(cmd, index)}
             title="Copy to clipboard"
+            aria-label="Copy command to clipboard"
             className="shrink-0"
           >
             {copiedIndex === index ? (

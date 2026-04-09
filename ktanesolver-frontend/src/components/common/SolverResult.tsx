@@ -1,7 +1,7 @@
 import { cn } from "../../lib/cn";
 
 interface SolverResultProps {
-  variant?: "success" | "warning" | "info";
+  variant?: "success" | "warning" | "error" | "info";
   title: string;
   description?: string;
   className?: string;
@@ -15,6 +15,14 @@ export default function SolverResult({
 }: SolverResultProps) {
   const isSuccess = variant === "success";
 
+  const titleColorClass = variant === "success"
+    ? "text-success"
+    : variant === "warning"
+    ? "text-warning"
+    : variant === "error"
+    ? "text-error"
+    : "text-info";
+
   return (
     <div
       className={cn(
@@ -25,7 +33,7 @@ export default function SolverResult({
       role="status"
       aria-live="polite"
     >
-      <p className="font-display text-sm uppercase tracking-widest text-success mb-2">
+      <p className={cn("font-display text-sm uppercase tracking-widest mb-2", titleColorClass)}>
         {title}
       </p>
       {description && (
