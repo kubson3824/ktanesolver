@@ -17,7 +17,7 @@ export default function ManualPanel({ manualUrl, moduleType }: ManualPanelProps)
   }, [manualUrl]);
 
   return (
-    <div className="bg-white border border-base-content rounded-sm shadow-card h-full min-h-[500px] flex flex-col">
+    <div className="card-manual h-full min-h-[500px] flex flex-col">
       {/* Header strip */}
       <div className="bg-base-200 border-b border-base-300 px-3 py-2 flex items-center justify-between shrink-0">
         <span className="text-sm font-semibold text-base-content truncate">{moduleName}</span>

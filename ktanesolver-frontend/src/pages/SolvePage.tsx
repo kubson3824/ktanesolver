@@ -4,7 +4,7 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { useRoundStore } from "../store/useRoundStore";
 import { type ModuleEntity, type ModuleCatalogItem, ModuleType } from "../types";
-import { getLazySolver } from "../components/solvers/registry";
+import { getLazySolver, isNeedyModuleType } from "../components/solvers/registry";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
 import PageContainer from "../components/layout/PageContainer";
 import ModuleGrid from "../features/solve/ModuleGrid";
@@ -145,14 +145,14 @@ export default function SolvePage() {
     const regular: ModuleEntity[] = [];
     const needy: ModuleEntity[] = [];
     modules.forEach((m) => {
-      if (["VENTING_GAS", "CAPACITOR_DISCHARGE", "KNOBS"].includes(m.type)) {
+      if (isNeedyModuleType(m.type, catalogByType)) {
         needy.push(m);
       } else {
         regular.push(m);
       }
     });
     return { regularModules: regular, needyModules: needy };
-  }, [modules]);
+  }, [modules, catalogByType]);
 
   const checkFirstModules = useMemo(() => {
     if (!currentBomb || !regularModules.length) return [];
