@@ -26,17 +26,11 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
     const moduleCount = bomb.modules?.length ?? 0;
     const hasModules = moduleCount > 0;
 
-    // Group modules by type for display
-    const moduleGroups: Record<string, number> = {};
-    for (const mod of bomb.modules ?? []) {
-        moduleGroups[mod.type] = (moduleGroups[mod.type] ?? 0) + 1;
-    }
-
     return (
         <div
             className={cn(
                 "card-manual animate-fade-in overflow-hidden",
-                isActive && "border-l-[3px] border-l-[#15803D]"
+                isActive && "border-l-[3px] border-l-success"
             )}
             style={{ animationDelay: `${animationDelay}ms`, animationFillMode: "backwards" }}
         >
@@ -58,7 +52,7 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
                     {onDelete && (
                         <Button
                             variant="ghost"
-                            size="sm"
+                            size="xs"
                             onClick={() => onDelete(bomb)}
                             aria-label="Delete bomb"
                             title="Delete bomb"

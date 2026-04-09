@@ -394,7 +394,11 @@ export default function SetupPage() {
                                     index={index}
                                     onEditEdgework={openEditForm}
                                     onAddModules={openModulePanel}
-                                    onDelete={(b) => void deleteBomb(b.id)}
+                                    onDelete={(b) => {
+                                        if (window.confirm(`Delete bomb #${round.bombs.indexOf(b) + 1}? This will also remove all its modules.`)) {
+                                            void deleteBomb(b.id);
+                                        }
+                                    }}
                                     animationDelay={index * 50}
                                 />
                             ))}

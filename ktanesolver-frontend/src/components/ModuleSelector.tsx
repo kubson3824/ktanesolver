@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { type ModuleCatalogItem, ModuleCategory } from "../types";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
+import { Alert } from "./ui/alert";
 import { cn } from "../lib/cn";
+import { api } from "../lib/api";
 
 interface ModuleSelectorProps {
   onSelectionChange: (selectedModules: Record<string, number>) => void;
@@ -43,6 +45,7 @@ function categoryMatchesFilter(category: ModuleCategory, filter: FilterTab): boo
 export default function ModuleSelector({ onSelectionChange, initialCounts = {} }: ModuleSelectorProps) {
   const [modules, setModules] = useState<ModuleCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
@@ -50,20 +53,13 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "category">("name-asc");
 
   useEffect(() => {
-    fetchModules();
+    setLoading(true);
+    setFetchError(null);
+    api.get<ModuleCatalogItem[]>("/api/modules")
+      .then(res => setModules(res.data))
+      .catch(() => setFetchError("Failed to load modules. Please try again."))
+      .finally(() => setLoading(false));
   }, []);
-
-  const fetchModules = async () => {
-    try {
-      const response = await fetch("/api/modules");
-      const data = await response.json();
-      setModules(data);
-    } catch (error) {
-      console.error("Failed to fetch modules:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredModules = useMemo(() => {
     let filtered = modules;
@@ -213,6 +209,11 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
             ))}
           </div>
         </div>
+      )}
+
+      {/* Fetch error */}
+      {fetchError && (
+        <Alert variant="error">{fetchError}</Alert>
       )}
 
       {/* Module grid */}
