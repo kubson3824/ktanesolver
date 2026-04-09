@@ -10,9 +10,8 @@ import PageContainer from "../components/layout/PageContainer";
 import ModuleGrid from "../features/solve/ModuleGrid";
 import ManualPanel from "../features/solve/ManualPanel";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcut";
-import { formatModuleDisplayName } from "../lib/utils";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+import { formatModuleName } from "../lib/utils";
+import { Skeleton } from "../components/ui/skeleton";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
@@ -195,214 +194,211 @@ export default function SolvePage() {
   if (!roundId) {
     return (
       <PageContainer>
-        <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
-          <CardContent className="text-center pt-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-300 mb-4" aria-hidden>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-body text-base-content/70 mb-2">No round selected.</p>
-            <p className="text-caption text-base-content/60 mb-6">Return to setup to create or choose a round.</p>
-            <button className="btn btn-primary" onClick={() => navigate(roundId ? `/round/${roundId}/setup` : "/")}>
-              Back to setup
-            </button>
-          </CardContent>
-        </Card>
+        <div className="card-manual p-6 text-center">
+          <p className="text-sm text-ink-muted mb-2">No round selected.</p>
+          <p className="text-xs text-ink-muted mb-4">Return to setup to create or choose a round.</p>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate("/")}>
+            Back to setup
+          </button>
+        </div>
       </PageContainer>
     );
   }
 
+  // Derived: current module catalog entry
+  const currentCatalogEntry = currentModule?.moduleType
+    ? catalogByType[currentModule.moduleType]
+    : undefined;
+  const currentModuleDisplayName = currentModule?.moduleType
+    ? (currentCatalogEntry?.name ?? formatModuleName(currentModule.moduleType))
+    : "";
+  const currentModuleId = currentCatalogEntry?.id ?? "";
+
   return (
     <PageContainer>
-      <div className="grid gap-5">
-        {/* Header */}
-        <Card className="animate-fade-in border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
-          <CardHeader className="space-y-1">
-            <div className="flex flex-row flex-wrap justify-between items-start gap-4">
-              <div className="min-w-0">
-                <p className="text-sm text-secondary font-medium uppercase tracking-wider">Round #{round?.id?.slice(0, 8)}</p>
-                <h1 className="text-page-title mt-2 mb-2">Live defusal</h1>
-                <p className="text-caption text-base-content/70 mb-2">
-                  Pick the module you&apos;re defusing, study the manual on the left, drive the solver on the right.
-                </p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <button className="btn btn-outline btn-sm" onClick={() => void handleRefresh()}>
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Main content */}
-        <div className="grid gap-5">
-          <div className="min-w-0">
-            {!currentModule ? (
-              <>
-                {error && (
-                  <div className="rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 text-warning text-sm mb-5" role="alert">
-                    {error}
-                  </div>
-                )}
-                {showFmnReminder && (() => {
-                  const fmn = round?.bombs.flatMap((b) =>
-                    b.modules
-                      .filter((m) => m.type === ModuleType.FORGET_ME_NOT && !(m as ModuleEntity).solved)
-                      .map((m) => ({ bombId: b.id, module: m as ModuleEntity }))
-                  )[0];
-                  if (!fmn) return null;
-                  return (
-                    <Card className="animate-fade-in border-warning/40 bg-warning/5 backdrop-blur-xl shadow-sm mb-5">
-                      <CardContent className="py-3 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-body text-base-content/90">
-                          Do Forget Me Not stage — a module was just solved.
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => {
-                              selectBomb(fmn.bombId);
-                              selectModuleById(fmn.bombId, fmn.module.id);
-                              setShowFmnReminder(false);
-                            }}
-                          >
-                            Open Forget Me Not
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => setShowFmnReminder(false)}
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
-                {checkFirstModules.length > 0 && (
-                  <Card className="animate-fade-in border-warning/40 bg-warning/5 backdrop-blur-xl shadow-sm mb-5">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-section-title text-warning">Check these first</CardTitle>
-                      <p className="text-caption text-base-content/70 mt-1">
-                        These modules need attention early: note info or enter data as the round progresses.
-                      </p>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ul className="space-y-2" role="list">
-                        {checkFirstModules.map((module) => {
-                          const displayName = formatModuleDisplayName(module.type, module.id);
-                          const hint =
-                            module.type === "TURN_THE_KEY"
-                              ? "Note the time on the display and open the solver."
-                              : module.type === "FORGET_ME_NOT"
-                                ? "Enter each digit as it appears."
-                                : null;
-                          return (
-                            <li
-                              key={module.id}
-                              className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-base-200/80 hover:bg-base-200 cursor-pointer"
-                              onClick={() => handleModuleClick(module)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  handleModuleClick(module);
-                                }
-                              }}
-                              role="button"
-                              tabIndex={0}
-                            >
-                              <span className="font-medium">{displayName}</span>
-                              {hint && <span className="text-caption text-base-content/60">— {hint}</span>}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-                <ModuleGrid
-                  bombs={round?.bombs ?? []}
-                  currentBomb={currentBomb}
-                  regularModules={regularModules}
-                  onSelectBomb={selectBomb}
-                  onSelectModule={handleModuleClick}
-                  openingModuleId={openingModuleId}
-                />
-              </>
-            ) : (
-              <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
-                <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-3 pb-2">
-                  <div>
-                    <p className="text-sm text-secondary font-medium uppercase tracking-wider">
-                      Currently solving
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <CardTitle className="text-section-title">
-                        {formatModuleDisplayName(currentModule.moduleType, currentModule.id)}
-                      </CardTitle>
-                      <Badge variant="outline" className="text-caption">
-                        {currentBomb?.serialNumber ?? "Unknown serial"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <button className="btn btn-outline btn-sm shrink-0" onClick={handleBack}>
-                    Back to modules
-                  </button>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid gap-5 lg:grid-cols-2">
-                    <ManualPanel
-                      manualUrl={manualUrl}
-                      moduleType={currentModule.moduleType}
-                    />
-
-                    <Card className="h-full flex flex-col border-panel-border bg-base-200/90 backdrop-blur-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-card-title">Solver</CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex flex-col flex-1 min-h-0">
-                        <Suspense
-                          fallback={
-                            <div className="flex items-center justify-center py-12 gap-2">
-                              <span className="loading loading-spinner loading-md text-primary"></span>
-                              <span className="text-body text-base-content/70">Loading solver...</span>
-                            </div>
-                          }
-                        >
-                          {SolverComponent ? (
-                            <SolverComponent bomb={currentBomb} />
-                          ) : (
-                            <div className="text-center py-12">
-                              <p className="text-body text-base-content/70 mb-2">Coming soon</p>
-                              <p className="text-caption text-base-content/60 mb-6">
-                                No solver available for this module type yet.
-                              </p>
-                              <button className="btn btn-outline" onClick={handleBack}>
-                                Back
-                              </button>
-                            </div>
-                          )}
-                        </Suspense>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="grid gap-4">
+        {/* Page header */}
+        <div className="flex flex-row flex-wrap justify-between items-center gap-3">
+          <div>
+            <p className="section-heading text-ink-muted">
+              Round #{round?.id?.slice(0, 8)}
+            </p>
+            <h1 className="page-title mt-1">Live defusal</h1>
+          </div>
+          <div className="flex gap-2 items-center">
+            {currentModule && (
+              <button className="btn btn-outline btn-sm" onClick={handleBack}>
+                ← Back to modules
+              </button>
             )}
+            <button className="btn btn-outline btn-sm" onClick={() => void handleRefresh()}>
+              Refresh
+            </button>
           </div>
         </div>
+
+        <div className="section-divider" />
+
+        {/* Main content */}
+        {!currentModule ? (
+          <div className="grid gap-4">
+            {error && (
+              <div className="callout callout-error" role="alert">
+                {error}
+              </div>
+            )}
+
+            {/* Forget Me Not reminder */}
+            {showFmnReminder && (() => {
+              const fmn = round?.bombs.flatMap((b) =>
+                b.modules
+                  .filter((m) => m.type === ModuleType.FORGET_ME_NOT && !(m as ModuleEntity).solved)
+                  .map((m) => ({ bombId: b.id, module: m as ModuleEntity }))
+              )[0];
+              if (!fmn) return null;
+              return (
+                <div className="callout callout-warning flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-semibold">
+                    Do Forget Me Not stage — a module was just solved.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-xs"
+                      onClick={() => {
+                        selectBomb(fmn.bombId);
+                        selectModuleById(fmn.bombId, fmn.module.id);
+                        setShowFmnReminder(false);
+                      }}
+                    >
+                      Open Forget Me Not
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => setShowFmnReminder(false)}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Check These First */}
+            {checkFirstModules.length > 0 && (
+              <div className="callout callout-warning">
+                <p className="font-semibold mb-2">Check These First</p>
+                <ul className="space-y-1">
+                  {checkFirstModules.map((module) => {
+                    const hint =
+                      module.type === "TURN_THE_KEY"
+                        ? "Note the time on the display and open the solver."
+                        : module.type === "FORGET_ME_NOT"
+                          ? "Enter each digit as it appears."
+                          : null;
+                    const name = catalogByType[module.type]?.name ?? formatModuleName(module.type);
+                    return (
+                      <li
+                        key={module.id}
+                        className="flex flex-wrap items-center gap-2 cursor-pointer hover:underline"
+                        onClick={() => handleModuleClick(module)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleModuleClick(module);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <span className="font-medium">{name}</span>
+                        {hint && <span className="text-xs opacity-80">— {hint}</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {/* Module grid */}
+            <ModuleGrid
+              bombs={round?.bombs ?? []}
+              currentBomb={currentBomb}
+              regularModules={regularModules}
+              onSelectBomb={selectBomb}
+              onSelectModule={handleModuleClick}
+              openingModuleId={openingModuleId}
+            />
+          </div>
+        ) : (
+          /* Solver view */
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            {/* Left: ManualPanel */}
+            <div className="lg:col-span-3">
+              <ManualPanel
+                manualUrl={manualUrl}
+                moduleType={currentModule.moduleType}
+              />
+            </div>
+
+            {/* Right: Solver card */}
+            <div className="lg:col-span-2">
+              <div className="card-manual h-full flex flex-col">
+                {/* Card header */}
+                <div className="bg-base-200 border-b border-base-300 px-4 py-3">
+                  <h2 className="font-display text-lg font-bold uppercase text-base-content leading-tight">
+                    {currentModuleDisplayName}
+                  </h2>
+                  {currentModuleId && (
+                    <p className="font-mono text-xs text-ink-muted mt-0.5">
+                      {currentModuleId}
+                    </p>
+                  )}
+                </div>
+
+                {/* Card content */}
+                <div className="px-4 py-4 flex-1 flex flex-col">
+                  <Suspense
+                    fallback={
+                      <div className="flex flex-col gap-3 py-4">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-8 w-full mt-2" />
+                      </div>
+                    }
+                  >
+                    {SolverComponent ? (
+                      <SolverComponent bomb={currentBomb} />
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-ink-muted mb-1">Coming soon</p>
+                        <p className="text-xs text-ink-muted mb-4">
+                          No solver available for this module type yet.
+                        </p>
+                        <button className="btn btn-outline btn-sm" onClick={handleBack}>
+                          Back
+                        </button>
+                      </div>
+                    )}
+                  </Suspense>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading overlay */}
       {loading && (
-        <div className="fixed inset-0 bg-base-300/80 backdrop-blur-sm flex items-center justify-center z-50" aria-live="polite" aria-busy="true">
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-panel-border bg-panel-bg/90 backdrop-blur-xl px-8 py-6 shadow-lg">
-            <span className="loading loading-spinner loading-lg text-primary" aria-hidden></span>
-            <p className="text-body font-medium text-base-content">Syncing round...</p>
+        <div
+          className="fixed inset-0 bg-base-300/80 backdrop-blur-sm flex items-center justify-center z-50"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="card-manual flex flex-col items-center gap-4 px-8 py-6">
+            <span className="loading loading-spinner loading-lg text-primary" aria-hidden />
+            <p className="text-sm font-medium text-base-content">Syncing round...</p>
           </div>
         </div>
       )}
