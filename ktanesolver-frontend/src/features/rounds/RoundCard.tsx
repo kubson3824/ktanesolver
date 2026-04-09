@@ -17,15 +17,15 @@ interface RoundCardProps {
 function getStatusBorderColor(status: RoundStatus): string {
   switch (status) {
     case RoundStatus.SETUP:
-      return "border-l-neutral";
+      return "border-l-[#6B7280]"; // neutral gray
     case RoundStatus.ACTIVE:
-      return "border-l-warning";
+      return "border-l-[#B45309]"; // warning amber
     case RoundStatus.COMPLETED:
-      return "border-l-success";
+      return "border-l-[#15803D]"; // success green
     case RoundStatus.FAILED:
-      return "border-l-error";
+      return "border-l-[#C41230]"; // error red
     default:
-      return "border-l-base-300";
+      return "border-l-[#6B7280]"; // neutral gray
   }
 }
 
@@ -75,7 +75,7 @@ export default function RoundCard({ round, onNavigate, onDelete, loading }: Roun
             {round.status === RoundStatus.ACTIVE ? "Continue" : "View"}
           </Button>
           <Button
-            variant="ghost"
+            variant="danger"
             size="sm"
             onClick={() => onDelete(round.id)}
             disabled={loading}
