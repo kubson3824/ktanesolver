@@ -34,6 +34,7 @@ type RoundStoreActions = {
     fetchAllRounds: () => Promise<RoundEntity[]>;
     deleteRound: (roundId: string) => Promise<void>;
     addBomb: (payload: CreateBombRequest) => Promise<BombEntity>;
+    deleteBomb: (bombId: string) => Promise<void>;
     configureBomb: (
         bombId: string,
         payload: Partial<CreateBombRequest>,
@@ -279,6 +280,33 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         };
                     });
                     return bomb;
+                } catch (error) {
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
+
+            deleteBomb: async (bombId) => {
+                set({loading: true, error: undefined});
+                try {
+                    await withErrorWrapping(async () => {
+                        await api.delete(`/bombs/${bombId}`);
+                    });
+                    set((state) => {
+                        if (!state.round) return {loading: false};
+                        return {
+                            loading: false,
+                            round: {
+                                ...state.round,
+                                bombs: state.round.bombs.filter((b) => b.id !== bombId),
+                            },
+                            currentBomb:
+                                state.currentBomb?.id === bombId ? undefined : state.currentBomb,
+                        };
+                    });
                 } catch (error) {
                     set({
                         loading: false,

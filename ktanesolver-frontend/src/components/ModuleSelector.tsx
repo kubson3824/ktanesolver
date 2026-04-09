@@ -232,7 +232,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                 className={cn(
                   "bg-white border border-base-300 rounded-sm p-2 cursor-pointer transition-colors",
                   "hover:border-primary hover:shadow-sm",
-                  isSelected && "border-primary bg-red-50/50"
+                  isSelected && "border-primary bg-primary/5"
                 )}
                 onClick={() => handleModuleClick(module)}
               >

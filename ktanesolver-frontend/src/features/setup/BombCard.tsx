@@ -1,12 +1,15 @@
 import { type BombEntity, BombStatus } from "../../types";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Trash2 } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 interface BombCardProps {
     bomb: BombEntity;
+    index: number;
     onEditEdgework: (bomb: BombEntity) => void;
     onAddModules: (bomb: BombEntity) => void;
+    onDelete?: (bomb: BombEntity) => void;
     animationDelay?: number;
 }
 
@@ -18,7 +21,7 @@ function EditIcon() {
     );
 }
 
-export default function BombCard({ bomb, onEditEdgework, onAddModules, animationDelay = 0 }: BombCardProps) {
+export default function BombCard({ bomb, index, onEditEdgework, onAddModules, onDelete, animationDelay = 0 }: BombCardProps) {
     const isActive = bomb.status === BombStatus.ACTIVE;
     const moduleCount = bomb.modules?.length ?? 0;
     const hasModules = moduleCount > 0;
@@ -40,7 +43,7 @@ export default function BombCard({ bomb, onEditEdgework, onAddModules, animation
             {/* Card header */}
             <div className="bg-base-200 border-b border-base-300 px-4 py-3 flex items-center justify-between">
                 <span className="font-display text-base font-bold uppercase tracking-wide text-base-content">
-                    BOMB #{bomb.serialNumber || "???"}
+                    BOMB {index + 1}
                 </span>
                 <div className="flex items-center gap-1">
                     <Button
@@ -52,6 +55,17 @@ export default function BombCard({ bomb, onEditEdgework, onAddModules, animation
                     >
                         <EditIcon />
                     </Button>
+                    {onDelete && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDelete(bomb)}
+                            aria-label="Delete bomb"
+                            title="Delete bomb"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             </div>
 

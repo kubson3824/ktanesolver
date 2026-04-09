@@ -72,6 +72,7 @@ export default function SetupPage() {
     const fetchRound = useRoundStore((state) => state.fetchRound);
     const refreshRound = useRoundStore((state) => state.refreshRound);
     const addBomb = useRoundStore((state) => state.addBomb);
+    const deleteBomb = useRoundStore((state) => state.deleteBomb);
     const configureBomb = useRoundStore((state) => state.configureBomb);
     const addModules = useRoundStore((state) => state.addModules);
     const startRound = useRoundStore((state) => state.startRound);
@@ -390,8 +391,10 @@ export default function SetupPage() {
                                 <BombCard
                                     key={bomb.id}
                                     bomb={bomb}
+                                    index={index}
                                     onEditEdgework={openEditForm}
                                     onAddModules={openModulePanel}
+                                    onDelete={(b) => void deleteBomb(b.id)}
                                     animationDelay={index * 50}
                                 />
                             ))}
