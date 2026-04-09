@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRoundStore } from "../store/useRoundStore";
 import PageContainer from "../components/layout/PageContainer";
-import { Card, CardContent, CardHeader } from "../components/ui/card";
+import PageHeader from "../components/layout/PageHeader";
 import { Button } from "../components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 
@@ -31,45 +31,65 @@ export default function MainPage() {
 
   return (
     <PageContainer>
-      <div className="max-w-2xl mx-auto py-12 sm:py-16">
-        <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
-          <CardHeader className="text-center pb-2">
-            <h1 className="text-3xl font-bold text-primary tracking-tight">
-              KTANE Solver
-            </h1>
-            <p className="text-base-content/70 mt-2">
-              Set up bombs, pick modules, and solve.
+      <PageHeader
+        title="BOMB DEFUSAL SOLVER"
+        subtitle="KTaNE solver for expert teams"
+      />
+
+      {error && (
+        <Alert variant="error" className="mb-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-6">
+        {/* New Round card */}
+        <div className="card-manual flex-1 flex flex-col">
+          <div className="bg-primary text-primary-content px-5 py-4">
+            <h2 className="font-display text-lg font-bold uppercase tracking-wide">
+              NEW ROUND
+            </h2>
+          </div>
+          <div className="px-5 py-4 flex-1">
+            <p className="text-sm text-ink-muted">
+              Configure bombs, add modules, and start solving.
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            {error && (
-              <Alert variant="error">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="grid gap-3">
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={handleCreateNewBomb}
-                disabled={loading || creating}
-              >
-                {creating || loading ? "Creating…" : "Create new bomb"}
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full"
-                onClick={handlePreviousRounds}
-                disabled={loading}
-              >
-                Previous rounds
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="px-5 pb-5">
+            <Button
+              variant="primary"
+              onClick={handleCreateNewBomb}
+              disabled={loading || creating}
+              loading={creating || loading}
+            >
+              {creating || loading ? "Creating…" : "Start New Round"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Round History card */}
+        <div className="card-manual flex-1 flex flex-col">
+          <div className="bg-base-200 px-5 py-4">
+            <h2 className="font-display text-lg font-bold uppercase tracking-wide text-base-content">
+              ROUND HISTORY
+            </h2>
+          </div>
+          <div className="px-5 py-4 flex-1">
+            <p className="text-sm text-ink-muted">
+              Review past rounds and solutions.
+            </p>
+          </div>
+          <div className="px-5 pb-5">
+            <Button
+              variant="secondary"
+              onClick={handlePreviousRounds}
+              disabled={loading}
+            >
+              View History
+            </Button>
+          </div>
+        </div>
       </div>
     </PageContainer>
   );
