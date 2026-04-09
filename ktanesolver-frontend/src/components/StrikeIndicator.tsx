@@ -36,7 +36,7 @@ export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({
       {Array.from({ length: strikeCount }).map((_, i) => (
         <span
           key={i}
-          className={`font-bold text-sm ${isExploded ? 'text-error' : 'text-primary'}`}
+          className="font-bold text-sm text-error"
           aria-hidden="true"
         >
           ✕
