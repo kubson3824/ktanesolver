@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { Skeleton } from "../../components/ui/skeleton";
+import { Alert } from "../../components/ui/alert";
 import { formatModuleName } from "../../lib/utils";
 
 interface ManualPanelProps {
@@ -8,6 +10,11 @@ interface ManualPanelProps {
 
 export default function ManualPanel({ manualUrl, moduleType }: ManualPanelProps) {
   const moduleName = formatModuleName(moduleType);
+  const [iframeError, setIframeError] = useState(false);
+
+  useEffect(() => {
+    setIframeError(false);
+  }, [manualUrl]);
 
   return (
     <div className="bg-white border border-base-content rounded-sm shadow-card h-full min-h-[500px] flex flex-col">
@@ -45,11 +52,20 @@ export default function ManualPanel({ manualUrl, moduleType }: ManualPanelProps)
       {/* Content area */}
       <div className="flex-1 flex flex-col min-h-0">
         {manualUrl ? (
+          iframeError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6">
+              <Alert variant="error">
+                Failed to load the module manual. Try opening it in a new tab.
+              </Alert>
+            </div>
+          ) : (
           <iframe
             src={manualUrl}
             title={`${moduleType} manual`}
             className="w-full flex-1 border-0 min-h-[450px]"
+            onError={() => setIframeError(true)}
           />
+          )
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 min-h-[200px]">
             <Skeleton className="h-4 w-3/4" />

@@ -90,10 +90,10 @@ export default function ModuleGrid({
               aria-disabled={disabled}
               aria-busy={isOpening}
               className={cn(
-                "bg-white border border-base-300 rounded-sm transition-shadow overflow-hidden",
-                module.solved && "border-[#15803D] bg-green-50/50",
-                !disabled && !module.solved && "cursor-pointer hover:shadow-card-sm",
-                disabled && "cursor-not-allowed opacity-70"
+                "bg-white border border-base-300 rounded-sm transition-shadow overflow-hidden cursor-pointer hover:shadow-card-sm",
+                module.solved && "border-success bg-green-50/50",
+                isOpening && "border-primary bg-primary/5 opacity-70",
+                !isOpening && !module.solved && ""
               )}
               onClick={() => !disabled && onSelectModule(module)}
               onKeyDown={(e) => {
@@ -108,7 +108,7 @@ export default function ModuleGrid({
               <div
                 className={cn(
                   "h-1 w-full",
-                  module.solved ? "bg-[#15803D]" : "bg-base-300"
+                  module.solved ? "bg-success" : "bg-base-300"
                 )}
               />
 
@@ -125,7 +125,7 @@ export default function ModuleGrid({
                 <div className="flex justify-center mt-1.5">
                   {module.solved ? (
                     <svg
-                      className="w-3.5 h-3.5 text-[#15803D]"
+                      className="w-3.5 h-3.5 text-success"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
