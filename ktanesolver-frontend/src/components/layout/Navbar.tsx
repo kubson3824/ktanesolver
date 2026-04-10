@@ -5,6 +5,8 @@ import { StrikeIndicator } from "../StrikeIndicator";
 import { StrikeButton } from "../StrikeButton";
 import Breadcrumb from "./Breadcrumb";
 import { formatRoundLabel, formatModuleDisplayName } from "../../lib/utils";
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function Navbar() {
   const location = useLocation();
@@ -13,6 +15,7 @@ export default function Navbar() {
   const currentModule = useRoundStore((state) => state.currentModule);
   const clearModule = useRoundStore((state) => state.clearModule);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
     setMobileOpen(false);
@@ -83,14 +86,26 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Right: strike info + mobile toggle */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Right: strike info + theme toggle + mobile menu toggle */}
+          <div className="flex items-center gap-2 shrink-0">
             {isSolving && currentBomb && (
               <div className="hidden sm:flex items-center gap-2">
                 <StrikeIndicator className="text-sm" />
                 <StrikeButton className="btn-xs" />
               </div>
             )}
+
+            <button
+              className="btn btn-ghost btn-sm btn-square"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Enable light mode' : 'Enable dark mode'}
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </button>
 
             <button
               className="sm:hidden btn btn-ghost btn-sm btn-square"
