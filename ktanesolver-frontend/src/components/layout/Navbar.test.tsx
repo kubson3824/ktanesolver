@@ -3,9 +3,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Navbar from './Navbar';
 
+const mockStore = { currentBomb: null, currentModule: null, clearModule: vi.fn() };
+
 vi.mock('../../store/useRoundStore', () => ({
-  useRoundStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ currentBomb: null, currentModule: null, clearModule: vi.fn() }),
+  useRoundStore: (selector: (s: typeof mockStore) => unknown) => selector(mockStore),
 }));
 
 describe('Navbar theme toggle', () => {
@@ -42,6 +43,18 @@ describe('Navbar theme toggle', () => {
       </MemoryRouter>
     );
     fireEvent.click(screen.getByRole('button', { name: 'Enable dark mode' }));
+    expect(
+      screen.getByRole('button', { name: 'Enable light mode' })
+    ).toBeInTheDocument();
+  });
+
+  it('shows "Enable light mode" label when dark mode is already active', () => {
+    localStorage.setItem('ktane-theme', 'manual-dark');
+    render(
+      <MemoryRouter>
+        <Navbar />
+      </MemoryRouter>
+    );
     expect(
       screen.getByRole('button', { name: 'Enable light mode' })
     ).toBeInTheDocument();

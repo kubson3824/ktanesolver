@@ -64,7 +64,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className="sticky top-0 z-40 bg-white border-b-2 border-base-content"
+      className="sticky top-0 z-40 bg-base-100 border-b-2 border-base-content"
       role="navigation"
       aria-label="Main navigation"
     >
