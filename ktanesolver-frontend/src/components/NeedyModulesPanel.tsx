@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import type { BombEntity, ModuleEntity } from "../types";
 import { formatModuleDisplayName } from "../lib/utils";
 import { Button } from "./ui/button";
@@ -60,22 +59,6 @@ export default function NeedyModulesPanel({
     const renderModuleSolver = () => {
         if (!selectedModule) return null;
 
-        switch (selectedModule.type) {
-            case "KNOBS":
-                return <KnobsSolver bomb={bomb} />;
-            case "CAPACITOR_DISCHARGE":
-                return <CapacitorDischargeSolver />;
-            case "VENTING_GAS":
-                return <VentingGasSolver />;
-            default:
-                return (
-                    <div className="text-center py-12">
-                        <p className="text-sm text-ink-muted mb-2">Coming soon</p>
-                        <p className="text-base-content/70 text-sm">
-                            This needy module solver is not yet implemented.
-                        </p>
-                    </div>
-                );
         const SolverComponent = lazySolverRegistry[selectedModule.type] ?? null;
         if (!SolverComponent) {
             return (

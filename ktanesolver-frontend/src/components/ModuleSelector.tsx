@@ -4,7 +4,6 @@ import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Alert } from "./ui/alert";
 import { cn } from "../lib/cn";
-import { api } from "../lib/api";
 import { useCatalogStore } from "../store/useCatalogStore";
 
 interface ModuleSelectorProps {
@@ -44,12 +43,10 @@ function categoryMatchesFilter(category: ModuleCategory, filter: FilterTab): boo
 }
 
 export default function ModuleSelector({ onSelectionChange, initialCounts = {} }: ModuleSelectorProps) {
-  const [modules, setModules] = useState<ModuleCatalogItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const modules = useCatalogStore((state) => state.catalog);
   const catalogLoaded = useCatalogStore((state) => state.loaded);
   const catalogLoading = useCatalogStore((state) => state.loading);
+  const catalogError = useCatalogStore((state) => state.error);
   const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
@@ -58,13 +55,6 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "category">("name-asc");
 
   useEffect(() => {
-    setLoading(true);
-    setFetchError(null);
-    api.get<ModuleCatalogItem[]>("/api/modules")
-      .then(res => setModules(res.data))
-      .catch(() => setFetchError("Failed to load modules. Please try again."))
-      .finally(() => setLoading(false));
-  }, []);
     if (!catalogLoaded && !catalogLoading) {
       void fetchCatalog();
     }
@@ -221,8 +211,8 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       )}
 
       {/* Fetch error */}
-      {fetchError && (
-        <Alert variant="error">{fetchError}</Alert>
+      {catalogError && (
+        <Alert variant="error">{catalogError}</Alert>
       )}
 
       {/* Module grid */}

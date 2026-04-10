@@ -3,11 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { useRoundStore } from "../store/useRoundStore";
-import { type ModuleEntity, type ModuleCatalogItem, ModuleType } from "../types";
-import { getLazySolver, isNeedyModuleType } from "../components/solvers/registry";
-import { useCatalogStore } from "../store/useCatalogStore";
 import { type BombEntity, type ModuleEntity, type ModuleCatalogItem, ModuleType } from "../types";
 import { isNeedyModuleType, lazySolverRegistry } from "../components/solvers/registry";
+import { useCatalogStore } from "../store/useCatalogStore";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
 import PageContainer from "../components/layout/PageContainer";
 import ModuleGrid from "../features/solve/ModuleGrid";
@@ -162,6 +160,13 @@ export default function SolvePage() {
     }
   }, [round, currentBomb, selectBomb]);
 
+  // Hide FMN reminder when user opens Forget Me Not
+  useEffect(() => {
+    if (currentModule?.moduleType === ModuleType.FORGET_ME_NOT) {
+      setShowFmnReminder(false);
+    }
+  }, [currentModule?.moduleType]);
+
   const modules: ModuleEntity[] = useMemo(() => {
     if (!currentBomb) return [];
     return currentBomb.modules ?? [];
@@ -184,8 +189,6 @@ export default function SolvePage() {
     if (!currentBomb || !regularModules.length) return [];
     return regularModules.filter((m) => catalogByType[m.type]?.checkFirst);
   }, [currentBomb, regularModules, catalogByType]);
-  const shouldShowFmnReminder =
-    showFmnReminder && currentModule?.moduleType !== ModuleType.FORGET_ME_NOT;
 
   const handleModuleClick = (module: ModuleEntity) => {
     if (!currentBomb) return;
@@ -391,19 +394,11 @@ export default function SolvePage() {
                       </div>
                     }
                   >
-                    {SolverComponent ? (
-                      <SolverComponent bomb={currentBomb} />
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-sm text-ink-muted mb-1">Coming soon</p>
-                        <p className="text-xs text-ink-muted mb-4">
-                          No solver available for this module type yet.
-                        </p>
-                        <button className="btn btn-outline btn-sm" onClick={handleBack}>
-                          Back
-                        </button>
-                      </div>
-                    )}
+                    <SolverContent
+                      moduleType={currentModule.moduleType}
+                      bomb={currentBomb}
+                      onBack={handleBack}
+                    />
                   </Suspense>
                 </div>
               </div>

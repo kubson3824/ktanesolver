@@ -62,32 +62,6 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },
 };
-export const lazySolverRegistry = Object.fromEntries(
-  Object.entries(solverRegistry).map(([moduleType, entry]) => [
-    moduleType,
-    lazy(entry.load),
-  ]),
-) as Partial<Record<ModuleType, LazyExoticComponent<ComponentType<SolverProps>>>>;
-
-function isNeedyCategory(category: ModuleCategory): boolean {
-  return (
-    category === ModuleCategory.VANILLA_NEEDY ||
-    category === ModuleCategory.MODDED_NEEDY
-  );
-}
-
-export function isNeedyModuleType(
-  moduleType: string,
-  catalogByType: Record<string, ModuleCatalogItem | undefined>,
-): boolean {
-  const catalogEntry = catalogByType[moduleType];
-  if (catalogEntry) {
-    return isNeedyCategory(catalogEntry.category);
-  }
-
-  const registryEntry = solverRegistry[moduleType as ModuleType];
-  return Boolean(registryEntry?.isNeedy);
-}
 
 /**
  * Stable map of pre-built React.lazy() references — one per module type.
