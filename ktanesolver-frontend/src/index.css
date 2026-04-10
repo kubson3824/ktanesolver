@@ -188,3 +188,64 @@
     word-spacing: 0.3em;
   }
 }
+
+/* ── Theme-aware CSS variables ───────────────────────────── */
+:root {
+  --shadow-ink: #1C1917;
+}
+
+[data-theme="manual-dark"] {
+  --shadow-ink: #F5F0E8;
+}
+
+/* ── Dark mode overrides for hardcoded-color utilities ────── */
+[data-theme="manual-dark"] body {
+  background-color: #1C1917;
+  color: #F5F0E8;
+}
+
+[data-theme="manual-dark"] .bg-paper {
+  background-color: #1C1917;
+}
+
+[data-theme="manual-dark"] .section-divider {
+  border-top-color: #F5F0E8;
+}
+
+[data-theme="manual-dark"] .card-manual {
+  background-color: #292524;
+  border-color: #F5F0E8;
+  box-shadow: 2px 2px 0 #F5F0E8;
+}
+
+[data-theme="manual-dark"] .page-title {
+  color: #F5F0E8;
+}
+
+[data-theme="manual-dark"] .section-heading {
+  color: #F5F0E8;
+}
+
+[data-theme="manual-dark"] .callout-error {
+  background-color: #3B0A12;
+  border-left-color: #DC2626;
+  color: #FCA5A5;
+}
+
+[data-theme="manual-dark"] .callout-warning {
+  background-color: #2D1B00;
+  border-left-color: #D97706;
+  color: #FCD34D;
+}
+
+[data-theme="manual-dark"] .callout-success {
+  background-color: #052E16;
+  border-left-color: #16A34A;
+  color: #86EFAC;
+}
+
+[data-theme="manual-dark"] .callout-info {
+  background-color: #0F1B3E;
+  border-left-color: #3B82F6;
+  color: #93C5FD;
+}
