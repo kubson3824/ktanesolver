@@ -106,8 +106,11 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
       if (raw == null) return null;
       if (typeof raw === "object") {
         const anyRaw = raw as { output?: { moves?: Move[] }; moves?: Move[]; path?: Move[] };
-        const fromOutput = anyRaw.output && typeof anyRaw.output === "object" && Array.isArray(anyRaw.output.moves);
-        if (fromOutput) return { moves: anyRaw.output.moves };
+        const outputMoves =
+          anyRaw.output && typeof anyRaw.output === "object" && Array.isArray(anyRaw.output.moves)
+            ? anyRaw.output.moves
+            : undefined;
+        if (outputMoves) return { moves: outputMoves };
         if (Array.isArray(anyRaw.moves)) return { moves: anyRaw.moves };
         if (Array.isArray(anyRaw.path)) return { moves: anyRaw.path };
       }
@@ -327,7 +330,7 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
             className={cn(
               "relative min-w-[3rem] min-h-[3rem] w-14 h-14 cursor-pointer transition-colors",
               "border border-base-content/25",
-              !isMarker && !isStart && !isEnd && !isOnPath && "bg-base-300 hover:bg-base-400",
+              !isMarker && !isStart && !isEnd && !isOnPath && "bg-base-300 hover:bg-base-200",
               isMarker && "bg-info/30 border-info/50",
               isStart && "bg-success/40 border-success/50",
               isEnd && "bg-error/40 border-error/50",
@@ -486,7 +489,7 @@ export default function MazeSolver({ bomb }: MazeSolverProps) {
                 aria-label={`Place ${config.label}`}
                 className={cn(
                   "px-4 py-2 rounded-full text-sm font-medium transition-colors",
-                  placementMode === mode ? config.activeClass : "bg-base-300 text-base-content hover:bg-base-400",
+                  placementMode === mode ? config.activeClass : "bg-base-300 text-base-content hover:bg-base-200",
                   isSolved && "cursor-not-allowed opacity-50"
                 )}
               >

@@ -20,9 +20,10 @@ interface ThemeStore {
   toggleTheme: () => void;
 }
 
+const initialTheme = getInitialTheme();
 export const useThemeStore = create<ThemeStore>((set) => ({
-  theme: getInitialTheme(),
-  isDark: getInitialTheme() === 'manual-dark',
+  theme: initialTheme,
+  isDark: initialTheme === 'manual-dark',
   toggleTheme: () =>
     set((state) => {
       const next: Theme = state.theme === 'manual' ? 'manual-dark' : 'manual';
@@ -45,17 +46,16 @@ export function useTheme() {
   // was initialized before this render (e.g., in test environments where localStorage
   // is set after module import but before component render).
   useEffect(() => {
-    const stored = (() => {
-      try {
-        return localStorage.getItem(STORAGE_KEY);
-      } catch {
-        return null;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const localTheme: Theme = stored === 'manual-dark' ? 'manual-dark' : 'manual';
+      if (useThemeStore.getState().theme !== localTheme) {
+        useThemeStore.setState({ theme: localTheme, isDark: localTheme === 'manual-dark' });
       }
-    })();
-    const localTheme: Theme = stored === 'manual-dark' ? 'manual-dark' : 'manual';
-    // Only update store if localStorage disagrees with current store state
-    useThemeStore.setState({ theme: localTheme, isDark: localTheme === 'manual-dark' });
-    document.documentElement.setAttribute('data-theme', localTheme);
+      document.documentElement.setAttribute('data-theme', localTheme);
+    } catch {
+      document.documentElement.setAttribute('data-theme', useThemeStore.getState().theme);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { theme, isDark, toggleTheme };

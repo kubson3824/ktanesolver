@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { solveWhosOnFirst, type ButtonPosition, type WhosOnFirstSolveRequest } from "../../services/whosOnFirstService";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { ModuleType } from "../../types";
 import { 
@@ -433,7 +432,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
               <button
                 key={word}
                 onClick={() => handleDisplayWordChange(word)}
-                className="text-xs bg-base-300 hover:bg-base-400 px-2 py-1 rounded transition-colors"
+                className="text-xs bg-base-300 hover:bg-base-200 px-2 py-1 rounded transition-colors"
                 disabled={isSolved || isLoading}
               >
                 {word}
