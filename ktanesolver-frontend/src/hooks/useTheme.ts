@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 
 type Theme = 'manual' | 'manual-dark';
 
-const STORAGE_KEY = 'ktane-theme';
+export const STORAGE_KEY = 'ktane-theme';
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === 'manual-dark' ? 'manual-dark' : 'manual';
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored === 'manual-dark' ? 'manual-dark' : 'manual';
+    } catch {
+      return 'manual';
+    }
   });
 
   useEffect(() => {
@@ -19,5 +23,5 @@ export function useTheme() {
     setTheme(t => (t === 'manual' ? 'manual-dark' : 'manual'));
   };
 
-  return { theme, toggleTheme };
+  return { theme, isDark: theme === 'manual-dark', toggleTheme };
 }
