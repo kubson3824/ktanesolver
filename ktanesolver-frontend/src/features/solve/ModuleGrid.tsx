@@ -90,7 +90,7 @@ export default function ModuleGrid({
               aria-disabled={disabled}
               aria-busy={isOpening}
               className={cn(
-                "bg-white border border-base-300 rounded-sm transition-shadow overflow-hidden cursor-pointer hover:shadow-card-sm",
+                "bg-base-100 border border-base-300 rounded-sm transition-shadow overflow-hidden cursor-pointer hover:shadow-card-sm",
                 module.solved && "border-success bg-green-50/50",
                 isOpening && "border-primary bg-primary/5 opacity-70",
                 !isOpening && !module.solved && ""

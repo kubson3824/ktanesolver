@@ -114,7 +114,7 @@ export default function NeedyModulesPanel({
                 role="dialog"
                 aria-label="Needy Modules"
                 aria-modal="true"
-                className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 bg-white border-l-2 border-base-content shadow-card z-40 transform transition-transform duration-300 ${
+                className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 bg-base-100 border-l-2 border-base-content shadow-card z-40 transform transition-transform duration-300 ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
             >
@@ -149,7 +149,7 @@ export default function NeedyModulesPanel({
                                             <div
                                                 key={module.id}
                                                 role="listitem"
-                                                className="bg-white border border-base-300 rounded-sm p-3 hover:border-primary transition-colors cursor-pointer"
+                                                className="bg-base-100 border border-base-300 rounded-sm p-3 hover:border-primary transition-colors cursor-pointer"
                                                 onClick={() => handleModuleClick(module)}
                                                 onKeyDown={(e) => {
                                                     if (e.key === "Enter" || e.key === " ") handleModuleClick(module);

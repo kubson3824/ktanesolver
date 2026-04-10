@@ -615,7 +615,7 @@ export default function SetupPage() {
                                     )}
                                     <div className="space-y-3">
                                         {formState.portPlates.map((plate, index) => (
-                                            <div key={plate.id} className="bg-white border border-base-300 rounded-sm p-3">
+                                            <div key={plate.id} className="bg-base-100 border border-base-300 rounded-sm p-3">
                                                 <div className="flex justify-between items-center mb-3">
                                                     <strong className="text-xs text-ink-muted uppercase tracking-widest">Plate {index + 1}</strong>
                                                     <Button
@@ -690,7 +690,7 @@ export default function SetupPage() {
                             onClick={() => setModuleTarget(undefined)}
                         />
                         <aside
-                            className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-xl animate-slide-in-right flex flex-col border-l border-base-300"
+                            className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-base-100 shadow-xl animate-slide-in-right flex flex-col border-l border-base-300"
                             role="dialog"
                             aria-labelledby="module-drawer-title"
                             aria-modal="true"

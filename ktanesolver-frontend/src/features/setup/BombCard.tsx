@@ -92,7 +92,7 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
                                     "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium rounded-sm border",
                                     lit
                                         ? "bg-red-50 text-primary border-primary/30"
-                                        : "bg-white text-ink-muted border-base-300"
+                                        : "bg-base-100 text-ink-muted border-base-300"
                                 )}
                             >
                                 <span

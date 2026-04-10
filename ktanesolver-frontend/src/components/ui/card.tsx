@@ -5,8 +5,8 @@ import { cn } from "../../lib/cn";
 const cardVariants = cva("rounded-sm", {
   variants: {
     variant: {
-      default: "bg-white border border-base-content shadow-card",
-      flat:    "bg-white border border-base-300",
+      default: "bg-base-100 border border-base-content shadow-card",
+      flat:    "bg-base-100 border border-base-300",
       inset:   "bg-base-200 border border-base-300",
     }
   },

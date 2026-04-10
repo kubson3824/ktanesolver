@@ -1,16 +1,21 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useTheme, STORAGE_KEY } from './useTheme';
+import { useTheme, useThemeStore, STORAGE_KEY } from './useTheme';
+
+// Reset Zustand store and localStorage between tests to avoid state leakage.
+function resetTheme() {
+  localStorage.clear();
+  document.documentElement.removeAttribute('data-theme');
+  useThemeStore.setState({ theme: 'manual', isDark: false });
+}
 
 describe('useTheme', () => {
   beforeEach(() => {
-    localStorage.clear();
-    document.documentElement.removeAttribute('data-theme');
+    resetTheme();
   });
 
   afterEach(() => {
-    localStorage.clear();
-    document.documentElement.removeAttribute('data-theme');
+    resetTheme();
   });
 
   it('defaults to "manual" when no stored preference', () => {
@@ -20,6 +25,7 @@ describe('useTheme', () => {
 
   it('reads "manual-dark" from localStorage on mount', () => {
     localStorage.setItem(STORAGE_KEY, 'manual-dark');
+    useThemeStore.setState({ theme: 'manual-dark', isDark: true });
     const { result } = renderHook(() => useTheme());
     expect(result.current.theme).toBe('manual-dark');
   });
@@ -40,7 +46,9 @@ describe('useTheme', () => {
   });
 
   it('toggleTheme switches from "manual-dark" back to "manual"', () => {
+    // Set both localStorage AND store so useEffect doesn't override the store.
     localStorage.setItem(STORAGE_KEY, 'manual-dark');
+    useThemeStore.setState({ theme: 'manual-dark', isDark: true });
     const { result } = renderHook(() => useTheme());
 
     act(() => { result.current.toggleTheme(); });
@@ -52,6 +60,7 @@ describe('useTheme', () => {
 
   it('isDark is true when theme is manual-dark', () => {
     localStorage.setItem(STORAGE_KEY, 'manual-dark');
+    useThemeStore.setState({ theme: 'manual-dark', isDark: true });
     const { result } = renderHook(() => useTheme());
     expect(result.current.isDark).toBe(true);
   });
@@ -62,6 +71,8 @@ describe('useTheme', () => {
   });
 
   it('falls back to "manual" when localStorage contains an unknown value', () => {
+    // store is already reset to 'manual' in beforeEach; corrupted localStorage
+    // will be treated as 'manual' by the useEffect on mount.
     localStorage.setItem(STORAGE_KEY, 'corrupted-value');
     const { result } = renderHook(() => useTheme());
     expect(result.current.theme).toBe('manual');

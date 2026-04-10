@@ -9,18 +9,18 @@ export default function ModuleNumberInput() {
 
   if (!currentModule) {
     return (
-      <div className="bg-white border border-base-300 rounded-sm px-3 py-2 mb-4">
+      <div className="bg-base-100 border border-base-300 rounded-sm px-3 py-2 mb-4">
         <p className="text-sm text-ink-muted">Select a module to set its Twitch number.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-base-300 rounded-sm px-3 py-2 mb-4">
+    <div className="bg-base-100 border border-base-300 rounded-sm px-3 py-2 mb-4">
       <label className="text-xs text-ink-muted uppercase tracking-widest block mb-2">
         Module Number (Twitch)
       </label>
-      <div className="inline-flex items-center bg-white border border-base-300 rounded-sm overflow-hidden">
+      <div className="inline-flex items-center bg-base-100 border border-base-300 rounded-sm overflow-hidden">
         <button
           type="button"
           className="px-2 py-1 text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors text-sm leading-none"

@@ -148,7 +148,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
           className="flex-1"
         />
         <select
-          className="bg-white border border-base-300 rounded-sm px-2 py-2 text-sm text-base-content focus:outline-none focus:border-primary transition-colors"
+          className="bg-base-100 border border-base-300 rounded-sm px-2 py-2 text-sm text-base-content focus:outline-none focus:border-primary transition-colors"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as "name-asc" | "name-desc" | "category")}
         >
@@ -179,7 +179,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
 
       {/* Selected summary */}
       {totalCount > 0 && (
-        <div className="bg-white border border-base-300 rounded-sm p-3">
+        <div className="bg-base-100 border border-base-300 rounded-sm p-3">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-semibold uppercase tracking-widest text-base-content">
               Selected: {totalCount} module{totalCount !== 1 ? "s" : ""}
@@ -230,7 +230,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
               <div
                 key={module.id}
                 className={cn(
-                  "bg-white border border-base-300 rounded-sm p-2 cursor-pointer transition-colors",
+                  "bg-base-100 border border-base-300 rounded-sm p-2 cursor-pointer transition-colors",
                   "hover:border-primary hover:shadow-sm",
                   isSelected && "border-primary bg-primary/5"
                 )}
@@ -248,7 +248,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                   >
                     <button
                       type="button"
-                      className="h-5 w-5 flex items-center justify-center bg-white border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
+                      className="h-5 w-5 flex items-center justify-center bg-base-100 border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         updateModuleCount(module.type, -1);
@@ -262,7 +262,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                     </span>
                     <button
                       type="button"
-                      className="h-5 w-5 flex items-center justify-center bg-white border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
+                      className="h-5 w-5 flex items-center justify-center bg-base-100 border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         updateModuleCount(module.type, 1);
