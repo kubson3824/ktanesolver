@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import ktanesolver.dto.RoundSummaryDto;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.RoundStatus;
 import ktanesolver.repository.RoundEventRepository;
@@ -76,6 +77,11 @@ public class RoundService {
 	@Transactional(readOnly = true)
 	public List<RoundEntity> getAllRounds() {
 		return roundRepo.findAll();
+	}
+
+	@Transactional(readOnly = true)
+	public List<RoundSummaryDto> getAllRoundSummaries() {
+		return roundRepo.findAllSummaries();
 	}
 
 	@Transactional

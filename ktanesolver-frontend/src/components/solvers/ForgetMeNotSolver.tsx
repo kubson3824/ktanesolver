@@ -76,12 +76,13 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         Array.isArray(state.calculatedNumbers) &&
         state.displayNumbers.length > 0
       ) {
+        const calculatedNumbers = state.calculatedNumbers ?? [];
         const restoredStages: Stage[] = state.displayNumbers.map((d, index) => ({
           display: d,
-          calculated: state.calculatedNumbers[index] ?? 0,
+          calculated: calculatedNumbers[index] ?? 0,
         }));
         setStages(restoredStages);
-        setSequence(state.calculatedNumbers);
+        setSequence(calculatedNumbers);
         setStage(state.displayNumbers.length + 1);
       }
     },
@@ -306,7 +307,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         {stages.length > 0 && (
           <div className="mt-6">
             {stages.length > 10 ? (
-              <details className="group" defaultOpen={false}>
+              <details className="group" open={false}>
                 <summary className="text-sm font-medium text-gray-400 cursor-pointer list-none flex items-center gap-1">
                   <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
                   Stage history ({stages.length})

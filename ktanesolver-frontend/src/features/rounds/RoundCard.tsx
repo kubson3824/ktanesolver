@@ -1,4 +1,4 @@
-import { type RoundEntity, RoundStatus } from "../../types";
+import { type RoundSummary, RoundStatus } from "../../types";
 import {
   getRoundStatusLabel,
   getRoundStatusBadgeVariant,
@@ -8,7 +8,7 @@ import { Badge } from "../../components/ui/badge";
 import { cn } from "../../lib/cn";
 
 interface RoundCardProps {
-  round: RoundEntity;
+  round: RoundSummary;
   onNavigate: (roundId: string) => void;
   onDelete: (roundId: string) => void;
   loading: boolean;
@@ -30,11 +30,6 @@ function getStatusBorderColor(status: RoundStatus): string {
 }
 
 export default function RoundCard({ round, onNavigate, onDelete, loading }: RoundCardProps) {
-  const totalModules = round.bombs.reduce(
-    (sum, bomb) => sum + (bomb.modules?.length ?? 0),
-    0
-  );
-
   const shortId = round.id.slice(0, 8);
 
   return (
@@ -56,7 +51,7 @@ export default function RoundCard({ round, onNavigate, onDelete, loading }: Roun
         {/* Middle: bomb + module count */}
         <div className="flex-1 min-w-0">
           <p className="text-sm text-ink-muted">
-            {round.bombs.length} {round.bombs.length === 1 ? "bomb" : "bombs"} &middot; {totalModules} {totalModules === 1 ? "module" : "modules"}
+            {round.bombCount} {round.bombCount === 1 ? "bomb" : "bombs"} &middot; {round.moduleCount} {round.moduleCount === 1 ? "module" : "modules"}
           </p>
           {round.startTime && (
             <p className="text-xs text-ink-muted mt-0.5">

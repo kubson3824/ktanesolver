@@ -29,9 +29,6 @@ const CONNECTIVE_OPTIONS: { value: LogicConnective; symbol: string; label: strin
   { value: "IMPL_RIGHT", symbol: "←", label: "Impl R" },
 ];
 
-const getConnectiveSymbol = (c: LogicConnective) =>
-  CONNECTIVE_OPTIONS.find((o) => o.value === c)?.symbol ?? "?";
-
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 type RowState = {

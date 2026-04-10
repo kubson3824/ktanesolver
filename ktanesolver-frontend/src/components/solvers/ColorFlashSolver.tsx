@@ -81,7 +81,6 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
     reset: resetSolverState,
     currentModule,
     round,
-    markModuleSolved,
   } = useSolver();
 
   const moduleState = useMemo(

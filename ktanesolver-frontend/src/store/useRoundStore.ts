@@ -7,6 +7,7 @@ import {
     type ModuleEntity,
     ModuleType,
     type RoundEntity,
+    type RoundSummary,
 
 } from "../types";
 import {api, debugModuleSync, withErrorWrapping} from "../lib/api";
@@ -14,8 +15,9 @@ import {useCatalogStore} from "./useCatalogStore";
 
 type RoundStoreState = {
     round?: RoundEntity;
-    allRounds?: RoundEntity[];
+    allRounds?: RoundSummary[];
     currentBomb?: BombEntity;
+    moduleNumbers: Record<string, number>;
     currentModule?: ModuleEntity & {
         bomb: BombEntity;
         moduleType: ModuleType;
@@ -31,7 +33,7 @@ type RoundStoreActions = {
     createRound: () => Promise<RoundEntity>;
     fetchRound: (roundId: string) => Promise<RoundEntity>;
     refreshRound: (roundId: string) => Promise<RoundEntity>;
-    fetchAllRounds: () => Promise<RoundEntity[]>;
+    fetchAllRounds: () => Promise<RoundSummary[]>;
     deleteRound: (roundId: string) => Promise<void>;
     addBomb: (payload: CreateBombRequest) => Promise<BombEntity>;
     deleteBomb: (bombId: string) => Promise<void>;
@@ -49,13 +51,15 @@ type RoundStoreActions = {
     selectModuleById: (bombId: string, moduleId: string) => void;
     clearModule: () => void;
     setManualUrl: (url: string) => void;
+    getModuleNumber: (moduleId?: string) => number;
+    setModuleNumber: (moduleId: string, number: number) => void;
     markModuleSolved: (bombId: string, moduleId: string) => void;
     /** Update a module's state and solution in the round (and currentModule if selected) so returning to the module shows the solution. */
     updateModuleAfterSolve: (
         bombId: string,
         moduleId: string,
-        state: Record<string, unknown>,
-        solution: Record<string, unknown>,
+        state: object,
+        solution: object,
         solved?: boolean
     ) => void;
     addStrike: (bombId: string) => Promise<BombEntity>;
@@ -77,6 +81,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             round: undefined,
             allRounds: undefined,
             currentBomb: undefined,
+            moduleNumbers: {},
             currentModule: undefined,
             manualUrl: undefined,
             loading: false,
@@ -221,7 +226,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 set({loading: true, error: undefined});
                 try {
                     const rounds = await withErrorWrapping(async () => {
-                        const {data} = await api.get<RoundEntity[]>("/rounds");
+                        const {data} = await api.get<RoundSummary[]>("/rounds");
                         return data;
                     });
                     set({allRounds: rounds, loading: false});
@@ -513,6 +518,20 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             },
 
             setManualUrl: (url) => set({manualUrl: url}),
+
+            getModuleNumber: (moduleId) => {
+                if (!moduleId) return 1;
+                return get().moduleNumbers[moduleId] ?? 1;
+            },
+
+            setModuleNumber: (moduleId, number) => {
+                set((state) => ({
+                    moduleNumbers: {
+                        ...state.moduleNumbers,
+                        [moduleId]: Math.min(99, Math.max(1, number)),
+                    },
+                }));
+            },
 
             markModuleSolved: (bombId, moduleId) => {
                 set((state) => {

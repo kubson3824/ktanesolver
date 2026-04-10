@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { BombEntity } from '../../types';
 import { ModuleType } from '../../types';
-import { useRoundStore } from '../../store/useRoundStore';
 import { generateTwitchCommand } from '../../utils/twitchCommands';
 import { solveRoundKeypad, type RoundKeypadInput, type RoundKeypadOutput, type RoundKeypadSymbol } from '../../services/roundKeypadService';
 import { 

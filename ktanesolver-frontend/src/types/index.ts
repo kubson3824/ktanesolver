@@ -107,6 +107,15 @@ export interface RoundEntity {
   roundState: JsonRecord;
 }
 
+export interface RoundSummary {
+  id: string;
+  status: RoundStatus;
+  startTime?: string;
+  version?: number;
+  bombCount: number;
+  moduleCount: number;
+}
+
 export interface CreateBombRequest {
   serialNumber: string;
   aaBatteryCount: number;

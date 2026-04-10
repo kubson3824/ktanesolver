@@ -29,7 +29,6 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
   const {
     isLoading,
     error,
-    isSolved,
     setIsLoading,
     setError,
     setIsSolved,

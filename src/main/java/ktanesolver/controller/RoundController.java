@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.web.bind.annotation.*;
 
 import ktanesolver.dto.RoundEventDto;
+import ktanesolver.dto.RoundSummaryDto;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.service.RoundEventService;
 import ktanesolver.service.RoundService;
@@ -54,8 +55,8 @@ public class RoundController {
 	}
 
 	@GetMapping
-	public List<RoundEntity> getAllRounds() {
-		return roundService.getAllRounds();
+	public List<RoundSummaryDto> getAllRounds() {
+		return roundService.getAllRoundSummaries();
 	}
 
 	@DeleteMapping ("/{roundId}")

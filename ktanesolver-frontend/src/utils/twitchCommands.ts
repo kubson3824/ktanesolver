@@ -7,8 +7,31 @@ export interface TwitchCommandData {
 
 const TWITCH_PLACEHOLDER = "number";
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function getString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function getNumber(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+function getBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function getStringArray(value: unknown): string[] | undefined {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? (value as string[])
+    : undefined;
+}
+
 export function generateTwitchCommand(data: TwitchCommandData): string {
   const { moduleType, result } = data;
+  const raw = asRecord(result);
   
   switch (moduleType) {
     case ModuleType.WIRES:
@@ -76,41 +99,38 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} transmit ${(result as { word: string }).word}`;
     
     case ModuleType.FORGET_ME_NOT:
-      // Assuming result has the action and parameter
-      if (result.action === 'display') {
-        return `!${TWITCH_PLACEHOLDER} display ${result.value}`;
-      } else if (result.action === 'press') {
-        return `!${TWITCH_PLACEHOLDER} press ${result.label}`;
+      if (getString(raw.action) === "display") {
+        return `!${TWITCH_PLACEHOLDER} display ${getString(raw.value) ?? getNumber(raw.value) ?? "unknown"}`;
+      } else if (getString(raw.action) === "press") {
+        return `!${TWITCH_PLACEHOLDER} press ${getString(raw.label) ?? "unknown"}`;
       }
-      return `!${TWITCH_PLACEHOLDER} ${result.action}`;
+      if (Array.isArray(raw.sequence)) {
+        return `!${TWITCH_PLACEHOLDER} sequence ${(raw.sequence as unknown[]).join(" ")}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
     
     case ModuleType.WHOS_ON_FIRST:
-      // Assuming result has the button to press
-      return `!${TWITCH_PLACEHOLDER} press ${result.button}`;
+      return `!${TWITCH_PLACEHOLDER} press ${getString(raw.button) ?? getString(raw.buttonText) ?? "unknown"}`;
     
     case ModuleType.VENTING_GAS:
-      // Assuming result has the action
-      return `!${TWITCH_PLACEHOLDER} ${result.action}`;
+      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
     
     case ModuleType.CAPACITOR_DISCHARGE:
-      // Assuming result has the action
-      return `!${TWITCH_PLACEHOLDER} ${result.action}`;
+      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
     
     case ModuleType.COMPLICATED_WIRES:
-      return `!${TWITCH_PLACEHOLDER} cut ${result.wire}`;
+      return `!${TWITCH_PLACEHOLDER} cut ${getString(raw.wire) ?? getNumber(raw.wire) ?? "unknown"}`;
     
     case ModuleType.WIRE_SEQUENCES:
-      // Assuming result has the wire to cut
-      return `!${TWITCH_PLACEHOLDER} cut ${result.wirePosition}`;
+      return `!${TWITCH_PLACEHOLDER} cut ${getNumber(raw.wirePosition) ?? getString(raw.wirePosition) ?? "unknown"}`;
     
     case ModuleType.PASSWORDS:
-      // Assuming result has the password
-      return `!${TWITCH_PLACEHOLDER} submit ${result.password}`;
+      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.password) ?? "unknown"}`;
     
     case ModuleType.MAZES:
-      // Assuming result has the directions - convert to first letters
-      if (result.directions) {
-        const directionLetters = result.directions.map((dir: string) => {
+      if (Array.isArray(raw.directions)) {
+        const directionLetters = (raw.directions as unknown[]).map((dir) => {
+          const direction = String(dir);
           // Map full direction names to first letters
           const directionMap: Record<string, string> = {
             'UP': 'U',
@@ -122,80 +142,72 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
             'L': 'L',
             'R': 'R'
           };
-          return directionMap[dir.toUpperCase()] || dir;
+          return directionMap[direction.toUpperCase()] || direction;
         });
         return `!${TWITCH_PLACEHOLDER} ${directionLetters.join(' ')}`;
       }
-      return `!${TWITCH_PLACEHOLDER} ${result.action || 'unknown'}`;
+      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? 'unknown'}`;
     
     case ModuleType.EMOJI_MATH:
-      return `!${TWITCH_PLACEHOLDER} answer ${result.answer}`;
+      return `!${TWITCH_PLACEHOLDER} answer ${getString(raw.answer) ?? getNumber(raw.answer) ?? "unknown"}`;
     
     case ModuleType.SWITCHES:
-      // For switches, we'll provide the instruction as is
-      return `!${TWITCH_PLACEHOLDER} ${result.instruction}`;
+      return `!${TWITCH_PLACEHOLDER} ${getString(raw.instruction) ?? "unknown"}`;
     
     case ModuleType.TWO_BITS:
-      // For Two Bits, we provide the letters to display
-      return `!${TWITCH_PLACEHOLDER} display ${result.letters}`;
+      return `!${TWITCH_PLACEHOLDER} display ${getString(raw.letters) ?? "unknown"}`;
     
     case ModuleType.WORD_SCRAMBLE:
-      // For Word Scramble, we provide the solution word
-      return `!${TWITCH_PLACEHOLDER} word ${result.solution || 'unknown'}`;
+      return `!${TWITCH_PLACEHOLDER} word ${getString(raw.solution) ?? getString(raw.instruction) ?? 'unknown'}`;
     
     case ModuleType.ANAGRAMS:
-      // For Anagrams, we provide the possible solutions
-      if (result.possibleSolutions && result.possibleSolutions.length > 0) {
-        return `!${TWITCH_PLACEHOLDER} anagrams ${result.possibleSolutions.join(', ')}`;
+      if (getStringArray(raw.possibleSolutions)?.length) {
+        return `!${TWITCH_PLACEHOLDER} anagrams ${getStringArray(raw.possibleSolutions)?.join(', ')}`;
       }
       return `!${TWITCH_PLACEHOLDER} anagrams no solution`;
     
     case ModuleType.COMBINATION_LOCK:
-      // For Combination Lock, we provide the combination numbers
-      if (result.combination && Array.isArray(result.combination)) {
-        return `!${TWITCH_PLACEHOLDER} combo ${result.combination.join(' ')}`;
+      if (Array.isArray(raw.combination)) {
+        return `!${TWITCH_PLACEHOLDER} combo ${(raw.combination as unknown[]).join(' ')}`;
       }
-      return `!${TWITCH_PLACEHOLDER} combo ${result.firstNumber || '0'} ${result.secondNumber || '0'} ${result.thirdNumber || '0'}`;
+      return `!${TWITCH_PLACEHOLDER} combo ${getNumber(raw.firstNumber) ?? '0'} ${getNumber(raw.secondNumber) ?? '0'} ${getNumber(raw.thirdNumber) ?? '0'}`;
     
     case ModuleType.ROUND_KEYPAD:
-      // For Round Keypad, we provide the symbols to press
-      if (result.symbolsToPress && Array.isArray(result.symbolsToPress)) {
-        return `!${TWITCH_PLACEHOLDER} press ${result.symbolsToPress.join(' ')}`;
+      if (getStringArray(raw.symbolsToPress)?.length) {
+        return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.symbolsToPress)?.join(' ')}`;
       }
       return `!${TWITCH_PLACEHOLDER} press none`;
     
     case ModuleType.LISTENING:
-      // For Listening, we provide the 4-symbol code to enter
-      if (result.code) {
-        return `!${TWITCH_PLACEHOLDER} code ${result.code}`;
+      if (getString(raw.code)) {
+        return `!${TWITCH_PLACEHOLDER} code ${getString(raw.code)}`;
       }
       return `!${TWITCH_PLACEHOLDER} code unknown`;
 
     case ModuleType.FOREIGN_EXCHANGE_RATES:
-      // For Foreign Exchange, we provide the key position
-      return `!${TWITCH_PLACEHOLDER} key ${result.keyPosition}`;
+      return `!${TWITCH_PLACEHOLDER} key ${getString(raw.keyPosition) ?? getNumber(raw.keyPosition) ?? "unknown"}`;
 
     case ModuleType.ORIENTATION_CUBE:
-      // For Orientation Cube, we provide the rotation sequence
-      if (result.rotations && Array.isArray(result.rotations)) {
+      if (Array.isArray(raw.rotations)) {
         const rotationMap: Record<string, string> = {
           'ROTATE_LEFT': 'L',
           'ROTATE_RIGHT': 'R',
           'ROTATE_CLOCKWISE': 'CW',
           'ROTATE_COUNTERCLOCKWISE': 'CCW'
         };
-        const rotations = result.rotations.map((rot: string) => rotationMap[rot] || rot).join(' ');
+        const rotations = (raw.rotations as unknown[]).map((rot) => {
+          const rotation = String(rot);
+          return rotationMap[rotation] || rotation;
+        }).join(' ');
         return `!${TWITCH_PLACEHOLDER} rotate ${rotations}`;
       }
       return `!${TWITCH_PLACEHOLDER} rotate unknown`;
 
     case ModuleType.LETTER_KEYS:
-      // For Letter Keys, we provide the letter to press
-      return `!${TWITCH_PLACEHOLDER} press ${result.letter}`;
+      return `!${TWITCH_PLACEHOLDER} press ${getString(raw.letter) ?? "unknown"}`;
 
     case ModuleType.ASTROLOGY:
-      // For Astrology, we provide the computed omen score
-      return `!${TWITCH_PLACEHOLDER} omen ${result.omenScore}`;
+      return `!${TWITCH_PLACEHOLDER} omen ${getNumber(raw.omenScore) ?? getString(raw.omenScore) ?? "unknown"}`;
 
     case ModuleType.CONNECTION_CHECK:
       // For Connection Check, result has ledStates array
@@ -300,7 +312,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} press ${(result as { press: string }).press}`;
 
     case ModuleType.SILLY_SLOTS: {
-      const legal = (result as { legal?: boolean }).legal;
+      const legal = getBoolean(raw.legal);
       return legal ? `!${TWITCH_PLACEHOLDER} press KEEP` : `!${TWITCH_PLACEHOLDER} pull lever`;
     }
 
@@ -326,7 +338,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     }
 
     default:
-      return `!${TWITCH_PLACEHOLDER} action ${result.action || 'unknown'}`;
+      return `!${TWITCH_PLACEHOLDER} action ${getString(raw.action) ?? 'unknown'}`;
   }
 }
 

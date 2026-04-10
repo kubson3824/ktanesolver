@@ -29,7 +29,7 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (state: { letters?: string; result?: WordScrambleSolveResponse["output"]; twitchCommand?: string }) => {
+    (state: { letters?: string; result?: WordScrambleSolveResponse["output"] | null; twitchCommand?: string }) => {
       if (state.letters !== undefined) setLetters(state.letters);
       if (state.result) setResult(state.result);
       if (state.twitchCommand) setTwitchCommand(state.twitchCommand);

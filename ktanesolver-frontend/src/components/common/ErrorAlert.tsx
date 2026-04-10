@@ -1,16 +1,20 @@
 import { Alert } from "../ui/alert";
 
 interface ErrorAlertProps {
-  error: string;
+  error?: string;
+  message?: string;
   className?: string;
+  onDismiss?: () => void;
 }
 
-export default function ErrorAlert({ error, className = "" }: ErrorAlertProps) {
-  if (!error) return null;
+export default function ErrorAlert({ error, message, className = "" }: ErrorAlertProps) {
+  const resolvedError = error ?? message ?? "";
+
+  if (!resolvedError) return null;
 
   return (
     <Alert variant="error" className={className}>
-      {error}
+      {resolvedError}
     </Alert>
   );
 }

@@ -30,7 +30,6 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   const {
     isLoading,
     error,
-    isSolved,
     setIsLoading,
     setError,
     setIsSolved,

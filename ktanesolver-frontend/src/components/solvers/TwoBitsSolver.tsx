@@ -30,7 +30,7 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (state: { currentStage?: number; inputNumber?: string; result?: TwoBitsOutput; twitchCommand?: string }) => {
+    (state: { currentStage?: number; inputNumber?: string; result?: TwoBitsOutput | null; twitchCommand?: string }) => {
       // Never restore to stage 3 unless the module is actually solved (avoids stale/partial backend state)
       const canRestoreStage3 = state.currentStage === 3 && currentModule?.solved;
       const stageToRestore =

@@ -67,7 +67,6 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
   const {
     isLoading,
     error,
-    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -120,9 +119,13 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
     extractSolution: (raw) => {
       if (raw == null || typeof raw !== "object") return null;
       const o = raw as { output?: { legal?: boolean; illegalRuleNumber?: number } };
-      if (o?.output && typeof o.output.legal === "boolean") return o.output;
+      if (o?.output && typeof o.output.legal === "boolean") {
+        return { legal: o.output.legal, illegalRuleNumber: o.output.illegalRuleNumber };
+      }
       const r = raw as { legal?: boolean; illegalRuleNumber?: number };
-      if (typeof r.legal === "boolean") return r;
+      if (typeof r.legal === "boolean") {
+        return { legal: r.legal, illegalRuleNumber: r.illegalRuleNumber };
+      }
       return null;
     },
     inferSolved: (_sol, mod) => Boolean((mod as { solved?: boolean })?.solved),

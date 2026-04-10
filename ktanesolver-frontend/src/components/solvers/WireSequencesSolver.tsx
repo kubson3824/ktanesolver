@@ -500,7 +500,7 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
             >
               <h4 className="text-sm font-semibold text-success">Instructions</h4>
               <ul className="space-y-1 text-sm">
-                {wires.map((wire, index) => (
+                {wires.map((_, index) => (
                   <li key={index} className="flex items-center gap-2">
                     <span className="text-base-content/70">Wire #{index + 1}:</span>
                     <span className={solution[index] ? "text-success font-medium" : "text-base-content/80"}>
