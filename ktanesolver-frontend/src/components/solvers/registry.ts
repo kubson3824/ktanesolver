@@ -90,8 +90,45 @@ export function isNeedyModuleType(
 }
 
 /**
- * Returns a React.lazy component for the given module type, or null if no
- * solver is registered.
+ * Stable map of pre-built React.lazy() references — one per module type.
+ * Built once at module load time so the same moduleType always returns the
+ * identical lazy() reference, preventing unnecessary remounts.
+ */
+export const lazySolverRegistry = Object.fromEntries(
+  Object.entries(solverRegistry).map(([moduleType, entry]) => [
+    moduleType,
+    lazy(entry.load),
+  ]),
+) as Partial<Record<ModuleType, LazyExoticComponent<ComponentType<SolverProps>>>>;
+
+function isNeedyCategory(category: ModuleCategory): boolean {
+  return (
+    category === ModuleCategory.VANILLA_NEEDY ||
+    category === ModuleCategory.MODDED_NEEDY
+  );
+}
+
+/**
+ * Returns true if the given module type is a needy module, using the catalog
+ * as the primary source of truth (category-based) and falling back to the
+ * registry's isNeedy flag when the catalog entry is unavailable.
+ */
+export function isNeedyModuleType(
+  moduleType: string,
+  catalogByType: Record<string, ModuleCatalogItem | undefined>,
+): boolean {
+  const catalogEntry = catalogByType[moduleType];
+  if (catalogEntry) {
+    return isNeedyCategory(catalogEntry.category);
+  }
+
+  const registryEntry = solverRegistry[moduleType as ModuleType];
+  return Boolean(registryEntry?.isNeedy);
+}
+
+/**
+ * Returns a stable React.lazy component for the given module type, or null if
+ * no solver is registered. Always returns the same reference for the same type.
  */
 export function getLazySolver(moduleType: ModuleType) {
   return lazySolverRegistry[moduleType] ?? null;

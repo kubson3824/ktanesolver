@@ -11,23 +11,22 @@ interface BreadcrumbProps {
 }
 
 const separator = (
-  <span className="text-base-content/50 mx-1.5" aria-hidden>
-    ›
+  <span className="text-ink-muted mx-1.5 select-none" aria-hidden>
+    /
   </span>
 );
 
 export default function Breadcrumb({ segments, className = "" }: BreadcrumbProps) {
   return (
-    <nav aria-label="Breadcrumb" className={`flex items-center text-sm font-medium ${className}`}>
+    <nav aria-label="Breadcrumb" className={`flex items-center text-sm font-medium font-sans ${className}`}>
       {segments.map((seg, i) => {
-        const isLast = i === segments.length - 1;
         const linkClass =
-          "text-base-content/70 hover:text-base-content transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200 rounded px-0.5";
-        const currentClass = "text-primary";
+          "text-ink-muted hover:text-ink underline-offset-2 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-0.5";
+        const currentClass = "font-semibold text-ink";
 
         if ("current" in seg && seg.current) {
           return (
-            <span key={i} className="flex items-center gap-1.5">
+            <span key={i} className="flex items-center">
               {i > 0 && separator}
               <span className={currentClass}>{seg.label}</span>
             </span>
@@ -35,7 +34,7 @@ export default function Breadcrumb({ segments, className = "" }: BreadcrumbProps
         }
         if ("to" in seg) {
           return (
-            <span key={i} className="flex items-center gap-1.5">
+            <span key={i} className="flex items-center">
               {i > 0 && separator}
               <Link to={seg.to} className={linkClass}>
                 {seg.label}
@@ -45,9 +44,13 @@ export default function Breadcrumb({ segments, className = "" }: BreadcrumbProps
         }
         if ("onClick" in seg) {
           return (
-            <span key={i} className="flex items-center gap-1.5">
+            <span key={i} className="flex items-center">
               {i > 0 && separator}
-              <button type="button" onClick={seg.onClick} className={`${linkClass} bg-transparent border-none cursor-pointer`}>
+              <button
+                type="button"
+                onClick={seg.onClick}
+                className={`${linkClass} bg-transparent border-none cursor-pointer`}
+              >
                 {seg.label}
               </button>
             </span>

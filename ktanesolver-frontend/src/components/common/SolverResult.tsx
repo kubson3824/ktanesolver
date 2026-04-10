@@ -1,35 +1,11 @@
 import { cn } from "../../lib/cn";
 
 interface SolverResultProps {
-  variant?: "success" | "warning" | "info";
+  variant?: "success" | "warning" | "error" | "info";
   title: string;
   description?: string;
   className?: string;
 }
-
-const variantClasses = {
-  success: "bg-success/10 border-success/30 text-success",
-  warning: "bg-warning/10 border-warning/30 text-warning",
-  info: "bg-info/10 border-info/30 text-info",
-};
-
-const variantIcons = {
-  success: (
-    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  warning: (
-    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-  ),
-  info: (
-    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-};
 
 export default function SolverResult({
   variant = "success",
@@ -37,21 +13,55 @@ export default function SolverResult({
   description,
   className,
 }: SolverResultProps) {
+  const isSuccess = variant === "success";
+
+  const titleColorClass = variant === "success"
+    ? "text-success"
+    : variant === "warning"
+    ? "text-warning"
+    : variant === "error"
+    ? "text-error"
+    : "text-info";
+
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4 mb-4 animate-fade-in shadow-sm",
-        variantClasses[variant],
+        "callout",
+        isSuccess ? "callout-success" : variant === "warning" ? "callout-warning" : "callout-info",
         className
       )}
       role="status"
       aria-live="polite"
     >
-      {variantIcons[variant]}
-      <div>
-        <span className="font-bold">{title}</span>
-        {description && <p className="text-sm mt-1 opacity-90">{description}</p>}
-      </div>
+      <p className={cn("font-display text-sm uppercase tracking-widest mb-2", titleColorClass)}>
+        {title}
+      </p>
+      {description && (
+        <div className="space-y-1">
+          {description.split("\n").map((line, i) => {
+            const colonIdx = line.indexOf(":");
+            if (colonIdx > -1) {
+              const label = line.slice(0, colonIdx).trim();
+              const value = line.slice(colonIdx + 1).trim();
+              return (
+                <div key={i} className="flex items-baseline gap-2">
+                  <span className="text-xs text-ink-muted uppercase tracking-wide shrink-0">
+                    {label}:
+                  </span>
+                  <span className="font-mono-code text-sm font-medium text-base-content">
+                    {value}
+                  </span>
+                </div>
+              );
+            }
+            return (
+              <p key={i} className="font-mono-code text-sm font-medium text-base-content">
+                {line}
+              </p>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

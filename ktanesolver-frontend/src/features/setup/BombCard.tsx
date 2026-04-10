@@ -1,131 +1,151 @@
-import { type BombEntity, BombStatus, ModuleType } from "../../types";
-import { getBombStatusBadgeVariant } from "../../lib/utils";
-import { Card, CardHeader, CardContent } from "../../components/ui/card";
+import { type BombEntity, BombStatus } from "../../types";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Trash2 } from "lucide-react";
 import { cn } from "../../lib/cn";
-
-const moduleTypes = Object.values(ModuleType);
-
-const batteryIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-    </svg>
-);
-
-const portPlateIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v6a1 1 0 01-1 1h-3a1 1 0 01-1-1V7a1 1 0 00-1-1h-2z" />
-    </svg>
-);
 
 interface BombCardProps {
     bomb: BombEntity;
+    index: number;
     onEditEdgework: (bomb: BombEntity) => void;
     onAddModules: (bomb: BombEntity) => void;
+    onDelete?: (bomb: BombEntity) => void;
     animationDelay?: number;
 }
 
-export default function BombCard({ bomb, onEditEdgework, onAddModules, animationDelay = 0 }: BombCardProps) {
+function EditIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+    );
+}
+
+export default function BombCard({ bomb, index, onEditEdgework, onAddModules, onDelete, animationDelay = 0 }: BombCardProps) {
     const isActive = bomb.status === BombStatus.ACTIVE;
+    const moduleCount = bomb.modules?.length ?? 0;
+    const hasModules = moduleCount > 0;
 
     return (
-        <Card
+        <div
             className={cn(
-                "animate-fade-in transition-colors border-panel-border bg-base-200/90 backdrop-blur-sm",
-                "hover:border-panel-border hover:bg-base-200",
-                isActive && "border-l-2 border-l-success"
+                "card-manual animate-fade-in overflow-hidden",
+                isActive && "border-l-[3px] border-l-success"
             )}
             style={{ animationDelay: `${animationDelay}ms`, animationFillMode: "backwards" }}
         >
-            <CardHeader className="pb-2">
-                <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0 flex-1 border-l-2 border-primary/40 pl-2 rounded pr-2 py-1">
-                        <p className="text-xs text-secondary uppercase tracking-wider">Serial</p>
-                        <p className="text-xl font-mono font-bold mt-1 truncate">
-                            {bomb.serialNumber || "Unknown"}
+            {/* Card header */}
+            <div className="bg-base-200 border-b border-base-300 px-4 py-3 flex items-center justify-between">
+                <span className="font-display text-base font-bold uppercase tracking-wide text-base-content">
+                    BOMB {index + 1}
+                </span>
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => onEditEdgework(bomb)}
+                        aria-label="Edit edgework"
+                        title="Edit edgework"
+                    >
+                        <EditIcon />
+                    </Button>
+                    {onDelete && (
+                        <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => onDelete(bomb)}
+                            aria-label="Delete bomb"
+                            title="Delete bomb"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Card body */}
+            <div className="px-4 py-4 space-y-3">
+                {/* Serial + batteries */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-0.5">Serial</p>
+                        <p className="font-mono text-base font-medium text-base-content">{bomb.serialNumber || "—"}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-0.5">Batteries</p>
+                        <p className="font-mono text-base font-medium text-base-content">
+                            <span title="AA batteries">{bomb.aaBatteryCount}<span className="text-xs text-ink-muted ml-0.5">AA</span></span>
+                            {" / "}
+                            <span title="D batteries">{bomb.dBatteryCount}<span className="text-xs text-ink-muted ml-0.5">D</span></span>
                         </p>
                     </div>
-                    <Badge variant={getBombStatusBadgeVariant(bomb.status)} className="shrink-0 text-caption">
-                        {bomb.status}
-                    </Badge>
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-                <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-caption text-secondary">
-                        {batteryIcon}
-                        AA / D
-                    </span>
-                    <span className="font-mono font-bold text-body">
-                        {bomb.aaBatteryCount} / {bomb.dBatteryCount}
-                    </span>
                 </div>
 
+                {/* Indicators */}
                 <div>
-                    <span className="flex items-center gap-1.5 text-caption text-secondary mb-1.5">
-                        <span className="h-2 w-2 rounded-full bg-success/80" aria-hidden />
-                        Indicators
-                    </span>
-                    <div className="flex flex-wrap gap-1">
+                    <p className="text-xs text-ink-muted uppercase tracking-widest mb-1.5">Indicators</p>
+                    <div className="flex flex-wrap gap-1.5">
                         {Object.entries(bomb.indicators ?? {}).map(([name, lit]) => (
-                            <Badge
+                            <span
                                 key={`${bomb.id}-${name}`}
-                                variant={lit ? "success" : "outline"}
-                                className="text-caption"
+                                className={cn(
+                                    "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium rounded-sm border",
+                                    lit
+                                        ? "bg-red-50 text-primary border-primary/30"
+                                        : "bg-white text-ink-muted border-base-300"
+                                )}
                             >
+                                <span
+                                    className={cn(
+                                        "h-1.5 w-1.5 rounded-full",
+                                        lit ? "bg-primary" : "bg-base-300"
+                                    )}
+                                    aria-hidden
+                                />
                                 {name}
-                            </Badge>
+                            </span>
                         ))}
                         {Object.keys(bomb.indicators ?? {}).length === 0 && (
-                            <span className="text-caption text-base-content/50 italic">None</span>
+                            <span className="text-xs text-ink-muted italic">None</span>
                         )}
                     </div>
                 </div>
 
+                {/* Port plates */}
                 <div>
-                    <span className="flex items-center gap-1.5 text-caption text-secondary mb-1.5">
-                        {portPlateIcon}
-                        Port plates
-                    </span>
+                    <p className="text-xs text-ink-muted uppercase tracking-widest mb-1.5">Port plates</p>
                     <div className="flex flex-wrap gap-1">
                         {bomb.portPlates.length === 0 ? (
-                            <span className="text-caption text-base-content/50">—</span>
+                            <span className="text-xs text-ink-muted">—</span>
                         ) : (
                             bomb.portPlates.map((plate, plateIndex) => (
-                                <Badge key={`${bomb.id}-plate-${plateIndex}`} variant="outline" className="text-caption">
-                                    Plate {plateIndex + 1}: {plate.ports?.length ? plate.ports.join(", ") : "Empty"}
+                                <Badge key={`${bomb.id}-plate-${plateIndex}`} variant="outline" className="text-xs font-mono">
+                                    {plate.ports?.length ? plate.ports.join(", ") : "Empty"}
                                 </Badge>
                             ))
                         )}
                     </div>
                 </div>
+            </div>
 
-                <div className="border-t border-base-300 pt-3 mt-2">
-                    <div className="flex flex-wrap gap-1 mb-3">
-                        {moduleTypes.map((type) => {
-                            const count = bomb.modules?.filter((m) => m.type === type).length ?? 0;
-                            if (count === 0) return null;
-                            return (
-                                <Badge key={type} variant="info" className="text-caption">
-                                    {type.replaceAll("_", " ")} ({count})
-                                </Badge>
-                            );
-                        })}
-                        {(!bomb.modules || bomb.modules.length === 0) && (
-                            <p className="text-caption text-base-content/50 italic">No modules yet</p>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-end">
-                        <Button variant="outline" size="sm" onClick={() => onEditEdgework(bomb)}>
-                            Adjust edgework
-                        </Button>
-                        <Button variant="primary" size="sm" onClick={() => onAddModules(bomb)}>
-                            Add modules
-                        </Button>
-                    </div>
+            {/* Card footer */}
+            <div className="bg-base-200 border-t border-base-300 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Badge variant={hasModules ? "info" : "default"} className="text-xs">
+                        {moduleCount} module{moduleCount !== 1 ? "s" : ""}
+                    </Badge>
+                    {isActive && (
+                        <Badge variant="success" className="text-xs">Active</Badge>
+                    )}
                 </div>
-            </CardContent>
-        </Card>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onAddModules(bomb)}
+                >
+                    {hasModules ? "Configure Modules" : "Add Modules"}
+                </Button>
+            </div>
+        </div>
     );
 }

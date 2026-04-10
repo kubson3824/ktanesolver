@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { type ModuleCatalogItem, ModuleCategory } from "../types";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
+import { Alert } from "./ui/alert";
+import { cn } from "../lib/cn";
+import { api } from "../lib/api";
 import { useCatalogStore } from "../store/useCatalogStore";
 
 interface ModuleSelectorProps {
@@ -7,32 +12,59 @@ interface ModuleSelectorProps {
   initialCounts?: Record<string, number>;
 }
 
-const categoryLabels = {
-  [ModuleCategory.VANILLA_REGULAR]: "Vanilla Regular",
-  [ModuleCategory.VANILLA_NEEDY]: "Vanilla Needy",
-  [ModuleCategory.MODDED_REGULAR]: "Modded Regular",
+const categoryLabels: Record<ModuleCategory, string> = {
+  [ModuleCategory.VANILLA_REGULAR]: "Vanilla",
+  [ModuleCategory.VANILLA_NEEDY]: "Needy",
+  [ModuleCategory.MODDED_REGULAR]: "Modded",
   [ModuleCategory.MODDED_NEEDY]: "Modded Needy",
 };
 
-const categoryColors = {
-  [ModuleCategory.VANILLA_REGULAR]: "badge-primary",
-  [ModuleCategory.VANILLA_NEEDY]: "badge-warning",
-  [ModuleCategory.MODDED_REGULAR]: "badge-info",
-  [ModuleCategory.MODDED_NEEDY]: "badge-error",
+const categoryBadgeVariant: Record<ModuleCategory, "primary" | "warning" | "info" | "error"> = {
+  [ModuleCategory.VANILLA_REGULAR]: "primary",
+  [ModuleCategory.VANILLA_NEEDY]: "warning",
+  [ModuleCategory.MODDED_REGULAR]: "info",
+  [ModuleCategory.MODDED_NEEDY]: "error",
 };
 
+type FilterTab = "ALL" | "VANILLA" | "MODDED" | "NEEDY";
+
+const filterTabs: { id: FilterTab; label: string }[] = [
+  { id: "ALL", label: "ALL" },
+  { id: "VANILLA", label: "VANILLA" },
+  { id: "MODDED", label: "MODDED" },
+  { id: "NEEDY", label: "NEEDY" },
+];
+
+function categoryMatchesFilter(category: ModuleCategory, filter: FilterTab): boolean {
+  if (filter === "ALL") return true;
+  if (filter === "VANILLA") return category === ModuleCategory.VANILLA_REGULAR;
+  if (filter === "MODDED") return category === ModuleCategory.MODDED_REGULAR || category === ModuleCategory.MODDED_NEEDY;
+  if (filter === "NEEDY") return category === ModuleCategory.VANILLA_NEEDY || category === ModuleCategory.MODDED_NEEDY;
+  return true;
+}
+
 export default function ModuleSelector({ onSelectionChange, initialCounts = {} }: ModuleSelectorProps) {
+  const [modules, setModules] = useState<ModuleCatalogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const modules = useCatalogStore((state) => state.catalog);
   const catalogLoaded = useCatalogStore((state) => state.loaded);
   const catalogLoading = useCatalogStore((state) => state.loading);
   const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<ModuleCategory | "ALL">("ALL");
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
   const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "category">("name-asc");
 
   useEffect(() => {
+    setLoading(true);
+    setFetchError(null);
+    api.get<ModuleCatalogItem[]>("/api/modules")
+      .then(res => setModules(res.data))
+      .catch(() => setFetchError("Failed to load modules. Please try again."))
+      .finally(() => setLoading(false));
+  }, []);
     if (!catalogLoaded && !catalogLoading) {
       void fetchCatalog();
     }
@@ -41,8 +73,8 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const filteredModules = useMemo(() => {
     let filtered = modules;
 
-    if (selectedCategory !== "ALL") {
-      filtered = filtered.filter(m => m.category === selectedCategory);
+    if (activeFilter !== "ALL") {
+      filtered = filtered.filter(m => categoryMatchesFilter(m.category, activeFilter));
     }
 
     if (searchTerm) {
@@ -54,11 +86,9 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       );
     }
 
-    // Separate recently used and others first
     const recent = filtered.filter(m => recentlyUsed.includes(m.id));
     const others = filtered.filter(m => !recentlyUsed.includes(m.id));
 
-    // Apply sorting function
     const sortFunction = (a: ModuleCatalogItem, b: ModuleCatalogItem) => {
       if (sortBy === "name-asc") {
         return a.name.localeCompare(b.name);
@@ -79,12 +109,8 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       return 0;
     };
 
-    // Sort both groups
-    const sortedRecent = [...recent].sort(sortFunction);
-    const sortedOthers = [...others].sort(sortFunction);
-    
-    return [...sortedRecent, ...sortedOthers];
-  }, [modules, selectedCategory, searchTerm, sortBy, recentlyUsed]);
+    return [...[...recent].sort(sortFunction), ...[...others].sort(sortFunction)];
+  }, [modules, activeFilter, searchTerm, sortBy, recentlyUsed]);
 
   const updateModuleCount = (moduleType: string, delta: number) => {
     setSelectedModules(prev => {
@@ -99,13 +125,10 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   }, [selectedModules, onSelectionChange]);
 
   const handleModuleClick = (module: ModuleCatalogItem) => {
-    // Track recently used
     setRecentlyUsed(prev => {
       const updated = [module.id, ...prev.filter(id => id !== module.id)];
-      return updated.slice(0, 10); // Keep only last 10
+      return updated.slice(0, 10);
     });
-
-    // Increment count
     updateModuleCount(module.type, 1);
   };
 
@@ -124,63 +147,70 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   }
 
   return (
-    <div className="space-y-4">
-      {/* Search and Filters */}
-      <div className="space-y-3">
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Search modules by name, description, or tags..."
-            className="input input-bordered flex-1"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <select
-            className="select select-bordered w-32"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as "name-asc" | "name-desc" | "category")}
-          >
-            <option value="name-asc">Name ↑</option>
-            <option value="name-desc">Name ↓</option>
-            <option value="category">Category</option>
-          </select>
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <button
-            className={`btn btn-sm ${selectedCategory === "ALL" ? "btn-active" : "btn-outline"}`}
-            onClick={() => setSelectedCategory("ALL")}
-          >
-            All ({modules.length})
-          </button>
-          {Object.values(ModuleCategory).map(category => (
-            <button
-              key={category}
-              className={`btn btn-sm ${selectedCategory === category ? "btn-active" : "btn-outline"}`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {categoryLabels[category]} ({modules.filter(m => m.category === category).length})
-            </button>
-          ))}
-        </div>
+    <div className="space-y-3">
+      {/* Search + Sort */}
+      <div className="flex gap-2 items-center">
+        <Input
+          type="text"
+          placeholder="Search modules..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1"
+        />
+        <select
+          className="bg-white border border-base-300 rounded-sm px-2 py-2 text-sm text-base-content focus:outline-none focus:border-primary transition-colors"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as "name-asc" | "name-desc" | "category")}
+        >
+          <option value="name-asc">Name ↑</option>
+          <option value="name-desc">Name ↓</option>
+          <option value="category">Category</option>
+        </select>
       </div>
 
-      {/* Selected Modules Summary */}
+      {/* Filter tabs */}
+      <div className="flex gap-1 flex-wrap">
+        {filterTabs.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            className={cn(
+              "px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors",
+              activeFilter === tab.id
+                ? "bg-primary text-primary-content"
+                : "bg-base-200 text-base-content hover:bg-base-300"
+            )}
+            onClick={() => setActiveFilter(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Selected summary */}
       {totalCount > 0 && (
-        <div className="rounded-lg border border-panel-border bg-base-200/90 p-4">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold">Selected: {totalCount} modules</span>
-            <button className="btn btn-xs btn-ghost" onClick={clearAll}>
+        <div className="bg-white border border-base-300 rounded-sm p-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-semibold uppercase tracking-widest text-base-content">
+              Selected: {totalCount} module{totalCount !== 1 ? "s" : ""}
+            </span>
+            <button
+              type="button"
+              className="text-xs text-ink-muted hover:text-base-content transition-colors"
+              onClick={clearAll}
+            >
               Clear all
             </button>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-1.5">
             {Object.entries(selectedModules).filter(([, count]) => count > 0).map(([type, count]) => (
-              <span key={type} className="badge badge-info gap-1">
+              <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-base-200 border border-base-300 rounded-sm text-base-content">
                 {type.replace(/_/g, " ")} × {count}
                 <button
-                  className="btn btn-ghost btn-xs p-0 h-4 min-h-4"
+                  type="button"
+                  className="text-ink-muted hover:text-base-content ml-0.5 leading-none"
                   onClick={() => updateModuleCount(type, -count)}
+                  aria-label={`Remove ${type}`}
                 >
                   ×
                 </button>
@@ -190,73 +220,69 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
         </div>
       )}
 
-      {/* Module List */}
-      <div className="grid gap-2 max-h-96 overflow-y-auto">
+      {/* Fetch error */}
+      {fetchError && (
+        <Alert variant="error">{fetchError}</Alert>
+      )}
+
+      {/* Module grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
         {filteredModules.length === 0 ? (
-          <div className="text-center py-8 text-base-content/50">
-            No modules found matching your criteria.
+          <div className="col-span-full text-center py-8 text-ink-muted text-sm">
+            No modules found.
           </div>
         ) : (
           filteredModules.map(module => {
             const count = selectedModules[module.type] || 0;
-            const isRecent = recentlyUsed.includes(module.id);
-            
+            const isSelected = count > 0;
+
             return (
               <div
                 key={module.id}
-                className={`rounded-lg border border-panel-border bg-base-200/90 cursor-pointer hover:border-primary transition-colors ${
-                  isRecent ? "ring-2 ring-primary/20" : ""
-                }`}
+                className={cn(
+                  "bg-white border border-base-300 rounded-sm p-2 cursor-pointer transition-colors",
+                  "hover:border-primary hover:shadow-sm",
+                  isSelected && "border-primary bg-primary/5"
+                )}
                 onClick={() => handleModuleClick(module)}
               >
-                <div className="p-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{module.name}</h3>
-                        {isRecent && <span className="badge badge-xs badge-primary">Recent</span>}
-                        <span className={`badge badge-xs ${categoryColors[module.category]}`}>
-                          {categoryLabels[module.category]}
-                        </span>
-                      </div>
-                      <p className="text-sm text-base-content/70 mb-2">{module.description}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {module.tags.map(tag => (
-                          <span key={tag} className="badge badge-outline badge-xs">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    {count > 0 && (
-                      <div className="flex items-center gap-1 ml-4">
-                        <button
-                          type="button"
-                          className="btn btn-xs btn-ghost btn-circle"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            updateModuleCount(module.type, -1);
-                          }}
-                        >
-                          -
-                        </button>
-                        <span className="badge badge-info w-8 text-center">{count}</span>
-                        <button
-                          type="button"
-                          className="btn btn-xs btn-ghost btn-circle"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            updateModuleCount(module.type, 1);
-                          }}
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
+                <p className="text-sm font-medium text-base-content leading-tight mb-1">{module.name}</p>
+                <Badge variant={categoryBadgeVariant[module.category]} className="text-xs">
+                  {categoryLabels[module.category]}
+                </Badge>
+
+                {isSelected && (
+                  <div
+                    className="flex items-center gap-1 mt-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className="h-5 w-5 flex items-center justify-center bg-white border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateModuleCount(module.type, -1);
+                      }}
+                      aria-label="Decrease count"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[1.5rem] text-center text-xs font-mono font-medium text-base-content">
+                      {count}
+                    </span>
+                    <button
+                      type="button"
+                      className="h-5 w-5 flex items-center justify-center bg-white border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateModuleCount(module.type, 1);
+                      }}
+                      aria-label="Increase count"
+                    >
+                      +
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
             );
           })

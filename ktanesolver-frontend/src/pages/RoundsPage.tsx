@@ -4,9 +4,9 @@ import { useRoundStore } from "../store/useRoundStore";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader from "../components/layout/PageHeader";
 import RoundCard from "../features/rounds/RoundCard";
-import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
+import { Skeleton } from "../components/ui/skeleton";
 
 export default function RoundsPage() {
     const navigate = useNavigate();
@@ -50,8 +50,20 @@ export default function RoundsPage() {
 
     if (loading) {
         return (
-            <PageContainer className="flex items-center justify-center min-h-[60vh]">
-                <span className="loading loading-spinner loading-lg"></span>
+            <PageContainer>
+                <PageHeader
+                    title="ROUND HISTORY"
+                    actions={
+                        <Button variant="primary" onClick={handleCreateNewRound} disabled>
+                            New Round
+                        </Button>
+                    }
+                />
+                <div className="flex flex-col gap-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                </div>
             </PageContainer>
         );
     }
@@ -59,7 +71,15 @@ export default function RoundsPage() {
     if (error) {
         return (
             <PageContainer>
-                <Alert variant="error" className="max-w-4xl mx-auto">
+                <PageHeader
+                    title="ROUND HISTORY"
+                    actions={
+                        <Button variant="primary" onClick={handleCreateNewRound}>
+                            New Round
+                        </Button>
+                    }
+                />
+                <Alert variant="error">
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -70,26 +90,25 @@ export default function RoundsPage() {
     return (
         <PageContainer>
             <PageHeader
-                eyebrow="Round history"
-                title="Previous bombs"
-                subtitle="View and return to previously created rounds and their bomb configurations."
+                title="ROUND HISTORY"
                 actions={
-                    <Button variant="outline" onClick={handleCreateNewRound} disabled={loading}>
-                        Create New Round
+                    <Button variant="primary" onClick={handleCreateNewRound} disabled={loading}>
+                        New Round
                     </Button>
                 }
             />
 
             {sortedRounds.length === 0 ? (
-                <Card className="border-panel-border bg-panel-bg/80 backdrop-blur-xl shadow-sm">
-                    <CardContent className="text-center py-12">
-                        <p className="text-body text-base-content/70">
-                            No rounds found. Create your first round to get started.
-                        </p>
-                    </CardContent>
-                </Card>
+                <div className="text-center py-16">
+                    <p className="text-ink-muted text-sm mb-4">
+                        No rounds yet. Start your first round.
+                    </p>
+                    <Button variant="primary" onClick={handleCreateNewRound}>
+                        New Round
+                    </Button>
+                </div>
             ) : (
-                <div className="space-y-6">
+                <div className="flex flex-col gap-3">
                     {sortedRounds.map((round) => (
                         <RoundCard
                             key={round.id}

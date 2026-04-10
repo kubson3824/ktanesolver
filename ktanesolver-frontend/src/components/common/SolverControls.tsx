@@ -1,3 +1,5 @@
+import { Button } from "../ui/button";
+
 interface SolverControlsProps {
   onSolve: () => void;
   onReset: () => void;
@@ -6,6 +8,7 @@ interface SolverControlsProps {
   isResetDisabled?: boolean;
   isManualSolveDisabled?: boolean;
   isLoading?: boolean;
+  isSolved?: boolean;
   solveText?: string;
   loadingText?: string;
   showManualSolve?: boolean;
@@ -20,38 +23,47 @@ export default function SolverControls({
   isResetDisabled = false,
   isManualSolveDisabled = false,
   isLoading = false,
+  isSolved = false,
   solveText = "Solve",
   loadingText = "Solving...",
   showManualSolve = false,
   className = ""
 }: SolverControlsProps) {
   return (
-    <div className={`flex flex-wrap gap-3 mb-4 ${className}`}>
-      <button
+    <div className={`space-y-2 ${className}`}>
+      <Button
+        variant={isSolved ? "success" : "primary"}
+        size="md"
+        className="w-full"
         onClick={onSolve}
-        className="btn btn-primary flex-1"
-        disabled={isSolveDisabled || isLoading}
+        disabled={isSolveDisabled || isLoading || isSolved}
+        loading={isLoading}
       >
-        {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
-        {isLoading ? loadingText : solveText}
-      </button>
-      {showManualSolve && onSolveManually && (
-        <button 
-          onClick={onSolveManually} 
-          className="btn btn-success" 
-          disabled={isManualSolveDisabled || isLoading}
-          title="Mark this module as solved manually"
+        {isSolved ? "Solved ✓" : isLoading ? loadingText : solveText}
+      </Button>
+
+      <div className="flex items-center justify-between gap-2">
+        {showManualSolve && onSolveManually && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onSolveManually}
+            disabled={isManualSolveDisabled || isLoading}
+            title="Mark this module as solved manually"
+          >
+            Mark Solved
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onReset}
+          disabled={isResetDisabled || isLoading}
+          className="ml-auto"
         >
-          Solve
-        </button>
-      )}
-      <button 
-        onClick={onReset} 
-        className="btn btn-outline" 
-        disabled={isResetDisabled || isLoading}
-      >
-        Reset
-      </button>
+          Reset
+        </Button>
+      </div>
     </div>
   );
 }
