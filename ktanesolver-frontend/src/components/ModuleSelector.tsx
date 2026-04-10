@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { Alert } from "./ui/alert";
 import { cn } from "../lib/cn";
 import { api } from "../lib/api";
+import { useCatalogStore } from "../store/useCatalogStore";
 
 interface ModuleSelectorProps {
   onSelectionChange: (selectedModules: Record<string, number>) => void;
@@ -46,6 +47,10 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const [modules, setModules] = useState<ModuleCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const modules = useCatalogStore((state) => state.catalog);
+  const catalogLoaded = useCatalogStore((state) => state.loaded);
+  const catalogLoading = useCatalogStore((state) => state.loading);
+  const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
@@ -60,6 +65,10 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       .catch(() => setFetchError("Failed to load modules. Please try again."))
       .finally(() => setLoading(false));
   }, []);
+    if (!catalogLoaded && !catalogLoading) {
+      void fetchCatalog();
+    }
+  }, [catalogLoaded, catalogLoading, fetchCatalog]);
 
   const filteredModules = useMemo(() => {
     let filtered = modules;
@@ -129,7 +138,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
 
   const totalCount = Object.values(selectedModules).reduce((sum, count) => sum + count, 0);
 
-  if (loading) {
+  if (catalogLoading && modules.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="loading loading-spinner loading-lg"></span>

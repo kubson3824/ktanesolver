@@ -1,10 +1,13 @@
-import { Suspense, useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { useRoundStore } from "../store/useRoundStore";
 import { type ModuleEntity, type ModuleCatalogItem, ModuleType } from "../types";
 import { getLazySolver, isNeedyModuleType } from "../components/solvers/registry";
+import { useCatalogStore } from "../store/useCatalogStore";
+import { type BombEntity, type ModuleEntity, type ModuleCatalogItem, ModuleType } from "../types";
+import { isNeedyModuleType, lazySolverRegistry } from "../components/solvers/registry";
 import NeedyModulesPanel from "../components/NeedyModulesPanel";
 import PageContainer from "../components/layout/PageContainer";
 import ModuleGrid from "../features/solve/ModuleGrid";
@@ -22,6 +25,43 @@ const REFRESH_EVENT_TYPES = [
   "ROUND_UPDATED",
 ] as const;
 
+function SolverContent({
+  moduleType,
+  bomb,
+  onBack,
+}: {
+  moduleType?: ModuleType;
+  bomb: BombEntity | null | undefined;
+  onBack: () => void;
+}) {
+  const SolverComponent = moduleType ? lazySolverRegistry[moduleType] ?? null : null;
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12 gap-2">
+          <span className="loading loading-spinner loading-md text-primary"></span>
+          <span className="text-body text-base-content/70">Loading solver...</span>
+        </div>
+      }
+    >
+      {SolverComponent ? (
+        <SolverComponent bomb={bomb} />
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-body text-base-content/70 mb-2">Coming soon</p>
+          <p className="text-caption text-base-content/60 mb-6">
+            No solver available for this module type yet.
+          </p>
+          <button className="btn btn-outline" onClick={onBack}>
+            Back
+          </button>
+        </div>
+      )}
+    </Suspense>
+  );
+}
+
 export default function SolvePage() {
   const { roundId } = useParams();
   const navigate = useNavigate();
@@ -36,24 +76,18 @@ export default function SolvePage() {
   const manualUrl = useRoundStore((state) => state.manualUrl);
   const error = useRoundStore((state) => state.error);
   const openingModuleId = useRoundStore((state) => state.openingModuleId);
+  const moduleCatalog = useCatalogStore((state) => state.catalog);
+  const catalogLoaded = useCatalogStore((state) => state.loaded);
+  const catalogLoading = useCatalogStore((state) => state.loading);
+  const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
-  const [moduleCatalog, setModuleCatalog] = useState<ModuleCatalogItem[]>([]);
   const [showFmnReminder, setShowFmnReminder] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchCatalog = async () => {
-      try {
-        const response = await fetch("/api/modules");
-        const data = await response.json();
-        if (!cancelled) setModuleCatalog(Array.isArray(data) ? data : []);
-      } catch {
-        if (!cancelled) setModuleCatalog([]);
-      }
-    };
-    void fetchCatalog();
-    return () => { cancelled = true; };
-  }, []);
+    if (!catalogLoaded && !catalogLoading) {
+      void fetchCatalog();
+    }
+  }, [catalogLoaded, catalogLoading, fetchCatalog]);
 
   const catalogByType = useMemo(() => {
     const map: Record<string, ModuleCatalogItem> = {};
@@ -85,8 +119,7 @@ export default function SolvePage() {
   }, [roundId, refreshRound]);
 
   // WebSocket: refresh round on events; on MODULE_SOLVED, show FMN reminder if round has unsolved Forget Me Not
-  const onModuleSolvedRef = useRef<() => void>(() => {});
-  onModuleSolvedRef.current = () => {
+  const onModuleSolved = useCallback(() => {
     const state = useRoundStore.getState();
     const r = state.round;
     if (!r) return;
@@ -94,7 +127,7 @@ export default function SolvePage() {
       b.modules.some((m) => m.type === ModuleType.FORGET_ME_NOT && !(m as ModuleEntity).solved)
     );
     if (hasUnsolvedFmn) setShowFmnReminder(true);
-  };
+  }, []);
 
   useEffect(() => {
     if (!roundId) return;
@@ -109,7 +142,7 @@ export default function SolvePage() {
               void refreshRound(roundId);
             }
             if (body.type === "MODULE_SOLVED") {
-              onModuleSolvedRef.current();
+              onModuleSolved();
             }
           } catch {
             // ignore parse errors
@@ -121,20 +154,13 @@ export default function SolvePage() {
     return () => {
       client.deactivate();
     };
-  }, [roundId, refreshRound]);
+  }, [onModuleSolved, roundId, refreshRound]);
 
   useEffect(() => {
     if (!currentBomb && round?.bombs.length) {
       selectBomb(round.bombs[0].id);
     }
   }, [round, currentBomb, selectBomb]);
-
-  // Hide FMN reminder when user opens Forget Me Not
-  useEffect(() => {
-    if (currentModule?.moduleType === ModuleType.FORGET_ME_NOT) {
-      setShowFmnReminder(false);
-    }
-  }, [currentModule?.moduleType]);
 
   const modules: ModuleEntity[] = useMemo(() => {
     if (!currentBomb) return [];
@@ -158,11 +184,8 @@ export default function SolvePage() {
     if (!currentBomb || !regularModules.length) return [];
     return regularModules.filter((m) => catalogByType[m.type]?.checkFirst);
   }, [currentBomb, regularModules, catalogByType]);
-
-  const SolverComponent = useMemo(() => {
-    if (!currentModule?.moduleType) return null;
-    return getLazySolver(currentModule.moduleType as ModuleType);
-  }, [currentModule?.moduleType]);
+  const shouldShowFmnReminder =
+    showFmnReminder && currentModule?.moduleType !== ModuleType.FORGET_ME_NOT;
 
   const handleModuleClick = (module: ModuleEntity) => {
     if (!currentBomb) return;

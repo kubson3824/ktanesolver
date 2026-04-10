@@ -23,10 +23,14 @@ function PageLoadingFallback() {
 
 export default function App() {
   const fetchCatalog = useCatalogStore((s) => s.fetchCatalog);
+  const catalogLoaded = useCatalogStore((s) => s.loaded);
+  const catalogLoading = useCatalogStore((s) => s.loading);
 
   useEffect(() => {
-    fetchCatalog();
-  }, [fetchCatalog]);
+    if (!catalogLoaded && !catalogLoading) {
+      void fetchCatalog();
+    }
+  }, [catalogLoaded, catalogLoading, fetchCatalog]);
 
   return (
     <ErrorBoundary>

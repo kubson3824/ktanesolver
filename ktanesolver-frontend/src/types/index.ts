@@ -130,8 +130,8 @@ export interface ModuleCatalogItem {
   type: string;  // Changed from ModuleType to string
   tags: string[];
   description: string;
-  isSolvable: boolean;
-  hasSolver: boolean;  // Indicates if this module has a solver implementation
+  hasInput: boolean;
+  hasOutput: boolean;
   checkFirst?: boolean;  // Show in "check these first" strip on Solve page
 }
 

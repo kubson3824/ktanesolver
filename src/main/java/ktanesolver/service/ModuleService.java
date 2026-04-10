@@ -68,7 +68,20 @@ public class ModuleService {
         RoundEntity round = bomb.getRound();
         ensureModuleInBombAndRound(module, bombId, roundId);
         ModuleSolver<?, ?> solver = registry.get(module.getType());
-        ModuleInput input = Json.mapper().convertValue(rawInput, solver.inputType());
+        if (solver == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_IMPLEMENTED,
+                    "No solver is registered for module type " + module.getType());
+        }
+        ModuleInput input;
+        try {
+            input = Json.mapper().convertValue(rawInput, solver.inputType());
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid solve input for module type " + module.getType(),
+                    exception);
+        }
         SolveResult<?> result = invokeSolver(solver, round, bomb, module, input);
         moduleRepo.save(module);
         eventPublisher.publishEvent(new BombModuleUpdatedEvent(this, round.getId(), bombId, module.getId(), module.getType(), module.isSolved()));
