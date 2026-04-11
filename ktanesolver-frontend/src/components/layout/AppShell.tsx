@@ -3,8 +3,7 @@ import Navbar from "./Navbar";
 
 export default function AppShell() {
   return (
-    <div className="min-h-screen flex flex-col bg-paper">
-      {/* Skip link for keyboard navigation */}
+    <div className="min-h-screen flex flex-col bg-background">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
