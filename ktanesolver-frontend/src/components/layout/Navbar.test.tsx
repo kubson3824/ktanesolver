@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Navbar from './Navbar';
+import { useThemeStore } from '../../hooks/useTheme';
 
 const mockStore = { currentBomb: null, currentModule: null, clearModule: vi.fn() };
 
@@ -13,6 +14,7 @@ describe('Navbar theme toggle', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.classList.remove('dark');
+    useThemeStore.setState({ theme: 'light', isDark: false });
   });
 
   it('renders a theme toggle button', () => {
