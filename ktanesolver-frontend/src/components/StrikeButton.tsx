@@ -7,22 +7,14 @@ import { Badge } from './ui/badge';
 interface StrikeButtonProps {
   bombId?: string;
   className?: string;
-  children?: React.ReactNode;
 }
 
-export const StrikeButton: React.FC<StrikeButtonProps> = ({
-  bombId,
-  className = '',
-}) => {
+export const StrikeButton: React.FC<StrikeButtonProps> = ({ bombId, className = '' }) => {
   const { currentBomb, addStrike, loading } = useRoundStore();
 
   const handleStrike = async () => {
     const targetBombId = bombId || currentBomb?.id;
-    if (!targetBombId) {
-      console.error('No bomb selected');
-      return;
-    }
-
+    if (!targetBombId) return;
     try {
       await addStrike(targetBombId);
     } catch (error) {
@@ -31,15 +23,13 @@ export const StrikeButton: React.FC<StrikeButtonProps> = ({
   };
 
   const isDisabled = loading || (!bombId && !currentBomb);
-  const strikes = (bombId
-    ? undefined
-    : currentBomb?.strikes) ?? 0;
+  const strikes = (bombId ? undefined : currentBomb?.strikes) ?? 0;
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <Badge variant="error">{strikes}</Badge>
+      <Badge variant="destructive">{strikes}</Badge>
       <Button
-        variant="danger"
+        variant="destructive"
         size="sm"
         onClick={handleStrike}
         disabled={isDisabled}

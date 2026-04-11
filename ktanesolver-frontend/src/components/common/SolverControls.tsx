@@ -33,7 +33,7 @@ export default function SolverControls({
   loadingText = "Solving...",
   showManualSolve = false,
   showReset = true,
-  className = ""
+  className = "",
 }: SolverControlsProps) {
   const resolvedSolveText = solveButtonText ?? solveText;
   const resolvedSolveDisabled = isSolveDisabled || !canSolve;
@@ -41,8 +41,8 @@ export default function SolverControls({
   return (
     <div className={`space-y-2 ${className}`}>
       <Button
-        variant={isSolved ? "success" : "primary"}
-        size="md"
+        variant={isSolved ? "success" : "default"}
+        size="default"
         className="w-full"
         onClick={onSolve}
         disabled={resolvedSolveDisabled || isLoading || isSolved}
@@ -53,28 +53,27 @@ export default function SolverControls({
 
       {(showManualSolve || showReset) && (
         <div className="flex items-center justify-between gap-2">
-        {showManualSolve && onSolveManually && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onSolveManually}
-            disabled={isManualSolveDisabled || isLoading}
-            title="Mark this module as solved manually"
-          >
-            Mark Solved
-          </Button>
-        )}
-        {showReset && (
-          <Button
-          variant="ghost"
-          size="sm"
-          onClick={onReset}
-          disabled={isResetDisabled || isLoading}
-          className="ml-auto"
-        >
-          Reset
-          </Button>
-        )}
+          {showManualSolve && onSolveManually && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSolveManually}
+              disabled={isManualSolveDisabled || isLoading}
+            >
+              Mark Solved
+            </Button>
+          )}
+          {showReset && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              disabled={isResetDisabled || isLoading}
+              className="ml-auto"
+            >
+              Reset
+            </Button>
+          )}
         </div>
       )}
     </div>

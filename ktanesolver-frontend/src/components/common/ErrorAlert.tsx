@@ -9,11 +9,10 @@ interface ErrorAlertProps {
 
 export default function ErrorAlert({ error, message, className = "" }: ErrorAlertProps) {
   const resolvedError = error ?? message ?? "";
-
   if (!resolvedError) return null;
 
   return (
-    <Alert variant="error" className={className}>
+    <Alert variant="destructive" className={className}>
       {resolvedError}
     </Alert>
   );
