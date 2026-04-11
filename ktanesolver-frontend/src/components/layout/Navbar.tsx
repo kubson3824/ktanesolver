@@ -90,7 +90,7 @@ export default function Navbar() {
             {isSolving && currentBomb && (
               <div className="hidden sm:flex items-center gap-2">
                 <StrikeIndicator className="text-sm" />
-                <StrikeButton className="btn-xs" />
+                <StrikeButton />
               </div>
             )}
 
