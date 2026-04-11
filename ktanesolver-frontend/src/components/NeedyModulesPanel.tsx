@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import type { BombEntity, ModuleEntity } from "../types";
 import { formatModuleDisplayName } from "../lib/utils";
 import { Button } from "./ui/button";
@@ -64,7 +64,7 @@ export default function NeedyModulesPanel({
             return (
                 <div className="text-center py-12">
                     <p className="text-sm text-secondary mb-2">Coming soon</p>
-                    <p className="text-base-content/70">
+                    <p className="text-muted-foreground">
                         This needy module solver is not yet implemented.
                     </p>
                 </div>
@@ -75,8 +75,8 @@ export default function NeedyModulesPanel({
             <Suspense
                 fallback={
                     <div className="flex items-center justify-center py-12 gap-2">
-                        <span className="loading loading-spinner loading-md text-primary"></span>
-                        <span className="text-sm text-base-content/70">Loading solver...</span>
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Loading solver...</span>
                     </div>
                 }
             >
@@ -114,14 +114,14 @@ export default function NeedyModulesPanel({
                 role="dialog"
                 aria-label="Needy Modules"
                 aria-modal="true"
-                className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 bg-base-100 border-l-2 border-base-content shadow-card z-40 transform transition-transform duration-300 ${
+                className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 bg-background border-l-2 border-border shadow-sm z-40 transform transition-transform duration-300 ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
             >
                 <div className="h-full flex flex-col">
                     {/* Header */}
-                    <div className="bg-base-200 border-b border-base-300 px-4 py-3 flex items-center justify-between">
-                        <h2 className="section-heading" id="needy-panel-title">Needy Modules</h2>
+                    <div className="bg-muted/40 border-b border-border px-4 py-3 flex items-center justify-between">
+                        <h2 className="text-base font-semibold text-foreground" id="needy-panel-title">Needy Modules</h2>
                         <Button
                             ref={closeButtonRef}
                             variant="ghost"
@@ -139,7 +139,7 @@ export default function NeedyModulesPanel({
                             <div className="h-full overflow-y-auto p-3 space-y-3">
                                 {needyModules.length === 0 ? (
                                     <div className="text-center py-12">
-                                        <p className="text-sm text-ink-muted">No needy modules on this bomb.</p>
+                                        <p className="text-sm text-muted-foreground">No needy modules on this bomb.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-2" role="list" aria-label="Needy modules list">
@@ -149,7 +149,7 @@ export default function NeedyModulesPanel({
                                             <div
                                                 key={module.id}
                                                 role="listitem"
-                                                className="bg-base-100 border border-base-300 rounded-sm p-3 hover:border-primary transition-colors cursor-pointer"
+                                                className="bg-background border border-border rounded-sm p-3 hover:border-primary transition-colors cursor-pointer"
                                                 onClick={() => handleModuleClick(module)}
                                                 onKeyDown={(e) => {
                                                     if (e.key === "Enter" || e.key === " ") handleModuleClick(module);
@@ -157,8 +157,8 @@ export default function NeedyModulesPanel({
                                                 tabIndex={0}
                                                 aria-label={`${displayName} — Click to open solver`}
                                             >
-                                                <h3 className="font-semibold text-sm text-base-content">{displayName}</h3>
-                                                <p className="text-xs text-ink-muted mt-0.5">Click to open solver</p>
+                                                <h3 className="font-semibold text-sm text-foreground">{displayName}</h3>
+                                                <p className="text-xs text-muted-foreground mt-0.5">Click to open solver</p>
                                             </div>
                                             );
                                         })}
@@ -168,7 +168,7 @@ export default function NeedyModulesPanel({
                         ) : (
                             <div className="h-full flex flex-col">
                                 {/* Module header */}
-                                <div className="bg-base-200 border-b border-base-300 px-4 py-3 flex items-center gap-2">
+                                <div className="bg-muted/40 border-b border-border px-4 py-3 flex items-center gap-2">
                                     <Button
                                         variant="ghost"
                                         size="xs"
@@ -177,7 +177,7 @@ export default function NeedyModulesPanel({
                                     >
                                         &#9664;
                                     </Button>
-                                    <h3 className="font-semibold text-sm text-base-content">
+                                    <h3 className="font-semibold text-sm text-foreground">
                                         {formatModuleDisplayName(selectedModule.type, selectedModule.id)}
                                     </h3>
                                 </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Loader2 } from "lucide-react";
 import { type ModuleCatalogItem, ModuleCategory } from "../types";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
@@ -131,7 +132,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   if (catalogLoading && modules.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <span className="loading loading-spinner loading-lg"></span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -148,7 +149,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
           className="flex-1"
         />
         <select
-          className="bg-base-100 border border-base-300 rounded-sm px-2 py-2 text-sm text-base-content focus:outline-none focus:border-primary transition-colors"
+          className="bg-background border border-border rounded-sm px-2 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as "name-asc" | "name-desc" | "category")}
         >
@@ -167,8 +168,8 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
             className={cn(
               "px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors",
               activeFilter === tab.id
-                ? "bg-primary text-primary-content"
-                : "bg-base-200 text-base-content hover:bg-base-300"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/40 text-foreground hover:bg-muted"
             )}
             onClick={() => setActiveFilter(tab.id)}
           >
@@ -179,14 +180,14 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
 
       {/* Selected summary */}
       {totalCount > 0 && (
-        <div className="bg-base-100 border border-base-300 rounded-sm p-3">
+        <div className="bg-background border border-border rounded-sm p-3">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-base-content">
+            <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
               Selected: {totalCount} module{totalCount !== 1 ? "s" : ""}
             </span>
             <button
               type="button"
-              className="text-xs text-ink-muted hover:text-base-content transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               onClick={clearAll}
             >
               Clear all
@@ -194,11 +195,11 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
           </div>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(selectedModules).filter(([, count]) => count > 0).map(([type, count]) => (
-              <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-base-200 border border-base-300 rounded-sm text-base-content">
+              <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-muted/40 border border-border rounded-sm text-foreground">
                 {type.replace(/_/g, " ")} × {count}
                 <button
                   type="button"
-                  className="text-ink-muted hover:text-base-content ml-0.5 leading-none"
+                  className="text-muted-foreground hover:text-foreground ml-0.5 leading-none"
                   onClick={() => updateModuleCount(type, -count)}
                   aria-label={`Remove ${type}`}
                 >
@@ -218,7 +219,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       {/* Module grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
         {filteredModules.length === 0 ? (
-          <div className="col-span-full text-center py-8 text-ink-muted text-sm">
+          <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
             No modules found.
           </div>
         ) : (
@@ -230,13 +231,13 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
               <div
                 key={module.id}
                 className={cn(
-                  "bg-base-100 border border-base-300 rounded-sm p-2 cursor-pointer transition-colors",
+                  "bg-background border border-border rounded-sm p-2 cursor-pointer transition-colors",
                   "hover:border-primary hover:shadow-sm",
                   isSelected && "border-primary bg-primary/5"
                 )}
                 onClick={() => handleModuleClick(module)}
               >
-                <p className="text-sm font-medium text-base-content leading-tight mb-1">{module.name}</p>
+                <p className="text-sm font-medium text-foreground leading-tight mb-1">{module.name}</p>
                 <Badge variant={categoryBadgeVariant[module.category]} className="text-xs">
                   {categoryLabels[module.category]}
                 </Badge>
@@ -248,7 +249,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                   >
                     <button
                       type="button"
-                      className="h-5 w-5 flex items-center justify-center bg-base-100 border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
+                      className="h-5 w-5 flex items-center justify-center bg-background border border-border rounded-sm text-xs text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         updateModuleCount(module.type, -1);
@@ -257,12 +258,12 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
                     >
                       −
                     </button>
-                    <span className="min-w-[1.5rem] text-center text-xs font-mono font-medium text-base-content">
+                    <span className="min-w-[1.5rem] text-center text-xs font-mono font-medium text-foreground">
                       {count}
                     </span>
                     <button
                       type="button"
-                      className="h-5 w-5 flex items-center justify-center bg-base-100 border border-base-300 rounded-sm text-xs text-ink-muted hover:bg-base-200 hover:text-base-content transition-colors"
+                      className="h-5 w-5 flex items-center justify-center bg-background border border-border rounded-sm text-xs text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         updateModuleCount(module.type, 1);
