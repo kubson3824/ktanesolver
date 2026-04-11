@@ -38,6 +38,7 @@ export default {
           foreground: 'rgb(var(--destructive-foreground) / <alpha-value>)',
         },
         ring: 'rgb(var(--ring) / <alpha-value>)',
+        'ring-offset': 'rgb(var(--background) / <alpha-value>)',
         // Backward-compatible aliases — solver components use these; they resolve to the
         // same CSS vars so dark mode works correctly everywhere without touching each file.
         'base-100': 'rgb(var(--background) / <alpha-value>)',
