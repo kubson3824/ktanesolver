@@ -52,9 +52,9 @@ export default function RoundsPage() {
         return (
             <PageContainer>
                 <PageHeader
-                    title="ROUND HISTORY"
+                    title="Round History"
                     actions={
-                        <Button variant="primary" onClick={handleCreateNewRound} disabled>
+                        <Button variant="default" onClick={handleCreateNewRound} disabled>
                             New Round
                         </Button>
                     }
@@ -72,14 +72,14 @@ export default function RoundsPage() {
         return (
             <PageContainer>
                 <PageHeader
-                    title="ROUND HISTORY"
+                    title="Round History"
                     actions={
-                        <Button variant="primary" onClick={handleCreateNewRound}>
+                        <Button variant="default" onClick={handleCreateNewRound}>
                             New Round
                         </Button>
                     }
                 />
-                <Alert variant="error">
+                <Alert variant="destructive">
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -90,9 +90,9 @@ export default function RoundsPage() {
     return (
         <PageContainer>
             <PageHeader
-                title="ROUND HISTORY"
+                title="Round History"
                 actions={
-                    <Button variant="primary" onClick={handleCreateNewRound} disabled={loading}>
+                    <Button variant="default" onClick={handleCreateNewRound} disabled={loading}>
                         New Round
                     </Button>
                 }
@@ -100,10 +100,10 @@ export default function RoundsPage() {
 
             {sortedRounds.length === 0 ? (
                 <div className="text-center py-16">
-                    <p className="text-ink-muted text-sm mb-4">
+                    <p className="text-muted-foreground text-sm mb-4">
                         No rounds yet. Start your first round.
                     </p>
-                    <Button variant="primary" onClick={handleCreateNewRound}>
+                    <Button variant="default" onClick={handleCreateNewRound}>
                         New Round
                     </Button>
                 </div>

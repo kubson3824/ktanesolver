@@ -299,7 +299,7 @@ export default function SetupPage() {
                 title="ROUND SETUP"
                 actions={
                     <Button
-                        variant="primary"
+                        variant="default"
                         disabled={!canStartRound || loading}
                         loading={loading && canStartRound ? true : undefined}
                         onClick={round?.status === RoundStatus.ACTIVE ? handleContinueRound : handleStartRound}
@@ -345,24 +345,24 @@ export default function SetupPage() {
 
                 {/* Stats row */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="card-manual flex-1 px-4 py-3">
-                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-1">Total Bombs</p>
+                    <div className="rounded-xl border border-border bg-card shadow-sm flex-1 px-4 py-3">
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Total Bombs</p>
                         <p className="font-display text-2xl font-bold text-base-content">{round?.bombs.length ?? 0}</p>
                     </div>
-                    <div className="card-manual flex-1 px-4 py-3">
-                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-1">Total Modules</p>
+                    <div className="rounded-xl border border-border bg-card shadow-sm flex-1 px-4 py-3">
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Total Modules</p>
                         <p className="font-display text-2xl font-bold text-base-content">{totalModules}</p>
                     </div>
-                    <div className="card-manual flex-1 px-4 py-3">
-                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-1">Status</p>
-                        <p className={cn("font-display text-2xl font-bold", canStartRound ? "text-success" : "text-ink-muted")}>
+                    <div className="rounded-xl border border-border bg-card shadow-sm flex-1 px-4 py-3">
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Status</p>
+                        <p className={cn("font-display text-2xl font-bold", canStartRound ? "text-success" : "text-muted-foreground")}>
                             {round ? roundStatusLabel : "No Round"}
                         </p>
                     </div>
                 </div>
 
                 {error && (
-                    <Alert variant="error">
+                    <Alert variant="destructive">
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
@@ -371,7 +371,7 @@ export default function SetupPage() {
                 {/* Add bomb + bomb grid */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <p className="section-heading">Bomb Manifest</p>
+                        <p className="text-base font-semibold text-foreground">Bomb Manifest</p>
                         <Button
                             variant="secondary"
                             size="sm"
@@ -404,18 +404,18 @@ export default function SetupPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="card-manual text-center py-12 px-4">
+                        <div className="rounded-xl border border-border bg-card shadow-sm text-center py-12 px-4">
                             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-base-200 mb-4" aria-hidden>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8 4-8-4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                 </svg>
                             </div>
-                            <p className="text-sm text-ink-muted mb-1">No bombs configured yet.</p>
-                            <p className="text-xs text-ink-muted mb-5">
+                            <p className="text-sm text-muted-foreground mb-1">No bombs configured yet.</p>
+                            <p className="text-xs text-muted-foreground mb-5">
                                 1. Click Add Bomb → 2. Enter serial and edgework → 3. Add modules → 4. Start round
                             </p>
                             <Button
-                                variant="primary"
+                                variant="default"
                                 onClick={openCreateForm}
                                 disabled={loading}
                             >
@@ -429,7 +429,7 @@ export default function SetupPage() {
                 <div className="flex items-center justify-between gap-3 pt-2">
                     <Link
                         to="/rounds"
-                        className="text-sm text-ink-muted hover:text-base-content transition-colors"
+                        className="text-sm text-muted-foreground hover:text-base-content transition-colors"
                     >
                         ← Previous rounds
                     </Link>
@@ -443,9 +443,9 @@ export default function SetupPage() {
                 {/* Bomb form dialog */}
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogContent className="max-h-[90vh] flex flex-col gap-0 p-0">
-                        <DialogHeader className="bg-base-200 border-b border-base-300 px-4 py-3 flex flex-row items-start justify-between gap-4">
+                        <DialogHeader className="bg-muted/40 border-b border-border px-4 py-3 flex flex-row items-start justify-between gap-4">
                             <div>
-                                <p className="text-xs text-ink-muted uppercase tracking-widest">
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest">
                                     {isEditing ? "Update" : "Configure"} bomb
                                 </p>
                                 <DialogTitle className="font-display text-lg font-bold uppercase mt-0.5">
@@ -460,11 +460,11 @@ export default function SetupPage() {
                         </DialogHeader>
                         <form className="flex flex-col flex-1 min-h-0 overflow-hidden" onSubmit={handleFormSubmit}>
                             <div className="overflow-y-auto px-4 sm:px-6 space-y-6 pb-4 pt-4">
-                                <div className="rounded-sm border border-base-300 bg-base-200/50 p-4 space-y-4">
-                                    <h3 className="section-heading">Serial &amp; Batteries</h3>
+                                <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                    <h3 className="text-base font-semibold text-foreground">Serial &amp; Batteries</h3>
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <label className="flex flex-col gap-1.5 w-full">
-                                            <span className="text-xs text-ink-muted uppercase tracking-widest">Serial number</span>
+                                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Serial number</span>
                                             <Input
                                                 type="text"
                                                 value={formState.serialNumber}
@@ -479,7 +479,7 @@ export default function SetupPage() {
                                         </label>
                                         <div className="grid grid-cols-2 gap-4">
                                             <label className="flex flex-col gap-1.5 w-full">
-                                                <span className="text-xs text-ink-muted uppercase tracking-widest">AA batteries</span>
+                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">AA batteries</span>
                                                 <Input
                                                     type="number"
                                                     min={0}
@@ -494,7 +494,7 @@ export default function SetupPage() {
                                                 />
                                             </label>
                                             <label className="flex flex-col gap-1.5 w-full">
-                                                <span className="text-xs text-ink-muted uppercase tracking-widest">D batteries</span>
+                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">D batteries</span>
                                                 <Input
                                                     type="number"
                                                     min={0}
@@ -511,8 +511,8 @@ export default function SetupPage() {
                                     </div>
                                 </div>
 
-                                <div className="rounded-sm border border-base-300 bg-base-200/50 p-4 space-y-4">
-                                    <h3 className="section-heading">Indicators</h3>
+                                <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                    <h3 className="text-base font-semibold text-foreground">Indicators</h3>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Input
                                             type="text"
@@ -529,9 +529,9 @@ export default function SetupPage() {
                                         <div className="flex items-center gap-2">
                                             <Button
                                                 type="button"
-                                                variant={indicatorDraft.lit ? "success" : "outline"}
+                                                variant="outline"
                                                 size="sm"
-                                                className="gap-1.5"
+                                                className={cn("gap-1.5", indicatorDraft.lit && "border-emerald-500 text-emerald-700 dark:text-emerald-400")}
                                                 onClick={() => setIndicatorDraft((p) => ({ ...p, lit: true }))}
                                             >
                                                 <span className="h-2 w-2 rounded-full bg-current opacity-90" aria-hidden />
@@ -585,14 +585,14 @@ export default function SetupPage() {
                                             </Badge>
                                         ))}
                                         {formState.indicators.length === 0 && (
-                                            <p className="text-xs text-ink-muted italic">No indicators yet.</p>
+                                            <p className="text-xs text-muted-foreground italic">No indicators yet.</p>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="rounded-sm border border-base-300 bg-base-200/50 p-4 space-y-4">
+                                <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="section-heading">Port Plates</h3>
+                                        <h3 className="text-base font-semibold text-foreground">Port Plates</h3>
                                         <Button
                                             type="button"
                                             variant="outline"
@@ -611,13 +611,13 @@ export default function SetupPage() {
                                         </Button>
                                     </div>
                                     {formState.portPlates.length === 0 && (
-                                        <p className="text-xs text-ink-muted italic">No plates configured.</p>
+                                        <p className="text-xs text-muted-foreground italic">No plates configured.</p>
                                     )}
                                     <div className="space-y-3">
                                         {formState.portPlates.map((plate, index) => (
-                                            <div key={plate.id} className="bg-base-100 border border-base-300 rounded-sm p-3">
+                                            <div key={plate.id} className="bg-background border border-border rounded-sm p-3">
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <strong className="text-xs text-ink-muted uppercase tracking-widest">Plate {index + 1}</strong>
+                                                    <strong className="text-xs text-muted-foreground uppercase tracking-widest">Plate {index + 1}</strong>
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
@@ -653,8 +653,8 @@ export default function SetupPage() {
                                 </div>
 
                                 {!isEditing && (
-                                    <div className="rounded-sm border border-base-300 bg-base-200/50 p-4 space-y-4">
-                                        <h3 className="section-heading">Modules for this bomb</h3>
+                                    <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                        <h3 className="text-base font-semibold text-foreground">Modules for this bomb</h3>
                                         <ModuleSelector
                                             onSelectionChange={handleModuleSelectionChange}
                                             initialCounts={formState.modules}
@@ -662,10 +662,10 @@ export default function SetupPage() {
                                     </div>
                                 )}
                             </div>
-                            <DialogFooter className="border-t border-base-300 bg-base-200/80">
+                            <DialogFooter className="border-t border-border bg-muted/40">
                                 <Button
                                     type="submit"
-                                    variant="primary"
+                                    variant="default"
                                     disabled={loading}
                                     loading={loading}
                                 >
@@ -690,21 +690,21 @@ export default function SetupPage() {
                             onClick={() => setModuleTarget(undefined)}
                         />
                         <aside
-                            className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-base-100 shadow-xl animate-slide-in-right flex flex-col border-l border-base-300"
+                            className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-background shadow-xl animate-slide-in-right flex flex-col border-l border-border"
                             role="dialog"
                             aria-labelledby="module-drawer-title"
                             aria-modal="true"
                         >
-                            <div className="bg-base-200 border-b border-base-300 px-4 py-3 flex items-start justify-between gap-4 shrink-0">
+                            <div className="bg-muted/40 border-b border-border px-4 py-3 flex items-start justify-between gap-4 shrink-0">
                                 <div>
-                                    <p className="text-xs text-ink-muted uppercase tracking-widest">Module injection</p>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Module injection</p>
                                     <h2 id="module-drawer-title" className="font-display text-lg font-bold uppercase mt-0.5">
                                         Add modules to {moduleTarget.serialNumber}
                                     </h2>
                                 </div>
                                 <button
                                     type="button"
-                                    className="p-1.5 rounded-sm text-ink-muted hover:bg-base-300 hover:text-base-content transition-colors"
+                                    className="p-1.5 rounded-sm text-muted-foreground hover:bg-base-300 hover:text-base-content transition-colors"
                                     onClick={() => setModuleTarget(undefined)}
                                     aria-label="Close"
                                 >
@@ -721,10 +721,10 @@ export default function SetupPage() {
                                     initialCounts={moduleDraft}
                                 />
                             </div>
-                            <div className="bg-base-200 border-t border-base-300 px-4 py-3 flex justify-end gap-2 shrink-0">
+                            <div className="bg-muted/40 border-t border-border px-4 py-3 flex justify-end gap-2 shrink-0">
                                 <Button
                                     type="button"
-                                    variant="primary"
+                                    variant="default"
                                     onClick={submitModuleDraft}
                                     disabled={loading}
                                     loading={loading}
