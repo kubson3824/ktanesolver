@@ -356,7 +356,7 @@ export default function SetupPage() {
                     </div>
                     <div className="rounded-xl border border-border bg-card shadow-sm flex-1 px-4 py-3">
                         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Status</p>
-                        <p className={cn("font-display text-2xl font-bold", canStartRound ? "text-success" : "text-muted-foreground")}>
+                        <p className={cn("font-display text-2xl font-bold", canStartRound ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
                             {round ? roundStatusLabel : "No Round"}
                         </p>
                     </div>

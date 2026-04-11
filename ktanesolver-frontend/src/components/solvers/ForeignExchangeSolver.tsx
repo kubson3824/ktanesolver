@@ -12,6 +12,7 @@ import {
   SolverControls
 } from "../common";
 import { Loader2 } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface ForeignExchangeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -252,14 +253,15 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
               />
             </div>
 
-            <button
+            <Button
+              variant="default"
+              className="w-full"
               onClick={solveForeignExchangeModule}
               disabled={isLoading || !baseCurrency || !targetCurrency || !amount}
-              className="w-full btn btn-primary"
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
               {isLoading ? "Solving..." : "Solve"}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">

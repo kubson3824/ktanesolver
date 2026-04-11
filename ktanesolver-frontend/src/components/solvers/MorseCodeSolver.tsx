@@ -12,6 +12,7 @@ import {
   TwitchCommandDisplay,
 } from "../common";
 import { Alert } from "../ui/alert";
+import { Button } from "../ui/button";
 import { Loader2 } from "lucide-react";
 
 interface MorseCodeSolverProps {
@@ -327,10 +328,12 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
             <div className="text-4xl font-mono font-bold text-green-300">
               {translatedWord || <span className="text-gray-500">?</span>}
             </div>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-500 text-emerald-700 dark:text-emerald-400 mt-3"
               onClick={playMorseCode}
               disabled={isPlaying || !morseInput}
-              className="mt-3 btn btn-sm btn-outline btn-success"
             >
               {isPlaying ? (
                 <>
@@ -345,7 +348,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
                   Play Sound
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -405,9 +408,10 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
       {/* Controls */}
       <div className="flex gap-3 mb-4">
-        <button
+        <Button
+          variant="default"
+          className="flex-1"
           onClick={solveMorseCode}
-          className="btn btn-primary flex-1"
           disabled={
             !translatedWord ||
             translatedWord.includes("?") ||
@@ -419,13 +423,13 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
           {isLoading ? "Solving..." : "Solve"}
-        </button>
-        <button onClick={clearInput} className="btn btn-outline" disabled={isLoading || (result?.resolved)}>
+        </Button>
+        <Button variant="outline" onClick={clearInput} disabled={isLoading || (result?.resolved)}>
           Clear
-        </button>
-        <button onClick={reset} className="btn btn-outline" disabled={isLoading || (result?.resolved)}>
+        </Button>
+        <Button variant="outline" onClick={reset} disabled={isLoading || (result?.resolved)}>
           Reset
-        </button>
+        </Button>
       </div>
 
       {/* Error display */}

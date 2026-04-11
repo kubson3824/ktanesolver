@@ -13,6 +13,7 @@ import {
 } from "../common";
 import { Alert } from "../ui/alert";
 import { Loader2 } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface ForgetMeNotSolverProps {
   bomb: BombEntity | null | undefined;
@@ -362,14 +363,15 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       {/* All modules completed button */}
       {!allModulesCompleted && stages.length > 0 && !isSolved && (
         <div className="mb-4">
-          <button
+          <Button
+            variant="secondary"
+            className="w-full"
             onClick={handleAllModulesCompleted}
-            className="btn btn-secondary w-full"
             disabled={isLoading}
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
             {isLoading ? "Getting Sequence..." : "All Modules Solved"}
-          </button>
+          </Button>
         </div>
       )}
 

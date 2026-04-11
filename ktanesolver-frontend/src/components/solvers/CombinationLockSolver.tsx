@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveCombinationLock, type CombinationLockInput, type CombinationLockOutput } from "../../services/combinationLockService";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,7 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Alert } from "../ui/alert";
 
 interface CombinationLockSolverProps {
   bomb: BombEntity | null | undefined;
@@ -135,20 +136,7 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
 
       {/* Results */}
       {result && (
-        <div className={`alert mb-4 ${result.solved ? 'alert-success' : 'alert-info'}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+        <Alert variant={result.solved ? "success" : "info"} className="mb-4">
           <div className="w-full">
             <span className="font-bold">Combination Found!</span>
             <div className="mt-2 text-lg font-mono">
@@ -156,7 +144,7 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
             </div>
             <div className="mt-2">{result.instruction}</div>
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Twitch command display */}

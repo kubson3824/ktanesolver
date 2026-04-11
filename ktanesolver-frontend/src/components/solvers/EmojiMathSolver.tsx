@@ -5,6 +5,7 @@ import { solveEmojiMath, type EmojiMathOutput, type EmojiMathInput } from "../..
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { Input } from "../ui/input";
 import { Alert } from "../ui/alert";
+import { Button } from "../ui/button";
 
 function isValidEmojiMathOutput(obj: unknown): obj is EmojiMathOutput {
   return (
@@ -204,80 +205,24 @@ export default function EmojiMathSolver({ bomb }: EmojiMathSolverProps) {
 
         {/* Emoji buttons */}
         <div className="grid grid-cols-5 gap-2 mb-4">
-          <button 
-            onClick={() => insertEmoji(":)")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >:)</button>
-          <button 
-            onClick={() => insertEmoji("=(")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >=(</button>
-          <button 
-            onClick={() => insertEmoji("(:")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >(:</button>
-          <button 
-            onClick={() => insertEmoji(")=")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >)=</button>
-          <button 
-            onClick={() => insertEmoji(":(")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >:(</button>
-          <button 
-            onClick={() => insertEmoji("):")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >):</button>
-          <button 
-            onClick={() => insertEmoji("=)")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >=)</button>
-          <button 
-            onClick={() => insertEmoji("(=")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >(=</button>
-          <button 
-            onClick={() => insertEmoji(":|")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >:|</button>
-          <button 
-            onClick={() => insertEmoji("|:")} 
-            className="btn btn-sm bg-gray-700 hover:bg-gray-600 text-xl"
-            disabled={isLoading || isSolved}
-          >|:</button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(":)")} disabled={isLoading || isSolved}>:)</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("=(")} disabled={isLoading || isSolved}>=(</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("(:")} disabled={isLoading || isSolved}>(:</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(")=")} disabled={isLoading || isSolved}>)=</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(":(")} disabled={isLoading || isSolved}>:(</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("):")} disabled={isLoading || isSolved}>):</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("=)")} disabled={isLoading || isSolved}>=)</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("(=")} disabled={isLoading || isSolved}>(=</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(":|")} disabled={isLoading || isSolved}>:|</Button>
+          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("|:")} disabled={isLoading || isSolved}>|:</Button>
         </div>
 
         {/* Operator buttons */}
         <div className="grid grid-cols-4 gap-2 mb-4">
-          <button 
-            onClick={() => insertEmoji("+")} 
-            className="btn btn-sm bg-primary hover:bg-primary-focus text-white font-bold"
-            disabled={isLoading || isSolved}
-          >+</button>
-          <button 
-            onClick={() => insertEmoji("-")} 
-            className="btn btn-sm bg-primary hover:bg-primary-focus text-white font-bold"
-            disabled={isLoading || isSolved}
-          >-</button>
-          <button 
-            onClick={() => insertEmoji("*")} 
-            className="btn btn-sm bg-primary hover:bg-primary-focus text-white font-bold"
-            disabled={isLoading || isSolved}
-          >*</button>
-          <button 
-            onClick={() => insertEmoji("/")} 
-            className="btn btn-sm bg-primary hover:bg-primary-focus text-white font-bold"
-            disabled={isLoading || isSolved}
-          >/</button>
+          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("+")} disabled={isLoading || isSolved}>+</Button>
+          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("-")} disabled={isLoading || isSolved}>-</Button>
+          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("*")} disabled={isLoading || isSolved}>*</Button>
+          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("/")} disabled={isLoading || isSolved}>/</Button>
         </div>
       </div>
 

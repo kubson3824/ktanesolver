@@ -13,6 +13,7 @@ import {
 } from "../common";
 import { Input } from "../ui/input";
 import { Alert } from "../ui/alert";
+import { Button } from "../ui/button";
 
 interface TurnTheKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -265,14 +266,14 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
               <span className="font-bold block mb-2">Right key</span>
               <span className="text-sm">{result.rightKeyInstruction}</span>
               <div className="mt-2">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleTurnedRightKey}
                   disabled={isLoading}
                 >
                   I turned the right key
-                </button>
+                </Button>
               </div>
             </Alert>
           )}
@@ -281,14 +282,14 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
               <span className="font-bold block mb-2">Left key</span>
               <span className="text-sm">{result.leftKeyInstruction}</span>
               <div className="mt-2">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleTurnedLeftKey}
                   disabled={isLoading}
                 >
                   I turned the left key
-                </button>
+                </Button>
               </div>
             </Alert>
           )}

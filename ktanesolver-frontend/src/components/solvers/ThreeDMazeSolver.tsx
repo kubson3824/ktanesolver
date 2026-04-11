@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { cn } from "../../lib/cn";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 const MARKER_LETTERS: MarkerLetter[] = ["A", "B", "C", "D", "H"];
 const GOAL_DIRECTIONS: { value: GoalDirection; label: string }[] = [
@@ -433,22 +434,24 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
             Goal direction <span className="text-neutral-500 font-normal">(leave empty until defuser has read it at a star)</span>
           </h3>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`btn btn-sm ${goalDirection === "" ? "btn-primary" : "btn-ghost bg-neutral-800 border border-neutral-600"}`}
+            <Button
+              variant={goalDirection === "" ? "default" : "ghost"}
+              size="sm"
+              className={goalDirection === "" ? "" : "bg-neutral-800 border border-neutral-600"}
               onClick={() => setGoalDirection("")}
             >
               Not yet
-            </button>
+            </Button>
             {GOAL_DIRECTIONS.map(({ value, label }) => (
-              <button
+              <Button
                 key={value}
-                type="button"
-                className={`btn btn-sm ${goalDirection === value ? "btn-primary" : "btn-ghost bg-neutral-800 border border-neutral-600"}`}
+                variant={goalDirection === value ? "default" : "ghost"}
+                size="sm"
+                className={goalDirection === value ? "" : "bg-neutral-800 border border-neutral-600"}
                 onClick={() => setGoalDirection(value)}
               >
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
 

@@ -24,6 +24,7 @@ import { cn } from "../../lib/cn";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 const SPHERE_OPTIONS: { value: SphereColor; label: string }[] = [
   { value: "GREEN", label: "Green" },
@@ -442,15 +443,15 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             </label>
             <div className="flex flex-wrap gap-2">
               {SPHERE_OPTIONS.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
-                  type="button"
+                  variant={sphereColorAtPosition === opt.value ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setSphereColorAtPosition(opt.value)}
                   disabled={isSolved}
-                  className={`btn btn-sm ${sphereColorAtPosition === opt.value ? "btn-primary" : "btn-outline"}`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -490,15 +491,15 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             </label>
             <div className="flex flex-wrap gap-2">
               {SPHERE_OPTIONS.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
-                  type="button"
+                  variant={torusColor === opt.value ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setTorusColor(opt.value)}
                   disabled={isSolved}
-                  className={`btn btn-sm ${torusColor === opt.value ? "btn-primary" : "btn-outline"}`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -509,15 +510,15 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             </label>
             <div className="flex flex-wrap gap-2">
               {DIRECTION_OPTIONS.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
-                  type="button"
+                  variant={startDirection === opt.value ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setStartDirection(opt.value)}
                   disabled={isSolved}
-                  className={`btn btn-sm ${startDirection === opt.value ? "btn-primary" : "btn-outline"}`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
