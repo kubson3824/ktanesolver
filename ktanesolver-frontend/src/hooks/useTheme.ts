@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
 
-type Theme = 'manual' | 'manual-dark';
+type Theme = 'light' | 'dark';
 
 export const STORAGE_KEY = 'ktane-theme';
 
 function getInitialTheme(): Theme {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === 'manual-dark' ? 'manual-dark' : 'manual';
+    return stored === 'dark' ? 'dark' : 'light';
   } catch {
-    return 'manual';
+    return 'light';
   }
 }
 
@@ -21,19 +21,20 @@ interface ThemeStore {
 }
 
 const initialTheme = getInitialTheme();
+
 export const useThemeStore = create<ThemeStore>((set) => ({
   theme: initialTheme,
-  isDark: initialTheme === 'manual-dark',
+  isDark: initialTheme === 'dark',
   toggleTheme: () =>
     set((state) => {
-      const next: Theme = state.theme === 'manual' ? 'manual-dark' : 'manual';
-      document.documentElement.setAttribute('data-theme', next);
+      const next: Theme = state.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.classList.toggle('dark', next === 'dark');
       try {
         localStorage.setItem(STORAGE_KEY, next);
       } catch {
         // ignore storage errors
       }
-      return { theme: next, isDark: next === 'manual-dark' };
+      return { theme: next, isDark: next === 'dark' };
     }),
 }));
 
@@ -42,19 +43,17 @@ export function useTheme() {
   const isDark = useThemeStore((s) => s.isDark);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
 
-  // Sync data-theme on initial mount and re-read localStorage in case the store
-  // was initialized before this render (e.g., in test environments where localStorage
-  // is set after module import but before component render).
+  // Sync on mount: re-read localStorage in case store was initialised before this render
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      const localTheme: Theme = stored === 'manual-dark' ? 'manual-dark' : 'manual';
+      const localTheme: Theme = stored === 'dark' ? 'dark' : 'light';
       if (useThemeStore.getState().theme !== localTheme) {
-        useThemeStore.setState({ theme: localTheme, isDark: localTheme === 'manual-dark' });
+        useThemeStore.setState({ theme: localTheme, isDark: localTheme === 'dark' });
       }
-      document.documentElement.setAttribute('data-theme', localTheme);
+      document.documentElement.classList.toggle('dark', localTheme === 'dark');
     } catch {
-      document.documentElement.setAttribute('data-theme', useThemeStore.getState().theme);
+      document.documentElement.classList.toggle('dark', useThemeStore.getState().isDark);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -5,8 +5,8 @@ import { useTheme, useThemeStore, STORAGE_KEY } from './useTheme';
 // Reset Zustand store and localStorage between tests to avoid state leakage.
 function resetTheme() {
   localStorage.clear();
-  document.documentElement.removeAttribute('data-theme');
-  useThemeStore.setState({ theme: 'manual', isDark: false });
+  document.documentElement.classList.remove('dark');
+  useThemeStore.setState({ theme: 'light', isDark: false });
 }
 
 describe('useTheme', () => {
@@ -18,63 +18,70 @@ describe('useTheme', () => {
     resetTheme();
   });
 
-  it('defaults to "manual" when no stored preference', () => {
+  it('defaults to "light" when no stored preference', () => {
     const { result } = renderHook(() => useTheme());
-    expect(result.current.theme).toBe('manual');
+    expect(result.current.theme).toBe('light');
   });
 
-  it('reads "manual-dark" from localStorage on mount', () => {
-    localStorage.setItem(STORAGE_KEY, 'manual-dark');
-    useThemeStore.setState({ theme: 'manual-dark', isDark: true });
+  it('reads "dark" from localStorage on mount', () => {
+    localStorage.setItem(STORAGE_KEY, 'dark');
+    useThemeStore.setState({ theme: 'dark', isDark: true });
     const { result } = renderHook(() => useTheme());
-    expect(result.current.theme).toBe('manual-dark');
+    expect(result.current.theme).toBe('dark');
   });
 
-  it('sets data-theme on documentElement to initial theme', () => {
+  it('adds dark class to documentElement when theme is dark', () => {
+    localStorage.setItem(STORAGE_KEY, 'dark');
+    useThemeStore.setState({ theme: 'dark', isDark: true });
     renderHook(() => useTheme());
-    expect(document.documentElement.getAttribute('data-theme')).toBe('manual');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 
-  it('toggleTheme switches from "manual" to "manual-dark"', () => {
+  it('does not add dark class to documentElement when theme is light', () => {
+    renderHook(() => useTheme());
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('toggleTheme switches from "light" to "dark"', () => {
     const { result } = renderHook(() => useTheme());
 
     act(() => { result.current.toggleTheme(); });
 
-    expect(result.current.theme).toBe('manual-dark');
-    expect(document.documentElement.getAttribute('data-theme')).toBe('manual-dark');
-    expect(localStorage.getItem(STORAGE_KEY)).toBe('manual-dark');
+    expect(result.current.theme).toBe('dark');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('dark');
   });
 
-  it('toggleTheme switches from "manual-dark" back to "manual"', () => {
+  it('toggleTheme switches from "dark" back to "light"', () => {
     // Set both localStorage AND store so useEffect doesn't override the store.
-    localStorage.setItem(STORAGE_KEY, 'manual-dark');
-    useThemeStore.setState({ theme: 'manual-dark', isDark: true });
+    localStorage.setItem(STORAGE_KEY, 'dark');
+    useThemeStore.setState({ theme: 'dark', isDark: true });
     const { result } = renderHook(() => useTheme());
 
     act(() => { result.current.toggleTheme(); });
 
-    expect(result.current.theme).toBe('manual');
-    expect(document.documentElement.getAttribute('data-theme')).toBe('manual');
-    expect(localStorage.getItem(STORAGE_KEY)).toBe('manual');
+    expect(result.current.theme).toBe('light');
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('light');
   });
 
-  it('isDark is true when theme is manual-dark', () => {
-    localStorage.setItem(STORAGE_KEY, 'manual-dark');
-    useThemeStore.setState({ theme: 'manual-dark', isDark: true });
+  it('isDark is true when theme is dark', () => {
+    localStorage.setItem(STORAGE_KEY, 'dark');
+    useThemeStore.setState({ theme: 'dark', isDark: true });
     const { result } = renderHook(() => useTheme());
     expect(result.current.isDark).toBe(true);
   });
 
-  it('isDark is false when theme is manual', () => {
+  it('isDark is false when theme is light', () => {
     const { result } = renderHook(() => useTheme());
     expect(result.current.isDark).toBe(false);
   });
 
-  it('falls back to "manual" when localStorage contains an unknown value', () => {
-    // store is already reset to 'manual' in beforeEach; corrupted localStorage
-    // will be treated as 'manual' by the useEffect on mount.
+  it('falls back to "light" when localStorage contains an unknown value', () => {
+    // store is already reset to 'light' in beforeEach; corrupted localStorage
+    // will be treated as 'light' by the useEffect on mount.
     localStorage.setItem(STORAGE_KEY, 'corrupted-value');
     const { result } = renderHook(() => useTheme());
-    expect(result.current.theme).toBe('manual');
+    expect(result.current.theme).toBe('light');
   });
 });
