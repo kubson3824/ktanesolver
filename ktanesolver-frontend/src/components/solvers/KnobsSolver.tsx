@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveKnob } from "../../services/knobsService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,7 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Alert } from "../ui/alert";
 
 interface KnobsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -177,13 +178,15 @@ export default function KnobsSolver({ bomb }: KnobsSolverProps) {
 
       {/* Result */}
       {result && (
-        <div className={`p-4 rounded-lg text-center font-bold text-lg ${
-          result.includes("Unknown")
-            ? "bg-gray-100 text-gray-800"
-            : "alert alert-success"
-        }`}>
-          {result}
-        </div>
+        result.includes("Unknown") ? (
+          <div className="p-4 rounded-lg text-center font-bold text-lg bg-gray-100 text-gray-800">
+            {result}
+          </div>
+        ) : (
+          <Alert variant="success" className="text-center font-bold text-lg">
+            {result}
+          </Alert>
+        )
       )}
 
       {/* Twitch command display */}

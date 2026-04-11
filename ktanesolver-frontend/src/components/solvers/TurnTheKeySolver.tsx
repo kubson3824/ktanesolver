@@ -11,6 +11,8 @@ import {
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
 
 interface TurnTheKeySolverProps {
   bomb: BombEntity | null | undefined;
@@ -173,7 +175,7 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
             <label className="label">
               <span className="label-text">Minutes (0–99)</span>
             </label>
-            <input
+            <Input
               type="number"
               min={0}
               max={99}
@@ -186,7 +188,7 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
                 }
               }}
               placeholder="0"
-              className="input input-bordered w-20 text-center"
+              className="w-20 text-center"
               disabled={isLoading || isSolved}
             />
           </div>
@@ -195,7 +197,7 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
             <label className="label">
               <span className="label-text">Seconds (0–59)</span>
             </label>
-            <input
+            <Input
               type="number"
               min={0}
               max={59}
@@ -208,7 +210,7 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
                 }
               }}
               placeholder="00"
-              className="input input-bordered w-20 text-center"
+              className="w-20 text-center"
               disabled={isLoading || isSolved}
             />
           </div>
@@ -226,9 +228,9 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
       <ErrorAlert error={error} />
 
       {result && (
-        <div className="alert alert-success mb-4">
+        <Alert variant="success" className="mb-4">
           <span className="font-bold">{result.instruction}</span>
-        </div>
+        </Alert>
       )}
 
       <TwitchCommandDisplay command={twitchCommand} />

@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveAnagrams, type AnagramsSolveRequest, type AnagramsSolveResponse } from "../../services/anagramsService";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,9 @@ import {
   ErrorAlert,
   TwitchCommandDisplay
 } from "../common";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
+import { Badge } from "../ui/badge";
 
 interface AnagramsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -188,12 +191,12 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Enter the word displayed on the module:
           </label>
-          <input
+          <Input
             type="text"
             value={displayWord}
             onChange={handleDisplayWordChange}
             placeholder="Enter the letters"
-            className="input input-bordered w-full max-w-md mx-auto block text-center text-xl tracking-widest"
+            className="w-full max-w-md mx-auto block text-center text-xl tracking-widest"
             maxLength={6}
             disabled={isLoading || isSolved}
           />
@@ -217,40 +220,20 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
 
       {/* Results */}
       {result && (
-        <div className={`alert mb-4 ${result.possibleSolutions.length > 0 ? 'alert-success' : 'alert-info'}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d={result.possibleSolutions.length > 0
-                ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                : "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              }
-            />
-          </svg>
-          <div className="w-full">
-            <span className="font-bold">{result.possibleSolutions.length > 0 ? "Possible Solutions:" : "No Solutions"}</span>
-            <div className="mt-2">
-              {result.possibleSolutions.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {result.possibleSolutions.map((solution, index) => (
-                    <span key={index} className="badge badge-lg badge-primary">
-                      {solution}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm">No valid anagrams found</p>
-              )}
+        <Alert variant={result.possibleSolutions.length > 0 ? "success" : "info"} className="mb-4">
+          <p className="font-semibold mb-2">
+            {result.possibleSolutions.length > 0 ? "Possible Solutions:" : "No Solutions"}
+          </p>
+          {result.possibleSolutions.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {result.possibleSolutions.map((solution, index) => (
+                <Badge key={index} variant="default">{solution}</Badge>
+              ))}
             </div>
-          </div>
-        </div>
+          ) : (
+            <p className="text-sm">No valid anagrams found</p>
+          )}
+        </Alert>
       )}
 
       {/* Twitch command display */}

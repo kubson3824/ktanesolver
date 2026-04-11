@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveForeignExchange, type ForeignExchangeInput, type ForeignExchangeOutput } from "../../services/foreignExchangeService";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,7 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Loader2 } from "lucide-react";
 
 interface ForeignExchangeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -256,7 +257,7 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
               disabled={isLoading || !baseCurrency || !targetCurrency || !amount}
               className="w-full btn btn-primary"
             >
-              {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
               {isLoading ? "Solving..." : "Solve"}
             </button>
           </div>

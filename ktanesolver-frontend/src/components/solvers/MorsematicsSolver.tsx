@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMorsematics as solveMorsematicsApi } from "../../services/morsematicsService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,8 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
 
 interface MorsematicsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -194,11 +196,11 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
         <label className="block text-sm font-medium text-gray-300 mb-3">
           Received Letters (3 letters):
         </label>
-        <input
+        <Input
           type="text"
           value={letters}
           onChange={(e) => handleLetterChange(e.target.value)}
-          className="input input-bordered w-full text-center text-2xl font-mono uppercase tracking-widest"
+          className="w-full text-center text-2xl font-mono uppercase tracking-widest"
           placeholder="ABC"
           maxLength={3}
           disabled={isLoading}
@@ -226,34 +228,19 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
 
       {/* Result */}
       {result && isSolved && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div>
-            <span className="font-bold mb-2 block">Transmit Letter:</span>
-            <div className="flex items-center gap-4">
-              <span className="text-4xl font-mono font-bold">{result}</span>
-              <div className="flex gap-1">
-                {MORSE_CODE[result]?.split('').map((symbol, index) => (
-                  <span key={index} className="text-2xl">
-                    {symbol === '.' ? '•' : '—'}
-                  </span>
-                ))}
-              </div>
+        <Alert variant="success" className="mb-4">
+          <span className="font-bold mb-2 block">Transmit Letter:</span>
+          <div className="flex items-center gap-4">
+            <span className="text-4xl font-mono font-bold">{result}</span>
+            <div className="flex gap-1">
+              {MORSE_CODE[result]?.split('').map((symbol, index) => (
+                <span key={index} className="text-2xl">
+                  {symbol === '.' ? '•' : '—'}
+                </span>
+              ))}
             </div>
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Twitch command display */}

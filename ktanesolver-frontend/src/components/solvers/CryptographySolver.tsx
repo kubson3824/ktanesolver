@@ -15,6 +15,7 @@ import {
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { Alert } from "../ui/alert";
 
 interface CryptographySolverProps {
   bomb: BombEntity | null | undefined;
@@ -254,27 +255,12 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
       <ErrorAlert error={error} />
 
       {result && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div>
-            <p className="font-bold">On the module</p>
-            <p className="text-sm mt-1">
-              Press the five keys once each in this order: {result.keyOrder.join(", ")}.
-            </p>
-          </div>
-        </div>
+        <Alert variant="success" className="mb-4">
+          <p className="font-bold">On the module</p>
+          <p className="text-sm mt-1">
+            Press the five keys once each in this order: {result.keyOrder.join(", ")}.
+          </p>
+        </Alert>
       )}
 
       <TwitchCommandDisplay command={twitchCommand} />

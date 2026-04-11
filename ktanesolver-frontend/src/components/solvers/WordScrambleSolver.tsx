@@ -9,6 +9,7 @@ import SolverControls from "../common/SolverControls";
 import ErrorAlert from "../common/ErrorAlert";
 import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
 import { useSolver, useSolverModulePersistence } from "../common";
+import { Input } from "../ui/input";
 
 interface WordScrambleSolverProps {
   bomb: BombEntity | null | undefined;
@@ -149,12 +150,12 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Enter the 6 letters you see on the module:
           </label>
-          <input
+          <Input
             type="text"
             value={letters}
             onChange={handleLettersChange}
             placeholder="Enter 6 letters"
-            className="input input-bordered w-full max-w-md mx-auto block text-center text-xl tracking-widest"
+            className="w-full max-w-md mx-auto block text-center text-xl tracking-widest"
             maxLength={6}
             disabled={isLoading || isSolved}
           />

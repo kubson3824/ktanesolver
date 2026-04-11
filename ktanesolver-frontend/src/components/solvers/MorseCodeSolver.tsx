@@ -11,6 +11,8 @@ import {
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { Alert } from "../ui/alert";
+import { Loader2 } from "lucide-react";
 
 interface MorseCodeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -332,7 +334,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
             >
               {isPlaying ? (
                 <>
-                  <span className="loading loading-spinner loading-xs"></span>
+                  <Loader2 className="h-3 w-3 animate-spin text-accent inline" />
                   Playing...
                 </>
               ) : (
@@ -415,7 +417,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
             !currentModule?.id
           }
         >
-          {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
           {isLoading ? "Solving..." : "Solve"}
         </button>
         <button onClick={clearInput} className="btn btn-outline" disabled={isLoading || (result?.resolved)}>
@@ -431,29 +433,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
       {/* Results */}
       {result && (
-        <div ref={resultsRef} className={`alert mb-4 ${result.resolved ? "alert-success" : "alert-warning"}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            {result.resolved ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            )}
-          </svg>
+        <Alert ref={resultsRef} variant={result.resolved ? "success" : "warning"} className="mb-4">
           <div>
             {result.resolved && (result.candidates?.length ?? 0) > 0 ? (
               <div>
@@ -489,7 +469,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
               </div>
             )}
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Twitch command display */}

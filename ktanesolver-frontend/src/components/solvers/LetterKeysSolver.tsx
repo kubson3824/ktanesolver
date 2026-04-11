@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveLetterKeys as solveLetterKeysApi } from "../../services/letterKeysService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,7 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Alert } from "../ui/alert";
 
 interface LetterKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -189,22 +190,9 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
 
       {/* Result */}
       {result && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+        <Alert variant="success" className="mb-4">
           <span className="font-bold">{result}</span>
-        </div>
+        </Alert>
       )}
 
       {/* Twitch command display */}

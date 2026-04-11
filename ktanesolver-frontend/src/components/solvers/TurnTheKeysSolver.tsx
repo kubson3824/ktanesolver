@@ -11,6 +11,8 @@ import {
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
 
 interface TurnTheKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -214,7 +216,7 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
             <label className="label">
               <span className="label-text">Priority (from display)</span>
             </label>
-            <input
+            <Input
               type="number"
               min={0}
               value={priorityInput}
@@ -226,7 +228,7 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
                 }
               }}
               placeholder="0"
-              className="input input-bordered w-24 text-center"
+              className="w-24 text-center"
               disabled={isLoading || isSolved}
             />
           </div>
@@ -248,18 +250,18 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
           <p className="text-sm text-base-content/70 font-medium">This module&apos;s priority: {result.priority}</p>
 
           {result.canTurnRightKey && (
-            <div className="alert alert-success">
+            <Alert variant="success">
               <span className="font-bold">You can turn the right key now.</span>
-            </div>
+            </Alert>
           )}
           {result.canTurnLeftKey && (
-            <div className="alert alert-success">
+            <Alert variant="success">
               <span className="font-bold">You can turn the left key now.</span>
-            </div>
+            </Alert>
           )}
 
           {!result.rightKeyTurned && (
-            <div className="alert alert-info">
+            <Alert variant="info">
               <span className="font-bold block mb-2">Right key</span>
               <span className="text-sm">{result.rightKeyInstruction}</span>
               <div className="mt-2">
@@ -272,10 +274,10 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
                   I turned the right key
                 </button>
               </div>
-            </div>
+            </Alert>
           )}
           {!result.leftKeyTurned && (
-            <div className="alert alert-info">
+            <Alert variant="info">
               <span className="font-bold block mb-2">Left key</span>
               <span className="text-sm">{result.leftKeyInstruction}</span>
               <div className="mt-2">
@@ -288,7 +290,7 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
                   I turned the left key
                 </button>
               </div>
-            </div>
+            </Alert>
           )}
         </div>
       )}

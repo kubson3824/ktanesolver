@@ -10,6 +10,8 @@ import ErrorAlert from "../common/ErrorAlert";
 import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
 import { useSolver, useSolverModulePersistence } from "../common";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
 
 interface TwoBitsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -191,13 +193,13 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
               <label className="block text-sm font-medium text-base-content/80 mb-2">
                 Number on the module (0–99)
               </label>
-              <input
+              <Input
                 type="number"
                 min="0"
                 max="99"
                 value={inputNumber}
                 onChange={(e) => handleNumberChange(e.target.value)}
-                className="input input-bordered w-full max-w-md mx-auto block text-center text-2xl tracking-widest"
+                className="w-full max-w-md mx-auto block text-center text-2xl tracking-widest"
                 placeholder="00"
                 disabled={isLoading || isSolved}
               />
@@ -218,22 +220,9 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       <ErrorAlert error={error} />
 
       {isSolved && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+        <Alert variant="success" className="mb-4">
           <span>Module Solved!</span>
-        </div>
+        </Alert>
       )}
 
       {result?.stages && result.stages.length > 0 && (
