@@ -2,8 +2,12 @@
 package ktanesolver.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,8 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import ktanesolver.dto.RoundSummaryDto;
+import ktanesolver.entity.BombEntity;
+import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.RoundStatus;
+import ktanesolver.repository.BombRepository;
 import ktanesolver.repository.RoundEventRepository;
 import ktanesolver.repository.RoundRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class RoundService {
 
 	private final RoundRepository roundRepo;
+	private final BombRepository bombRepo;
 	private final RoundEventRepository roundEventRepo;
 
 	@Transactional
@@ -56,8 +64,32 @@ public class RoundService {
 
 	@Transactional(readOnly = true)
 	public RoundEntity getRoundWithDetails(UUID roundId) {
-		return roundRepo.findByIdWithDetails(roundId)
+		RoundEntity round = roundRepo.findByIdWithDetails(roundId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Round not found"));
+
+		List<BombEntity> uniqueBombs = new ArrayList<>();
+		for (BombEntity bomb : round.getBombs()) {
+			boolean alreadyPresent = uniqueBombs.stream().anyMatch(existing -> existing.getId().equals(bomb.getId()));
+			if (!alreadyPresent) {
+				uniqueBombs.add(bomb);
+			}
+		}
+		round.setBombs(uniqueBombs);
+
+		Map<UUID, BombEntity> bombsWithModules = bombRepo.findAllByRoundIdWithModules(roundId).stream()
+				.collect(Collectors.toMap(BombEntity::getId, Function.identity()));
+
+		for (BombEntity bomb : round.getBombs()) {
+			BombEntity loadedBomb = bombsWithModules.get(bomb.getId());
+			List<ModuleEntity> modules = loadedBomb == null
+					? List.of()
+					: loadedBomb.getModules().stream()
+							.peek(module -> module.setBomb(bomb))
+							.collect(Collectors.toCollection(ArrayList::new));
+			bomb.setModules(modules);
+		}
+
+		return round;
 	}
 
 	@Transactional

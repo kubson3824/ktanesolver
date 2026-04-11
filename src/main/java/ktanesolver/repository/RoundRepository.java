@@ -34,7 +34,6 @@ public interface RoundRepository extends JpaRepository<RoundEntity, UUID> {
     @Query("""
             SELECT DISTINCT r FROM RoundEntity r
             LEFT JOIN FETCH r.bombs b
-            LEFT JOIN FETCH b.modules
             LEFT JOIN FETCH b.portPlates
             LEFT JOIN FETCH b.indicators
             WHERE r.id = :id

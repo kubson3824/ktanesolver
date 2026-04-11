@@ -117,7 +117,10 @@ esac
 
 
 # Determine the Java command to use to start the JVM.
-if [ -n "$JAVA_HOME" ] ; then
+if command -v java >/dev/null 2>&1
+then
+    JAVACMD=java
+elif [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
         # IBM's JDK on AIX uses strange locations for the executables
         JAVACMD=$JAVA_HOME/jre/sh/java
@@ -131,14 +134,9 @@ Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
     fi
 else
-    JAVACMD=java
-    if ! command -v java >/dev/null 2>&1
-    then
-        die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+    die "ERROR: Neither 'java' from PATH nor JAVA_HOME could provide a Java runtime.
 
-Please set the JAVA_HOME variable in your environment to match the
-location of your Java installation."
-    fi
+Please set JAVA_HOME or put a compatible Java installation on PATH."
 fi
 
 # Increase the maximum file descriptors if we can.
@@ -210,7 +208,8 @@ DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
 
 set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
-        -jar "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+        -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+        org.gradle.wrapper.GradleWrapperMain \
         "$@"
 
 # Stop when "xargs" is not available.

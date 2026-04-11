@@ -27,7 +27,7 @@ public class PortPlateEntity {
 	@JsonIgnore
 	private BombEntity bomb;
 
-	@ElementCollection
+	@ElementCollection (fetch = FetchType.EAGER)
 	@CollectionTable (name = "port_plate_ports", joinColumns = @JoinColumn (name = "port_plate_id"))
 	@Column (name = "port_type")
 	@Enumerated (EnumType.STRING)

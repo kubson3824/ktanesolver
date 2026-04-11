@@ -1,6 +1,7 @@
 
 package ktanesolver.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,4 +17,12 @@ public interface BombRepository extends JpaRepository<BombEntity, UUID> {
 
 	@Query("SELECT b FROM BombEntity b LEFT JOIN FETCH b.modules WHERE b.id = :id")
 	Optional<BombEntity> findByIdWithModules(@Param("id") UUID id);
+
+	@Query("""
+			SELECT DISTINCT b
+			FROM BombEntity b
+			LEFT JOIN FETCH b.modules
+			WHERE b.round.id = :roundId
+			""")
+	List<BombEntity> findAllByRoundIdWithModules(@Param("roundId") UUID roundId);
 }
