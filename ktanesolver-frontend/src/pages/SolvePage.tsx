@@ -249,10 +249,10 @@ export default function SolvePage() {
         {/* Page header */}
         <div className="flex flex-row flex-wrap justify-between items-center gap-3">
           <div>
-            <p className="text-base font-semibold text-foreground text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Round #{round?.id?.slice(0, 8)}
             </p>
-            <h1 className="page-title mt-1">Live defusal</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">Live defusal</h1>
           </div>
           <div className="flex gap-2 items-center">
             {currentModule && (
@@ -266,7 +266,7 @@ export default function SolvePage() {
           </div>
         </div>
 
-        <div className="section-divider" />
+        <div className="border-b border-border" />
 
         {/* Main content */}
         {!currentModule ? (

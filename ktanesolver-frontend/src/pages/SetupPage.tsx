@@ -27,6 +27,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { cn } from "../lib/cn";
+import { Loader2 } from "lucide-react";
 
 type IndicatorInput = {
     id: string;
@@ -286,7 +287,7 @@ export default function SetupPage() {
     if (roundId && (roundNotYetLoaded || loading) && !round) {
         return (
             <PageContainer className="flex items-center justify-center min-h-[60vh]">
-                <span className="loading loading-spinner loading-lg text-primary" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </PageContainer>
         );
     }
@@ -296,7 +297,7 @@ export default function SetupPage() {
     return (
         <PageContainer>
             <PageHeader
-                title="ROUND SETUP"
+                title="Round Setup"
                 actions={
                     <Button
                         variant="default"
@@ -562,7 +563,7 @@ export default function SetupPage() {
                                                 <span
                                                     className={cn(
                                                         "h-2 w-2 rounded-full shrink-0",
-                                                        indicator.lit ? "bg-success-content/80" : "bg-base-content/50"
+                                                        indicator.lit ? "bg-emerald-500/80" : "bg-foreground/50"
                                                     )}
                                                     aria-hidden
                                                 />
@@ -639,7 +640,7 @@ export default function SetupPage() {
                                                         <Button
                                                             key={port}
                                                             type="button"
-                                                            variant={plate.ports.includes(port) ? "primary" : "outline"}
+                                                            variant={plate.ports.includes(port) ? "default" : "outline"}
                                                             size="sm"
                                                             onClick={() => updatePlate(plate.id, port)}
                                                         >
