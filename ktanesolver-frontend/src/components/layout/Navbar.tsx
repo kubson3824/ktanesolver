@@ -5,8 +5,9 @@ import { StrikeIndicator } from "../StrikeIndicator";
 import { StrikeButton } from "../StrikeButton";
 import Breadcrumb from "./Breadcrumb";
 import { formatRoundLabel, formatModuleDisplayName } from "../../lib/utils";
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Menu, X } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { cn } from "../../lib/cn";
 
 export default function Navbar() {
   const location = useLocation();
@@ -64,86 +65,80 @@ export default function Navbar() {
 
   return (
     <nav
-      className="sticky top-0 z-40 bg-base-100 border-b-2 border-base-content"
+      className="sticky top-0 z-40 bg-background border-b border-border"
       role="navigation"
       aria-label="Main navigation"
     >
       <div className="max-w-5xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
-          {/* Left: logo */}
+        <div className="flex items-center justify-between h-12">
+          {/* Logo */}
           <div className="flex items-center gap-4 min-w-0">
             <Link to="/" aria-label="KTANE Solver home" className="shrink-0">
-              <span className="font-display text-2xl font-bold uppercase tracking-tight text-base-content">
-                KTANE<span className="text-primary">·</span>SOLVER
+              <span className="font-bold text-lg text-foreground tracking-tight">
+                KTANE<span className="text-accent">·</span>SOLVER
               </span>
             </Link>
-
-            {/* Desktop: breadcrumb */}
             <div className="hidden sm:flex items-center gap-1 min-w-0">
-              {breadcrumbSegments ? (
+              {breadcrumbSegments && (
                 <Breadcrumb segments={breadcrumbSegments} className="truncate" />
-              ) : null}
+              )}
             </div>
           </div>
 
-          {/* Right: strike info + theme toggle + mobile menu toggle */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {isSolving && currentBomb && (
               <div className="hidden sm:flex items-center gap-2">
                 <StrikeIndicator className="text-sm" />
-                <StrikeButton className="btn-xs" />
+                <StrikeButton />
               </div>
             )}
 
             <button
-              className="btn btn-ghost btn-sm btn-square"
+              className={cn(
+                "h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground",
+                "hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              )}
               onClick={toggleTheme}
               aria-label={isDark ? 'Enable light mode' : 'Enable dark mode'}
             >
-              {isDark ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
             <button
-              className="sm:hidden btn btn-ghost btn-sm btn-square"
+              className={cn(
+                "sm:hidden h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground",
+                "hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              )}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileOpen}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {mobileOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="sm:hidden pb-4 border-t border-base-content/20 mt-2 pt-3 space-y-1">
+          <div className="sm:hidden pb-3 border-t border-border mt-0 pt-3 space-y-1">
             {breadcrumbSegments ? (
-              <div className="px-3 py-2">
+              <div className="px-2 py-1">
                 <Breadcrumb segments={breadcrumbSegments} />
               </div>
             ) : !isHome ? (
               <Link
                 to="/"
                 onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-md text-sm font-medium text-ink-muted hover:text-ink"
+                className="block px-2 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 Home
               </Link>
             ) : null}
             {isSolving && currentBomb && (
-              <div className="flex items-center gap-2 px-3 py-2">
+              <div className="flex items-center gap-2 px-2 py-2">
                 <StrikeIndicator className="text-sm" />
-                <StrikeButton className="btn-xs" />
+                <StrikeButton />
               </div>
             )}
           </div>

@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-paper">
-          <div className="card-manual p-8 max-w-md text-center">
+          <div className="rounded-xl border border-border bg-card shadow-sm p-8 max-w-md text-center">
             <h3 className="font-display text-xl uppercase text-base-content">
               Something went wrong
             </h3>

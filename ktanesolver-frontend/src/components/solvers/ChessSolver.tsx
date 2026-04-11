@@ -12,6 +12,8 @@ import {
   TwitchCommandDisplay,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
 
 const FILES = ["a", "b", "c", "d", "e", "f"] as const;
 const RANKS = [1, 2, 3, 4, 5, 6] as const;
@@ -235,13 +237,13 @@ export default function ChessSolver({ bomb }: ChessSolverProps) {
               <label className="label py-0.5">
                 <span className="label-text text-neutral-400">Position {i + 1}</span>
               </label>
-              <input
+              <Input
                 type="text"
                 maxLength={2}
                 value={coord}
                 onChange={(e) => setCoord(i, e.target.value)}
                 placeholder="a1"
-                className="input input-bordered w-full bg-neutral-800 border-neutral-600 text-yellow-400 font-mono uppercase"
+                className="w-full bg-neutral-800 border-neutral-600 text-yellow-400 font-mono uppercase"
                 disabled={isLoading || isSolved}
                 aria-label={`Position ${i + 1} coordinate`}
               />
@@ -295,14 +297,12 @@ export default function ChessSolver({ bomb }: ChessSolverProps) {
       <ErrorAlert error={error} />
 
       {result?.coordinate && (
-        <div className="alert alert-success mb-4">
-          <div>
-            <p className="font-bold">Submit on the module:</p>
-            <p className="text-lg font-mono mt-1">
-              Press letter <strong>{result.coordinate[0].toUpperCase()}</strong>, then number <strong>{result.coordinate[1]}</strong>
-            </p>
-          </div>
-        </div>
+        <Alert variant="success" className="mb-4">
+          <p className="font-bold">Submit on the module:</p>
+          <p className="text-lg font-mono mt-1">
+            Press letter <strong>{result.coordinate[0].toUpperCase()}</strong>, then number <strong>{result.coordinate[1]}</strong>
+          </p>
+        </Alert>
       )}
 
       <TwitchCommandDisplay command={twitchCommand} />

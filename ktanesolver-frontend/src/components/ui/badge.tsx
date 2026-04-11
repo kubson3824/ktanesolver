@@ -3,21 +3,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/cn";
 
 const badgeVariants = cva(
-  "inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide rounded-sm border",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors",
   {
     variants: {
       variant: {
-        default:   "bg-base-200 text-base-content border-base-300",
-        secondary: "bg-base-200 text-base-content border-base-300",
-        primary:   "bg-red-50 text-primary border-primary/30",
-        success:   "bg-green-50 text-success border-success/30",
-        warning:   "bg-amber-50 text-warning border-warning/30",
-        error:     "bg-red-50 text-error border-error/30",
-        info:      "bg-blue-50 text-info border-info/30",
-        outline:   "bg-transparent border-current text-current",
-      }
+        default:     "border-transparent bg-primary text-primary-foreground",
+        secondary:   "border-transparent bg-secondary text-secondary-foreground",
+        outline:     "border-border text-foreground bg-transparent",
+        success:     "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+        warning:     "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+        destructive: "border-transparent bg-destructive/10 text-destructive dark:bg-destructive/20",
+        info:        "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+        // Backward-compat aliases
+        error:       "border-transparent bg-destructive/10 text-destructive dark:bg-destructive/20",
+        primary:     "border-transparent bg-primary text-primary-foreground",
+      },
     },
-    defaultVariants: { variant: "default" }
+    defaultVariants: { variant: "default" },
   }
 );
 

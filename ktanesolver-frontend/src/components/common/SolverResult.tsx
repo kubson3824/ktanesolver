@@ -13,21 +13,29 @@ export default function SolverResult({
   description,
   className,
 }: SolverResultProps) {
-  const isSuccess = variant === "success";
+  const variantClasses =
+    variant === "success"
+      ? "bg-emerald-50 border-l-4 border-l-emerald-500 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400"
+      : variant === "warning"
+      ? "bg-amber-50 border-l-4 border-l-amber-500 text-amber-900 dark:bg-amber-950/30 dark:text-amber-400"
+      : variant === "error"
+      ? "bg-red-50 border-l-4 border-l-red-500 text-red-900 dark:bg-red-950/30 dark:text-red-400"
+      : "bg-blue-50 border-l-4 border-l-blue-500 text-blue-900 dark:bg-blue-950/30 dark:text-blue-400";
 
-  const titleColorClass = variant === "success"
-    ? "text-success"
-    : variant === "warning"
-    ? "text-warning"
-    : variant === "error"
-    ? "text-error"
-    : "text-info";
+  const titleColorClass =
+    variant === "success"
+      ? "text-emerald-700 dark:text-emerald-400"
+      : variant === "warning"
+      ? "text-amber-700 dark:text-amber-400"
+      : variant === "error"
+      ? "text-red-700 dark:text-red-400"
+      : "text-blue-700 dark:text-blue-400";
 
   return (
     <div
       className={cn(
-        "callout",
-        isSuccess ? "callout-success" : variant === "warning" ? "callout-warning" : "callout-info",
+        "rounded-lg p-4",
+        variantClasses,
         className
       )}
       role="status"

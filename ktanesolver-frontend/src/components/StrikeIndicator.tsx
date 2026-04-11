@@ -7,15 +7,9 @@ interface StrikeIndicatorProps {
   className?: string;
 }
 
-export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({
-  bombId,
-  className = ''
-}) => {
+export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({ bombId, className = '' }) => {
   const { round, currentBomb } = useRoundStore();
-
-  const bomb = bombId
-    ? round?.bombs.find(b => b.id === bombId)
-    : currentBomb;
+  const bomb = bombId ? round?.bombs.find(b => b.id === bombId) : currentBomb;
 
   if (!bomb) return null;
 
@@ -25,21 +19,13 @@ export const StrikeIndicator: React.FC<StrikeIndicatorProps> = ({
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       {Array.from({ length: strikeCount }).map((_, i) => (
-        <span
-          key={i}
-          className="font-bold text-sm text-error"
-          aria-hidden="true"
-        >
-          ✕
-        </span>
+        <span key={i} className="font-bold text-sm text-destructive" aria-hidden>✕</span>
       ))}
       {strikeCount === 0 && !isExploded && (
-        <span className="text-xs text-ink-muted">No strikes</span>
+        <span className="text-xs text-muted-foreground">No strikes</span>
       )}
       {isExploded && (
-        <span className="text-xs font-semibold text-error uppercase tracking-wide ml-1">
-          EXPLODED
-        </span>
+        <span className="text-xs font-semibold text-destructive uppercase tracking-wide ml-1">EXPLODED</span>
       )}
     </div>
   );

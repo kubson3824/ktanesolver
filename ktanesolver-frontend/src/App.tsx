@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useCatalogStore } from "./store/useCatalogStore";
+import { Loader2 } from "lucide-react";
 
 // Route-level code splitting
 const MainPage = lazy(() => import("./pages/MainPage"));
@@ -14,7 +15,7 @@ function PageLoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-3">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm text-base-content/70">Loading...</p>
       </div>
     </div>

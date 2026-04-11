@@ -9,6 +9,8 @@ import SolverControls from "../common/SolverControls";
 import ErrorAlert from "../common/ErrorAlert";
 import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
 import { useSolver, useSolverModulePersistence } from "../common";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
 
 interface WordScrambleSolverProps {
   bomb: BombEntity | null | undefined;
@@ -149,12 +151,12 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Enter the 6 letters you see on the module:
           </label>
-          <input
+          <Input
             type="text"
             value={letters}
             onChange={handleLettersChange}
             placeholder="Enter 6 letters"
-            className="input input-bordered w-full max-w-md mx-auto block text-center text-xl tracking-widest"
+            className="w-full max-w-md mx-auto block text-center text-xl tracking-widest"
             maxLength={6}
             disabled={isLoading || isSolved}
           />
@@ -178,23 +180,7 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
 
       {/* Results */}
       {result && (
-        <div className={`alert mb-4 ${result.solved ? 'alert-success' : 'alert-info'}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d={result.solved 
-                ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                : "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              }
-            />
-          </svg>
+        <Alert variant={result.solved ? "success" : "info"} className="mb-4">
           <div className="w-full">
             <span className="font-bold">{result.solved ? "Solution Found!" : "No Solution"}</span>
             <div className="mt-2">{result.instruction}</div>
@@ -207,7 +193,7 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
               </div>
             )}
           </div>
-        </div>
+        </Alert>
       )}
 
       {twitchCommand && result && (

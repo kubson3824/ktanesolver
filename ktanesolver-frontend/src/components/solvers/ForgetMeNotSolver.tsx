@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveForgetMeNot as solveForgetMeNotApi } from "../../services/forgetMeNotService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,9 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Alert } from "../ui/alert";
+import { Loader2 } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface ForgetMeNotSolverProps {
   bomb: BombEntity | null | undefined;
@@ -263,25 +266,10 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       
       {/* Reminder alert */}
       {reminderShown && (
-        <div className="alert alert-warning mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-          <div>
-            <h3 className="font-bold">Reminder: Check Forget Me Not!</h3>
-            <p className="text-sm">Don't forget to check the Forget Me Not module display and enter the number shown.</p>
-          </div>
-        </div>
+        <Alert variant="warning" className="mb-4">
+          <h3 className="font-bold">Reminder: Check Forget Me Not!</h3>
+          <p className="text-sm">Don't forget to check the Forget Me Not module display and enter the number shown.</p>
+        </Alert>
       )}
 
       {/* Module visualization */}
@@ -375,14 +363,15 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       {/* All modules completed button */}
       {!allModulesCompleted && stages.length > 0 && !isSolved && (
         <div className="mb-4">
-          <button
+          <Button
+            variant="secondary"
+            className="w-full"
             onClick={handleAllModulesCompleted}
-            className="btn btn-secondary w-full"
             disabled={isLoading}
           >
-            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : ""}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
             {isLoading ? "Getting Sequence..." : "All Modules Solved"}
-          </button>
+          </Button>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 import { type BombEntity, BombStatus } from "../../types";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 interface BombCardProps {
@@ -13,14 +13,6 @@ interface BombCardProps {
     animationDelay?: number;
 }
 
-function EditIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-    );
-}
-
 export default function BombCard({ bomb, index, onEditEdgework, onAddModules, onDelete, animationDelay = 0 }: BombCardProps) {
     const isActive = bomb.status === BombStatus.ACTIVE;
     const moduleCount = bomb.modules?.length ?? 0;
@@ -29,15 +21,15 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
     return (
         <div
             className={cn(
-                "card-manual animate-fade-in overflow-hidden",
-                isActive && "border-l-[3px] border-l-success"
+                "rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden animate-fade-in",
+                isActive && "border-l-4 border-l-emerald-500"
             )}
             style={{ animationDelay: `${animationDelay}ms`, animationFillMode: "backwards" }}
         >
-            {/* Card header */}
-            <div className="bg-base-200 border-b border-base-300 px-4 py-3 flex items-center justify-between">
-                <span className="font-display text-base font-bold uppercase tracking-wide text-base-content">
-                    BOMB {index + 1}
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/40">
+                <span className="font-semibold text-sm text-foreground">
+                    Bomb {index + 1}
                 </span>
                 <div className="flex items-center gap-1">
                     <Button
@@ -47,7 +39,7 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
                         aria-label="Edit edgework"
                         title="Edit edgework"
                     >
-                        <EditIcon />
+                        <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     {onDelete && (
                         <Button
@@ -57,66 +49,60 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
                             aria-label="Delete bomb"
                             title="Delete bomb"
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                     )}
                 </div>
             </div>
 
-            {/* Card body */}
+            {/* Body */}
             <div className="px-4 py-4 space-y-3">
-                {/* Serial + batteries */}
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-0.5">Serial</p>
-                        <p className="font-mono text-base font-medium text-base-content">{bomb.serialNumber || "—"}</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">Serial</p>
+                        <p className="font-mono text-sm font-medium text-foreground">{bomb.serialNumber || "—"}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-ink-muted uppercase tracking-widest mb-0.5">Batteries</p>
-                        <p className="font-mono text-base font-medium text-base-content">
-                            <span title="AA batteries">{bomb.aaBatteryCount}<span className="text-xs text-ink-muted ml-0.5">AA</span></span>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">Batteries</p>
+                        <p className="font-mono text-sm font-medium text-foreground">
+                            <span title="AA batteries">{bomb.aaBatteryCount}<span className="text-xs text-muted-foreground ml-0.5">AA</span></span>
                             {" / "}
-                            <span title="D batteries">{bomb.dBatteryCount}<span className="text-xs text-ink-muted ml-0.5">D</span></span>
+                            <span title="D batteries">{bomb.dBatteryCount}<span className="text-xs text-muted-foreground ml-0.5">D</span></span>
                         </p>
                     </div>
                 </div>
 
-                {/* Indicators */}
                 <div>
-                    <p className="text-xs text-ink-muted uppercase tracking-widest mb-1.5">Indicators</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Indicators</p>
                     <div className="flex flex-wrap gap-1.5">
                         {Object.entries(bomb.indicators ?? {}).map(([name, lit]) => (
                             <span
                                 key={`${bomb.id}-${name}`}
                                 className={cn(
-                                    "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium rounded-sm border",
+                                    "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium rounded-full border",
                                     lit
-                                        ? "bg-red-50 text-primary border-primary/30"
-                                        : "bg-base-100 text-ink-muted border-base-300"
+                                        ? "bg-accent/10 text-accent border-accent/30"
+                                        : "bg-muted text-muted-foreground border-border"
                                 )}
                             >
                                 <span
-                                    className={cn(
-                                        "h-1.5 w-1.5 rounded-full",
-                                        lit ? "bg-primary" : "bg-base-300"
-                                    )}
+                                    className={cn("h-1.5 w-1.5 rounded-full", lit ? "bg-accent" : "bg-muted-foreground/40")}
                                     aria-hidden
                                 />
                                 {name}
                             </span>
                         ))}
                         {Object.keys(bomb.indicators ?? {}).length === 0 && (
-                            <span className="text-xs text-ink-muted italic">None</span>
+                            <span className="text-xs text-muted-foreground italic">None</span>
                         )}
                     </div>
                 </div>
 
-                {/* Port plates */}
                 <div>
-                    <p className="text-xs text-ink-muted uppercase tracking-widest mb-1.5">Port plates</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Port plates</p>
                     <div className="flex flex-wrap gap-1">
                         {bomb.portPlates.length === 0 ? (
-                            <span className="text-xs text-ink-muted">—</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                         ) : (
                             bomb.portPlates.map((plate, plateIndex) => (
                                 <Badge key={`${bomb.id}-plate-${plateIndex}`} variant="outline" className="text-xs font-mono">
@@ -128,21 +114,15 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
                 </div>
             </div>
 
-            {/* Card footer */}
-            <div className="bg-base-200 border-t border-base-300 px-4 py-3 flex items-center justify-between">
+            {/* Footer */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/40">
                 <div className="flex items-center gap-2">
-                    <Badge variant={hasModules ? "info" : "default"} className="text-xs">
+                    <Badge variant={hasModules ? "info" : "secondary"} className="text-xs">
                         {moduleCount} module{moduleCount !== 1 ? "s" : ""}
                     </Badge>
-                    {isActive && (
-                        <Badge variant="success" className="text-xs">Active</Badge>
-                    )}
+                    {isActive && <Badge variant="success" className="text-xs">Active</Badge>}
                 </div>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onAddModules(bomb)}
-                >
+                <Button variant="outline" size="sm" onClick={() => onAddModules(bomb)}>
                     {hasModules ? "Configure Modules" : "Add Modules"}
                 </Button>
             </div>

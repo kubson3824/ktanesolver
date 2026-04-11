@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRoundStore } from "../store/useRoundStore";
 import PageContainer from "../components/layout/PageContainer";
-import PageHeader from "../components/layout/PageHeader";
 import { Button } from "../components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 
@@ -25,69 +24,61 @@ export default function MainPage() {
     }
   };
 
-  const handlePreviousRounds = () => {
-    navigate("/rounds");
-  };
-
   return (
     <PageContainer>
-      <PageHeader
-        title="BOMB DEFUSAL SOLVER"
-        subtitle="KTaNE solver for expert teams"
-      />
-
-      {error && (
-        <Alert variant="error" className="mb-6">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-6">
-        {/* New Round card */}
-        <div className="card-manual flex-1 flex flex-col">
-          <div className="bg-primary text-primary-content px-5 py-4">
-            <h2 className="font-display text-lg font-bold uppercase tracking-wide">
-              NEW ROUND
-            </h2>
-          </div>
-          <div className="px-5 py-4 flex-1">
-            <p className="text-sm text-ink-muted">
-              Configure bombs, add modules, and start solving.
-            </p>
-          </div>
-          <div className="px-5 pb-5">
-            <Button
-              variant="primary"
-              onClick={handleCreateNewBomb}
-              disabled={loading || creating}
-              loading={creating || loading}
-            >
-              {creating || loading ? "Creating…" : "Start New Round"}
-            </Button>
-          </div>
+      <div className="max-w-lg mx-auto py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Bomb Defusal Solver</h1>
+          <p className="text-muted-foreground mt-1">KTaNE solver for expert teams</p>
         </div>
 
-        {/* Round History card */}
-        <div className="card-manual flex-1 flex flex-col">
-          <div className="bg-base-200 px-5 py-4">
-            <h2 className="font-display text-lg font-bold uppercase tracking-wide text-base-content">
-              ROUND HISTORY
-            </h2>
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* New Round */}
+          <div className="flex-1 rounded-xl border border-border bg-card shadow-sm flex flex-col">
+            <div className="p-5 flex-1">
+              <h2 className="font-semibold text-foreground">New Round</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure bombs, add modules, and start solving.
+              </p>
+            </div>
+            <div className="px-5 pb-5">
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={handleCreateNewBomb}
+                disabled={loading || creating}
+                loading={creating || loading}
+              >
+                {creating || loading ? "Creating…" : "Start New Round"}
+              </Button>
+            </div>
           </div>
-          <div className="px-5 py-4 flex-1">
-            <p className="text-sm text-ink-muted">
-              Review past rounds and solutions.
-            </p>
-          </div>
-          <div className="px-5 pb-5">
-            <Button
-              variant="secondary"
-              onClick={handlePreviousRounds}
-              disabled={loading}
-            >
-              View History
-            </Button>
+
+          {/* Round History */}
+          <div className="flex-1 rounded-xl border border-border bg-card shadow-sm flex flex-col">
+            <div className="p-5 flex-1">
+              <h2 className="font-semibold text-foreground">Round History</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Review past rounds and solutions.
+              </p>
+            </div>
+            <div className="px-5 pb-5">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate("/rounds")}
+                disabled={loading}
+              >
+                View History
+              </Button>
+            </div>
           </div>
         </div>
       </div>

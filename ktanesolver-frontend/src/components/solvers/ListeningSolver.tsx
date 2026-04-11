@@ -3,7 +3,7 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { solveListening, type ListeningInput, type ListeningOutput } from "../../services/listeningService";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
@@ -11,6 +11,7 @@ import {
   TwitchCommandDisplay,
   SolverControls
 } from "../common";
+import { Alert } from "../ui/alert";
 
 interface ListeningSolverProps {
   bomb: BombEntity | null | undefined;
@@ -183,23 +184,7 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
 
       {/* Results */}
       {result && (
-        <div className={`alert mb-4 ${result.code ? 'alert-success' : 'alert-info'}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d={result.code 
-                ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                : "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              }
-            />
-          </svg>
+        <Alert variant={result.code ? "success" : "info"} className="mb-4">
           <div className="w-full">
             <span className="font-bold">{result.code ? "Code Found!" : "Sound not found"}</span>
             {result.code && (
@@ -215,7 +200,7 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
               </div>
             )}
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Twitch command display */}

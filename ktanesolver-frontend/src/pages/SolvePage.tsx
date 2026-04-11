@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useState, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -13,6 +14,8 @@ import ManualPanel from "../features/solve/ManualPanel";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcut";
 import { formatModuleName } from "../lib/utils";
 import { Skeleton } from "../components/ui/skeleton";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
@@ -38,8 +41,8 @@ function SolverContent({
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-12 gap-2">
-          <span className="loading loading-spinner loading-md text-primary"></span>
-          <span className="text-body text-base-content/70">Loading solver...</span>
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          <span className="text-sm text-muted-foreground">Loading solver...</span>
         </div>
       }
     >
@@ -47,13 +50,13 @@ function SolverContent({
         <SolverComponent bomb={bomb} />
       ) : (
         <div className="text-center py-12">
-          <p className="text-body text-base-content/70 mb-2">Coming soon</p>
-          <p className="text-caption text-base-content/60 mb-6">
+          <p className="text-sm text-muted-foreground mb-2">Coming soon</p>
+          <p className="text-xs text-muted-foreground mb-6">
             No solver available for this module type yet.
           </p>
-          <button className="btn btn-outline" onClick={onBack}>
+          <Button variant="outline" size="sm" onClick={onBack}>
             Back
-          </button>
+          </Button>
         </div>
       )}
     </Suspense>
@@ -220,12 +223,12 @@ export default function SolvePage() {
   if (!roundId) {
     return (
       <PageContainer>
-        <div className="card-manual p-6 text-center">
-          <p className="text-sm text-ink-muted mb-2">No round selected.</p>
-          <p className="text-xs text-ink-muted mb-4">Return to setup to create or choose a round.</p>
-          <button className="btn btn-primary btn-sm" onClick={() => navigate("/")}>
+        <div className="rounded-xl border border-border bg-card shadow-sm p-6 text-center">
+          <p className="text-sm text-muted-foreground mb-2">No round selected.</p>
+          <p className="text-xs text-muted-foreground mb-4">Return to setup to create or choose a round.</p>
+          <Button variant="default" size="sm" onClick={() => navigate("/")}>
             Back to setup
-          </button>
+          </Button>
         </div>
       </PageContainer>
     );
@@ -246,32 +249,32 @@ export default function SolvePage() {
         {/* Page header */}
         <div className="flex flex-row flex-wrap justify-between items-center gap-3">
           <div>
-            <p className="section-heading text-ink-muted">
+            <p className="text-sm text-muted-foreground">
               Round #{round?.id?.slice(0, 8)}
             </p>
-            <h1 className="page-title mt-1">Live defusal</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">Live defusal</h1>
           </div>
           <div className="flex gap-2 items-center">
             {currentModule && (
-              <button className="btn btn-outline btn-sm" onClick={handleBack}>
+              <Button variant="outline" size="sm" onClick={handleBack}>
                 ← Back to modules
-              </button>
+              </Button>
             )}
-            <button className="btn btn-outline btn-sm" onClick={() => void handleRefresh()}>
+            <Button variant="outline" size="sm" onClick={() => void handleRefresh()}>
               Refresh
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="section-divider" />
+        <div className="border-b border-border" />
 
         {/* Main content */}
         {!currentModule ? (
           <div className="grid gap-4">
             {error && (
-              <div className="callout callout-error" role="alert">
-                {error}
-              </div>
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {/* Forget Me Not reminder */}
@@ -283,14 +286,15 @@ export default function SolvePage() {
               )[0];
               if (!fmn) return null;
               return (
-                <div className="callout callout-warning flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-semibold">
+                <Alert variant="warning" className="flex flex-wrap items-center justify-between gap-3">
+                  <AlertDescription className="font-semibold">
                     Do Forget Me Not stage — a module was just solved.
-                  </p>
+                  </AlertDescription>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       type="button"
-                      className="btn btn-outline btn-xs"
+                      variant="outline"
+                      size="sm"
                       onClick={() => {
                         selectBomb(fmn.bombId);
                         selectModuleById(fmn.bombId, fmn.module.id);
@@ -298,53 +302,56 @@ export default function SolvePage() {
                       }}
                     >
                       Open Forget Me Not
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="btn btn-ghost btn-xs"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setShowFmnReminder(false)}
                     >
                       Dismiss
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Alert>
               );
             })()}
 
             {/* Check These First */}
             {checkFirstModules.length > 0 && (
-              <div className="callout callout-warning">
-                <p className="font-semibold mb-2">Check These First</p>
-                <ul className="space-y-1">
-                  {checkFirstModules.map((module) => {
-                    const hint =
-                      module.type === "TURN_THE_KEY"
-                        ? "Note the time on the display and open the solver."
-                        : module.type === "FORGET_ME_NOT"
-                          ? "Enter each digit as it appears."
-                          : null;
-                    const name = catalogByType[module.type]?.name ?? formatModuleName(module.type);
-                    return (
-                      <li
-                        key={module.id}
-                        className="flex flex-wrap items-center gap-2 cursor-pointer hover:underline"
-                        onClick={() => handleModuleClick(module)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleModuleClick(module);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <span className="font-medium">{name}</span>
-                        {hint && <span className="text-xs opacity-80">— {hint}</span>}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+              <Alert variant="warning">
+                <AlertDescription>
+                  <p className="font-semibold mb-2">Check These First</p>
+                  <ul className="space-y-1">
+                    {checkFirstModules.map((module) => {
+                      const hint =
+                        module.type === "TURN_THE_KEY"
+                          ? "Note the time on the display and open the solver."
+                          : module.type === "FORGET_ME_NOT"
+                            ? "Enter each digit as it appears."
+                            : null;
+                      const name = catalogByType[module.type]?.name ?? formatModuleName(module.type);
+                      return (
+                        <li
+                          key={module.id}
+                          className="flex flex-wrap items-center gap-2 cursor-pointer hover:underline"
+                          onClick={() => handleModuleClick(module)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleModuleClick(module);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <span className="font-medium">{name}</span>
+                          {hint && <span className="text-xs opacity-80">— {hint}</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Module grid */}
@@ -370,14 +377,14 @@ export default function SolvePage() {
 
             {/* Right: Solver card */}
             <div className="lg:col-span-2">
-              <div className="card-manual h-full flex flex-col">
+              <div className="rounded-xl border border-border bg-card shadow-sm h-full flex flex-col">
                 {/* Card header */}
-                <div className="bg-base-200 border-b border-base-300 px-4 py-3">
+                <div className="bg-muted/40 border-b border-border px-4 py-3">
                   <h2 className="font-display text-lg font-bold uppercase text-base-content leading-tight">
                     {currentModuleDisplayName}
                   </h2>
                   {currentModuleId && (
-                    <p className="font-mono text-xs text-ink-muted mt-0.5">
+                    <p className="font-mono text-xs text-muted-foreground mt-0.5">
                       {currentModuleId}
                     </p>
                   )}
@@ -410,14 +417,12 @@ export default function SolvePage() {
       {/* Loading overlay */}
       {loading && (
         <div
-          className="fixed inset-0 bg-base-300/80 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden bg-transparent"
           aria-live="polite"
           aria-busy="true"
+          aria-label="Syncing round"
         >
-          <div className="card-manual flex flex-col items-center gap-4 px-8 py-6">
-            <span className="loading loading-spinner loading-lg text-primary" aria-hidden />
-            <p className="text-sm font-medium text-base-content">Syncing round...</p>
-          </div>
+          <div className="h-full bg-accent animate-progress" />
         </div>
       )}
 

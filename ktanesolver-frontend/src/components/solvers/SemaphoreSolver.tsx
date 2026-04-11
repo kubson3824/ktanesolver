@@ -12,6 +12,8 @@ import {
   SolverControls
 } from "../common";
 import SemaphoreFlagSelector from "../SemaphoreFlagSelector";
+import { Button } from "../ui/button";
+import { Alert } from "../ui/alert";
 
 interface SemaphoreSolverProps {
   bomb: BombEntity | null | undefined;
@@ -193,20 +195,24 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
 
         {/* Sequence controls */}
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
             onClick={removeLastPosition}
-            className="btn btn-sm btn-outline flex-1"
             disabled={sequence.length === 0 || isLoading || isSolved}
           >
             Remove Last
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
             onClick={clearSequence}
-            className="btn btn-sm btn-outline flex-1"
             disabled={sequence.length === 0 || isLoading || isSolved}
           >
             Clear All
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -224,29 +230,7 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
 
       {/* Results */}
       {result && (
-        <div className={`alert mb-4 ${result.resolved ? "alert-success" : "alert-warning"}`}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            {result.resolved ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            )}
-          </svg>
+        <Alert variant={result.resolved ? "success" : "warning"} className="mb-4">
           <div>
             {result.resolved ? (
               <div>
@@ -260,7 +244,7 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
               </div>
             )}
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Twitch command display */}

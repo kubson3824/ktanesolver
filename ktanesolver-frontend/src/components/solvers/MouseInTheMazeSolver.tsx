@@ -22,6 +22,9 @@ import {
 import { useRoundStore } from "../../store/useRoundStore";
 import { cn } from "../../lib/cn";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 const SPHERE_OPTIONS: { value: SphereColor; label: string }[] = [
   { value: "GREEN", label: "Green" },
@@ -440,15 +443,15 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             </label>
             <div className="flex flex-wrap gap-2">
               {SPHERE_OPTIONS.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
-                  type="button"
+                  variant={sphereColorAtPosition === opt.value ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setSphereColorAtPosition(opt.value)}
                   disabled={isSolved}
-                  className={`btn btn-sm ${sphereColorAtPosition === opt.value ? "btn-primary" : "btn-outline"}`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -460,12 +463,12 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             <p className="text-sm text-base-content/70 mb-1">Number of moves before hitting a wall or edge in each direction. Enter in any order.</p>
             <div className="flex flex-wrap gap-2 items-center">
               {([0, 1, 2, 3] as const).map((i) => (
-                <input
+                <Input
                   key={i}
                   type="number"
                   min={0}
                   max={9}
-                  className="input input-bordered w-16 text-center"
+                  className="w-16 text-center"
                   value={stepsToWall[i]}
                   onChange={(e) => {
                     const v = clampStep(Number(e.target.value));
@@ -488,15 +491,15 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             </label>
             <div className="flex flex-wrap gap-2">
               {SPHERE_OPTIONS.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
-                  type="button"
+                  variant={torusColor === opt.value ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setTorusColor(opt.value)}
                   disabled={isSolved}
-                  className={`btn btn-sm ${torusColor === opt.value ? "btn-primary" : "btn-outline"}`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -507,15 +510,15 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             </label>
             <div className="flex flex-wrap gap-2">
               {DIRECTION_OPTIONS.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
-                  type="button"
+                  variant={startDirection === opt.value ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setStartDirection(opt.value)}
                   disabled={isSolved}
-                  className={`btn btn-sm ${startDirection === opt.value ? "btn-primary" : "btn-outline"}`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -582,12 +585,9 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
           <CardContent>
             <div className="flex flex-wrap gap-1.5">
               {result.moves.map((m, i) => (
-                <span
-                  key={i}
-                  className="badge badge-lg badge-success gap-1"
-                >
+                <Badge key={i} variant="success" className="text-base gap-1">
                   {moveLabel(m)}
-                </span>
+                </Badge>
               ))}
             </div>
             <p className="text-sm text-base-content/70 mt-2">

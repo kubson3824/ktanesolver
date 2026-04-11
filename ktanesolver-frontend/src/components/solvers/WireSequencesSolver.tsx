@@ -19,6 +19,7 @@ import {
 import { useRoundStore } from "../../store/useRoundStore";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { cn } from "../../lib/cn";
 
 interface WireSequencesSolverProps {
@@ -387,15 +388,16 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
                     />
                     <span className="text-sm w-12 shrink-0">{color.display}</span>
                     {LETTERS.map((letter) => (
-                      <button
+                      <Button
                         key={`${color.color}-${letter.letter}`}
+                        variant="outline"
+                        size="xs"
                         onClick={() => addWire(color.color, letter.letter)}
-                        className="btn btn-xs btn-outline"
                         disabled={isLoading || wires.length >= 3}
                         aria-label={`Add wire ${color.display} ${letter.letter}`}
                       >
                         {letter.display}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ))}
@@ -454,15 +456,16 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
                         aria-hidden
                       />
                       {!isSolved && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="destructive"
+                          size="xs"
+                          className="shrink-0"
                           onClick={() => removeWire(index)}
-                          className="btn btn-xs btn-ghost btn-error shrink-0"
                           disabled={isLoading}
                           aria-label={`Remove wire ${index + 1}`}
                         >
                           ×
-                        </button>
+                        </Button>
                       )}
                       {shouldCut !== undefined && (
                         <span

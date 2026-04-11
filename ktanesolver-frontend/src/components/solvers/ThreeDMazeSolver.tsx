@@ -22,6 +22,9 @@ import {
 import { useRoundStore } from "../../store/useRoundStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "../../lib/cn";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 const MARKER_LETTERS: MarkerLetter[] = ["A", "B", "C", "D", "H"];
 const GOAL_DIRECTIONS: { value: GoalDirection; label: string }[] = [
@@ -431,22 +434,24 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
             Goal direction <span className="text-neutral-500 font-normal">(leave empty until defuser has read it at a star)</span>
           </h3>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`btn btn-sm ${goalDirection === "" ? "btn-primary" : "btn-ghost bg-neutral-800 border border-neutral-600"}`}
+            <Button
+              variant={goalDirection === "" ? "default" : "ghost"}
+              size="sm"
+              className={goalDirection === "" ? "" : "bg-neutral-800 border border-neutral-600"}
               onClick={() => setGoalDirection("")}
             >
               Not yet
-            </button>
+            </Button>
             {GOAL_DIRECTIONS.map(({ value, label }) => (
-              <button
+              <Button
                 key={value}
-                type="button"
-                className={`btn btn-sm ${goalDirection === value ? "btn-primary" : "btn-ghost bg-neutral-800 border border-neutral-600"}`}
+                variant={goalDirection === value ? "default" : "ghost"}
+                size="sm"
+                className={goalDirection === value ? "" : "bg-neutral-800 border border-neutral-600"}
                 onClick={() => setGoalDirection(value)}
               >
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -480,11 +485,11 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
                 ] as const
               ).map(([i, label]) => (
                 <div key={i} className="flex flex-col items-center gap-0.5">
-                  <input
+                  <Input
                     type="number"
                     min={0}
                     max={7}
-                    className="input input-bordered w-14 bg-neutral-800 border-neutral-600 text-neutral-100"
+                    className="w-14 bg-neutral-800 border-neutral-600 text-neutral-100"
                     value={stepsToWall[i]}
                     onChange={(e) => {
                       const n = Math.max(0, Math.min(7, parseInt(e.target.value, 10) || 0));
@@ -585,9 +590,9 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
               )}
               <div className="flex flex-wrap gap-2">
                 {result.moves.map((move, i) => (
-                  <span key={i} className="badge badge-lg bg-neutral-600 text-neutral-100">
+                  <Badge key={i} variant="secondary" className="text-base">
                     {moveLabel(move)}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>

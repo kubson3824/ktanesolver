@@ -18,6 +18,7 @@ import {
   TwitchCommandDisplay,
   SolverControls,
 } from "../common";
+import { Alert } from "../ui/alert";
 
 interface AstrologySolverProps {
   bomb: BombEntity | null | undefined;
@@ -317,42 +318,27 @@ export default function AstrologySolver({ bomb }: AstrologySolverProps) {
       <ErrorAlert error={error} />
 
       {result != null && typeof result.omenScore === "number" && (
-        <div className="alert alert-success mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div>
-            <span className="font-bold">Omen score:</span>
-            <div className="mt-1 font-mono text-2xl">{result.omenScore}</div>
-            <div className="mt-2">
-              {result.omenScore === 0 ? (
-                <span>
-                  Press <span className="font-bold">NO OMEN</span>.
-                </span>
-              ) : result.omenScore > 0 ? (
-                <span>
-                  Press <span className="font-bold">GOOD OMEN</span> anytime {" "}
-                  <span className="font-mono">{omenScoreDigits.join(", ")}</span> is a digit in the timer.
-                </span>
-              ) : (
-                <span>
-                  Press <span className="font-bold">POOR OMEN</span> anytime {" "}
-                  <span className="font-mono">{omenScoreDigits.join(", ")}</span> is a digit in the timer.
-                </span>
-              )}
-            </div>
+        <Alert variant="success" className="mb-4">
+          <span className="font-bold">Omen score:</span>
+          <div className="mt-1 font-mono text-2xl">{result.omenScore}</div>
+          <div className="mt-2">
+            {result.omenScore === 0 ? (
+              <span>
+                Press <span className="font-bold">NO OMEN</span>.
+              </span>
+            ) : result.omenScore > 0 ? (
+              <span>
+                Press <span className="font-bold">GOOD OMEN</span> anytime {" "}
+                <span className="font-mono">{omenScoreDigits.join(", ")}</span> is a digit in the timer.
+              </span>
+            ) : (
+              <span>
+                Press <span className="font-bold">POOR OMEN</span> anytime {" "}
+                <span className="font-mono">{omenScoreDigits.join(", ")}</span> is a digit in the timer.
+              </span>
+            )}
           </div>
-        </div>
+        </Alert>
       )}
 
       {result != null && typeof result.omenScore === "number" && twitchCommand && (

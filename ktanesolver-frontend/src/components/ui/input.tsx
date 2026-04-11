@@ -4,19 +4,17 @@ import { cn } from "../../lib/cn";
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "w-full bg-base-100 border border-neutral/50 rounded-sm px-3 py-2 text-sm text-base-content placeholder:text-ink-subtle focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50 disabled:bg-base-200",
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
+  ({ className, type, ...props }, ref) => (
+    <input
+      type={type}
+      className={cn(
+        "flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  )
 );
 Input.displayName = "Input";
 
