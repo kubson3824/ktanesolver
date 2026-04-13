@@ -211,7 +211,7 @@ export default function SetupPage() {
         const indicatorMap = Object.fromEntries(
             formState.indicators.map((indicator) => [indicator.name, indicator.lit]),
         );
-        const payload = {
+        const edgeworkPayload = {
             serialNumber: formState.serialNumber.trim(),
             aaBatteryCount: formState.aaBatteryCount,
             dBatteryCount: formState.dBatteryCount,
@@ -220,23 +220,22 @@ export default function SetupPage() {
         };
 
         if (isEditing && editingBomb) {
-            await configureBomb(editingBomb.id, payload);
+            await configureBomb(editingBomb.id, edgeworkPayload);
             setIsFormOpen(false);
             setEditingBomb(undefined);
             return;
         }
 
-        const newBomb = await addBomb(payload);
-        const moduleEntries = Object.entries(formState.modules).filter(
-            ([, count]) => count > 0,
-        ) as [string, number][];
-        if (moduleEntries.length > 0) {
-            await Promise.all(
-                moduleEntries.map(([type, count]) =>
-                    addModules(newBomb.id, {type: type as ModuleType, count}),
-                ),
-            );
-        }
+        const initialModules = Object.fromEntries(
+            Object.entries(formState.modules).filter(
+                ([, count]) => count > 0,
+            ) as [string, number][],
+        ) as Partial<Record<ModuleType, number>>;
+
+        await addBomb({
+            ...edgeworkPayload,
+            modules: initialModules,
+        });
         setIsFormOpen(false);
         setFormState(initialFormState());
     };
@@ -463,7 +462,7 @@ export default function SetupPage() {
                             <div className="overflow-y-auto px-4 sm:px-6 space-y-6 pb-4 pt-4">
                                 <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
                                     <h3 className="text-base font-semibold text-foreground">Serial &amp; Batteries</h3>
-                                    <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="grid grid-cols-3 gap-4">
                                         <label className="flex flex-col gap-1.5 w-full">
                                             <span className="text-xs text-muted-foreground uppercase tracking-widest">Serial number</span>
                                             <Input
@@ -478,37 +477,35 @@ export default function SetupPage() {
                                                 required
                                             />
                                         </label>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <label className="flex flex-col gap-1.5 w-full">
-                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">AA batteries</span>
-                                                <Input
-                                                    type="number"
-                                                    min={0}
-                                                    step={2}
-                                                    value={formState.aaBatteryCount}
-                                                    onChange={(event) =>
-                                                        setFormState((prev) => ({
-                                                            ...prev,
-                                                            aaBatteryCount: Number(event.target.value),
-                                                        }))
-                                                    }
-                                                />
-                                            </label>
-                                            <label className="flex flex-col gap-1.5 w-full">
-                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">D batteries</span>
-                                                <Input
-                                                    type="number"
-                                                    min={0}
-                                                    value={formState.dBatteryCount}
-                                                    onChange={(event) =>
-                                                        setFormState((prev) => ({
-                                                            ...prev,
-                                                            dBatteryCount: Number(event.target.value),
-                                                        }))
-                                                    }
-                                                />
-                                            </label>
-                                        </div>
+                                        <label className="flex flex-col gap-1.5 w-full">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-widest">AA batteries</span>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                step={2}
+                                                value={formState.aaBatteryCount}
+                                                onChange={(event) =>
+                                                    setFormState((prev) => ({
+                                                        ...prev,
+                                                        aaBatteryCount: Number(event.target.value),
+                                                    }))
+                                                }
+                                            />
+                                        </label>
+                                        <label className="flex flex-col gap-1.5 w-full">
+                                            <span className="text-xs text-muted-foreground uppercase tracking-widest">D batteries</span>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                value={formState.dBatteryCount}
+                                                onChange={(event) =>
+                                                    setFormState((prev) => ({
+                                                        ...prev,
+                                                        dBatteryCount: Number(event.target.value),
+                                                    }))
+                                                }
+                                            />
+                                        </label>
                                     </div>
                                 </div>
 
