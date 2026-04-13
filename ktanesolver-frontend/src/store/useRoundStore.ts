@@ -46,6 +46,7 @@ type RoundStoreActions = {
         bombId: string,
         payload: AddModulesRequest,
     ) => Promise<ModuleEntity[]>;
+    removeModule: (bombId: string, moduleId: string) => Promise<void>;
     startRound: () => Promise<RoundEntity>;
     selectBomb: (bombId: string) => void;
     selectModule: (bombId: string, moduleType: ModuleType) => void;
@@ -394,6 +395,49 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         };
                     });
                     return modules;
+                } catch (error) {
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
+
+            removeModule: async (bombId, moduleId) => {
+                set({loading: true, error: undefined});
+                try {
+                    await withErrorWrapping(async () => {
+                        await api.delete(`/bombs/${bombId}/modules/${moduleId}`);
+                    });
+                    set((state) => {
+                        if (!state.round) {
+                            return {loading: false};
+                        }
+
+                        const updateBomb = (bomb: BombEntity) => ({
+                            ...bomb,
+                            modules: bomb.modules.filter((module) => module.id !== moduleId),
+                        });
+                        const updatedCurrentBomb =
+                            state.currentBomb?.id === bombId
+                                ? updateBomb(state.currentBomb)
+                                : state.currentBomb;
+                        const removedCurrentModule = state.currentModule?.id === moduleId;
+
+                        return {
+                            loading: false,
+                            round: {
+                                ...state.round,
+                                bombs: state.round.bombs.map((bomb) =>
+                                    bomb.id === bombId ? updateBomb(bomb) : bomb,
+                                ),
+                            },
+                            currentBomb: updatedCurrentBomb,
+                            currentModule: removedCurrentModule ? undefined : state.currentModule,
+                            manualUrl: removedCurrentModule ? undefined : state.manualUrl,
+                        };
+                    });
                 } catch (error) {
                     set({
                         loading: false,

@@ -10,6 +10,7 @@ import {
     RoundStatus,
 } from "../types";
 import BombCard from "../features/setup/BombCard";
+import SetupModuleManifest from "../features/setup/SetupModuleManifest";
 import ModuleSelector from "../components/ModuleSelector";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader from "../components/layout/PageHeader";
@@ -76,6 +77,7 @@ export default function SetupPage() {
     const deleteBomb = useRoundStore((state) => state.deleteBomb);
     const configureBomb = useRoundStore((state) => state.configureBomb);
     const addModules = useRoundStore((state) => state.addModules);
+    const removeModule = useRoundStore((state) => state.removeModule);
     const startRound = useRoundStore((state) => state.startRound);
     const loading = useRoundStore((state) => state.loading);
     const error = useRoundStore((state) => state.error);
@@ -263,6 +265,10 @@ export default function SetupPage() {
     };
 
     const roundStatusLabel = round ? getRoundStatusLabel(round.status) : "No round";
+    const canRemoveModules = round?.status === RoundStatus.SETUP;
+    const activeModuleTarget = moduleTarget
+        ? round?.bombs.find((bomb) => bomb.id === moduleTarget.id) ?? moduleTarget
+        : undefined;
 
     const handleModuleSelectionChange = useCallback((selectedModules: Record<string, number>) => {
         setFormState(prev => ({
@@ -275,6 +281,19 @@ export default function SetupPage() {
         if (!round) return;
         const updated = await startRound();
         navigate(`/solve/${updated.id}`);
+    };
+
+    const handleRemoveModule = async (moduleId: string) => {
+        if (!activeModuleTarget || !canRemoveModules) return;
+        const module = activeModuleTarget.modules.find((entry) => entry.id === moduleId);
+        if (!module) return;
+
+        const moduleName = module.type.toLowerCase().replaceAll("_", " ");
+        if (!window.confirm(`Remove this ${moduleName} module from ${activeModuleTarget.serialNumber}?`)) {
+            return;
+        }
+
+        await removeModule(activeModuleTarget.id, moduleId);
     };
 
     const handleContinueRound = () => {
@@ -689,7 +708,7 @@ export default function SetupPage() {
                 </Dialog>
 
                 {/* Module drawer */}
-                {moduleTarget && (
+                {activeModuleTarget && (
                     <>
                         <div
                             className="fixed inset-0 z-40 bg-base-content/20 backdrop-blur-sm animate-fade-in"
@@ -706,7 +725,7 @@ export default function SetupPage() {
                                 <div>
                                     <p className="text-xs text-muted-foreground uppercase tracking-widest">Module injection</p>
                                     <h2 id="module-drawer-title" className="font-display text-lg font-bold uppercase mt-0.5">
-                                        Add modules to {moduleTarget.serialNumber}
+                                        Add modules to {activeModuleTarget.serialNumber}
                                     </h2>
                                 </div>
                                 <button
@@ -721,12 +740,29 @@ export default function SetupPage() {
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto px-4 py-4">
-                                <ModuleSelector
-                                    onSelectionChange={(selectedModules) => {
-                                        setModuleDraft(selectedModules as Record<ModuleType, number>);
-                                    }}
-                                    initialCounts={moduleDraft}
-                                />
+                                <div className="space-y-4">
+                                    <SetupModuleManifest
+                                        modules={activeModuleTarget.modules}
+                                        canRemove={canRemoveModules}
+                                        onRemove={(moduleId) => {
+                                            void handleRemoveModule(moduleId);
+                                        }}
+                                    />
+                                    <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                        <div>
+                                            <h3 className="text-base font-semibold text-foreground">Add more modules</h3>
+                                            <p className="text-xs text-muted-foreground">
+                                                Queue up additional modules to append to this bomb.
+                                            </p>
+                                        </div>
+                                        <ModuleSelector
+                                            onSelectionChange={(selectedModules) => {
+                                                setModuleDraft(selectedModules as Record<ModuleType, number>);
+                                            }}
+                                            initialCounts={moduleDraft}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-muted/40 border-t border-border px-4 py-3 flex justify-end gap-2 shrink-0">
                                 <Button
