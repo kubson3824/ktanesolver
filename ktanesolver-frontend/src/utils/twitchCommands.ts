@@ -319,6 +319,17 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return legal ? `!${TWITCH_PLACEHOLDER} press KEEP` : `!${TWITCH_PLACEHOLDER} pull lever`;
     }
 
+    case ModuleType.LAUNDRY: {
+      if (getBoolean(raw.bobShortcut)) {
+        return `!${TWITCH_PLACEHOLDER} coin`;
+      }
+      const washing = getString(raw.washingSymbol) ?? "unknown";
+      const drying = getString(raw.dryingSymbol) ?? "unknown";
+      const ironing = getString(raw.ironingSymbol) ?? "unknown";
+      const special = getString(raw.specialSymbol) ?? "unknown";
+      return `!${TWITCH_PLACEHOLDER} laundry ${washing} ${drying} ${ironing} ${special}`;
+    }
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;
@@ -396,6 +407,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.SILLY_SLOTS]: "Silly Slots",
     [ModuleType.THREE_D_MAZE]: "3D Maze",
     [ModuleType.SIMON_STATES]: "Simon States",
+    [ModuleType.LAUNDRY]: "Laundry",
   };
 
   return displayNames[moduleType] || moduleType;

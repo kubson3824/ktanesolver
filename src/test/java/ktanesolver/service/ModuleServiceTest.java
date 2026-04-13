@@ -3,10 +3,12 @@ package ktanesolver.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
+import ktanesolver.event.RoundStateChangedEvent;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.utils.Json;
 import ktanesolver.registry.ModuleSolverRegistry;
@@ -102,6 +105,42 @@ class ModuleServiceTest {
                 });
 
         verify(moduleRepo, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void removeModuleDeletesModuleAndPublishesRoundUpdate() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        module.getBomb().setModules(new ArrayList<>());
+        module.getBomb().getModules().add(module);
+        when(moduleRepo.findByIdWithBomb(module.getId())).thenReturn(Optional.of(module));
+        doAnswer(invocation -> {
+            ModuleEntity deletedModule = invocation.getArgument(0);
+            deletedModule.getBomb().getModules().remove(deletedModule);
+            return null;
+        }).when(moduleRepo).delete(module);
+
+        moduleService.removeModule(module.getBomb().getId(), module.getId());
+
+        assertThat(module.getBomb().getModules()).isEmpty();
+        verify(moduleRepo).delete(module);
+        verify(eventPublisher).publishEvent(any(RoundStateChangedEvent.class));
+    }
+
+    @Test
+    void removeModuleReturnsNotFoundWhenModuleDoesNotBelongToBomb() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        when(moduleRepo.findByIdWithBomb(module.getId())).thenReturn(Optional.of(module));
+
+        assertThatThrownBy(() -> moduleService.removeModule(UUID.randomUUID(), module.getId()))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> {
+                    ResponseStatusException response = (ResponseStatusException) error;
+                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(response.getReason()).isEqualTo("Module not found");
+                });
+
+        verify(moduleRepo, never()).delete(any(ModuleEntity.class));
         verify(eventPublisher, never()).publishEvent(any());
     }
 

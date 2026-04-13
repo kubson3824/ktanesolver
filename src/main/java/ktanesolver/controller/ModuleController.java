@@ -35,4 +35,10 @@ public class ModuleController {
         }
         return module;
     }
+
+    @DeleteMapping("/{moduleId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeModule(@PathVariable UUID bombId, @PathVariable UUID moduleId) {
+        moduleService.removeModule(bombId, moduleId);
+    }
 }
