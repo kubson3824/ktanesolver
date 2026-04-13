@@ -160,7 +160,7 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
 
   const handleCheckAnswer = async () => {
     if (sequence.length !== 8) {
-      setError("Color Flash requires exactly 8 word/color pairs");
+      setError("Colour Flash requires exactly 8 word/color pairs");
       return;
     }
 
@@ -203,7 +203,7 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
         }
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve Color Flash");
+      setError(err instanceof Error ? err.message : "Failed to solve Colour Flash");
     } finally {
       setIsLoading(false);
     }
@@ -218,7 +218,7 @@ export default function ColorFlashSolver({ bomb }: ColorFlashSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Color Flash Module Visualization */}
+      {/* Colour Flash module visualization */}
       <div className="bg-gray-800 rounded-lg p-6 mb-4">
         <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
         

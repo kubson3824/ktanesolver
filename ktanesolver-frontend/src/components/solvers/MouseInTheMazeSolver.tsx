@@ -321,7 +321,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
         const isOnPath = pathInfo !== undefined;
         const sphereAtCell = maze.spherePositions
           ? (Object.entries(maze.spherePositions) as [SphereColor, Cell][]).find(
-              ([_, cell]) => cell.row === r && cell.col === c
+              ([, cell]) => cell.row === r && cell.col === c
             )
           : null;
         const sphereColor = sphereAtCell ? sphereAtCell[0] : null;

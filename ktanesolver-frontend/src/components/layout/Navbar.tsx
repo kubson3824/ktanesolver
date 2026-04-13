@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useRoundStore } from "../../store/useRoundStore";
 import { StrikeIndicator } from "../StrikeIndicator";
@@ -15,18 +15,18 @@ export default function Navbar() {
   const currentBomb = useRoundStore((state) => state.currentBomb);
   const currentModule = useRoundStore((state) => state.currentModule);
   const clearModule = useRoundStore((state) => state.clearModule);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
-
   const pathname = location.pathname;
+  const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null);
+  const mobileOpen = mobileMenuPath === pathname;
   const isHome = pathname === "/";
   const isRounds = pathname === "/rounds";
   const isRoundSetup = /^\/round\/[^/]+\/setup$/.test(pathname);
   const isSolving = pathname.startsWith("/solve");
+  const closeMobileMenu = () => setMobileMenuPath(null);
+  const toggleMobileMenu = () => {
+    setMobileMenuPath((current) => (current === pathname ? null : pathname));
+  };
 
   const breadcrumbSegments = (() => {
     if (isHome) return null;
@@ -45,7 +45,7 @@ export default function Navbar() {
     if (isSolving && roundId) {
       const goToModuleList = () => {
         clearModule();
-        setMobileOpen(false);
+        closeMobileMenu();
       };
       const currentModuleLabel = currentModule
         ? formatModuleDisplayName(currentModule.moduleType, currentModule.id)
@@ -110,7 +110,7 @@ export default function Navbar() {
                 "sm:hidden h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground",
                 "hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               )}
-              onClick={() => setMobileOpen(!mobileOpen)}
+              onClick={toggleMobileMenu}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileOpen}
             >
@@ -129,7 +129,7 @@ export default function Navbar() {
             ) : !isHome ? (
               <Link
                 to="/"
-                onClick={() => setMobileOpen(false)}
+                onClick={closeMobileMenu}
                 className="block px-2 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 Home

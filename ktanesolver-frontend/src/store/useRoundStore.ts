@@ -2,6 +2,7 @@ import {create} from "zustand";
 import {devtools} from "zustand/middleware";
 import {
     type AddModulesRequest,
+    type BombConfig,
     type BombEntity,
     type CreateBombRequest,
     type ModuleEntity,
@@ -39,7 +40,7 @@ type RoundStoreActions = {
     deleteBomb: (bombId: string) => Promise<void>;
     configureBomb: (
         bombId: string,
-        payload: Partial<CreateBombRequest>,
+        payload: BombConfig,
     ) => Promise<BombEntity>;
     addModules: (
         bombId: string,

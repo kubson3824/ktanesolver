@@ -15,7 +15,7 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo (type = ModuleType.COLOR_FLASH, id = "color_flash", name = "Color Flash", category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR, description = "Press the button when the colors match", tags = {
+@ModuleInfo (type = ModuleType.COLOR_FLASH, id = "color_flash", name = "Colour Flash", category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR, description = "Press the button when the colors match", tags = {
 	"pattern", "timing"})
 public class ColorFlashSolver extends AbstractModuleSolver<ColorFlashInput, ColorFlashOutput> {
 
@@ -26,7 +26,7 @@ public class ColorFlashSolver extends AbstractModuleSolver<ColorFlashInput, Colo
 		storeState(module, "input", input);
 
 		if(sequence == null || sequence.size() != 8) {
-			return failure("Color Flash requires exactly 8 word/color pairs");
+			return failure("Colour Flash requires exactly 8 word/color pairs");
 		}
 
 		ColorFlashEntry lastEntry = sequence.get(7);

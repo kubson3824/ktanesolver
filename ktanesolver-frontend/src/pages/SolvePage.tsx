@@ -163,13 +163,6 @@ export default function SolvePage() {
     }
   }, [round, currentBomb, selectBomb]);
 
-  // Hide FMN reminder when user opens Forget Me Not
-  useEffect(() => {
-    if (currentModule?.moduleType === ModuleType.FORGET_ME_NOT) {
-      setShowFmnReminder(false);
-    }
-  }, [currentModule?.moduleType]);
-
   const modules: ModuleEntity[] = useMemo(() => {
     if (!currentBomb) return [];
     return currentBomb.modules ?? [];
@@ -195,6 +188,9 @@ export default function SolvePage() {
 
   const handleModuleClick = (module: ModuleEntity) => {
     if (!currentBomb) return;
+    if (module.type === ModuleType.FORGET_ME_NOT) {
+      setShowFmnReminder(false);
+    }
     selectModuleById(currentBomb.id, module.id);
   };
 
@@ -242,6 +238,8 @@ export default function SolvePage() {
     ? (currentCatalogEntry?.name ?? formatModuleName(currentModule.moduleType))
     : "";
   const currentModuleId = currentCatalogEntry?.id ?? "";
+  const shouldShowFmnReminder =
+    showFmnReminder && currentModule?.moduleType !== ModuleType.FORGET_ME_NOT;
 
   return (
     <PageContainer>
@@ -278,7 +276,7 @@ export default function SolvePage() {
             )}
 
             {/* Forget Me Not reminder */}
-            {showFmnReminder && (() => {
+            {shouldShowFmnReminder && (() => {
               const fmn = round?.bombs.flatMap((b) =>
                 b.modules
                   .filter((m) => m.type === ModuleType.FORGET_ME_NOT && !(m as ModuleEntity).solved)

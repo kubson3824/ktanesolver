@@ -35,6 +35,7 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
   [ModuleType.ANAGRAMS]: { load: () => import("./AnagramsSolver") },
   [ModuleType.COMBINATION_LOCK]: { load: () => import("./CombinationLockSolver") },
   [ModuleType.ROUND_KEYPAD]: { load: () => import("./RoundKeypadSolver") },
+  [ModuleType.NUMBER_PAD]: { load: () => import("./NumberPadSolver") },
   [ModuleType.LISTENING]: { load: () => import("./ListeningSolver") },
   [ModuleType.FOREIGN_EXCHANGE_RATES]: { load: () => import("./ForeignExchangeSolver") },
   [ModuleType.ORIENTATION_CUBE]: { load: () => import("./OrientationCubeSolver") },

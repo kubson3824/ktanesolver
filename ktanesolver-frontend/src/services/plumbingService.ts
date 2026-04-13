@@ -1,8 +1,6 @@
 import { api, withErrorWrapping } from "../lib/api";
 
-export interface PlumbingInput {
-  // No user input; solver uses bomb state only.
-}
+export type PlumbingInput = Record<string, never>;
 
 export interface PlumbingOutput {
   activeInputs: boolean[];

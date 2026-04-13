@@ -38,7 +38,7 @@ export default function CombinationLockSolver({ bomb }: CombinationLockSolverPro
 
   const moduleState = useMemo(() => ({}), []);
 
-  const onRestoreState = useCallback((_state: Record<string, never>) => {}, []);
+  const onRestoreState = useCallback(() => {}, []);
 
   const onRestoreSolution = useCallback(
     (solution: CombinationLockOutput) => {

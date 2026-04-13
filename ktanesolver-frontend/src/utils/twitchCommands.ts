@@ -177,6 +177,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
         return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.symbolsToPress)?.join(' ')}`;
       }
       return `!${TWITCH_PLACEHOLDER} press none`;
+
+    case ModuleType.NUMBER_PAD:
+      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.code) ?? "unknown"}`;
     
     case ModuleType.LISTENING:
       if (getString(raw.code)) {
@@ -359,7 +362,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.PASSWORDS]: "Passwords",
     [ModuleType.MAZES]: "Mazes",
     [ModuleType.KNOBS]: "Knobs",
-    [ModuleType.COLOR_FLASH]: "Color Flash",
+    [ModuleType.COLOR_FLASH]: "Colour Flash",
     [ModuleType.PIANO_KEYS]: "Piano Keys",
     [ModuleType.SEMAPHORE]: "Semaphore",
     [ModuleType.MATH]: "Math",
@@ -370,6 +373,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.ANAGRAMS]: "Anagrams",
     [ModuleType.COMBINATION_LOCK]: "Combination Lock",
     [ModuleType.ROUND_KEYPAD]: "Round Keypad",
+    [ModuleType.NUMBER_PAD]: "Number Pad",
     [ModuleType.LISTENING]: "Listening",
     [ModuleType.FOREIGN_EXCHANGE_RATES]: "Foreign Exchange Rates",
     [ModuleType.ORIENTATION_CUBE]: "Orientation Cube",

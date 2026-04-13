@@ -4,7 +4,11 @@
       "Bash(ls -la /c/Users/Ja/IdeaProjects/ktanesolver/gradlew*)",
       "Bash(./gradlew build:*)",
       "Bash(git add:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(git commit:*)",
+      "Bash(git -C \"C:/Users/Ja/IdeaProjects/ktanesolver\" diff c11d9136050cdee7ad384963c7875b583af7099a 4c4d78d753b63400054f6597b3953f36f1077f15 -- ktanesolver-frontend/src/components/ModuleSelector.tsx)",
+      "Bash(git -C \"C:/Users/Ja/IdeaProjects/ktanesolver\" show c11d9136050cdee7ad384963c7875b583af7099a:ktanesolver-frontend/src/pages/SetupPage.tsx)"
     ]
   }
 }

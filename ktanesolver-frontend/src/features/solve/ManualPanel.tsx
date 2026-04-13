@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Alert } from "../../components/ui/alert";
 import { formatModuleName } from "../../lib/utils";
@@ -11,11 +11,8 @@ interface ManualPanelProps {
 
 export default function ManualPanel({ manualUrl, moduleType }: ManualPanelProps) {
   const moduleName = formatModuleName(moduleType);
-  const [iframeError, setIframeError] = useState(false);
-
-  useEffect(() => {
-    setIframeError(false);
-  }, [manualUrl]);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const iframeError = manualUrl != null && failedUrl === manualUrl;
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm h-full min-h-[500px] flex flex-col">
@@ -47,10 +44,11 @@ export default function ManualPanel({ manualUrl, moduleType }: ManualPanelProps)
             </div>
           ) : (
             <iframe
+              key={manualUrl}
               src={manualUrl}
               title={`${moduleType} manual`}
               className="w-full flex-1 border-0 min-h-[450px]"
-              onError={() => setIframeError(true)}
+              onError={() => setFailedUrl(manualUrl)}
             />
           )
         ) : (

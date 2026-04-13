@@ -163,14 +163,20 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   // Play Morse code sound for the current input
   const playMorseCode = async () => {
     if (!morseInput || isPlaying) return;
-    
+
     setIsPlaying(true);
     const dotDuration = 150; // milliseconds
     const dashDuration = dotDuration * 3;
     const frequency = 600; // Hz
-
-    // Create audio context
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContextConstructor =
+      window.AudioContext ??
+      (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!audioContextConstructor) {
+      setError("Audio playback is not supported in this browser.");
+      setIsPlaying(false);
+      return;
+    }
+    const audioContext = new audioContextConstructor();
 
     try {
       // Parse the morse input
@@ -230,7 +236,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
   const handleMorseInput = (value: string) => {
     // Only allow dots, dashes, and spaces
-    const filtered = value.replace(/[^\.\-\s]/g, '');
+    const filtered = value.replace(/[^.\s-]/g, '');
     setMorseInput(filtered);
   };
 

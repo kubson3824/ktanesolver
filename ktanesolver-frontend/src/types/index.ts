@@ -27,6 +27,7 @@ export enum ModuleType {
   LISTENING = "LISTENING",
   FOREIGN_EXCHANGE_RATES = "FOREIGN_EXCHANGE_RATES",
   ROUND_KEYPAD = "ROUND_KEYPAD",
+  NUMBER_PAD = "NUMBER_PAD",
   ORIENTATION_CUBE = "ORIENTATION_CUBE",
   MORSEMATICS = "MORSEMATICS",
   CONNECTION_CHECK = "CONNECTION_CHECK",
@@ -122,6 +123,7 @@ export interface CreateBombRequest {
   dBatteryCount: number;
   indicators: Record<string, boolean>;
   portPlates: PortType[][];
+  modules?: Partial<Record<ModuleType, number>>;
 }
 
 export interface BombConfig {

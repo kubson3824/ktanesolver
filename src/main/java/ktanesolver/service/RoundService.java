@@ -2,9 +2,10 @@
 package ktanesolver.service;
 
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,7 +55,8 @@ public class RoundService {
 		round.setStatus(RoundStatus.ACTIVE);
 		round.setStartTime(Instant.now());
 
-		return roundRepo.save(round);
+		roundRepo.save(round);
+		return getRoundWithDetails(roundId);
 	}
 
 	@Transactional(readOnly = true)
@@ -67,26 +69,23 @@ public class RoundService {
 		RoundEntity round = roundRepo.findByIdWithDetails(roundId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Round not found"));
 
-		List<BombEntity> uniqueBombs = new ArrayList<>();
-		for (BombEntity bomb : round.getBombs()) {
-			boolean alreadyPresent = uniqueBombs.stream().anyMatch(existing -> existing.getId().equals(bomb.getId()));
-			if (!alreadyPresent) {
-				uniqueBombs.add(bomb);
-			}
-		}
-		round.setBombs(uniqueBombs);
+		Set<UUID> seenBombIds = new HashSet<>();
+		round.getBombs().removeIf(bomb -> !seenBombIds.add(bomb.getId()));
 
 		Map<UUID, BombEntity> bombsWithModules = bombRepo.findAllByRoundIdWithModules(roundId).stream()
 				.collect(Collectors.toMap(BombEntity::getId, Function.identity()));
 
 		for (BombEntity bomb : round.getBombs()) {
 			BombEntity loadedBomb = bombsWithModules.get(bomb.getId());
-			List<ModuleEntity> modules = loadedBomb == null
-					? List.of()
-					: loadedBomb.getModules().stream()
-							.peek(module -> module.setBomb(bomb))
-							.collect(Collectors.toCollection(ArrayList::new));
-			bomb.setModules(modules);
+			if (loadedBomb == null || loadedBomb == bomb) {
+				continue;
+			}
+
+			bomb.getModules().clear();
+			for (ModuleEntity module : loadedBomb.getModules()) {
+				module.setBomb(bomb);
+				bomb.getModules().add(module);
+			}
 		}
 
 		return round;

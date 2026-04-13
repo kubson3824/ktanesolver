@@ -150,8 +150,8 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
       setTwitchCommand(command);
       
       markModuleSolved(bomb.id, currentModule.id);
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Failed to solve module");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to solve module");
     } finally {
       setIsLoading(false);
     }

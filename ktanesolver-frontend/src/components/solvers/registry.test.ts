@@ -34,6 +34,10 @@ describe("solver registry", () => {
     expect(getLazySolver(ModuleType.CAPACITOR_DISCHARGE)).not.toBeNull();
   });
 
+  it("registers the Number Pad solver in the shared registry", () => {
+    expect(getLazySolver(ModuleType.NUMBER_PAD)).not.toBeNull();
+  });
+
   it("uses catalog metadata when available to classify needy modules", () => {
     const catalogByType: Record<string, ModuleCatalogItem> = {
       [ModuleType.FORGET_ME_NOT]: createCatalogItem(

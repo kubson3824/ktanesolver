@@ -1,8 +1,6 @@
 import { api, withErrorWrapping } from "../lib/api";
 
-export interface SafetySafeInput {
-  // No user input; solver uses bomb state only.
-}
+export type SafetySafeInput = Record<string, never>;
 
 export interface SafetySafeOutput {
   dialTurns: number[];

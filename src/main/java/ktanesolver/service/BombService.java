@@ -1,6 +1,7 @@
 
 package ktanesolver.service;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -12,8 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 import ktanesolver.dto.BombConfig;
 import ktanesolver.dto.CreateBombRequest;
 import ktanesolver.entity.BombEntity;
+import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.BombStatus;
+import ktanesolver.enums.ModuleType;
 import ktanesolver.event.RoundStateChangedEvent;
 import ktanesolver.event.StrikeAddedEvent;
 import ktanesolver.repository.BombRepository;
@@ -40,6 +43,7 @@ public class BombService {
         bomb.setIndicators(req.indicators());
         bomb.replacePortPlates(req.portPlates());
         bomb.setStatus(BombStatus.ACTIVE);
+        appendInitialModules(bomb, req.modules());
         bomb = bombRepo.save(bomb);
         eventPublisher.publishEvent(new RoundStateChangedEvent(this, roundId));
         return bomb;
@@ -69,5 +73,25 @@ public class BombService {
         bomb = bombRepo.save(bomb);
         eventPublisher.publishEvent(new StrikeAddedEvent(this, bomb.getId(), bomb.getRound().getId(), bomb.getStrikes()));
         return bomb;
+    }
+
+    private static void appendInitialModules(BombEntity bomb, Map<ModuleType, Integer> requestedModules) {
+        if (requestedModules == null || requestedModules.isEmpty()) {
+            return;
+        }
+
+        requestedModules.forEach((type, count) -> {
+            if (type == null || count == null || count <= 0) {
+                return;
+            }
+
+            for (int i = 0; i < count; i++) {
+                ModuleEntity module = new ModuleEntity();
+                module.setBomb(bomb);
+                module.setType(type);
+                module.setSolved(false);
+                bomb.getModules().add(module);
+            }
+        });
     }
 }

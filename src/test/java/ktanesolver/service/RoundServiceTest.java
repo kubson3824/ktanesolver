@@ -110,4 +110,110 @@ class RoundServiceTest {
                 .extracting(ModuleEntity::getId)
                 .containsExactly(moduleId);
     }
+
+    @Test
+    void getRoundWithDetailsDeduplicatesBombsWithoutReplacingManagedCollection() {
+        UUID roundId = UUID.randomUUID();
+        UUID bombId = UUID.randomUUID();
+
+        RoundEntity round = new RoundEntity();
+        round.setId(roundId);
+
+        BombEntity duplicatedBomb = new BombEntity();
+        duplicatedBomb.setId(bombId);
+        duplicatedBomb.setRound(round);
+        round.getBombs().add(duplicatedBomb);
+        round.getBombs().add(duplicatedBomb);
+
+        List<BombEntity> originalBombCollection = round.getBombs();
+
+        BombEntity bombWithModules = new BombEntity();
+        bombWithModules.setId(bombId);
+
+        when(roundRepo.findByIdWithDetails(roundId)).thenReturn(Optional.of(round));
+        when(bombRepo.findAllByRoundIdWithModules(roundId)).thenReturn(List.of(bombWithModules));
+
+        RoundEntity result = roundService.getRoundWithDetails(roundId);
+
+        assertThat(result.getBombs() == originalBombCollection).isTrue();
+        assertThat(result.getBombs()).hasSize(1);
+    }
+
+    @Test
+    void getRoundWithDetailsLoadsModulesWithoutReplacingBombModuleCollection() {
+        UUID roundId = UUID.randomUUID();
+        UUID bombId = UUID.randomUUID();
+        UUID moduleId = UUID.randomUUID();
+
+        RoundEntity round = new RoundEntity();
+        round.setId(roundId);
+
+        BombEntity bomb = new BombEntity();
+        bomb.setId(bombId);
+        bomb.setRound(round);
+        round.getBombs().add(bomb);
+
+        List<ModuleEntity> originalModuleCollection = bomb.getModules();
+
+        BombEntity bombWithModules = new BombEntity();
+        bombWithModules.setId(bombId);
+
+        ModuleEntity module = new ModuleEntity();
+        module.setId(moduleId);
+        module.setBomb(bombWithModules);
+        module.setType(ModuleType.BUTTON);
+        bombWithModules.getModules().add(module);
+
+        when(roundRepo.findByIdWithDetails(roundId)).thenReturn(Optional.of(round));
+        when(bombRepo.findAllByRoundIdWithModules(roundId)).thenReturn(List.of(bombWithModules));
+
+        RoundEntity result = roundService.getRoundWithDetails(roundId);
+
+        BombEntity loadedBomb = result.getBombs().getFirst();
+        assertThat(loadedBomb.getModules() == originalModuleCollection).isTrue();
+        assertThat(loadedBomb.getModules())
+                .extracting(ModuleEntity::getId)
+                .containsExactly(moduleId);
+    }
+
+    @Test
+    void startRoundReturnsHydratedRoundDetailsForSerialization() {
+        UUID roundId = UUID.randomUUID();
+        UUID bombId = UUID.randomUUID();
+        UUID moduleId = UUID.randomUUID();
+
+        RoundEntity round = new RoundEntity();
+        round.setId(roundId);
+        round.setStatus(ktanesolver.enums.RoundStatus.SETUP);
+
+        BombEntity roundBomb = new BombEntity();
+        roundBomb.setId(bombId);
+        roundBomb.setRound(round);
+        round.getBombs().add(roundBomb);
+
+        BombEntity bombWithModules = new BombEntity();
+        bombWithModules.setId(bombId);
+
+        ModuleEntity module = new ModuleEntity();
+        module.setId(moduleId);
+        module.setBomb(bombWithModules);
+        module.setType(ModuleType.BUTTON);
+        bombWithModules.getModules().add(module);
+
+        when(roundRepo.findById(roundId)).thenReturn(Optional.of(round));
+        when(roundRepo.save(round)).thenReturn(round);
+        when(roundRepo.findByIdWithDetails(roundId)).thenReturn(Optional.of(round));
+        when(bombRepo.findAllByRoundIdWithModules(roundId)).thenReturn(List.of(bombWithModules));
+
+        RoundEntity result = roundService.startRound(roundId);
+
+        assertThat(result.getStatus()).isEqualTo(ktanesolver.enums.RoundStatus.ACTIVE);
+        assertThat(result.getStartTime()).isNotNull();
+        assertThat(result.getBombs()).singleElement().satisfies(loadedBomb ->
+                assertThat(loadedBomb.getModules())
+                        .extracting(ModuleEntity::getId)
+                        .containsExactly(moduleId));
+        verify(roundRepo).findByIdWithDetails(roundId);
+        verify(bombRepo).findAllByRoundIdWithModules(roundId);
+    }
 }
