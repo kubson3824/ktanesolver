@@ -442,7 +442,7 @@ export default function SetupPage() {
 
                 {/* Bomb form dialog */}
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogContent className="max-h-[90vh] flex flex-col gap-0 p-0">
+                    <DialogContent className="h-[100dvh] md:h-[90vh] max-w-none md:max-w-6xl md:w-[90vw] flex flex-col gap-0 p-0 rounded-none md:rounded-xl">
                         <DialogHeader className="bg-muted/40 border-b border-border px-4 py-3 flex flex-row items-start justify-between gap-4">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-widest">
@@ -459,204 +459,213 @@ export default function SetupPage() {
                             </DialogClose>
                         </DialogHeader>
                         <form className="flex flex-col flex-1 min-h-0 overflow-hidden" onSubmit={handleFormSubmit}>
-                            <div className="overflow-y-auto px-4 sm:px-6 space-y-6 pb-4 pt-4">
-                                <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
-                                    <h3 className="text-base font-semibold text-foreground">Serial &amp; Batteries</h3>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <label className="flex flex-col gap-1.5 w-full">
-                                            <span className="text-xs text-muted-foreground uppercase tracking-widest">Serial number</span>
+                            <div className="flex flex-1 min-h-0 flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+                                {/* Left panel — edgework */}
+                                <div className={cn(
+                                    "md:overflow-y-auto px-4 sm:px-6 py-4 space-y-6",
+                                    !isEditing && "md:w-2/5 md:border-r md:border-border"
+                                )}>
+                                    <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                        <h3 className="text-base font-semibold text-foreground">Serial &amp; Batteries</h3>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <label className="flex flex-col gap-1.5 w-full">
+                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">Serial number</span>
+                                                <Input
+                                                    type="text"
+                                                    value={formState.serialNumber}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({
+                                                            ...prev,
+                                                            serialNumber: event.target.value.toUpperCase(),
+                                                        }))
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-1.5 w-full">
+                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">AA batteries</span>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    step={2}
+                                                    value={formState.aaBatteryCount}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({
+                                                            ...prev,
+                                                            aaBatteryCount: Number(event.target.value),
+                                                        }))
+                                                    }
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-1.5 w-full">
+                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">D batteries</span>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    value={formState.dBatteryCount}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({
+                                                            ...prev,
+                                                            dBatteryCount: Number(event.target.value),
+                                                        }))
+                                                    }
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                        <h3 className="text-base font-semibold text-foreground">Indicators</h3>
+                                        <div className="flex flex-wrap items-center gap-2">
                                             <Input
                                                 type="text"
-                                                value={formState.serialNumber}
+                                                placeholder="Label"
+                                                className="w-24 h-8"
+                                                value={indicatorDraft.name}
                                                 onChange={(event) =>
-                                                    setFormState((prev) => ({
+                                                    setIndicatorDraft((prev) => ({
                                                         ...prev,
-                                                        serialNumber: event.target.value.toUpperCase(),
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </label>
-                                        <label className="flex flex-col gap-1.5 w-full">
-                                            <span className="text-xs text-muted-foreground uppercase tracking-widest">AA batteries</span>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                step={2}
-                                                value={formState.aaBatteryCount}
-                                                onChange={(event) =>
-                                                    setFormState((prev) => ({
-                                                        ...prev,
-                                                        aaBatteryCount: Number(event.target.value),
+                                                        name: event.target.value,
                                                     }))
                                                 }
                                             />
-                                        </label>
-                                        <label className="flex flex-col gap-1.5 w-full">
-                                            <span className="text-xs text-muted-foreground uppercase tracking-widest">D batteries</span>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                value={formState.dBatteryCount}
-                                                onChange={(event) =>
-                                                    setFormState((prev) => ({
-                                                        ...prev,
-                                                        dBatteryCount: Number(event.target.value),
-                                                    }))
-                                                }
-                                            />
-                                        </label>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className={cn("gap-1.5", indicatorDraft.lit && "border-emerald-500 text-emerald-700 dark:text-emerald-400")}
+                                                    onClick={() => setIndicatorDraft((p) => ({ ...p, lit: true }))}
+                                                >
+                                                    <span className="h-2 w-2 rounded-full bg-current opacity-90" aria-hidden />
+                                                    Lit
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant={!indicatorDraft.lit ? "ghost" : "outline"}
+                                                    size="sm"
+                                                    className={cn("gap-1.5", !indicatorDraft.lit && "bg-base-300")}
+                                                    onClick={() => setIndicatorDraft((p) => ({ ...p, lit: false }))}
+                                                >
+                                                    <span className="h-2 w-2 rounded-full bg-base-content/40" aria-hidden />
+                                                    Unlit
+                                                </Button>
+                                            </div>
+                                            <Button type="button" variant="outline" size="sm" onClick={addIndicator}>
+                                                Add
+                                            </Button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {formState.indicators.map((indicator) => (
+                                                <Badge
+                                                    key={indicator.id}
+                                                    variant={indicator.lit ? "success" : "outline"}
+                                                    className="gap-2 pr-1"
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            "h-2 w-2 rounded-full shrink-0",
+                                                            indicator.lit ? "bg-emerald-500/80" : "bg-foreground/50"
+                                                        )}
+                                                        aria-hidden
+                                                    />
+                                                    {indicator.name}
+                                                    <button
+                                                        type="button"
+                                                        className="p-0 h-4 min-h-4 w-4 inline-flex items-center justify-center rounded hover:bg-base-content/10 text-base-content/80"
+                                                        onClick={() =>
+                                                            setFormState((prev) => ({
+                                                                ...prev,
+                                                                indicators: prev.indicators.filter(
+                                                                    (entry) => entry.id !== indicator.id,
+                                                                ),
+                                                            }))
+                                                        }
+                                                        aria-label={`Remove ${indicator.name}`}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </Badge>
+                                            ))}
+                                            {formState.indicators.length === 0 && (
+                                                <p className="text-xs text-muted-foreground italic">No indicators yet.</p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
-                                    <h3 className="text-base font-semibold text-foreground">Indicators</h3>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Input
-                                            type="text"
-                                            placeholder="Label"
-                                            className="w-24 h-8"
-                                            value={indicatorDraft.name}
-                                            onChange={(event) =>
-                                                setIndicatorDraft((prev) => ({
-                                                    ...prev,
-                                                    name: event.target.value,
-                                                }))
-                                            }
-                                        />
-                                        <div className="flex items-center gap-2">
+                                    <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-base font-semibold text-foreground">Port Plates</h3>
                                             <Button
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                className={cn("gap-1.5", indicatorDraft.lit && "border-emerald-500 text-emerald-700 dark:text-emerald-400")}
-                                                onClick={() => setIndicatorDraft((p) => ({ ...p, lit: true }))}
+                                                onClick={() =>
+                                                    setFormState((prev) => ({
+                                                        ...prev,
+                                                        portPlates: [
+                                                            ...prev.portPlates,
+                                                            {id: randomId(), ports: []},
+                                                        ],
+                                                    }))
+                                                }
                                             >
-                                                <span className="h-2 w-2 rounded-full bg-current opacity-90" aria-hidden />
-                                                Lit
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant={!indicatorDraft.lit ? "ghost" : "outline"}
-                                                size="sm"
-                                                className={cn("gap-1.5", !indicatorDraft.lit && "bg-base-300")}
-                                                onClick={() => setIndicatorDraft((p) => ({ ...p, lit: false }))}
-                                            >
-                                                <span className="h-2 w-2 rounded-full bg-base-content/40" aria-hidden />
-                                                Unlit
+                                                Add plate
                                             </Button>
                                         </div>
-                                        <Button type="button" variant="outline" size="sm" onClick={addIndicator}>
-                                            Add
-                                        </Button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {formState.indicators.map((indicator) => (
-                                            <Badge
-                                                key={indicator.id}
-                                                variant={indicator.lit ? "success" : "outline"}
-                                                className="gap-2 pr-1"
-                                            >
-                                                <span
-                                                    className={cn(
-                                                        "h-2 w-2 rounded-full shrink-0",
-                                                        indicator.lit ? "bg-emerald-500/80" : "bg-foreground/50"
-                                                    )}
-                                                    aria-hidden
-                                                />
-                                                {indicator.name}
-                                                <button
-                                                    type="button"
-                                                    className="p-0 h-4 min-h-4 w-4 inline-flex items-center justify-center rounded hover:bg-base-content/10 text-base-content/80"
-                                                    onClick={() =>
-                                                        setFormState((prev) => ({
-                                                            ...prev,
-                                                            indicators: prev.indicators.filter(
-                                                                (entry) => entry.id !== indicator.id,
-                                                            ),
-                                                        }))
-                                                    }
-                                                    aria-label={`Remove ${indicator.name}`}
-                                                >
-                                                    ×
-                                                </button>
-                                            </Badge>
-                                        ))}
-                                        {formState.indicators.length === 0 && (
-                                            <p className="text-xs text-muted-foreground italic">No indicators yet.</p>
+                                        {formState.portPlates.length === 0 && (
+                                            <p className="text-xs text-muted-foreground italic">No plates configured.</p>
                                         )}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="text-base font-semibold text-foreground">Port Plates</h3>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                setFormState((prev) => ({
-                                                    ...prev,
-                                                    portPlates: [
-                                                        ...prev.portPlates,
-                                                        {id: randomId(), ports: []},
-                                                    ],
-                                                }))
-                                            }
-                                        >
-                                            Add plate
-                                        </Button>
-                                    </div>
-                                    {formState.portPlates.length === 0 && (
-                                        <p className="text-xs text-muted-foreground italic">No plates configured.</p>
-                                    )}
-                                    <div className="space-y-3">
-                                        {formState.portPlates.map((plate, index) => (
-                                            <div key={plate.id} className="bg-background border border-border rounded-sm p-3">
-                                                <div className="flex justify-between items-center mb-3">
-                                                    <strong className="text-xs text-muted-foreground uppercase tracking-widest">Plate {index + 1}</strong>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="xs"
-                                                        onClick={() =>
-                                                            setFormState((prev) => ({
-                                                                ...prev,
-                                                                portPlates: prev.portPlates.filter(
-                                                                    (entry) => entry.id !== plate.id,
-                                                                ),
-                                                            }))
-                                                        }
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {portTypes.map((port) => (
+                                        <div className="space-y-3">
+                                            {formState.portPlates.map((plate, index) => (
+                                                <div key={plate.id} className="bg-background border border-border rounded-sm p-3">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <strong className="text-xs text-muted-foreground uppercase tracking-widest">Plate {index + 1}</strong>
                                                         <Button
-                                                            key={port}
                                                             type="button"
-                                                            variant={plate.ports.includes(port) ? "default" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => updatePlate(plate.id, port)}
+                                                            variant="ghost"
+                                                            size="xs"
+                                                            onClick={() =>
+                                                                setFormState((prev) => ({
+                                                                    ...prev,
+                                                                    portPlates: prev.portPlates.filter(
+                                                                        (entry) => entry.id !== plate.id,
+                                                                    ),
+                                                                }))
+                                                            }
                                                         >
-                                                            {port}
+                                                            Remove
                                                         </Button>
-                                                    ))}
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {portTypes.map((port) => (
+                                                            <Button
+                                                                key={port}
+                                                                type="button"
+                                                                variant={plate.ports.includes(port) ? "default" : "outline"}
+                                                                size="sm"
+                                                                onClick={() => updatePlate(plate.id, port)}
+                                                            >
+                                                                {port}
+                                                            </Button>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
+                                {/* Right panel — modules (create mode only) */}
                                 {!isEditing && (
-                                    <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
-                                        <h3 className="text-base font-semibold text-foreground">Modules for this bomb</h3>
-                                        <ModuleSelector
-                                            onSelectionChange={handleModuleSelectionChange}
-                                            initialCounts={formState.modules}
-                                        />
+                                    <div className="md:overflow-y-auto md:w-3/5 px-4 sm:px-6 py-4 border-t border-border md:border-t-0">
+                                        <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4">
+                                            <h3 className="text-base font-semibold text-foreground">Modules for this bomb</h3>
+                                            <ModuleSelector
+                                                onSelectionChange={handleModuleSelectionChange}
+                                                initialCounts={formState.modules}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>
