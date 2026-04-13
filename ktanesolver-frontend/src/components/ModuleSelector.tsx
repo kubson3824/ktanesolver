@@ -52,7 +52,6 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>(initialCounts);
-  const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "category">("name-asc");
 
   useEffect(() => {
@@ -77,9 +76,6 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       );
     }
 
-    const recent = filtered.filter(m => recentlyUsed.includes(m.id));
-    const others = filtered.filter(m => !recentlyUsed.includes(m.id));
-
     const sortFunction = (a: ModuleCatalogItem, b: ModuleCatalogItem) => {
       if (sortBy === "name-asc") {
         return a.name.localeCompare(b.name);
@@ -100,8 +96,8 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       return 0;
     };
 
-    return [...[...recent].sort(sortFunction), ...[...others].sort(sortFunction)];
-  }, [modules, activeFilter, searchTerm, sortBy, recentlyUsed]);
+    return [...filtered].sort(sortFunction);
+  }, [modules, activeFilter, searchTerm, sortBy]);
 
   const updateModuleCount = (moduleType: string, delta: number) => {
     setSelectedModules(prev => {
@@ -116,10 +112,6 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
   }, [selectedModules, onSelectionChange]);
 
   const handleModuleClick = (module: ModuleCatalogItem) => {
-    setRecentlyUsed(prev => {
-      const updated = [module.id, ...prev.filter(id => id !== module.id)];
-      return updated.slice(0, 10);
-    });
     updateModuleCount(module.type, 1);
   };
 
@@ -217,7 +209,7 @@ export default function ModuleSelector({ onSelectionChange, initialCounts = {} }
       )}
 
       {/* Module grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {filteredModules.length === 0 ? (
           <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
             No modules found.
