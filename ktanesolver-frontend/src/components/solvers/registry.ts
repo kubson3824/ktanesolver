@@ -60,6 +60,7 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
   [ModuleType.THREE_D_MAZE]: { load: () => import("./ThreeDMazeSolver") },
   [ModuleType.SIMON_STATES]: { load: () => import("./SimonStatesSolver") },
   [ModuleType.LAUNDRY]: { load: () => import("./LaundrySolver") },
+  [ModuleType.PROBING]: { load: () => import("./ProbingSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },

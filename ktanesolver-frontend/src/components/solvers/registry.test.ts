@@ -42,6 +42,10 @@ describe("solver registry", () => {
     expect(getLazySolver(ModuleType.LAUNDRY)).not.toBeNull();
   });
 
+  it("registers the Probing solver in the shared registry", () => {
+    expect(getLazySolver(ModuleType.PROBING)).not.toBeNull();
+  });
+
   it("uses catalog metadata when available to classify needy modules", () => {
     const catalogByType: Record<string, ModuleCatalogItem> = {
       [ModuleType.FORGET_ME_NOT]: createCatalogItem(

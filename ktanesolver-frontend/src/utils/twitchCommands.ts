@@ -330,6 +330,14 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} laundry ${washing} ${drying} ${ironing} ${special}`;
     }
 
+    case ModuleType.PROBING: {
+      const r = raw as { redClipWire?: number; blueClipWire?: number };
+      if (typeof r.redClipWire === "number" && typeof r.blueClipWire === "number") {
+        return `!${TWITCH_PLACEHOLDER} probing red ${r.redClipWire} blue ${r.blueClipWire}`;
+      }
+      return "";
+    }
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;
