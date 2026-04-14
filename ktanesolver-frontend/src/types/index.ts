@@ -49,6 +49,7 @@ export enum ModuleType {
   THREE_D_MAZE = "THREE_D_MAZE",
   SIMON_STATES = "SIMON_STATES",
   LAUNDRY = "LAUNDRY",
+  PROBING = "PROBING",
 }
 
 export enum PortType {

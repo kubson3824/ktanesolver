@@ -351,6 +351,11 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} Turn The Keys`;
     }
 
+    case ModuleType.PROBING: {
+      const instruction = getString((result as { instruction?: string }).instruction);
+      return instruction ? `!${TWITCH_PLACEHOLDER} ${instruction}` : `!${TWITCH_PLACEHOLDER} connect clips`;
+    }
+
     default:
       return `!${TWITCH_PLACEHOLDER} action ${getString(raw.action) ?? 'unknown'}`;
   }
@@ -408,6 +413,7 @@ export function getModuleDisplayName(moduleType: ModuleType): string {
     [ModuleType.THREE_D_MAZE]: "3D Maze",
     [ModuleType.SIMON_STATES]: "Simon States",
     [ModuleType.LAUNDRY]: "Laundry",
+    [ModuleType.PROBING]: "Probing",
   };
 
   return displayNames[moduleType] || moduleType;
