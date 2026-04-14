@@ -351,11 +351,6 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} Turn The Keys`;
     }
 
-    case ModuleType.PROBING: {
-      const instruction = getString((result as { instruction?: string }).instruction);
-      return instruction ? `!${TWITCH_PLACEHOLDER} ${instruction}` : `!${TWITCH_PLACEHOLDER} connect clips`;
-    }
-
     default:
       return `!${TWITCH_PLACEHOLDER} action ${getString(raw.action) ?? 'unknown'}`;
   }
