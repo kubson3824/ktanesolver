@@ -15,6 +15,14 @@ export interface ProbingSolveResponse {
   solved?: boolean;
 }
 
+export interface ProbingInput {
+  missingFrequenciesByWire: number[];
+}
+
+export interface ProbingSolveRequest {
+  input: ProbingInput;
+}
+
 export const PROBING_FREQUENCIES = [10, 22, 50, 60] as const;
 export type ProbingFrequency = (typeof PROBING_FREQUENCIES)[number];
 
@@ -22,12 +30,12 @@ export const solveProbing = async (
   roundId: string,
   bombId: string,
   moduleId: string,
-  missingFrequenciesByWire: number[],
+  input: ProbingSolveRequest,
 ): Promise<ProbingSolveResponse> => {
   return withErrorWrapping(async () => {
     const response = await api.post<ProbingSolveResponse>(
       `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-      { input: { missingFrequenciesByWire } },
+      input,
     );
     return response.data;
   });
