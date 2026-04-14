@@ -331,7 +331,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     }
 
     case ModuleType.PROBING: {
-      const r = raw as { redClipWire?: number; blueClipWire?: number };
+      const r = result as { redClipWire?: number; blueClipWire?: number };
       if (typeof r.redClipWire === "number" && typeof r.blueClipWire === "number") {
         return `!${TWITCH_PLACEHOLDER} probing red ${r.redClipWire} blue ${r.blueClipWire}`;
       }
