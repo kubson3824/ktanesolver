@@ -156,7 +156,6 @@ export default function ProbingSolver({ bomb }: ProbingSolverProps) {
       next[wireIndex] = freq;
       return next;
     });
-    if (isSolved) resetSolverState();
   };
 
   const allSelected = frequencies.every((f) => f !== null);

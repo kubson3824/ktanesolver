@@ -335,7 +335,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       if (typeof r.redClipWire === "number" && typeof r.blueClipWire === "number") {
         return `!${TWITCH_PLACEHOLDER} probing red ${r.redClipWire} blue ${r.blueClipWire}`;
       }
-      return "";
+      return `!${TWITCH_PLACEHOLDER} probing unknown`;
     }
 
     case ModuleType.TURN_THE_KEY: {
