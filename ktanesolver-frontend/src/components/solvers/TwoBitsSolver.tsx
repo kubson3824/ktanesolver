@@ -58,9 +58,20 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       });
       setTwitchCommand(command);
 
-      setCurrentStage(3);
+      // Derive the next stage from how many stages the backend has completed.
+      // Hardcoding stage 3 caused stage 2 to be skipped whenever the websocket
+      // refresh repopulated currentModule.solution after stage 1.
+      const solved = Boolean(currentModule?.solved);
+      if (solved) {
+        setCurrentStage(3);
+        return;
+      }
+      const completed = solution.stages?.length;
+      if (typeof completed === "number") {
+        setCurrentStage(Math.min(3, Math.max(1, completed + 1)));
+      }
     },
-  []);
+  [currentModule?.solved]);
 
   useSolverModulePersistence<
     { currentStage: number; inputNumber: string; result: TwoBitsOutput | null; twitchCommand: string },
@@ -75,7 +86,8 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       if (typeof o.letters !== "string" || o.letters.length === 0) return null;
       return o;
     },
-    inferSolved: () => true,
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });

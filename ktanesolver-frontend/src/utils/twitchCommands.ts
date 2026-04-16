@@ -287,6 +287,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       }
       return `!${TWITCH_PLACEHOLDER} cryptography unknown`;
 
+    case ModuleType.CAESAR_CIPHER:
+      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.solution) ?? "unknown"}`;
+
     case ModuleType.CHESS:
       if ((result as { coordinate?: string }).coordinate) {
         return `!${TWITCH_PLACEHOLDER} submit ${(result as { coordinate: string }).coordinate}`;

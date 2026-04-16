@@ -46,6 +46,10 @@ describe("solver registry", () => {
     expect(getLazySolver(ModuleType.PROBING)).not.toBeNull();
   });
 
+  it("registers the Caesar Cipher solver in the shared registry", () => {
+    expect(getLazySolver(ModuleType.CAESAR_CIPHER)).not.toBeNull();
+  });
+
   it("uses catalog metadata when available to classify needy modules", () => {
     const catalogByType: Record<string, ModuleCatalogItem> = {
       [ModuleType.FORGET_ME_NOT]: createCatalogItem(

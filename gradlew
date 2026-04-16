@@ -88,6 +88,17 @@ APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
 APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s\n' "$PWD" ) || exit
 
+# In some WSL/sandboxed setups, HOME points to a read-only location.
+# Fall back to a writable repo-local cache so the wrapper can download and run.
+if [ -z "${GRADLE_USER_HOME:-}" ]; then
+    if [ -n "${HOME:-}" ] && [ -d "$HOME" ] && [ -w "$HOME" ]; then
+        :
+    else
+        GRADLE_USER_HOME="$APP_HOME/.gradle-user-home"
+        export GRADLE_USER_HOME
+    fi
+fi
+
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 
