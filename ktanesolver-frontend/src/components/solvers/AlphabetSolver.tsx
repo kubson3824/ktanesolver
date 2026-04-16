@@ -145,7 +145,7 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [round?.id, bomb?.id, currentModule?.id, letters, clearError, setIsLoading, setError, setIsSolved, markModuleSolved, updateModuleAfterSolve, error]);
+  }, [round?.id, bomb?.id, currentModule?.id, letters, clearError, setIsLoading, setError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
 
   const reset = useCallback(() => {
     setLetters(["", "", "", ""]);
