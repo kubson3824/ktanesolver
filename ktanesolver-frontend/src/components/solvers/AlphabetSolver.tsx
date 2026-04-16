@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useRoundStore } from "../../store/useRoundStore";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
@@ -24,12 +25,7 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
   const [result, setResult] = useState<AlphabetSolveResponse["output"] | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const inputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
 
   const {
     isLoading,
@@ -44,6 +40,8 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
     round,
     markModuleSolved,
   } = useSolver();
+
+  const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
   const moduleState = useMemo(
     () => ({ letters, result, twitchCommand }),
@@ -102,11 +100,11 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
     setLetters(updated);
     if (error) clearError();
     if (upper && index < 3) {
-      inputRefs[index + 1].current?.focus();
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const solveAlphabetModule = async () => {
+  const solveAlphabetModule = useCallback(async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
       setError("Missing required information");
       return;
@@ -124,28 +122,37 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
         input: { letters },
       });
 
-      setResult(response.output);
+      const output = response.output;
+      setResult(output);
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
 
       const command = generateTwitchCommand({
         moduleType: ModuleType.ALPHABET,
-        result: response.output,
+        result: output,
       });
       setTwitchCommand(command);
+
+      updateModuleAfterSolve(
+        bomb.id,
+        currentModule.id,
+        { letters, result: output, twitchCommand: command },
+        output,
+        true,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve Alphabet");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [round?.id, bomb?.id, currentModule?.id, letters, clearError, setIsLoading, setError, setIsSolved, markModuleSolved, updateModuleAfterSolve, error]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setLetters(["", "", "", ""]);
     setResult(null);
     setTwitchCommand("");
     resetSolverState();
-  };
+  }, [resetSolverState]);
 
   const allFilled = letters.every((l) => l.length === 1);
 
@@ -180,7 +187,7 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
             {letters.map((letter, i) => (
               <Input
                 key={i}
-                ref={inputRefs[i]}
+                ref={(el) => { inputRefs.current[i] = el; }}
                 type="text"
                 value={letter}
                 onChange={(e) => handleLetterChange(i, e.target.value)}
@@ -199,6 +206,7 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
         onReset={reset}
         isSolveDisabled={!allFilled}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
       />
 
