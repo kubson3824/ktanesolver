@@ -37,7 +37,7 @@ public class AlphabetSolver extends AbstractModuleSolver<AlphabetInput, Alphabet
     ) {
         List<String> letters = input.letters();
 
-        if (letters.size() != 4) {
+        if (letters == null || letters.size() != 4) {
             return failure("Alphabet requires exactly 4 letters");
         }
         for (String letter : letters) {

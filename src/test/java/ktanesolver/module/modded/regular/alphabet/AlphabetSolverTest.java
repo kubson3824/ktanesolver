@@ -81,6 +81,20 @@ class AlphabetSolverTest {
     }
 
     @Test
+    void failsWhenLettersListIsNull() {
+        ModuleEntity module = module();
+        SolveResult<AlphabetOutput> result = solver.solve(
+            new RoundEntity(), new BombEntity(), module,
+            new AlphabetInput(null)
+        );
+
+        assertThat(result).isInstanceOf(SolveFailure.class);
+        assertThat(((SolveFailure<AlphabetOutput>) result).getReason())
+            .isEqualTo("Alphabet requires exactly 4 letters");
+        assertThat(module.isSolved()).isFalse();
+    }
+
+    @Test
     void failsWhenAnyLetterIsNotASingleCharacter() {
         ModuleEntity module = module();
         SolveResult<AlphabetOutput> result = solver.solve(
