@@ -338,6 +338,14 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} probing unknown`;
     }
 
+    case ModuleType.ALPHABET: {
+      const pressOrder = getStringArray(raw.pressOrder);
+      if (pressOrder?.length) {
+        return `!${TWITCH_PLACEHOLDER} alphabet ${pressOrder.join(' ')}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} alphabet unknown`;
+    }
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;

@@ -50,6 +50,7 @@ export enum ModuleType {
   SIMON_STATES = "SIMON_STATES",
   LAUNDRY = "LAUNDRY",
   PROBING = "PROBING",
+  ALPHABET = "ALPHABET",
 }
 
 export enum PortType {
