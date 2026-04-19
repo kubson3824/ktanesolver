@@ -3,15 +3,20 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMemory } from "../../services/memoryService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  SegmentedControl,
+  StageIndicator,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls,
-  SolverResult
+  SolverResult,
 } from "../common";
+import { cn } from "../../lib/cn";
 
 interface MemorySolverProps {
   bomb: BombEntity | null | undefined;
@@ -24,18 +29,25 @@ interface StageResult {
   label: number;
 }
 
-/** Mini 4-cell grid for Memory: positions 1–4, one cell highlighted with its label. */
+const NUMBER_OPTIONS = [
+  { value: 1, label: "1" },
+  { value: 2, label: "2" },
+  { value: 3, label: "3" },
+  { value: 4, label: "4" },
+] as const;
+
 function MemoryMiniGrid({ position, label }: { position: number; label: number }) {
   return (
-    <div className="flex gap-0.5 w-24 h-8 shrink-0" aria-hidden>
+    <div className="flex h-8 w-24 shrink-0 gap-0.5" aria-hidden>
       {[1, 2, 3, 4].map((pos) => (
         <div
           key={pos}
-          className={`flex-1 rounded border text-sm font-bold flex items-center justify-center ${
+          className={cn(
+            "flex flex-1 items-center justify-center rounded border text-sm font-bold",
             pos === position
-              ? "bg-success/30 border-success text-success"
-              : "bg-base-300 border-base-content/20 text-base-content/40"
-          }`}
+              ? "border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+              : "border-border bg-muted text-muted-foreground",
+          )}
         >
           {pos === position ? label : ""}
         </div>
@@ -52,7 +64,6 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
   const [result, setResult] = useState<{ position: number; label: number } | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -72,13 +83,12 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     [currentStage, displayNumber, buttonLabels, stageHistory, result, twitchCommand],
   );
 
-  // One Twitch command per stage: from completed stageHistory + current stage if we have result/twitchCommand
   const displayTwitchCommands = useMemo(() => {
     const list = stageHistory.map((s) =>
       generateTwitchCommand({
         moduleType: ModuleType.MEMORY,
         result: { position: s.position, label: s.label },
-      })
+      }),
     );
     if (result && twitchCommand) list.push(twitchCommand);
     return list;
@@ -110,15 +120,15 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
             display: displayHistory[i] ?? 0,
             position: step.position,
             label: step.label,
-          }))
+          })),
         );
         setDisplayNumber(null);
         setResult(null);
         setTwitchCommand("");
-        if (state.buttonLabels && state.buttonLabels.length === 4) setButtonLabels(state.buttonLabels);
+        if (state.buttonLabels && state.buttonLabels.length === 4)
+          setButtonLabels(state.buttonLabels);
       } else {
-        if (state.currentStage !== undefined)
-          setCurrentStage(Math.min(state.currentStage, 5));
+        if (state.currentStage !== undefined) setCurrentStage(Math.min(state.currentStage, 5));
         if (state.displayNumber !== undefined) setDisplayNumber(state.displayNumber);
         if (state.buttonLabels) setButtonLabels(state.buttonLabels);
         if (state.stageHistory) setStageHistory(state.stageHistory);
@@ -133,13 +143,20 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     (solution: { position: number; label: number }) => {
       if (!solution) return;
       setResult(solution);
-      setCurrentStage(5); // Final stage; never > 5
+      setCurrentStage(5);
     },
     [],
   );
 
   useSolverModulePersistence<
-    { currentStage: number; displayNumber: number | null; buttonLabels: number[]; stageHistory: StageResult[]; result: { position: number; label: number } | null; twitchCommand: string },
+    {
+      currentStage: number;
+      displayNumber: number | null;
+      buttonLabels: number[];
+      stageHistory: StageResult[];
+      result: { position: number; label: number } | null;
+      twitchCommand: string;
+    },
     { position: number; label: number }
   >({
     state: moduleState,
@@ -148,24 +165,32 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     extractSolution: (raw) => {
       if (raw == null) return null;
       if (typeof raw === "object") {
-        const anyRaw = raw as { output?: unknown; finalResult?: unknown; position?: number; label?: number };
-        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { position: number; label: number };
-        if (anyRaw.finalResult && typeof anyRaw.finalResult === "object") return anyRaw.finalResult as { position: number; label: number };
-        // Backend stores MemoryOutput as flat map: { position, label }
-        if (typeof anyRaw.position === "number" && typeof anyRaw.label === "number") return { position: anyRaw.position, label: anyRaw.label };
+        const anyRaw = raw as {
+          output?: unknown;
+          finalResult?: unknown;
+          position?: number;
+          label?: number;
+        };
+        if (anyRaw.output && typeof anyRaw.output === "object")
+          return anyRaw.output as { position: number; label: number };
+        if (anyRaw.finalResult && typeof anyRaw.finalResult === "object")
+          return anyRaw.finalResult as { position: number; label: number };
+        if (typeof anyRaw.position === "number" && typeof anyRaw.label === "number")
+          return { position: anyRaw.position, label: anyRaw.label };
       }
       return null;
     },
-    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
 
   const handleLabelChange = (position: number, label: number) => {
     if (isSolved) return;
-    const newLabels = [...buttonLabels];
-    newLabels[position] = label;
-    setButtonLabels(newLabels);
+    const next = [...buttonLabels];
+    next[position] = label;
+    setButtonLabels(next);
   };
 
   const handleSolve = async () => {
@@ -173,50 +198,40 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
       setError("Missing required information");
       return;
     }
-
     if (displayNumber === null || displayNumber < 1 || displayNumber > 4) {
-      setError("Please enter a valid display number (1-4)");
+      setError("Pick the number currently shown on the display (1–4).");
       return;
     }
-
-    if (buttonLabels.some(label => label < 1 || label > 4)) {
-      setError("All button labels must be between 1 and 4");
+    if (buttonLabels.some((l) => l < 1 || l > 4)) {
+      setError("All button labels must be between 1 and 4.");
       return;
     }
-
     if (currentStage > 5) {
-      setError("Memory module has only 5 stages. Please reset and try again.");
+      setError("Memory has only 5 stages. Reset to start over.");
       return;
     }
 
     setIsLoading(true);
     clearError();
-
     try {
       const response = await solveMemory(round.id, bomb.id, currentModule.id, {
-        input: {
-          stage: currentStage,
-          display: displayNumber,
-          labels: buttonLabels
-        }
+        input: { stage: currentStage, display: displayNumber, labels: buttonLabels },
       });
 
       setResult(response.output);
-      
-      // Generate Twitch command for current stage
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.MEMORY,
-        result: response.output,
-      });
-      setTwitchCommand(command);
-      
+      setTwitchCommand(
+        generateTwitchCommand({
+          moduleType: ModuleType.MEMORY,
+          result: response.output,
+        }),
+      );
+
       const stageResult: StageResult = {
         stage: currentStage,
         display: displayNumber,
         position: response.output.position,
-        label: response.output.label
+        label: response.output.label,
       };
-      
       const newHistory = [...stageHistory, stageResult];
       setStageHistory(newHistory);
 
@@ -224,22 +239,18 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
         setDisplayNumber(null);
-        // Keep result and twitchCommand visible when solved so user can see/copy the final answer
       } else {
         setCurrentStage(Math.min(currentStage + 1, 5));
         setDisplayNumber(null);
-        setResult(null); // Clear result when advancing to next stage
-        setTwitchCommand(""); // Clear Twitch command for next stage
+        setResult(null);
+        setTwitchCommand("");
       }
-      // Keep the same labels as they don't change between stages
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to solve memory module";
-      
-      // Handle invalid stage order error gracefully
-      if (errorMessage.includes("Invalid stage order")) {
-        setError("Module state out of sync. Please reset and try again from stage 1.");
+      const msg = err instanceof Error ? err.message : "Failed to solve memory module";
+      if (msg.includes("Invalid stage order")) {
+        setError("Module state is out of sync — reset and start from stage 1.");
       } else {
-        setError(errorMessage);
+        setError(msg);
       }
     } finally {
       setIsLoading(false);
@@ -256,157 +267,123 @@ export default function MemorySolver({ bomb }: MemorySolverProps) {
     resetSolverState();
   };
 
-  const renderButton = (position: number) => {
-    const label = buttonLabels[position];
-    const isHighlighted = result?.position === position + 1;
-
-    return (
-      <div key={position} className="flex flex-col items-center gap-2">
-        <div className="text-xs text-gray-400">Position {position + 1}</div>
-        <button
-          className={`w-20 h-20 rounded-lg border-2 font-bold text-2xl transition-all ${
-            isHighlighted
-              ? "bg-green-600 border-green-400 text-white scale-105 shadow-lg shadow-green-600/50"
-              : "bg-gray-700 border-gray-600 text-gray-200 hover:border-gray-500"
-          } ${isSolved ? "cursor-not-allowed" : ""}`}
-          disabled={isSolved}
-        >
-          {label}
-        </button>
-        <select
-          value={label}
-          onChange={(e) => handleLabelChange(position, parseInt(e.target.value))}
-          disabled={isSolved}
-          className="w-20 px-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-gray-200 focus:border-primary focus:outline-none"
-        >
-          {[1, 2, 3, 4].map(num => (
-            <option key={num} value={num}>{num}</option>
-          ))}
-        </select>
-      </div>
-    );
-  };
+  const highlightedPosition = result?.position;
 
   return (
     <SolverLayout>
-      {/* Stage indicator */}
-      <div className="bg-gray-900 rounded-lg p-4 mb-4">
-        <h3 className="text-center text-gray-400 mb-2 text-sm font-medium">STAGE PROGRESS</h3>
-        <div className="flex justify-center gap-2">
-          {[1, 2, 3, 4, 5].map(stage => (
-            <div
-              key={stage}
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                stage < currentStage
-                  ? "bg-green-600 text-white"
-                  : stage === currentStage
-                  ? "bg-primary text-primary-content"
-                  : "bg-gray-700 text-gray-500"
-              }`}
-            >
-              {stage < currentStage ? "✓" : stage}
-            </div>
-          ))}
-        </div>
-      </div>
+      <SolverSection title="Stage progress">
+        <StageIndicator total={5} current={currentStage} completedThrough={stageHistory.length} />
+      </SolverSection>
 
-      {/* Display number input - inputs first */}
-      <div className="bg-base-200 rounded-lg p-4 mb-4">
-        <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">
-          DISPLAY NUMBER
-        </h3>
-        <div className="flex justify-center gap-2">
-          {[1, 2, 3, 4].map(num => (
-            <button
-              key={num}
-              onClick={() => !isSolved && setDisplayNumber(num)}
-              disabled={isSolved}
-              className={`w-16 h-16 rounded-lg border-2 font-bold text-xl transition-all ${
-                displayNumber === num
-                  ? "bg-primary border-primary text-primary-content"
-                  : "bg-base-100 border-base-300 text-base-content hover:border-primary"
-              } ${isSolved ? "cursor-not-allowed opacity-50" : ""}`}
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SolverSection
+        title="Display number"
+        description="The large number shown on the module's display."
+      >
+        <SegmentedControl
+          value={displayNumber ?? 0}
+          onChange={(v) => !isSolved && setDisplayNumber(v as number)}
+          options={NUMBER_OPTIONS}
+          ariaLabel="Display number"
+          disabled={isSolved}
+          className="w-full justify-center"
+        />
+      </SolverSection>
 
-      {/* Module visualization - 4 buttons (input only; solution shown below) */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
-        <div className="flex justify-center gap-4">
-          {[0, 1, 2, 3].map(position => renderButton(position))}
+      <SolverSection
+        title="Button labels"
+        description="Set the number printed on each of the four buttons, in order."
+      >
+        <div className="grid grid-cols-4 gap-2">
+          {[0, 1, 2, 3].map((position) => {
+            const label = buttonLabels[position];
+            const isHighlighted = highlightedPosition === position + 1;
+            return (
+              <div key={position} className="flex flex-col items-center gap-1.5">
+                <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Pos {position + 1}
+                </div>
+                <div
+                  className={cn(
+                    "flex aspect-square w-full items-center justify-center rounded-xl border-2 text-2xl font-bold transition-all",
+                    isHighlighted
+                      ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shadow-md"
+                      : "border-border bg-muted/60 text-foreground",
+                  )}
+                >
+                  {label}
+                </div>
+                <SegmentedControl
+                  value={label}
+                  onChange={(v) => handleLabelChange(position, v as number)}
+                  options={NUMBER_OPTIONS}
+                  size="sm"
+                  ariaLabel={`Position ${position + 1} label`}
+                  disabled={isSolved}
+                  className="w-full"
+                />
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </SolverSection>
 
-      {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
         isSolveDisabled={displayNumber === null}
         isLoading={isLoading}
-        solveText={isSolved ? "Module Solved" : currentStage === 5 ? "Final Stage" : `Solve Stage ${currentStage}`}
+        isSolved={isSolved}
+        solveText={
+          isSolved
+            ? "Module Solved"
+            : currentStage === 5
+              ? "Final stage"
+              : `Solve stage ${currentStage}`
+        }
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Stage history - output below inputs */}
       {stageHistory.length > 0 && (
-        <div className="bg-base-200 rounded-lg p-4 mb-4">
-          <h3 className="text-center text-base-content/70 mb-3 text-sm font-medium">STAGE HISTORY</h3>
-          <div className="space-y-2 text-sm">
+        <SolverSection title="Stage history">
+          <ul className="space-y-2 text-sm">
             {stageHistory.map((stage, index) => (
-              <div key={index} className="flex flex-wrap items-center gap-3 bg-base-100 rounded-lg px-3 py-2">
-                <span className="shrink-0 font-medium text-base-content/70">Stage {stage.stage}</span>
-                <span className="shrink-0 text-base-content/60">Display <strong className="text-base-content">{stage.display}</strong></span>
+              <li
+                key={index}
+                className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2"
+              >
+                <span className="shrink-0 font-semibold">Stage {stage.stage}</span>
+                <span className="shrink-0 text-muted-foreground">
+                  Display <strong className="text-foreground">{stage.display}</strong>
+                </span>
                 <MemoryMiniGrid position={stage.position} label={stage.label} />
-                <span className="shrink-0 text-base-content/60">Position <strong className="text-base-content">{stage.position}</strong>, label <strong className="text-base-content">{stage.label}</strong></span>
-              </div>
+                <span className="shrink-0 text-muted-foreground">
+                  Position <strong className="text-foreground">{stage.position}</strong>, label{" "}
+                  <strong className="text-foreground">{stage.label}</strong>
+                </span>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </SolverSection>
       )}
 
-      {/* Solution - which button to press */}
       {result && !isSolved && (
         <SolverResult
           variant="success"
           title="Press this button"
           description={`Position ${result.position}, label ${result.label}`}
-          className="mb-4"
         />
       )}
 
-      {/* Twitch command display - one command per stage, all in one block */}
       {displayTwitchCommands.length > 0 && (
         <TwitchCommandDisplay command={displayTwitchCommands} />
       )}
 
-      {/* Solved-state summary - full sequence at a glance */}
-      {isSolved && stageHistory.length > 0 && (
-        <div className="bg-success/10 border border-success/30 rounded-lg p-4 mb-4 animate-fade-in">
-          <h3 className="text-center text-success font-medium mb-3 text-sm">SOLVED — Sequence</h3>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-            {stageHistory.map((stage, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <MemoryMiniGrid position={stage.position} label={stage.label} />
-                <span className="text-base-content">
-                  Stage {stage.stage}: position {stage.position}, label {stage.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Select the number shown on the display. Set the labels on each button (1-4).</p>
-        <p>Press solve to determine which button to press. The module has 5 stages.</p>
-      </div>
+      <SolverInstructions>
+        Memory has 5 stages. At each stage, the display shows a number and the
+        four buttons have numeric labels. The solver tracks what was pressed to
+        produce the correct answer for the next stage.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

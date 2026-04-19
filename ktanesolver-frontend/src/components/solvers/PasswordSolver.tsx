@@ -7,12 +7,13 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls,
   SolverResult,
 } from "../common";
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 
@@ -20,13 +21,11 @@ interface PasswordSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-// All possible password words from the enum
 export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   const [columnLetters, setColumnLetters] = useState<Record<number, string[]>>({});
   const [result, setResult] = useState<PasswordOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -40,27 +39,20 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
     markModuleSolved,
   } = useSolver();
 
-  // Save state to module when inputs change
-
   const moduleState = useMemo(
     () => ({ columnLetters, result, twitchCommand }),
     [columnLetters, result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
-    (state: { 
-      columnLetters?: Record<number, string[]>; 
-      result?: PasswordOutput | null; 
+    (state: {
+      columnLetters?: Record<number, string[]>;
+      result?: PasswordOutput | null;
       twitchCommand?: string;
       input?: { letters?: Record<number, string[]> };
     }) => {
-      // Prioritize the backend format (input.letters) over the local format
-      if (state.input?.letters) {
-        setColumnLetters(state.input.letters);
-      } else if (state.columnLetters) {
-        setColumnLetters(state.columnLetters);
-      }
-      
+      if (state.input?.letters) setColumnLetters(state.input.letters);
+      else if (state.columnLetters) setColumnLetters(state.columnLetters);
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
@@ -71,20 +63,15 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
     (solution: PasswordOutput) => {
       if (!solution || !solution.possibleWords) return;
       setResult(solution);
-
-      // Generate Twitch command when solution is restored
       if (solution.possibleWords.length === 1) {
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.PASSWORDS,
-          result: { password: solution.possibleWords[0] },
-        });
-        setTwitchCommand(command);
+        setTwitchCommand(
+          generateTwitchCommand({
+            moduleType: ModuleType.PASSWORDS,
+            result: { password: solution.possibleWords[0] },
+          }),
+        );
       }
-
-      // Mark as solved if the solution is resolved
-      if (solution.resolved) {
-        setIsSolved(true);
-      }
+      if (solution.resolved) setIsSolved(true);
     },
     [setIsSolved],
   );
@@ -106,46 +93,38 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
       }
       return null;
     },
-    inferSolved: (sol, currentModule) => 
+    inferSolved: (sol, currentModule) =>
       Boolean((currentModule as { solved?: boolean } | undefined)?.solved) || Boolean(sol?.resolved),
     currentModule,
     setIsSolved,
   });
 
   const handleColumnChange = (column: number, value: string) => {
-    // Filter to keep only uppercase letters and convert to array
-    const letters = value.split('')
-      .filter(letter => letter >= 'A' && letter <= 'Z');
-    setColumnLetters(prev => ({
-      ...prev,
-      [column]: letters
-    }));
+    const letters = value
+      .toUpperCase()
+      .split("")
+      .filter((l) => l >= "A" && l <= "Z");
+    setColumnLetters((prev) => ({ ...prev, [column]: letters }));
   };
 
   const handleSolve = async () => {
     if (!round || !currentModule || !bomb) return;
-    
     setIsLoading(true);
     clearError();
-    
     try {
-      const input = {
-        letters: columnLetters
-      };
-      
-      const response = await solvePassword(round.id, bomb.id, currentModule.id, { input });
+      const response = await solvePassword(round.id, bomb.id, currentModule.id, {
+        input: { letters: columnLetters },
+      });
       setResult(response.output);
-      
-      // Generate Twitch command if resolved
       if (response.output.resolved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.PASSWORDS,
-          result: { password: response.output.possibleWords[0] },
-        });
-        setTwitchCommand(command);
+        setTwitchCommand(
+          generateTwitchCommand({
+            moduleType: ModuleType.PASSWORDS,
+            result: { password: response.output.possibleWords[0] },
+          }),
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve password");
@@ -161,41 +140,38 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
     resetSolverState();
   };
 
-
   const hasAnyLetters = Object.values(columnLetters).some((arr) => arr.length > 0);
 
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="text-center">Password Module</CardTitle>
-          <p className="text-sm text-base-content/70 text-center">
-            Enter the letters in each column (e.g. ABC). Up to 6 letters per column.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap justify-center gap-4">
-            {[1, 2, 3, 4, 5].map((col) => (
-              <div key={col} className="flex flex-col items-center">
-                <label htmlFor={`password-column-${col}`} className="text-xs font-semibold text-base-content/80 mb-1.5">
-                  Column {col}
-                </label>
-                <Input
-                  id={`password-column-${col}`}
-                  type="text"
-                  className="text-center font-mono font-semibold text-lg w-24"
-                  placeholder="ABC"
-                  maxLength={6}
-                  value={(columnLetters[col] || []).join("")}
-                  onChange={(e) => handleColumnChange(col, e.target.value.toUpperCase())}
-                  disabled={isLoading}
-                  aria-label={`Column ${col} letters`}
-                />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <SolverSection
+        title="Password columns"
+        description="Enter the letters visible in each of the 5 columns (up to 6 per column)."
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((col) => (
+            <div key={col} className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`password-column-${col}`}
+                className="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+              >
+                Column {col}
+              </label>
+              <Input
+                id={`password-column-${col}`}
+                type="text"
+                className="text-center font-mono text-lg font-semibold uppercase tracking-widest"
+                placeholder="ABC"
+                maxLength={6}
+                value={(columnLetters[col] || []).join("")}
+                onChange={(e) => handleColumnChange(col, e.target.value)}
+                disabled={isLoading}
+                aria-label={`Column ${col} letters`}
+              />
+            </div>
+          ))}
+        </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={handleSolve}
@@ -210,37 +186,44 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
       {result && (
         <>
           {result.resolved && result.possibleWords.length === 1 ? (
-            <SolverResult
-              variant="success"
-              title={`Solution: ${result.possibleWords[0]}`}
-            />
+            <SolverResult variant="success" title={`Password: ${result.possibleWords[0]}`} />
           ) : (
             <SolverResult
               variant="warning"
               title="Multiple possibilities"
-              description="Enter more letters to narrow down."
+              description="Enter more letters to narrow the answer."
             />
           )}
-          <div className="mb-4">
-            <h4 className="font-semibold mb-2 text-sm text-base-content/80">
-              Possible words ({result.possibleWords.length})
-            </h4>
+          <SolverSection
+            title={`Candidates (${result.possibleWords.length})`}
+            plain={false}
+          >
             <div className="flex flex-wrap gap-2">
               {result.possibleWords.map((word) => (
                 <Badge
                   key={word}
-                  variant={result.resolved && result.possibleWords[0] === word ? "success" : "secondary"}
+                  variant={
+                    result.resolved && result.possibleWords[0] === word
+                      ? "success"
+                      : "secondary"
+                  }
                   className="font-mono text-sm py-1 px-3"
                 >
                   {word}
                 </Badge>
               ))}
             </div>
-          </div>
+          </SolverSection>
         </>
       )}
 
       <TwitchCommandDisplay command={twitchCommand} />
+
+      <SolverInstructions>
+        Each column holds the letters that appear as you scroll through that
+        position on the module. The solver narrows candidates as more letters
+        are entered.
+      </SolverInstructions>
     </SolverLayout>
   );
 }
