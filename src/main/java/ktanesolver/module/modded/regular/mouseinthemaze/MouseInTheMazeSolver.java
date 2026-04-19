@@ -20,7 +20,7 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
-import ktanesolver.module.vanilla.regular.maze.Cell;
+import ktanesolver.module.shared.grid.Cell;
 
 @Service
 @ModuleInfo(

@@ -3,7 +3,7 @@ package ktanesolver.module.modded.regular.mouseinthemaze;
 
 import java.util.Map;
 
-import ktanesolver.module.vanilla.regular.maze.Cell;
+import ktanesolver.module.shared.grid.Cell;
 
 /**
  * 10×10 cell grid with walls between cells.

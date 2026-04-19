@@ -9,12 +9,11 @@ import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
-import ktanesolver.entity.PortPlateEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.enums.PortType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.shared.edgework.BombEdgeworkUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -64,35 +63,6 @@ public class AdventureGameSolver extends AbstractModuleSolver<AdventureGameInput
 
 	private static String norm(String s) {
 		return s == null ? "" : s.trim().toUpperCase();
-	}
-
-	private static int getFirstNumericDigit(BombEntity bomb) {
-		String serial = bomb.getSerialNumber();
-		if (serial == null) return 0;
-		for (int i = 0; i < serial.length(); i++) {
-			char c = serial.charAt(i);
-			if (Character.isDigit(c)) return c - '0';
-		}
-		return 0;
-	}
-
-	private static boolean hasTwoOrMoreOfSamePort(BombEntity bomb) {
-		List<PortType> all = bomb.getPortPlates().stream()
-			.flatMap(p -> p.getPorts().stream())
-			.toList();
-		return all.size() != all.stream().distinct().count();
-	}
-
-	private static long litIndicatorCount(BombEntity bomb) {
-		return bomb.getIndicators().values().stream()
-			.filter(Boolean::booleanValue)
-			.count();
-	}
-
-	private static long unlitIndicatorCount(BombEntity bomb) {
-		return bomb.getIndicators().values().stream()
-			.filter(b -> !Boolean.TRUE.equals(b))
-			.count();
 	}
 
 	@Override
@@ -178,15 +148,15 @@ public class AdventureGameSolver extends AbstractModuleSolver<AdventureGameInput
 			case "BELLOWS" -> ("DRAGON".equals(enemy) || "EAGLE".equals(enemy)) ? pressure > 105 : pressure < 95;
 			case "CRYSTAL BALL" -> pInt > bomb.getLastDigit() && !"WIZARD".equals(enemy);
 			case "FEATHER" -> pDex > pStr && pDex > pInt;
-			case "HARD DRIVE" -> hasTwoOrMoreOfSamePort(bomb);
+			case "HARD DRIVE" -> BombEdgeworkUtils.hasDuplicatePorts(bomb);
 			case "LAMP" -> temp < 12 && !"LIZARD".equals(enemy);
-			case "MOONSTONE" -> unlitIndicatorCount(bomb) >= 2;
+			case "MOONSTONE" -> BombEdgeworkUtils.getUnlitIndicatorCount(bomb) >= 2;
 			case "SMALL DOG" -> !"DEMON".equals(enemy) && !"DRAGON".equals(enemy) && !"TROLL".equals(enemy);
 			case "STEPLADDER" -> heightInches < 48 && !"GOBLIN".equals(enemy) && !"LIZARD".equals(enemy);
-			case "SUNSTONE" -> litIndicatorCount(bomb) >= 2;
+			case "SUNSTONE" -> BombEdgeworkUtils.getLitIndicatorCount(bomb) >= 2;
 			case "SYMBOL" -> "DEMON".equals(enemy) || "GOLEM".equals(enemy) || temp > 31;
 			case "TICKET" -> heightInches >= 54 && gravity >= 9.2 && gravity <= 10.4;
-			case "TROPHY" -> pStr > getFirstNumericDigit(bomb) || "TROLL".equals(enemy);
+			case "TROPHY" -> pStr > BombEdgeworkUtils.getFirstSerialDigit(bomb) || "TROLL".equals(enemy);
 			default -> false;
 		};
 	}

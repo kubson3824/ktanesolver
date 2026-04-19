@@ -3,8 +3,6 @@ package ktanesolver.module.modded.regular.logic;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.dto.ModuleCatalogDto;
@@ -15,6 +13,7 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.shared.edgework.BombEdgeworkUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -54,31 +53,31 @@ public class LogicSolver extends AbstractModuleSolver<LogicInput, LogicOutput> {
 	private boolean evaluateStatement(BombEntity bomb, char letter) {
 		return switch (Character.toUpperCase(letter)) {
 			case 'A' -> bomb.getBatteryCount() == bomb.getIndicators().size();
-			case 'B' -> serialHasMoreLettersThanDigits(bomb);
+			case 'B' -> BombEdgeworkUtils.serialHasMoreLettersThanDigits(bomb);
 			case 'C' -> bomb.hasIndicator("IND");
 			case 'D' -> bomb.hasIndicator("FRK");
-			case 'E' -> getUnlitIndicatorCount(bomb) == 1;
-			case 'F' -> getDistinctPortTypeCount(bomb) > 1;
+			case 'E' -> BombEdgeworkUtils.getUnlitIndicatorCount(bomb) == 1;
+			case 'F' -> BombEdgeworkUtils.getDistinctPortTypeCount(bomb) > 1;
 			case 'G' -> bomb.getBatteryCount() >= 2;
 			case 'H' -> bomb.getBatteryCount() < 2;
 			case 'I' -> bomb.isLastDigitOdd();
 			case 'J' -> bomb.getBatteryCount() > 4;
-			case 'K' -> getLitIndicatorCount(bomb) == 1;
+			case 'K' -> BombEdgeworkUtils.getLitIndicatorCount(bomb) == 1;
 			case 'L' -> bomb.getIndicators().size() > 2;
-			case 'M' -> hasNoDuplicatePorts(bomb);
+			case 'M' -> !BombEdgeworkUtils.hasDuplicatePorts(bomb);
 			case 'N' -> bomb.getBatteryHolders() > 2;
-			case 'O' -> hasBothLitAndUnlit(bomb);
+			case 'O' -> BombEdgeworkUtils.hasBothLitAndUnlitIndicators(bomb);
 			case 'P' -> bomb.hasPort(PortType.PARALLEL);
-			case 'Q' -> getTotalPortCount(bomb) == 2;
+			case 'Q' -> BombEdgeworkUtils.getTotalPortCount(bomb) == 2;
 			case 'R' -> bomb.hasPort(PortType.PS2);
-			case 'S' -> getSerialDigitSum(bomb) > 10;
+			case 'S' -> BombEdgeworkUtils.getSerialDigitSum(bomb) > 10;
 			case 'T' -> bomb.hasIndicator("MSA");
 			case 'U' -> bomb.getBatteryHolders() == 1;
 			case 'V' -> bomb.serialHasVowel();
 			case 'W' -> bomb.getIndicators().isEmpty();
 			case 'X' -> bomb.getIndicators().size() == 1;
-			case 'Y' -> getTotalPortCount(bomb) > 5;
-			case 'Z' -> getTotalPortCount(bomb) < 2;
+			case 'Y' -> BombEdgeworkUtils.getTotalPortCount(bomb) > 5;
+			case 'Z' -> BombEdgeworkUtils.getTotalPortCount(bomb) < 2;
 			default -> throw new IllegalArgumentException("Invalid statement letter: " + letter);
 		};
 	}
@@ -94,60 +93,5 @@ public class LogicSolver extends AbstractModuleSolver<LogicInput, LogicOutput> {
 			case IMPL_LEFT -> !a || b;   // false only when a true and b false
 			case IMPL_RIGHT -> a || !b;  // false only when a false and b true
 		};
-	}
-
-	private static int getTotalPortCount(BombEntity bomb) {
-		return bomb.getPortPlates().stream()
-			.mapToInt(p -> p.getPorts().size())
-			.sum();
-	}
-
-	private static long getDistinctPortTypeCount(BombEntity bomb) {
-		Set<PortType> distinct = bomb.getPortPlates().stream()
-			.flatMap(p -> p.getPorts().stream())
-			.collect(Collectors.toSet());
-		return distinct.size();
-	}
-
-	private static boolean hasNoDuplicatePorts(BombEntity bomb) {
-		List<PortType> all = bomb.getPortPlates().stream()
-			.flatMap(p -> p.getPorts().stream())
-			.toList();
-		return all.size() == all.stream().distinct().count();
-	}
-
-	private static int getSerialDigitSum(BombEntity bomb) {
-		String s = bomb.getSerialNumber();
-		if (s == null) return 0;
-		return s.chars()
-			.filter(Character::isDigit)
-			.map(c -> c - '0')
-			.sum();
-	}
-
-	private static boolean serialHasMoreLettersThanDigits(BombEntity bomb) {
-		String s = bomb.getSerialNumber();
-		if (s == null) return false;
-		long letters = s.chars().filter(Character::isLetter).count();
-		long digits = s.chars().filter(Character::isDigit).count();
-		return letters > digits;
-	}
-
-	private static long getLitIndicatorCount(BombEntity bomb) {
-		return bomb.getIndicators().values().stream()
-			.filter(Boolean::booleanValue)
-			.count();
-	}
-
-	private static long getUnlitIndicatorCount(BombEntity bomb) {
-		return bomb.getIndicators().values().stream()
-			.filter(b -> !Boolean.TRUE.equals(b))
-			.count();
-	}
-
-	private static boolean hasBothLitAndUnlit(BombEntity bomb) {
-		boolean hasLit = bomb.getIndicators().values().stream().anyMatch(Boolean::booleanValue);
-		boolean hasUnlit = bomb.getIndicators().values().stream().anyMatch(b -> !Boolean.TRUE.equals(b));
-		return hasLit && hasUnlit;
 	}
 }

@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import ktanesolver.module.vanilla.regular.maze.Cell;
+import ktanesolver.module.shared.grid.Cell;
 
 public final class MouseInTheMazeAsciiPrinter {
 

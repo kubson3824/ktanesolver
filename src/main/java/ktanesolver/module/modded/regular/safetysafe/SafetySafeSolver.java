@@ -3,8 +3,6 @@ package ktanesolver.module.modded.regular.safetysafe;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.dto.ModuleCatalogDto;
@@ -12,9 +10,9 @@ import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
-import ktanesolver.enums.PortType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.shared.edgework.BombEdgeworkUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -76,7 +74,7 @@ public class SafetySafeSolver extends AbstractModuleSolver<SafetySafeInput, Safe
 		}
 		serial = serial.toUpperCase();
 
-		int portTypeCount = getDistinctPortTypeCount(bomb);
+		int portTypeCount = BombEdgeworkUtils.getDistinctPortTypeCount(bomb);
 		int litMatching = countLitIndicatorsMatchingSerial(bomb, serial);
 		int unlitMatching = countUnlitIndicatorsMatchingSerial(bomb, serial);
 
@@ -101,13 +99,6 @@ public class SafetySafeSolver extends AbstractModuleSolver<SafetySafeInput, Safe
 		dialTurns.add(Math.floorMod(base + sumAll, 12));
 
 		return success(new SafetySafeOutput(dialTurns));
-	}
-
-	private static int getDistinctPortTypeCount(BombEntity bomb) {
-		Set<PortType> distinct = bomb.getPortPlates().stream()
-			.flatMap(p -> p.getPorts().stream())
-			.collect(Collectors.toSet());
-		return distinct.size();
 	}
 
 	/** Indicator "matches" if any letter in its label appears in the serial (case-insensitive). */

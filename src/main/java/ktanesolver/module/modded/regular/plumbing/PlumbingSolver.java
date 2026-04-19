@@ -2,9 +2,6 @@
 package ktanesolver.module.modded.regular.plumbing;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import ktanesolver.annotation.ModuleInfo;
 import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.entity.BombEntity;
@@ -14,6 +11,7 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.shared.edgework.BombEdgeworkUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -49,11 +47,11 @@ public class PlumbingSolver extends AbstractModuleSolver<PlumbingInput, Plumbing
 	// --- Red Input: Against duplicate serial chars, duplicate ports; For exactly 1 RJ45, serial contains '1'
 	private boolean isRedInputActive(BombEntity bomb) {
 		int forCount = 0;
-		if (getPortCount(bomb, PortType.RJ45) == 1) forCount++;
-		if (serialContains(bomb, '1')) forCount++;
+		if (BombEdgeworkUtils.countPortPlatesWithPortType(bomb, PortType.RJ45) == 1) forCount++;
+		if (BombEdgeworkUtils.serialContains(bomb, '1')) forCount++;
 		int againstCount = 0;
-		if (hasDuplicateSerialCharacters(bomb)) againstCount++;
-		if (hasDuplicatePorts(bomb)) againstCount++;
+		if (BombEdgeworkUtils.hasDuplicateSerialCharacters(bomb)) againstCount++;
+		if (BombEdgeworkUtils.hasDuplicatePorts(bomb)) againstCount++;
 		return forCount > againstCount;
 	}
 
@@ -61,10 +59,10 @@ public class PlumbingSolver extends AbstractModuleSolver<PlumbingInput, Plumbing
 	private boolean isYellowInputActive(BombEntity bomb) {
 		int forCount = 0;
 		if (bomb.hasPort(PortType.STEREO_RCA)) forCount++;
-		if (serialContains(bomb, '2')) forCount++;
+		if (BombEdgeworkUtils.serialContains(bomb, '2')) forCount++;
 		int againstCount = 0;
-		if (serialContains(bomb, '1') || serialContains(bomb, 'L')) againstCount++;
-		if (!hasDuplicatePorts(bomb)) againstCount++;
+		if (BombEdgeworkUtils.serialContains(bomb, '1') || BombEdgeworkUtils.serialContains(bomb, 'L')) againstCount++;
+		if (!BombEdgeworkUtils.hasDuplicatePorts(bomb)) againstCount++;
 		return forCount > againstCount;
 	}
 
@@ -74,7 +72,7 @@ public class PlumbingSolver extends AbstractModuleSolver<PlumbingInput, Plumbing
 		boolean yellowIn = isYellowInputActive(bomb);
 		int forCount = 0;
 		if (bomb.hasPort(PortType.DVI)) forCount++;
-		if (countDigitsInSerial(bomb) >= 3) forCount++;
+		if (BombEdgeworkUtils.countSerialDigits(bomb) >= 3) forCount++;
 		int againstCount = 0;
 		if (!yellowIn) againstCount++;
 		if (!redIn) againstCount++;
@@ -86,10 +84,10 @@ public class PlumbingSolver extends AbstractModuleSolver<PlumbingInput, Plumbing
 		if (!redIn && !yellowIn && !greenIn) return true;
 		int forCount = 0;
 		if (bomb.getBatteryCount() >= 4) forCount++;
-		if (getDistinctPortTypeCount(bomb) >= 4) forCount++;
+		if (BombEdgeworkUtils.getDistinctPortTypeCount(bomb) >= 4) forCount++;
 		int againstCount = 0;
 		if (bomb.getBatteryCount() == 0) againstCount++;
-		if (getTotalPortCount(bomb) == 0) againstCount++;
+		if (BombEdgeworkUtils.getTotalPortCount(bomb) == 0) againstCount++;
 		return forCount > againstCount;
 	}
 
@@ -101,30 +99,30 @@ public class PlumbingSolver extends AbstractModuleSolver<PlumbingInput, Plumbing
 		if (bomb.hasPort(PortType.SERIAL)) forCount++;
 		int againstCount = 0;
 		if (activeIn > 2) againstCount++;
-		if (countDigitsInSerial(bomb) > 2) againstCount++;
+		if (BombEdgeworkUtils.countSerialDigits(bomb) > 2) againstCount++;
 		return forCount > againstCount;
 	}
 
 	// --- Yellow Output: Against Green input active, serial doesn't contain '2'; For serial '4' or '8', duplicate ports
 	private boolean isYellowOutputActive(BombEntity bomb, boolean greenIn) {
 		int forCount = 0;
-		if (serialContains(bomb, '4') || serialContains(bomb, '8')) forCount++;
-		if (hasDuplicatePorts(bomb)) forCount++;
+		if (BombEdgeworkUtils.serialContains(bomb, '4') || BombEdgeworkUtils.serialContains(bomb, '8')) forCount++;
+		if (BombEdgeworkUtils.hasDuplicatePorts(bomb)) forCount++;
 		int againstCount = 0;
 		if (greenIn) againstCount++;
-		if (!serialContains(bomb, '2')) againstCount++;
+		if (!BombEdgeworkUtils.serialContains(bomb, '2')) againstCount++;
 		return forCount > againstCount;
 	}
 
 	// --- Green Output: Against serial more than 3 digits, less than 3 ports; For exactly 3 ports, exactly 3 inputs active
 	private boolean isGreenOutputActive(BombEntity bomb, List<Boolean> activeInputs) {
 		long activeIn = activeInputs.stream().filter(Boolean::booleanValue).count();
-		int totalPorts = getTotalPortCount(bomb);
+		int totalPorts = BombEdgeworkUtils.getTotalPortCount(bomb);
 		int forCount = 0;
 		if (totalPorts == 3) forCount++;
 		if (activeIn == 3) forCount++;
 		int againstCount = 0;
-		if (countDigitsInSerial(bomb) > 3) againstCount++;
+		if (BombEdgeworkUtils.countSerialDigits(bomb) > 3) againstCount++;
 		if (totalPorts < 3) againstCount++;
 		return forCount > againstCount;
 	}
@@ -142,48 +140,5 @@ public class PlumbingSolver extends AbstractModuleSolver<PlumbingInput, Plumbing
 		if (!bomb.hasPort(PortType.PARALLEL)) againstCount++;
 		if (bomb.getBatteryCount() < 2) againstCount++;
 		return forCount > againstCount;
-	}
-
-	private static boolean serialContains(BombEntity bomb, char c) {
-		String s = bomb.getSerialNumber();
-		return s != null && s.toUpperCase().indexOf(Character.toUpperCase(c)) >= 0;
-	}
-
-	private static int countDigitsInSerial(BombEntity bomb) {
-		String s = bomb.getSerialNumber();
-		return s == null ? 0 : (int) s.chars().filter(Character::isDigit).count();
-	}
-
-	private static boolean hasDuplicateSerialCharacters(BombEntity bomb) {
-		String s = bomb.getSerialNumber();
-		if (s == null || s.isEmpty()) return false;
-		Set<Integer> seen = s.toUpperCase().chars().boxed().collect(Collectors.toSet());
-		return s.length() != seen.size();
-	}
-
-	private static boolean hasDuplicatePorts(BombEntity bomb) {
-		List<PortType> all = bomb.getPortPlates().stream()
-			.flatMap(p -> p.getPorts().stream())
-			.collect(Collectors.toList());
-		return all.size() != all.stream().distinct().count();
-	}
-
-	private static int getTotalPortCount(BombEntity bomb) {
-		return bomb.getPortPlates().stream()
-			.mapToInt(p -> p.getPorts().size())
-			.sum();
-	}
-
-	private static long getDistinctPortTypeCount(BombEntity bomb) {
-		Set<PortType> distinct = bomb.getPortPlates().stream()
-			.flatMap(p -> p.getPorts().stream())
-			.collect(Collectors.toSet());
-		return distinct.size();
-	}
-
-	private static int getPortCount(BombEntity bomb, PortType type) {
-		return (int) bomb.getPortPlates().stream()
-			.filter(p -> p.getPorts().contains(type))
-			.count();
 	}
 }

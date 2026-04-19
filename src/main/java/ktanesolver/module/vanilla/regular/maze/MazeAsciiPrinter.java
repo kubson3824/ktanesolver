@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import ktanesolver.module.shared.grid.Cell;
+
 public final class MazeAsciiPrinter {
 
 	private MazeAsciiPrinter() {

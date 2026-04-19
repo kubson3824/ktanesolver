@@ -1,7 +1,7 @@
 package ktanesolver.module.modded.regular.mouseinthemaze;
 
 import ktanesolver.logic.ModuleInput;
-import ktanesolver.module.vanilla.regular.maze.Cell;
+import ktanesolver.module.shared.grid.Cell;
 
 /**
  * Either (mazeIndex, start) for legacy flow, or (sphereColorAtPosition, stepsToWall) for sphere-based identification.

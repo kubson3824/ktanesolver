@@ -7,6 +7,7 @@ import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.shared.edgework.BombEdgeworkUtils;
 import org.springframework.stereotype.Service;
 
 import ktanesolver.enums.ModuleType;
@@ -26,10 +27,10 @@ public class LaundrySolver extends AbstractModuleSolver<LaundryInput, LaundryOut
 
     @Override
     protected SolveResult<LaundryOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, LaundryInput input) {
-        LaundryItem item = indexedValue(LaundryItem.values(), getUnsolvedRegularModuleCount(bomb) + bomb.getIndicators().size());
+        LaundryItem item = indexedValue(LaundryItem.values(), BombEdgeworkUtils.countUnsolvedRegularModules(bomb) + bomb.getIndicators().size());
         LaundryMaterial material = indexedValue(
             LaundryMaterial.values(),
-            getTotalPortCount(bomb) + getSolvedModuleCount(bomb) - bomb.getBatteryHolders()
+            BombEdgeworkUtils.getTotalPortCount(bomb) + BombEdgeworkUtils.countSolvedModules(bomb) - bomb.getBatteryHolders()
         );
         LaundryColor color = indexedValue(LaundryColor.values(), bomb.getLastDigit() + bomb.getBatteryCount());
 
@@ -83,25 +84,6 @@ public class LaundrySolver extends AbstractModuleSolver<LaundryInput, LaundryOut
             }
         }
         return false;
-    }
-
-    private static int getSolvedModuleCount(BombEntity bomb) {
-        return (int) bomb.getModules().stream()
-            .filter(ModuleEntity::isSolved)
-            .count();
-    }
-
-    private static int getUnsolvedRegularModuleCount(BombEntity bomb) {
-        return (int) bomb.getModules().stream()
-            .filter(module -> !module.isSolved())
-            .filter(module -> !module.getType().isNeedy())
-            .count();
-    }
-
-    private static int getTotalPortCount(BombEntity bomb) {
-        return bomb.getPortPlates().stream()
-            .mapToInt(plate -> plate.getPorts().size())
-            .sum();
     }
 
     private static <T> T indexedValue(T[] values, int rawIndex) {

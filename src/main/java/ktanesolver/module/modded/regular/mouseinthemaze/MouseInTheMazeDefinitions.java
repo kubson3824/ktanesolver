@@ -7,7 +7,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import ktanesolver.module.vanilla.regular.maze.Cell;
+import ktanesolver.module.shared.grid.Cell;
 
 /**
  * Six mazes (10×10 grid) and their torus→sphere tables.

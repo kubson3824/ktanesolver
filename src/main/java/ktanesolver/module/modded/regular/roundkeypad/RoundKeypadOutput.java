@@ -4,7 +4,7 @@ package ktanesolver.module.modded.regular.roundkeypad;
 import java.util.List;
 
 import ktanesolver.logic.ModuleOutput;
-import ktanesolver.module.vanilla.regular.keypads.KeypadSymbol;
+import ktanesolver.module.shared.keypad.KeypadSymbol;
 
 public record RoundKeypadOutput(List<KeypadSymbol> symbolsToPress) implements ModuleOutput {
 }

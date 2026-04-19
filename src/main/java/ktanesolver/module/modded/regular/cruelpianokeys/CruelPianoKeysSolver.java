@@ -12,7 +12,8 @@ import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
-import ktanesolver.module.modded.regular.pianokeys.PianoKeysNote;
+import ktanesolver.module.shared.edgework.BombEdgeworkUtils;
+import ktanesolver.module.shared.music.PianoKeysNote;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -115,24 +116,24 @@ public class CruelPianoKeysSolver extends AbstractModuleSolver<CruelPianoKeysInp
 		// 1. Breve AND T; 2+ indicators → left-most digit of serial → RI
 		if (symbols.contains(CruelPianoKeysSymbol.BREVE) && symbols.contains(CruelPianoKeysSymbol.T)
 			&& bomb.getIndicators().size() >= 2) {
-			return new RuleMatch(getLeftmostDigit(bomb), Transformation.RI, 0);
+			return new RuleMatch(BombEdgeworkUtils.getFirstSerialDigit(bomb), Transformation.RI, 0);
 		}
 		// 2. # or double sharp; empty port plate → battery holders (mod 10) → P, transpose down by minutes remaining
 		if ((symbols.contains(CruelPianoKeysSymbol.SHARP) || symbols.contains(CruelPianoKeysSymbol.DOUBLE_SHARP))
-			&& hasEmptyPortPlate(bomb)) {
+			&& BombEdgeworkUtils.hasEmptyPortPlate(bomb)) {
 			int idx = normalize0to9(bomb.getBatteryHolders());
 			return new RuleMatch(idx, Transformation.P, -minutesRemaining);
 		}
 		// 3. U or down bow; 2+ of a certain type of port → LSD of completed modules → I
 		if ((symbols.contains(CruelPianoKeysSymbol.U) || symbols.contains(CruelPianoKeysSymbol.DOWN_BOW))
-			&& hasTwoOrMoreOfSamePortType(bomb)) {
+			&& BombEdgeworkUtils.hasTwoOrMoreOfAnyPortType(bomb)) {
 			long completed = bomb.getModules().stream().filter(ModuleEntity::isSolved).count();
 			return new RuleMatch((int)(completed % 10), Transformation.I, 0);
 		}
 		// 4. B AND 16th rest; 2+ port plates → 9 minus unlit indicators (normalize 0-9) → R
 		if (symbols.contains(CruelPianoKeysSymbol.B) && symbols.contains(CruelPianoKeysSymbol.SIXTEENTH_REST)
 			&& bomb.getPortPlates().size() >= 2) {
-			long unlit = bomb.getIndicators().values().stream().filter(b -> !Boolean.TRUE.equals(b)).count();
+			long unlit = BombEdgeworkUtils.getUnlitIndicatorCount(bomb);
 			int idx = normalize0to9(9 - (int)unlit);
 			return new RuleMatch(idx, Transformation.R, 0);
 		}
@@ -146,17 +147,17 @@ public class CruelPianoKeysSolver extends AbstractModuleSolver<CruelPianoKeysInp
 		if ((symbols.contains(CruelPianoKeysSymbol.N) || symbols.contains(CruelPianoKeysSymbol.M))
 			&& (bomb.getBatteryCount() % 2 == 0)) {
 			int idx = bomb.hasPort(PortType.DVI) ? 7 : 3;
-			int ports = getTotalPortCount(bomb);
+			int ports = BombEdgeworkUtils.getTotalPortCount(bomb);
 			return new RuleMatch(idx, Transformation.P, ports);
 		}
 		// 7. b or quarter rest; indicator with no vowels in label → 8 → I
 		if ((symbols.contains(CruelPianoKeysSymbol.B_LOWER) || symbols.contains(CruelPianoKeysSymbol.QUARTER_REST))
-			&& hasIndicatorWithNoVowels(bomb)) {
+			&& BombEdgeworkUtils.hasIndicatorWithNoVowels(bomb)) {
 			return new RuleMatch(8, Transformation.I, 0);
 		}
 		// 8. down bow or 16th rest; less than 2 ports → 4 → R
 		if ((symbols.contains(CruelPianoKeysSymbol.DOWN_BOW) || symbols.contains(CruelPianoKeysSymbol.SIXTEENTH_REST))
-			&& getTotalPortCount(bomb) < 2) {
+			&& BombEdgeworkUtils.getTotalPortCount(bomb) < 2) {
 			return new RuleMatch(4, Transformation.R, 0);
 		}
 		// 9. breve or double sharp; (no other requirements) → 5 → P
@@ -166,44 +167,11 @@ public class CruelPianoKeysSolver extends AbstractModuleSolver<CruelPianoKeysInp
 		return null;
 	}
 
-	private static int getLeftmostDigit(BombEntity bomb) {
-		String s = bomb.getSerialNumber();
-		if (s == null) return 0;
-		return s.chars()
-			.filter(Character::isDigit)
-			.map(c -> c - '0')
-			.findFirst()
-			.orElse(0);
-	}
-
 	private static int normalize0to9(int value) {
 		int v = value;
 		while (v > 9) v -= 10;
 		while (v < 0) v += 10;
 		return v;
-	}
-
-	private static boolean hasEmptyPortPlate(BombEntity bomb) {
-		return bomb.getPortPlates().stream().anyMatch(p -> p.getPorts().isEmpty());
-	}
-
-	private static boolean hasTwoOrMoreOfSamePortType(BombEntity bomb) {
-		for (PortType type : PortType.values()) {
-			long count = bomb.getPortPlates().stream().filter(p -> p.getPorts().contains(type)).count();
-			if (count >= 2) return true;
-		}
-		return false;
-	}
-
-	private static int getTotalPortCount(BombEntity bomb) {
-		return bomb.getPortPlates().stream()
-			.mapToInt(p -> p.getPorts().size())
-			.sum();
-	}
-
-	private static boolean hasIndicatorWithNoVowels(BombEntity bomb) {
-		return bomb.getIndicators().keySet().stream()
-			.anyMatch(label -> label.chars().noneMatch(c -> "AEIOU".indexOf(Character.toUpperCase(c)) >= 0));
 	}
 
 	private List<PianoKeysNote> applyTransformation(List<PianoKeysNote> row, Transformation t) {

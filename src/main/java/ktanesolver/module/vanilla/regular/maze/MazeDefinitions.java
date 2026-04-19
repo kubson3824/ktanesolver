@@ -3,6 +3,8 @@ package ktanesolver.module.vanilla.regular.maze;
 
 import java.util.Set;
 
+import ktanesolver.module.shared.grid.Cell;
+
 public class MazeDefinitions {
 	public static final Maze MAZE_1 = new Maze(
 		Set.of(new Cell(2, 1), new Cell(3, 6)),

@@ -4,6 +4,8 @@ package ktanesolver.module.vanilla.regular.maze;
 import java.util.List;
 import java.util.Set;
 
+import ktanesolver.module.shared.grid.Cell;
+
 public final class MazeRegistry {
 
 	public static final List<Maze> MAZES = List.of(

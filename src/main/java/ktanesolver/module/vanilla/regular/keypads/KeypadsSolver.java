@@ -15,6 +15,8 @@ import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.module.shared.keypad.KeypadColumns;
+import ktanesolver.module.shared.keypad.KeypadSymbol;
 
 @Service
 @ModuleInfo (type = ModuleType.KEYPADS, id = "keypads", name = "Keypads", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Press buttons in the correct sequence", tags = {

@@ -13,6 +13,7 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.enums.PortType;
 import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.module.shared.music.PianoKeysNote;
 
 @Service
 @ModuleInfo (type = ModuleType.PIANO_KEYS, id = "piano_keys", name = "Piano Keys", category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR, description = "Play the correct sequence of piano keys", tags = {

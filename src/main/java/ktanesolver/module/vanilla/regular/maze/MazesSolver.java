@@ -12,6 +12,7 @@ import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.module.shared.grid.Cell;
 
 @Service
 @ModuleInfo (type = ModuleType.MAZES, id = "mazes", name = "Mazes", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Navigate the maze following the rules", tags = {

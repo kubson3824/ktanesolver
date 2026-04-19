@@ -1,7 +1,7 @@
 
-package ktanesolver.module.vanilla.regular.keypads;
+package ktanesolver.module.shared.keypad;
 
-import static ktanesolver.module.vanilla.regular.keypads.KeypadSymbol.*;
+import static ktanesolver.module.shared.keypad.KeypadSymbol.*;
 
 import java.util.List;
 

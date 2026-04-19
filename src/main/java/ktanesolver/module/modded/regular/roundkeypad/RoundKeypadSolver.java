@@ -15,8 +15,8 @@ import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
-import ktanesolver.module.vanilla.regular.keypads.KeypadSymbol;
-import ktanesolver.module.vanilla.regular.keypads.KeypadColumns;
+import ktanesolver.module.shared.keypad.KeypadColumns;
+import ktanesolver.module.shared.keypad.KeypadSymbol;
 
 @Service
 @ModuleInfo (type = ModuleType.ROUND_KEYPAD, id = "roundkeypad", name = "Round Keypad", category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR, description = "Press all buttons that have a symbol not present on the correct column", tags = {
