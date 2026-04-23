@@ -7,11 +7,15 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  StageIndicator,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls,
+  SolverResult,
 } from "../common";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { cn } from "../../lib/cn";
 
 interface SimonStatesSolverProps {
   bomb: BombEntity | null | undefined;
@@ -23,53 +27,81 @@ interface StageResult {
   press: SimonStatesColor;
 }
 
-const COLOR_CONFIG: {
+interface ColorSpec {
   color: SimonStatesColor;
-  display: string;
-  btnClass: string;
-  lightClass: string;
-  bgClass: string;
-  textClass: string;
-}[] = [
+  label: string;
+  /** Solid button base (darker when idle). */
+  base: string;
+  /** Solid button lit (selected / highlighted). */
+  lit: string;
+  /** Chip bg/border for sequence list. */
+  chip: string;
+  /** Chip text color. */
+  chipText: string;
+}
+
+const COLORS: readonly ColorSpec[] = [
   {
     color: "RED",
-    display: "Red",
-    btnClass: "bg-red-600 hover:bg-red-500 border-red-700",
-    lightClass: "bg-red-400 shadow-red-400",
-    bgClass: "bg-red-900/30 border-red-800",
-    textClass: "text-red-300",
-  },
-  {
-    color: "BLUE",
-    display: "Blue",
-    btnClass: "bg-blue-600 hover:bg-blue-500 border-blue-700",
-    lightClass: "bg-blue-400 shadow-blue-400",
-    bgClass: "bg-blue-900/30 border-blue-800",
-    textClass: "text-blue-300",
-  },
-  {
-    color: "GREEN",
-    display: "Green",
-    btnClass: "bg-green-600 hover:bg-green-500 border-green-700",
-    lightClass: "bg-green-400 shadow-green-400",
-    bgClass: "bg-green-900/30 border-green-800",
-    textClass: "text-green-300",
+    label: "Red",
+    base: "bg-red-700 hover:bg-red-600",
+    lit: "bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.65)]",
+    chip: "bg-red-500/15 border-red-500/40",
+    chipText: "text-red-700 dark:text-red-300",
   },
   {
     color: "YELLOW",
-    display: "Yellow",
-    btnClass: "bg-yellow-500 hover:bg-yellow-400 border-yellow-600",
-    lightClass: "bg-yellow-300 shadow-yellow-300",
-    bgClass: "bg-yellow-900/30 border-yellow-800",
-    textClass: "text-yellow-300",
+    label: "Yellow",
+    base: "bg-yellow-600 hover:bg-yellow-500",
+    lit: "bg-yellow-300 shadow-[0_0_18px_rgba(253,224,71,0.7)]",
+    chip: "bg-yellow-500/15 border-yellow-500/40",
+    chipText: "text-yellow-700 dark:text-yellow-300",
   },
-];
+  {
+    color: "GREEN",
+    label: "Green",
+    base: "bg-green-700 hover:bg-green-600",
+    lit: "bg-green-400 shadow-[0_0_18px_rgba(74,222,128,0.7)]",
+    chip: "bg-green-500/15 border-green-500/40",
+    chipText: "text-green-700 dark:text-green-300",
+  },
+  {
+    color: "BLUE",
+    label: "Blue",
+    base: "bg-blue-700 hover:bg-blue-600",
+    lit: "bg-blue-400 shadow-[0_0_18px_rgba(96,165,250,0.7)]",
+    chip: "bg-blue-500/15 border-blue-500/40",
+    chipText: "text-blue-700 dark:text-blue-300",
+  },
+] as const;
 
 // Module button layout: RED top-left, YELLOW top-right, GREEN bottom-left, BLUE bottom-right
 const GRID_LAYOUT: SimonStatesColor[] = ["RED", "YELLOW", "GREEN", "BLUE"];
 
-function cfg(color: SimonStatesColor) {
-  return COLOR_CONFIG.find((c) => c.color === color)!;
+function spec(color: SimonStatesColor): ColorSpec {
+  return COLORS.find((c) => c.color === color)!;
+}
+
+function Chip({
+  color,
+  className,
+}: {
+  color: SimonStatesColor;
+  className?: string;
+}) {
+  const s = spec(color);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+        s.chip,
+        s.chipText,
+        className,
+      )}
+    >
+      {s.label}
+    </span>
+  );
 }
 
 export default function SimonStatesSolver({ bomb }: SimonStatesSolverProps) {
@@ -96,32 +128,27 @@ export default function SimonStatesSolver({ bomb }: SimonStatesSolverProps) {
 
   const moduleState = useMemo(
     () => ({ topLeft, currentStage, stageHistory, result, twitchCommands }),
-    [topLeft, currentStage, stageHistory, result, twitchCommands]
+    [topLeft, currentStage, stageHistory, result, twitchCommands],
   );
 
-  const onRestoreState = useCallback(
-    (state: unknown) => {
-      const s = state as Record<string, unknown>;
-      // Backend shape: { pressHistory: SimonStatesColor[], topLeft: SimonStatesColor }
-      if (Array.isArray(s.pressHistory)) {
-        const pressHistory = s.pressHistory as SimonStatesColor[];
-        setCurrentStage(Math.min(pressHistory.length + 1, 4));
-        if (typeof s.topLeft === "string") setTopLeft(s.topLeft as SimonStatesColor);
-        // Can't reconstruct full history without flash data, so just set stage
-        setStageHistory([]);
-        setResult(null);
-        setFlashes(new Set());
-        return;
-      }
-      // Frontend-persisted shape
+  const onRestoreState = useCallback((state: unknown) => {
+    const s = state as Record<string, unknown>;
+    if (Array.isArray(s.pressHistory)) {
+      const pressHistory = s.pressHistory as SimonStatesColor[];
+      setCurrentStage(Math.min(pressHistory.length + 1, 4));
       if (typeof s.topLeft === "string") setTopLeft(s.topLeft as SimonStatesColor);
-      if (typeof s.currentStage === "number") setCurrentStage(s.currentStage);
-      if (Array.isArray(s.stageHistory)) setStageHistory(s.stageHistory as StageResult[]);
-      if (typeof s.result === "string" || s.result === null) setResult(s.result as SimonStatesColor | null);
-      if (Array.isArray(s.twitchCommands)) setTwitchCommands(s.twitchCommands as string[]);
-    },
-    []
-  );
+      setStageHistory([]);
+      setResult(null);
+      setFlashes(new Set());
+      return;
+    }
+    if (typeof s.topLeft === "string") setTopLeft(s.topLeft as SimonStatesColor);
+    if (typeof s.currentStage === "number") setCurrentStage(s.currentStage);
+    if (Array.isArray(s.stageHistory)) setStageHistory(s.stageHistory as StageResult[]);
+    if (typeof s.result === "string" || s.result === null)
+      setResult(s.result as SimonStatesColor | null);
+    if (Array.isArray(s.twitchCommands)) setTwitchCommands(s.twitchCommands as string[]);
+  }, []);
 
   const onRestoreSolution = useCallback((solution: { press: SimonStatesColor } | null) => {
     if (!solution) return;
@@ -129,7 +156,13 @@ export default function SimonStatesSolver({ bomb }: SimonStatesSolverProps) {
   }, []);
 
   useSolverModulePersistence<
-    { topLeft: SimonStatesColor | null; currentStage: number; stageHistory: StageResult[]; result: SimonStatesColor | null; twitchCommands: string[] },
+    {
+      topLeft: SimonStatesColor | null;
+      currentStage: number;
+      stageHistory: StageResult[];
+      result: SimonStatesColor | null;
+      twitchCommands: string[];
+    },
     { press: SimonStatesColor } | null
   >({
     state: moduleState,
@@ -232,160 +265,131 @@ export default function SimonStatesSolver({ bomb }: SimonStatesSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Top-left colour picker */}
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium text-base-content">
-            Top-left button colour
-          </CardTitle>
-          <p className="text-sm text-base-content/60">
-            Which colour is in the top-left position on the module?
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            {COLOR_CONFIG.map((c) => {
-              const selected = topLeft === c.color;
+      <SolverSection
+        title="Top-left button colour"
+        description="Which colour is in the top-left position on the module? Locked after the first stage."
+      >
+        <div className="flex flex-wrap gap-2">
+          {COLORS.map((c) => {
+            const selected = topLeft === c.color;
+            return (
+              <button
+                key={c.color}
+                type="button"
+                onClick={() => setTopLeft(c.color)}
+                disabled={topLeftLocked}
+                aria-pressed={selected}
+                className={cn(
+                  "inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors",
+                  selected
+                    ? cn(c.chip, c.chipText, "ring-2 ring-ring ring-offset-1 ring-offset-background")
+                    : cn(c.chip, c.chipText, "opacity-60 hover:opacity-100"),
+                  topLeftLocked && "cursor-not-allowed opacity-60",
+                )}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      </SolverSection>
+
+      <SolverSection
+        title="Stage progress"
+        description={isSolved ? "All 4 stages complete." : `Stage ${currentStage} of 4`}
+      >
+        <StageIndicator
+          total={4}
+          current={isSolved ? 5 : currentStage}
+          completedThrough={isSolved ? 4 : currentStage - 1}
+        />
+      </SolverSection>
+
+      {!isSolved && (
+        <SolverSection
+          title={`Stage ${currentStage} flashes`}
+          description="Toggle every colour that lit up during this stage."
+        >
+          <div className="mx-auto grid max-w-[260px] grid-cols-2 gap-3">
+            {GRID_LAYOUT.map((color) => {
+              const c = spec(color);
+              const active = flashes.has(color);
               return (
                 <button
-                  key={c.color}
+                  key={color}
                   type="button"
-                  disabled={topLeftLocked}
-                  onClick={() => setTopLeft(c.color)}
-                  className={`px-4 py-2 rounded-lg border-2 font-semibold text-sm transition-all ${
-                    selected
-                      ? `${c.lightClass} shadow-lg text-white border-transparent`
-                      : `${c.btnClass} text-white`
-                  } ${topLeftLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                  onClick={() => toggleFlash(color)}
+                  disabled={isLoading}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex aspect-square items-center justify-center rounded-2xl border-2 border-black/10 text-sm font-semibold text-white transition-all duration-150",
+                    active ? c.lit : c.base,
+                    active && "scale-95",
+                    isLoading && "cursor-not-allowed opacity-60",
+                  )}
                 >
-                  {c.display}
+                  <span className="drop-shadow-sm">{c.label}</span>
                 </button>
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Stage progress */}
-      <div className="bg-base-200 rounded-lg p-4 mb-4">
-        <p className="text-center text-base-content/60 mb-2 text-xs font-medium uppercase tracking-wide">
-          Stage progress
-        </p>
-        <div className="flex justify-center gap-2">
-          {[1, 2, 3, 4].map((s) => (
-            <div
-              key={s}
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                s < currentStage
-                  ? "bg-green-600 text-white"
-                  : s === currentStage
-                  ? "bg-primary text-primary-content"
-                  : "bg-base-300 text-base-content/40"
-              }`}
-            >
-              {s < currentStage ? "✓" : s}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Flash selector */}
-      {!isSolved && (
-        <Card className="mb-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-base-content">
-              Stage {currentStage} — which colours flashed?
-            </CardTitle>
-            <p className="text-sm text-base-content/60">Toggle all colours that lit up.</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 max-w-[240px] mx-auto">
-              {GRID_LAYOUT.map((color) => {
-                const c = cfg(color);
-                const active = flashes.has(color);
-                return (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => toggleFlash(color)}
-                    disabled={isLoading}
-                    className={`min-h-[72px] rounded-xl border-2 transition-all duration-150 flex items-center justify-center ${
-                      active
-                        ? `${c.lightClass} shadow-lg scale-[0.98] border-transparent text-white`
-                        : `${c.btnClass} text-white`
-                    } ${isLoading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-                  >
-                    <span className="font-semibold text-base drop-shadow-sm">{c.display}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        </SolverSection>
       )}
 
-      {/* Current stage answer */}
       {result && !isSolved && (
-        <Card className="mb-4 border-success/30 bg-success/5">
-          <CardContent className="pt-4">
-            <p className="text-sm text-base-content/70 mb-2">Press this colour:</p>
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${cfg(result).bgClass}`}>
-              <span className={`font-bold text-lg ${cfg(result).textClass}`}>{cfg(result).display}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <SolverResult
+          variant="success"
+          title="Press this colour"
+          description={spec(result).label}
+        />
       )}
 
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
-        isSolveDisabled={!topLeft || flashes.size === 0 || isSolved}
+        isSolveDisabled={!topLeft || flashes.size === 0}
         isLoading={isLoading}
-        solveText={isSolved ? "Solved" : `Solve Stage ${currentStage}`}
-        loadingText="Solving..."
+        isSolved={isSolved}
+        solveText={`Solve stage ${currentStage}`}
+        loadingText="Solving…"
       />
 
       <ErrorAlert error={error} />
 
-      {/* Stage history */}
       {stageHistory.length > 0 && (
-        <Card className="mt-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-base-content/70">Stage history</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <SolverSection title="Stage history">
+          <ul className="space-y-1.5">
             {stageHistory.map((entry) => (
-              <div
+              <li
                 key={entry.stage}
-                className="flex flex-wrap items-center gap-2 bg-base-200 rounded-lg px-3 py-2 text-sm"
+                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-1.5 text-sm"
               >
-                <span className="font-medium text-base-content/60 shrink-0">
+                <span className="shrink-0 font-medium text-muted-foreground">
                   Stage {entry.stage}
                 </span>
-                <span className="text-base-content/40 shrink-0">flashed:</span>
-                <div className="flex gap-1 flex-wrap">
+                <span className="shrink-0 text-muted-foreground">flashed:</span>
+                <div className="flex flex-wrap gap-1">
                   {entry.flashes.map((c) => (
-                    <span
-                      key={c}
-                      className={`px-2 py-0.5 rounded text-xs font-semibold border ${cfg(c).bgClass} ${cfg(c).textClass}`}
-                    >
-                      {cfg(c).display}
-                    </span>
+                    <Chip key={c} color={c} />
                   ))}
                 </div>
-                <span className="text-base-content/40 shrink-0">→ press:</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-bold border ${cfg(entry.press).bgClass} ${cfg(entry.press).textClass}`}>
-                  {cfg(entry.press).display}
+                <span className="shrink-0 text-muted-foreground" aria-hidden>
+                  →
                 </span>
-              </div>
+                <span className="shrink-0 text-muted-foreground">press:</span>
+                <Chip color={entry.press} />
+              </li>
             ))}
-          </CardContent>
-        </Card>
+          </ul>
+        </SolverSection>
       )}
 
-      {twitchCommands.length > 0 && (
-        <TwitchCommandDisplay command={twitchCommands} className="mt-4" />
-      )}
+      {twitchCommands.length > 0 && <TwitchCommandDisplay command={twitchCommands} />}
+
+      <SolverInstructions>
+        Record which coloured buttons flashed each stage. The solver works out which
+        button to press next based on strikes, stage, and the top-left colour.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

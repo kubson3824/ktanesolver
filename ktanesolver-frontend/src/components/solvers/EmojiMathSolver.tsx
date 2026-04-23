@@ -4,8 +4,18 @@ import { ModuleType } from "../../types";
 import { solveEmojiMath, type EmojiMathOutput, type EmojiMathInput } from "../../services/emojiMathService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
 import { Button } from "../ui/button";
+import {
+  useSolver,
+  useSolverModulePersistence,
+  SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  SolverResult,
+} from "../common";
 
 function isValidEmojiMathOutput(obj: unknown): obj is EmojiMathOutput {
   return (
@@ -17,25 +27,19 @@ function isValidEmojiMathOutput(obj: unknown): obj is EmojiMathOutput {
     typeof (obj as EmojiMathOutput).translatedEquation === "string"
   );
 }
-import { 
-  useSolver,
-  useSolverModulePersistence,
-  SolverLayout,
-  ErrorAlert,
-  TwitchCommandDisplay,
-  SolverControls
-} from "../common";
 
 interface EmojiMathSolverProps {
   bomb: BombEntity | null | undefined;
 }
+
+const EMOJIS = [":)", "=(", "(:", ")=", ":(", "):", "=)", "(=", ":|", "|:"] as const;
+const OPERATORS = ["+", "-", "*", "/"] as const;
 
 export default function EmojiMathSolver({ bomb }: EmojiMathSolverProps) {
   const [emojiEquation, setEmojiEquation] = useState<string>("");
   const [result, setResult] = useState<EmojiMathOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -111,9 +115,7 @@ export default function EmojiMathSolver({ bomb }: EmojiMathSolverProps) {
   });
 
   const handleEmojiEquationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Allow emojis and operators
-    setEmojiEquation(value);
+    setEmojiEquation(e.target.value);
     clearError();
   };
 
@@ -135,9 +137,9 @@ export default function EmojiMathSolver({ bomb }: EmojiMathSolverProps) {
       const input: EmojiMathInput = {
         emojiEquation: emojiEquation.trim()
       };
-      
+
       const response = await solveEmojiMath(round.id, bomb.id, currentModule.id, { input });
-      
+
       if (response.output && isValidEmojiMathOutput(response.output)) {
         setResult(response.output);
         setIsSolved(true);
@@ -166,100 +168,115 @@ export default function EmojiMathSolver({ bomb }: EmojiMathSolverProps) {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !isLoading && !isSolved) {
-      solveEmojiMathModule();
+    if (e.key === "Enter" && !isLoading && !isSolved) {
+      void solveEmojiMathModule();
     }
   };
 
-  const insertEmoji = (emoji: string) => {
+  const insertSymbol = (symbol: string) => {
     if (!isLoading && !isSolved) {
-      setEmojiEquation(prev => prev + emoji);
+      setEmojiEquation((prev) => prev + symbol);
       clearError();
     }
   };
 
   return (
     <SolverLayout>
-      {/* Emoji Math Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">EMOJI MATH MODULE</h3>
-        
-        {/* Display area */}
-        <div className="bg-black rounded-lg p-4 mb-4 min-h-[120px] flex flex-col items-center justify-center">
-          <div className="text-center">
-            <div className="text-sm text-gray-400 mb-2">Enter Emoji Equation</div>
-            <Input
-              type="text"
-              value={emojiEquation}
-              onChange={handleEmojiEquationChange}
-              onKeyPress={handleKeyPress}
-              placeholder="e.g., )::(+)=:("
-              className="font-mono text-center text-2xl w-full max-w-xs bg-gray-900 text-gray-100 border-gray-700 focus:border-primary"
-              disabled={isLoading || isSolved}
-            />
-            <div className="text-xs text-gray-500 mt-2">
-              Format: emoji [+,-,*,/] emoji
+      <SolverSection
+        title="Equation"
+        description="Enter the emoji expression shown on the module."
+      >
+        <Input
+          type="text"
+          value={emojiEquation}
+          onChange={handleEmojiEquationChange}
+          onKeyPress={handleKeyPress}
+          placeholder="e.g. )::(+)=:("
+          className="text-center font-mono text-xl"
+          disabled={isLoading || isSolved}
+          aria-label="Emoji equation"
+        />
+
+        <div className="mt-4 space-y-3">
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Emojis
+            </p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {EMOJIS.map((e) => (
+                <Button
+                  key={e}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="font-mono text-base"
+                  onClick={() => insertSymbol(e)}
+                  disabled={isLoading || isSolved}
+                >
+                  {e}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Operators
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {OPERATORS.map((op) => (
+                <Button
+                  key={op}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="font-mono text-base font-bold"
+                  onClick={() => insertSymbol(op)}
+                  disabled={isLoading || isSolved}
+                >
+                  {op}
+                </Button>
+              ))}
             </div>
           </div>
         </div>
+      </SolverSection>
 
-        {/* Emoji buttons */}
-        <div className="grid grid-cols-5 gap-2 mb-4">
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(":)")} disabled={isLoading || isSolved}>:)</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("=(")} disabled={isLoading || isSolved}>=(</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("(:")} disabled={isLoading || isSolved}>(:</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(")=")} disabled={isLoading || isSolved}>)=</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(":(")} disabled={isLoading || isSolved}>:(</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("):")} disabled={isLoading || isSolved}>):</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("=)")} disabled={isLoading || isSolved}>=)</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("(=")} disabled={isLoading || isSolved}>(=</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji(":|")} disabled={isLoading || isSolved}>:|</Button>
-          <Button variant="ghost" size="sm" className="text-xl bg-gray-700 hover:bg-gray-600 text-white" onClick={() => insertEmoji("|:")} disabled={isLoading || isSolved}>|:</Button>
-        </div>
-
-        {/* Operator buttons */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("+")} disabled={isLoading || isSolved}>+</Button>
-          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("-")} disabled={isLoading || isSolved}>-</Button>
-          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("*")} disabled={isLoading || isSolved}>*</Button>
-          <Button variant="default" size="sm" className="font-bold" onClick={() => insertEmoji("/")} disabled={isLoading || isSolved}>/</Button>
-        </div>
-      </div>
-
-      {/* Controls */}
       <SolverControls
         onSolve={solveEmojiMathModule}
         onReset={reset}
         isSolveDisabled={!emojiEquation.trim()}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Press OK"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Results */}
       {result && isValidEmojiMathOutput(result) && (
-        <Alert variant="success" className="mb-4">
-          <span className="font-bold">Translation:</span>
-          <div className="mt-2 font-mono text-lg">{result.translatedEquation}</div>
-          <span className="font-bold mt-2 block">Result:</span>
-          <div className="font-mono text-2xl">{result.result}</div>
-        </Alert>
+        <SolverResult
+          variant="success"
+          title="Answer"
+          description={`Translated: ${result.translatedEquation}\nResult: ${result.result}`}
+        />
       )}
 
-      {/* Twitch command display */}
       {twitchCommand && result && isValidEmojiMathOutput(result) && (
         <TwitchCommandDisplay command={twitchCommand} />
       )}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Enter the emoji equation shown on the module.</p>
-        <p>• Click the emoji buttons or type directly</p>
-        <p>• Emoji mapping: :)0 =(1 (:2 )=3 :(4 ):5 =)6 (=7 :|8 |:9</p>
-        <p>• Press Enter or click "Press OK" to calculate</p>
-      </div>
+      <SolverInstructions>
+        Emoji mapping:
+        <span className="font-mono"> :)</span>=0,
+        <span className="font-mono"> =(</span>=1,
+        <span className="font-mono"> (:</span>=2,
+        <span className="font-mono"> )=</span>=3,
+        <span className="font-mono"> :(</span>=4,
+        <span className="font-mono"> ):</span>=5,
+        <span className="font-mono"> =)</span>=6,
+        <span className="font-mono"> (=</span>=7,
+        <span className="font-mono"> :|</span>=8,
+        <span className="font-mono"> |:</span>=9.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

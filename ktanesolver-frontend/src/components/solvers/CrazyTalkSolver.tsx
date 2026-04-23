@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, ArrowDown, ArrowUp } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
@@ -12,10 +13,13 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { Button } from "../ui/button";
 
 interface CrazyTalkSolverProps {
   bomb: BombEntity | null | undefined;
@@ -44,7 +48,7 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
 
   const moduleState = useMemo(
     () => ({ displayText, result, twitchCommand }),
-    [displayText, result, twitchCommand]
+    [displayText, result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
@@ -59,7 +63,7 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
-    []
+    [],
   );
 
   const onRestoreSolution = useCallback((solution: CrazyTalkOutput) => {
@@ -69,7 +73,7 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
         generateTwitchCommand({
           moduleType: ModuleType.CRAZY_TALK,
           result: { downAt: solution.downAt, upAt: solution.upAt },
-        })
+        }),
       );
     }
   }, []);
@@ -119,13 +123,30 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
         result: { downAt: output.downAt, upAt: output.upAt },
       });
       setTwitchCommand(command);
-      updateModuleAfterSolve(bomb.id, currentModule.id, { displayText: trimmed, result: output, twitchCommand: command }, output, true);
+      updateModuleAfterSolve(
+        bomb.id,
+        currentModule.id,
+        { displayText: trimmed, result: output, twitchCommand: command },
+        output,
+        true,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Solve failed.");
     } finally {
       setIsLoading(false);
     }
-  }, [displayText, round?.id, bomb?.id, currentModule?.id, setIsLoading, clearError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
+  }, [
+    displayText,
+    round?.id,
+    bomb?.id,
+    currentModule?.id,
+    setIsLoading,
+    clearError,
+    setError,
+    setIsSolved,
+    markModuleSolved,
+    updateModuleAfterSolve,
+  ]);
 
   const reset = useCallback(() => {
     setDisplayText("");
@@ -135,67 +156,102 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
   }, [resetSolverState]);
 
   const canSolve = useMemo(() => displayText.trim().length > 0, [displayText]);
+  const disabled = isLoading || isSolved;
+
+  const insertArrow = (arrow: "←" | "→") => {
+    setDisplayText((prev) => `${prev}${prev && !prev.endsWith(" ") ? " " : ""}${arrow}`);
+  };
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          Enter the exact text shown on the module display. Match the manual table to get the action (e.g. 5/4).
-        </p>
-        <div className="mb-4">
-          <label className="block text-sm text-neutral-400 mb-2">Display text</label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            <span className="text-xs text-neutral-500 self-center">Insert arrows:</span>
-            <button
+      <SolverSection
+        title="Display text"
+        description="Copy the exact text shown on the module screen. Use the arrow buttons to insert ← and → symbols."
+        actions={
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Insert:</span>
+            <Button
               type="button"
-              onClick={() => setDisplayText((prev) => prev + " ←")}
-              disabled={isLoading || isSolved}
-              className="px-3 py-1.5 rounded-lg bg-neutral-600 hover:bg-neutral-500 border border-neutral-500 text-neutral-200 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Insert left arrow"
+              variant="outline"
+              size="sm"
+              onClick={() => insertArrow("←")}
+              disabled={disabled}
+              aria-label="Insert left arrow"
             >
-              ←
-            </button>
-            <button
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+            </Button>
+            <Button
               type="button"
-              onClick={() => setDisplayText((prev) => prev + " →")}
-              disabled={isLoading || isSolved}
-              className="px-3 py-1.5 rounded-lg bg-neutral-600 hover:bg-neutral-500 border border-neutral-500 text-neutral-200 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Insert right arrow"
+              variant="outline"
+              size="sm"
+              onClick={() => insertArrow("→")}
+              disabled={disabled}
+              aria-label="Insert right arrow"
             >
-              →
-            </button>
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Button>
           </div>
-          <textarea
-            value={displayText}
-            onChange={(e) => setDisplayText(e.target.value)}
-            placeholder="e.g. BLANK or 1 3 2 4 or use the arrow buttons above"
-            disabled={isLoading || isSolved}
-            rows={3}
-            className="w-full rounded-lg bg-neutral-800 border border-neutral-600 text-neutral-100 p-3 focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-70"
-          />
-        </div>
-
-        <ErrorAlert error={error ?? ""} />
-
-        {result && (
-          <div className="space-y-2 mt-4 p-4 rounded-lg bg-neutral-800/80">
-            <p className="font-medium text-amber-400">
-              Flip the switch <strong>down</strong> when the bomb timer seconds show <strong>{result.downAt}</strong>.
-            </p>
-            <p className="font-medium text-amber-400">
-              Flip the switch <strong>up</strong> when the bomb timer seconds show <strong>{result.upAt}</strong>.
-            </p>
-          </div>
-        )}
-
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={!canSolve}
-          isLoading={isLoading}
+        }
+      >
+        <textarea
+          value={displayText}
+          onChange={(e) => setDisplayText(e.target.value)}
+          placeholder="e.g. BLANK, 1 3 2 4, or text with ← →"
+          disabled={disabled}
+          rows={3}
+          className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-70"
+          aria-label="Module display text"
         />
-        <TwitchCommandDisplay command={twitchCommand} />
-      </div>
+      </SolverSection>
+
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!canSolve}
+        isLoading={isLoading}
+        isSolved={isSolved}
+        solveText="Solve"
+      />
+
+      <ErrorAlert error={error} />
+
+      {result && (
+        <SolverSection title="Flip the switch" className="border-amber-500/40">
+          <ul className="space-y-2">
+            <li className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+              <ArrowDown
+                className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400"
+                aria-hidden
+              />
+              <p className="text-sm text-foreground">
+                Flip the switch{" "}
+                <span className="font-semibold text-amber-700 dark:text-amber-300">down</span>{" "}
+                when the timer seconds show{" "}
+                <span className="font-mono font-bold">{result.downAt}</span>.
+              </p>
+            </li>
+            <li className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+              <ArrowUp
+                className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400"
+                aria-hidden
+              />
+              <p className="text-sm text-foreground">
+                Flip the switch{" "}
+                <span className="font-semibold text-amber-700 dark:text-amber-300">up</span>{" "}
+                when the timer seconds show{" "}
+                <span className="font-mono font-bold">{result.upAt}</span>.
+              </p>
+            </li>
+          </ul>
+        </SolverSection>
+      )}
+
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Timer seconds count down. Flip the switch the moment the seconds display matches each
+        value. The down-action happens before the up-action.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

@@ -11,11 +11,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 const DIAL_LABELS = [
   "Top Left",
@@ -30,6 +33,39 @@ interface SafetySafeSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
+function DialFace({ turns }: { turns: number }) {
+  // Each click is 30 degrees (360 / 12). 0 = pointing up.
+  const angle = (turns % 12) * 30;
+  return (
+    <div className="relative h-14 w-14">
+      <div className="absolute inset-0 rounded-full border-2 border-border bg-muted/60" />
+      {/* tick marks */}
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          aria-hidden
+          className="absolute left-1/2 top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-full origin-bottom"
+          style={{ transform: `translate(-50%, -100%) rotate(${i * 30}deg) translateY(-0.75rem)` }}
+        >
+          <div className="h-1 w-0.5 rounded-full bg-muted-foreground/40" />
+        </div>
+      ))}
+      {/* pointer */}
+      <div
+        className="absolute left-1/2 top-1/2 h-6 w-0.5 -translate-x-1/2 origin-bottom bg-amber-500"
+        style={{ transform: `translate(-50%, -100%) rotate(${angle}deg)` }}
+        aria-hidden
+      />
+      {/* hub */}
+      <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500" />
+      {/* number */}
+      <div className="absolute inset-0 flex items-end justify-center pb-1">
+        <span className="font-mono text-xs font-bold tabular-nums text-foreground">{turns}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
   const [result, setResult] = useState<SafetySafeOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
@@ -37,6 +73,7 @@ export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
   const {
     isLoading,
     error,
+    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -51,7 +88,7 @@ export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
 
   const moduleState = useMemo(
     () => ({ result, twitchCommand }),
-    [result, twitchCommand]
+    [result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
@@ -59,7 +96,7 @@ export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
-    []
+    [],
   );
 
   const onRestoreSolution = useCallback((solution: SafetySafeOutput) => {
@@ -69,7 +106,7 @@ export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
         generateTwitchCommand({
           moduleType: ModuleType.SAFETY_SAFE,
           result: { dialTurns: solution.dialTurns },
-        })
+        }),
       );
     }
   }, []);
@@ -124,7 +161,7 @@ export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
         currentModule.id,
         { result: output, twitchCommand: command },
         { dialTurns: output.dialTurns },
-        true
+        true,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Solve failed.");
@@ -141,57 +178,69 @@ export default function SafetySafeSolver({ bomb }: SafetySafeSolverProps) {
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          Each dial has a tell where it clicks louder—that is the starting position. The solver uses the bomb&apos;s serial, port types, and indicators to compute how many turns (0–11) to rotate each dial from that starting position. Turn the lever to check; green = correct, red = wrong.
-        </p>
-
-        {result && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {DIAL_LABELS.map((label, i) => (
+      <SolverSection
+        title="Safety Safe"
+        description="The solver uses bomb edgework only — no inputs needed. Find each dial's loud-click starting position, then rotate the listed number of clicks (0–11)."
+      >
+        {result ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {DIAL_LABELS.map((label, i) => {
+              const turns = result.dialTurns[i] ?? 0;
+              return (
                 <div
                   key={label}
-                  className="rounded-lg bg-neutral-800/80 border border-neutral-600 p-3 flex items-center justify-between"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3",
+                  )}
                 >
-                  <span className="text-neutral-200 text-sm font-medium">
-                    {label}
-                  </span>
-                  <span className="text-amber-400 font-mono font-bold text-lg">
-                    {result.dialTurns[i] ?? "—"}
-                  </span>
+                  <DialFace turns={turns} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {label}
+                    </div>
+                    <div className="font-mono text-lg font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                      {turns}{" "}
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {turns === 1 ? "click" : "clicks"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <p className="text-neutral-400 text-sm">
-              From each dial&apos;s loud click, rotate that many positions (0 = leave it, 1 = one click, etc.). A full rotation is 12 clicks.
-            </p>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
+            Dial turns will appear here after solving.
           </div>
         )}
-      </div>
+      </SolverSection>
 
-      <div className="mt-6">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={false}
-          isLoading={isLoading}
-          solveText="Solve"
-        />
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={false}
+        isLoading={isLoading}
+        isSolved={isSolved}
+        solveText="Solve"
+      />
 
       <ErrorAlert error={error} />
 
       {result && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-bold">On the module</p>
-          <p className="text-sm mt-1">
-            From each dial&apos;s loud click, rotate: {result.dialTurns.join(", ")} turns (Top Left → Bottom Right). Then turn the lever to check.
-          </p>
-        </Alert>
+        <SolverResult
+          variant="success"
+          title="On the module"
+          description={`From each dial's loud click, rotate: ${result.dialTurns.join(", ")}\nOrder: Top Left → Bottom Right, then pull the lever.`}
+        />
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Each dial has a <strong>tell</strong> — a louder click — that marks its starting position.
+        From there, rotate the listed number of clicks. A full revolution is 12 clicks.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

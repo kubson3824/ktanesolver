@@ -8,13 +8,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
-import { Badge } from "../ui/badge";
+import { cn } from "../../lib/cn";
 
 interface AlphabetSolverProps {
   bomb: BombEntity | null | undefined;
@@ -158,49 +159,34 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Module visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">ALPHABET MODULE</h3>
-
-        {/* 4 letter button slots */}
-        <div className="flex justify-center gap-3 mb-6">
+      <SolverSection
+        title="Letters on module"
+        description="Enter the four letters shown on the Alphabet module."
+      >
+        <div className="flex justify-center gap-2">
           {letters.map((letter, i) => (
-            <div
+            <Input
               key={i}
-              className={`h-14 w-12 border-2 rounded flex items-center justify-center text-2xl font-bold ${
+              ref={(el) => { inputRefs.current[i] = el; }}
+              type="text"
+              value={letter}
+              onChange={(e) => handleLetterChange(i, e.target.value)}
+              className={cn(
+                "h-14 w-12 px-0 text-center text-2xl font-bold font-mono rounded-md border-2 transition-colors",
                 letter
-                  ? "bg-blue-600 border-blue-400 text-white"
-                  : "bg-gray-700 border-gray-600 text-gray-400"
-              }`}
-            >
-              {letter || "?"}
-            </div>
+                  ? "border-ring bg-accent/15 text-foreground"
+                  : "border-border bg-muted/40 text-muted-foreground"
+              )}
+              maxLength={1}
+              autoComplete="off"
+              autoCapitalize="characters"
+              aria-label={`Letter ${i + 1}`}
+              disabled={isLoading || isSolved}
+            />
           ))}
         </div>
+      </SolverSection>
 
-        {/* Inputs */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2 text-center">
-            Enter the 4 letters shown on the module:
-          </label>
-          <div className="flex justify-center gap-2">
-            {letters.map((letter, i) => (
-              <Input
-                key={i}
-                ref={(el) => { inputRefs.current[i] = el; }}
-                type="text"
-                value={letter}
-                onChange={(e) => handleLetterChange(i, e.target.value)}
-                className="w-12 text-center text-xl tracking-widest"
-                maxLength={1}
-                disabled={isLoading || isSolved}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Controls */}
       <SolverControls
         onSolve={solveAlphabetModule}
         onReset={reset}
@@ -210,34 +196,29 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
         solveText="Solve"
       />
 
-      {/* Error */}
       <ErrorAlert error={error} />
 
-      {/* Result */}
       {result && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-semibold mb-2">Press order:</p>
-          <div className="flex flex-wrap gap-2 mt-1">
+        <SolverSection title="Press order" className="border-emerald-500/40">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {result.pressOrder.map((step, i) => (
-              <div key={i} className="flex items-center gap-1">
-                {i > 0 && <span className="text-gray-400">→</span>}
-                <Badge variant="default">{step}</Badge>
+              <div key={i} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden className="text-muted-foreground">→</span>}
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/10 font-mono text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                  {step}
+                </span>
               </div>
             ))}
           </div>
-        </Alert>
+        </SolverSection>
       )}
 
-      {/* Twitch */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Enter the 4 letter buttons shown on the Alphabet module.</p>
-        <p>• The solver spells the longest possible word from the bank first</p>
-        <p>• On ties, it picks the alphabetically earlier word</p>
-        <p>• Remaining letters are pressed in alphabetical order</p>
-      </div>
+      <SolverInstructions>
+        The solver spells the longest possible word from the bank first, then
+        presses any remaining letters in alphabetical order.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

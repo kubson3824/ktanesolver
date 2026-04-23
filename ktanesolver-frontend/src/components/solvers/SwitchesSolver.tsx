@@ -1,18 +1,27 @@
 import { useCallback, useMemo, useState } from "react";
+import { Lightbulb } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { solveSwitches, type SwitchesInput, type SwitchesOutput } from "../../services/switchesService";
-import SolverLayout from "../common/SolverLayout";
-import SolverControls from "../common/SolverControls";
-import ErrorAlert from "../common/ErrorAlert";
-import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
-import SolverResult from "../common/SolverResult";
-import { useSolver, useSolverModulePersistence } from "../common";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  solveSwitches,
+  type SwitchesInput,
+  type SwitchesOutput,
+} from "../../services/switchesService";
+import {
+  useSolver,
+  useSolverModulePersistence,
+  SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  SolverResult,
+} from "../common";
 import { Button } from "../ui/button";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcut";
+import { cn } from "../../lib/cn";
 
 interface SwitchesSolverProps {
   bomb: BombEntity | null | undefined;
@@ -21,15 +30,37 @@ interface SwitchesSolverProps {
 const FORBIDDEN_MESSAGE = "Current switch configuration is invalid";
 
 export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
-  const [currentSwitches, setCurrentSwitches] = useState<boolean[]>([false, false, false, false, false]);
-  const [ledPositions, setLedPositions] = useState<boolean[]>([false, false, false, false, false]);
+  const [currentSwitches, setCurrentSwitches] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+  const [ledPositions, setLedPositions] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
   const [result, setResult] = useState<SwitchesOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-
-  const { isLoading, error, isSolved, clearError, reset, setIsLoading, setError, setIsSolved, round, markModuleSolved } = useSolver();
+  const {
+    isLoading,
+    error,
+    isSolved,
+    clearError,
+    reset,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    currentModule,
+    round,
+    markModuleSolved,
+  } = useSolver();
 
   const moduleState = useMemo(
     () => ({ currentSwitches, ledPositions, result, twitchCommand }),
@@ -39,13 +70,20 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
   const defaultSwitches = useMemo(() => [false, false, false, false, false] as boolean[], []);
 
   const onRestoreState = useCallback(
-    (state: { currentSwitches?: boolean[]; ledPositions?: boolean[]; result?: SwitchesOutput | null; twitchCommand?: string }) => {
-      const switches = Array.isArray(state.currentSwitches) && state.currentSwitches.length === 5
-        ? state.currentSwitches
-        : defaultSwitches;
-      const leds = Array.isArray(state.ledPositions) && state.ledPositions.length === 5
-        ? state.ledPositions
-        : defaultSwitches;
+    (state: {
+      currentSwitches?: boolean[];
+      ledPositions?: boolean[];
+      result?: SwitchesOutput | null;
+      twitchCommand?: string;
+    }) => {
+      const switches =
+        Array.isArray(state.currentSwitches) && state.currentSwitches.length === 5
+          ? state.currentSwitches
+          : defaultSwitches;
+      const leds =
+        Array.isArray(state.ledPositions) && state.ledPositions.length === 5
+          ? state.ledPositions
+          : defaultSwitches;
       setCurrentSwitches(switches);
       setLedPositions(leds);
       setResult(state.result ?? null);
@@ -54,23 +92,25 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
     [defaultSwitches],
   );
 
-  const onRestoreSolution = useCallback(
-    (solution: SwitchesOutput) => {
-      if (solution.instruction) {
-        setResult(solution);
-        setCurrentStepIndex(0);
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.SWITCHES,
-          result: { instruction: solution.instruction },
-        });
-        setTwitchCommand(command);
-      }
-    },
-    [],
-  );
+  const onRestoreSolution = useCallback((solution: SwitchesOutput) => {
+    if (solution.instruction) {
+      setResult(solution);
+      setCurrentStepIndex(0);
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.SWITCHES,
+        result: { instruction: solution.instruction },
+      });
+      setTwitchCommand(command);
+    }
+  }, []);
 
   useSolverModulePersistence<
-    { currentSwitches: boolean[]; ledPositions: boolean[]; result: SwitchesOutput | null; twitchCommand: string },
+    {
+      currentSwitches: boolean[];
+      ledPositions: boolean[];
+      result: SwitchesOutput | null;
+      twitchCommand: string;
+    },
     SwitchesOutput
   >({
     state: moduleState,
@@ -175,98 +215,131 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
     reset();
   };
 
-  const isForbiddenResult = result && !result.solved && result.instruction?.includes(FORBIDDEN_MESSAGE);
+  const isForbiddenResult = Boolean(
+    result && !result.solved && result.instruction?.includes(FORBIDDEN_MESSAGE),
+  );
   const solutionSteps = Array.isArray(result?.solutionSteps) ? result.solutionSteps : [];
   const currentStepSwitch = solutionSteps.length
     ? solutionSteps[Math.min(currentStepIndex, solutionSteps.length - 1)]
     : null;
 
+  const ledsSafe = ledPositions ?? defaultSwitches;
+  const switchesSafe = currentSwitches ?? defaultSwitches;
+
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium text-base-content">Module state</CardTitle>
-          <CardDescription>Set each switch and which LED is lit. Click an LED dot to set it as lit for that switch.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-base-300 bg-base-300/50 p-6">
-            <div className="grid grid-cols-5 gap-4">
-              {(currentSwitches ?? defaultSwitches).map((isUp, index) => {
-                const switchNum = index + 1;
-                const isCurrentStep = currentStepSwitch === switchNum;
-                return (
-                  <div key={index} className="flex flex-col items-center">
-                    {/* Top LED - click to set lit at top */}
-                    <button
-                      type="button"
-                      onClick={() => setLedLitTop(index)}
-                      disabled={isLoading || isSolved}
-                      aria-label={`Switch ${switchNum}, LED top, ${(ledPositions ?? defaultSwitches)[index] ? "lit" : "unlit"}`}
-                      className={`mb-2 h-4 w-4 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200 disabled:pointer-events-none disabled:opacity-50 ${
-                        (ledPositions ?? defaultSwitches)[index]
-                          ? "border-success/50 bg-success shadow-[0_0_8px_rgba(91,231,169,0.5)]"
-                          : "border-base-400 bg-base-300"
-                      } ${!(isLoading || isSolved) ? "hover:opacity-90" : ""}`}
-                    />
+      <SolverSection
+        title="Module state"
+        description="Flip each switch and click the lit LED (top or bottom) for each position. Use keys 1–5 to flip switches."
+      >
+        <div
+          className="grid grid-cols-5 gap-3 rounded-md border border-border bg-muted/20 p-4"
+          role="group"
+          aria-label="Switches"
+        >
+          {switchesSafe.map((isUp, index) => {
+            const switchNum = index + 1;
+            const isCurrentStep = currentStepSwitch === switchNum;
+            const topLit = ledsSafe[index];
+            const bottomLit = !ledsSafe[index];
+            return (
+              <div key={index} className="flex flex-col items-center gap-1.5">
+                {/* Top LED */}
+                <button
+                  type="button"
+                  onClick={() => setLedLitTop(index)}
+                  disabled={isLoading || isSolved}
+                  aria-label={`Switch ${switchNum}, top LED ${topLit ? "lit" : "unlit"}`}
+                  aria-pressed={topLit}
+                  className={cn(
+                    "inline-flex h-6 w-6 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    topLit
+                      ? "border-amber-400 bg-amber-400/20"
+                      : "border-border bg-muted/40 hover:border-foreground/30",
+                    (isLoading || isSolved) && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  <Lightbulb
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      topLit ? "text-amber-400 fill-amber-400/70" : "text-muted-foreground",
+                    )}
+                    aria-hidden
+                  />
+                </button>
 
-                    {/* Switch - click to flip */}
-                    <button
-                      type="button"
-                      onClick={() => toggleSwitch(index)}
-                      disabled={isLoading || isSolved}
-                      aria-label={`Switch ${switchNum}, ${isUp ? "up" : "down"}`}
-                      className={`relative w-12 h-20 rounded-lg border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200 disabled:pointer-events-none disabled:opacity-50 ${
-                        isCurrentStep ? "ring-2 ring-primary ring-offset-2 ring-offset-base-300 animate-pulse-success" : ""
-                      } ${
-                        isUp
-                          ? "border-base-400 bg-base-200"
-                          : "border-base-400 bg-base-300"
-                      } ${!(isLoading || isSolved) ? "hover:scale-[1.02]" : ""}`}
-                    >
-                      <div
-                        className={`absolute left-1/2 w-8 h-8 -translate-x-1/2 rounded bg-neutral transition-all duration-200 ${
-                          isUp ? "top-1" : "bottom-1"
-                        }`}
-                        aria-hidden
-                      />
-                    </button>
+                {/* Switch body */}
+                <button
+                  type="button"
+                  onClick={() => toggleSwitch(index)}
+                  disabled={isLoading || isSolved}
+                  aria-label={`Switch ${switchNum}, ${isUp ? "up" : "down"}`}
+                  aria-pressed={isUp}
+                  className={cn(
+                    "relative h-20 w-12 rounded-md border bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    isCurrentStep
+                      ? "border-emerald-500 ring-2 ring-emerald-500/40"
+                      : "border-border hover:border-foreground/30",
+                    (isLoading || isSolved) && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-1/2 h-8 w-8 -translate-x-1/2 rounded bg-foreground/80 transition-all duration-200",
+                      isUp ? "top-1" : "bottom-1",
+                    )}
+                    aria-hidden
+                  />
+                </button>
 
-                    {/* Bottom LED - click to set lit at bottom */}
-                    <button
-                      type="button"
-                      onClick={() => setLedLitBottom(index)}
-                      disabled={isLoading || isSolved}
-                      aria-label={`Switch ${switchNum}, LED bottom, ${!(ledPositions ?? defaultSwitches)[index] ? "lit" : "unlit"}`}
-                      className={`mt-2 h-4 w-4 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-200 disabled:pointer-events-none disabled:opacity-50 ${
-                        !(ledPositions ?? defaultSwitches)[index]
-                          ? "border-success/50 bg-success shadow-[0_0_8px_rgba(91,231,169,0.5)]"
-                          : "border-base-400 bg-base-300"
-                      } ${!(isLoading || isSolved) ? "hover:opacity-90" : ""}`}
-                    />
+                {/* Bottom LED */}
+                <button
+                  type="button"
+                  onClick={() => setLedLitBottom(index)}
+                  disabled={isLoading || isSolved}
+                  aria-label={`Switch ${switchNum}, bottom LED ${bottomLit ? "lit" : "unlit"}`}
+                  aria-pressed={bottomLit}
+                  className={cn(
+                    "inline-flex h-6 w-6 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    bottomLit
+                      ? "border-amber-400 bg-amber-400/20"
+                      : "border-border bg-muted/40 hover:border-foreground/30",
+                    (isLoading || isSolved) && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  <Lightbulb
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      bottomLit ? "text-amber-400 fill-amber-400/70" : "text-muted-foreground",
+                    )}
+                    aria-hidden
+                  />
+                </button>
 
-                    <span className="mt-2 text-xs text-base-content/60" aria-hidden>
-                      {switchNum}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                <span
+                  className="mt-0.5 font-mono text-xs text-muted-foreground"
+                  aria-hidden
+                >
+                  {switchNum}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={solveSwitchesModule}
         onReset={resetAll}
         isSolveDisabled={isSolved}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
       />
 
       <ErrorAlert error={error} />
 
-      {/* Result: forbidden state */}
-      {isForbiddenResult && (
+      {isForbiddenResult && result && (
         <SolverResult
           variant="warning"
           title="Invalid configuration"
@@ -274,39 +347,52 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
         />
       )}
 
-      {/* Result: solved */}
       {result && result.solved && !isForbiddenResult && (
         <>
-          <SolverResult variant="success" title="Solved!" description={result.instruction} />
+          <SolverResult
+            variant="success"
+            title="Solved!"
+            description={result.instruction ?? "Follow the flip sequence below."}
+          />
+
           {solutionSteps.length > 0 && (
-            <div className="mb-4 space-y-2">
-              <p className="text-sm font-medium text-base-content/90">
-                Step {currentStepIndex + 1} of {solutionSteps.length}: Flip switch {solutionSteps[currentStepIndex]}
-              </p>
+            <SolverSection
+              title="Flip sequence"
+              description={`Step ${currentStepIndex + 1} of ${solutionSteps.length}: flip switch ${solutionSteps[currentStepIndex]}.`}
+            >
               <div className="flex flex-wrap gap-2">
                 {solutionSteps.map((switchNum, idx) => (
                   <span
                     key={idx}
-                    className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                    className={cn(
+                      "inline-flex items-center rounded-md border px-2 py-1 text-xs font-medium",
                       idx === currentStepIndex
-                        ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                        : "bg-base-300 text-base-content/80"
-                    }`}
+                        ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                        : idx < currentStepIndex
+                          ? "border-border bg-muted/40 text-muted-foreground line-through"
+                          : "border-border bg-muted/40 text-muted-foreground",
+                    )}
                   >
-                    {idx + 1} → Switch {switchNum}
+                    <span className="mr-1 tabular-nums">{idx + 1}.</span>
+                    Switch {switchNum}
                   </span>
                 ))}
               </div>
+
               {currentStepIndex < solutionSteps.length - 1 && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setCurrentStepIndex((i) => Math.min(i + 1, solutionSteps.length - 1))}
-                >
-                  Next step
-                </Button>
+                <div className="mt-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentStepIndex((i) => Math.min(i + 1, solutionSteps.length - 1))
+                    }
+                  >
+                    Next step
+                  </Button>
+                </div>
               )}
-            </div>
+            </SolverSection>
           )}
         </>
       )}
@@ -315,16 +401,11 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
         <TwitchCommandDisplay command={twitchCommand} />
       )}
 
-      <Card className="mt-4">
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm font-medium text-base-content/80">How to use</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <CardDescription>
-            Match the module: set each switch and which LED is lit (top or bottom). Goal: each switch points toward its lit LED. Then press Solve. You can also use keys 1–5 to flip switches.
-          </CardDescription>
-        </CardContent>
-      </Card>
+      <SolverInstructions>
+        Match the module: flip each switch up or down and click the lit LED for each
+        position. Goal after solving: every switch points toward its lit LED. Keys 1–5
+        flip switches.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

@@ -15,23 +15,24 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
+  SegmentedControl,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "../../lib/cn";
 import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 
 const MARKER_LETTERS: MarkerLetter[] = ["A", "B", "C", "D", "H"];
-const GOAL_DIRECTIONS: { value: GoalDirection; label: string }[] = [
-  { value: "N", label: "North" },
-  { value: "S", label: "South" },
-  { value: "E", label: "East" },
-  { value: "W", label: "West" },
+const GOAL_DIRECTIONS: ReadonlyArray<{ value: GoalDirection; label: string }> = [
+  { value: "N", label: "N" },
+  { value: "S", label: "S" },
+  { value: "E", label: "E" },
+  { value: "W", label: "W" },
 ];
 
 interface ThreeDMazeSolverProps {
@@ -52,6 +53,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
   const {
     isLoading,
     error,
+    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -296,7 +298,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
             <DirectionArrow
               key="start"
               direction={startFacing}
-              className="h-6 w-6 shrink-0 text-success-content"
+              className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300"
             />
           );
         } else if (isOnPath && pathInfo?.outgoingDir != null) {
@@ -304,20 +306,20 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
             <DirectionArrow
               key="path"
               direction={pathInfo.outgoingDir}
-              className="h-4 w-4 shrink-0 text-success/90"
+              className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
             />
           );
         }
         if (isStar) {
           symbols.push(
-            <span key="star" className="text-amber-400 font-bold text-sm" title="Direction marker">
+            <span key="star" className="text-sm font-bold text-amber-500" title="Direction marker">
               *
             </span>
           );
         }
         if (letter != null && letter !== "") {
           symbols.push(
-            <span key="letter" className="text-base-content/90 text-xs font-medium">
+            <span key="letter" className="text-xs font-medium text-foreground/90">
               {letter}
             </span>
           );
@@ -326,7 +328,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
           symbols.push(
             <span
               key="goal"
-              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-error bg-error/40 text-error-content text-xs font-bold"
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-red-500 bg-red-500/40 text-xs font-bold text-red-900 dark:text-red-100"
               title="Goal"
             >
               ✓
@@ -352,19 +354,18 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
                       : `Cell row ${row}, column ${col}`
             }
             className={cn(
-              "relative min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 border border-base-content/25",
-              "flex items-center justify-center",
-              !isStart && !isGoal && !isStar && !isOnPath && "bg-base-300",
-              isStart && "bg-success/40 border-success/50",
-              isGoal && "bg-error/30 border-error/50",
-              isOnPath && !isStart && !isGoal && "bg-success/25 border-success/40",
-              isStar && !isGoal && !isOnPath && "bg-base-200"
+              "relative flex h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] items-center justify-center border border-border",
+              !isStart && !isGoal && !isStar && !isOnPath && "bg-muted/40",
+              isStart && "border-emerald-500/60 bg-emerald-500/25",
+              isGoal && "border-red-500/60 bg-red-500/20",
+              isOnPath && !isStart && !isGoal && "border-emerald-500/40 bg-emerald-500/15",
+              isStar && !isGoal && !isOnPath && "bg-muted",
             )}
           >
             {(hasRightWall || hasBottomWall || hasLeftWall || hasTopWall) && (
               <svg
                 viewBox="0 0 1 1"
-                className="absolute pointer-events-none text-base-content"
+                className="pointer-events-none absolute text-foreground"
                 style={{
                   left: -1,
                   top: -1,
@@ -399,83 +400,74 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          Enter the three marker letters (A, B, C, D, or H) at the three stars to identify the maze, and the goal direction (N/S/E/W) that the defuser should move. Direction is not tied to the maze layout.
-        </p>
-
-        <div className="space-y-4">
-          <h3 className="text-amber-400 font-semibold text-sm uppercase tracking-wide">
-            Letters at the three stars
-          </h3>
-          <div className="flex flex-wrap gap-4">
-            {([0, 1, 2] as const).map((i) => (
-              <div key={i} className="flex items-center gap-2">
-                <label className="text-neutral-400 text-sm">Star {i + 1}:</label>
-                <select
-                  className="select select-bordered bg-neutral-800 border-neutral-600 text-neutral-100 min-w-[4rem]"
-                  value={starLetters[i]}
-                  onChange={(e) => {
-                    const next = [...starLetters] as [MarkerLetter, MarkerLetter, MarkerLetter];
-                    next[i] = e.target.value as MarkerLetter;
-                    setStarLetters(next);
-                  }}
-                >
-                  {MARKER_LETTERS.map((letter) => (
-                    <option key={letter} value={letter}>
-                      {letter}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-          <h3 className="text-amber-400 font-semibold text-sm uppercase tracking-wide mt-4">
-            Goal direction <span className="text-neutral-500 font-normal">(leave empty until defuser has read it at a star)</span>
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={goalDirection === "" ? "default" : "ghost"}
-              size="sm"
-              className={goalDirection === "" ? "" : "bg-neutral-800 border border-neutral-600"}
-              onClick={() => setGoalDirection("")}
-            >
-              Not yet
-            </Button>
-            {GOAL_DIRECTIONS.map(({ value, label }) => (
-              <Button
-                key={value}
-                variant={goalDirection === value ? "default" : "ghost"}
+      <SolverSection
+        title="Letters at the three stars"
+        description="The three markers on the floor identify which maze you are in. Pick each letter (A, B, C, D, or H)."
+      >
+        <div className="flex flex-wrap gap-3">
+          {([0, 1, 2] as const).map((i) => (
+            <div key={i} className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Star {i + 1}</p>
+              <SegmentedControl<MarkerLetter>
+                value={starLetters[i]}
+                onChange={(v) => {
+                  const next = [...starLetters] as [MarkerLetter, MarkerLetter, MarkerLetter];
+                  next[i] = v;
+                  setStarLetters(next);
+                }}
+                options={MARKER_LETTERS.map((l) => ({ value: l, label: l }))}
+                disabled={isSolved}
                 size="sm"
-                className={goalDirection === value ? "" : "bg-neutral-800 border border-neutral-600"}
-                onClick={() => setGoalDirection(value)}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-
-          <h3 className="text-amber-400 font-semibold text-sm uppercase tracking-wide mt-4">
-            Current position
-          </h3>
-          <p className="text-neutral-400 text-sm">
-            You don&apos;t need to know compass direction. Enter the letter on the floor and measure steps to the wall in front of you, to your left, to your right, and behind you. First solve without goal direction to get path to nearest star; after defuser reports N/S/E/W, set goal direction and solve again for path to goal.
-          </p>
-          <div className="flex flex-wrap items-center gap-4 mt-2">
-            <div className="flex items-center gap-2">
-              <label className="text-neutral-400 text-sm">Letter at cell:</label>
-              <select
-                className="select select-bordered bg-neutral-800 border-neutral-600 text-neutral-100 min-w-[4rem]"
-                value={letterAtPosition}
-                onChange={(e) => setLetterAtPosition(e.target.value)}
-              >
-                {LETTER_AT_POSITION_OPTIONS.map((opt) => (
-                  <option key={opt || "empty"} value={opt}>{opt || "—"}</option>
-                ))}
-              </select>
+                ariaLabel={`Star ${i + 1} letter`}
+              />
             </div>
-            <div className="flex items-center gap-1">
-              <label className="text-neutral-400 text-sm">Distances to wall:</label>
+          ))}
+        </div>
+      </SolverSection>
+
+      <SolverSection
+        title="Goal direction"
+        description="Leave empty until the defuser has read it at a star — then pick N/S/E/W and solve again."
+      >
+        <SegmentedControl<string>
+          value={goalDirection}
+          onChange={(v) => setGoalDirection(v as GoalDirection | "")}
+          options={[{ value: "", label: "Not yet" }, ...GOAL_DIRECTIONS]}
+          disabled={isSolved}
+          ariaLabel="Goal direction"
+        />
+      </SolverSection>
+
+      <SolverSection
+        title="Current position"
+        description="Enter the letter on the floor where you stand and the distance to the wall in front, left, right, and behind. You don't need compass orientation."
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="letter-at-position" className="text-xs font-medium text-muted-foreground">
+              Letter at cell
+            </label>
+            <select
+              id="letter-at-position"
+              value={letterAtPosition}
+              onChange={(e) => setLetterAtPosition(e.target.value)}
+              disabled={isSolved}
+              className={cn(
+                "h-9 min-w-[4rem] rounded-md border border-border bg-muted/40 px-2 text-sm text-foreground",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
+                "disabled:opacity-70",
+              )}
+            >
+              {LETTER_AT_POSITION_OPTIONS.map((opt) => (
+                <option key={opt || "empty"} value={opt}>
+                  {opt || "—"}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Distances to wall</p>
+            <div className="flex flex-wrap gap-2">
               {(
                 [
                   [0, "Facing"],
@@ -484,12 +476,12 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
                   [3, "Behind"],
                 ] as const
               ).map(([i, label]) => (
-                <div key={i} className="flex flex-col items-center gap-0.5">
+                <div key={i} className="flex flex-col items-center gap-1">
                   <Input
                     type="number"
                     min={0}
                     max={7}
-                    className="w-14 bg-neutral-800 border-neutral-600 text-neutral-100"
+                    className="w-14 text-center"
                     value={stepsToWall[i]}
                     onChange={(e) => {
                       const n = Math.max(0, Math.min(7, parseInt(e.target.value, 10) || 0));
@@ -497,110 +489,109 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
                       next[i] = n;
                       setStepsToWall(next);
                     }}
+                    disabled={isSolved}
+                    aria-label={label}
                   />
-                  <span className="text-neutral-500 text-xs">{label}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </SolverSection>
 
-      <div className="mt-6">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={false}
-          isLoading={isLoading}
-          solveText="Solve"
-        />
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isLoading={isLoading}
+        isSolved={isSolved}
+      />
 
       <ErrorAlert error={error} />
 
+      {result && (
+        <SolverResult
+          variant={result.phase === "go_to_star" ? "info" : "success"}
+          title={result.phase === "go_to_star" ? "Go to a star first" : "Goal found"}
+          description={
+            result.phase === "go_to_star"
+              ? (result.message ?? "Walk to one of the stars, then solve again with the reported direction.")
+              : `Goal cell: (${result.goalRow}, ${result.goalCol})\nThen walk forward through the wall.`
+          }
+        />
+      )}
+
+      {result && result.moves != null && result.moves.length > 0 && (
+        <SolverSection
+          title="Turn-by-turn moves"
+          description={
+            result.startRow != null && result.startCol != null && result.startFacing
+              ? `From (${result.startRow}, ${result.startCol}) facing ${directionLabel[result.startFacing] ?? result.startFacing}`
+              : undefined
+          }
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {result.moves.map((move, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300"
+              >
+                {moveLabel(move)}
+              </span>
+            ))}
+          </div>
+        </SolverSection>
+      )}
+
       {result?.maze && (
-        <Card className="mb-4 mt-6">
-          <CardHeader>
-            <CardTitle className="text-center">Maze</CardTitle>
-            <CardDescription id={mazeGridDescId} className="text-center">
-              8×8 grid: start (arrow), path (green), stars (*), letters, goal (✓). Rows and columns wrap.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              id={mazeGridId}
-              role="grid"
-              aria-label="Maze grid, 8 by 8 cells"
-              aria-describedby={mazeGridDescId}
-              className="relative inline-grid max-w-2xl mx-auto border-2 border-base-content/40 rounded overflow-hidden bg-base-content/10"
-              style={{
-                gridTemplateColumns: "auto repeat(8, 1fr)",
-                gridTemplateRows: "auto repeat(8, 1fr)",
-              }}
-            >
-              <div className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 bg-base-300" aria-hidden />
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((c) => (
+        <SolverSection
+          title="Maze map"
+          description="8×8 grid; rows and columns wrap around. Arrow = start, green tint = path, * = star, ✓ = goal."
+        >
+          <div
+            id={mazeGridId}
+            role="grid"
+            aria-label="Maze grid, 8 by 8 cells"
+            aria-describedby={mazeGridDescId}
+            className="relative mx-auto inline-grid max-w-full overflow-auto rounded border border-border bg-muted/20"
+            style={{
+              gridTemplateColumns: "auto repeat(8, 1fr)",
+              gridTemplateRows: "auto repeat(8, 1fr)",
+            }}
+          >
+            <div className="h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] bg-muted/40" aria-hidden />
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((c) => (
+              <div
+                key={`col-${c}`}
+                className="flex h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] items-center justify-center bg-muted/40 text-xs font-medium text-muted-foreground"
+                aria-hidden
+              >
+                {c}
+              </div>
+            ))}
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((row) => (
+              <Fragment key={`row-${row}`}>
                 <div
-                  key={`col-${c}`}
-                  className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 flex items-center justify-center bg-base-300 text-xs text-base-content/70 font-medium"
+                  className="flex h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] items-center justify-center bg-muted/40 text-xs font-medium text-muted-foreground"
                   aria-hidden
                 >
-                  {c}
+                  {row}
                 </div>
-              ))}
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((row) => (
-                <Fragment key={`row-${row}`}>
-                  <div
-                    className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 flex items-center justify-center bg-base-300 text-xs text-base-content/70 font-medium"
-                    aria-hidden
-                  >
-                    {row}
-                  </div>
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map((col) =>
-                    renderMazeGrid(result.maze!)[row * SIZE + col]
-                  )}
-                </Fragment>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((col) =>
+                  renderMazeGrid(result.maze!)[row * SIZE + col]
+                )}
+              </Fragment>
+            ))}
+          </div>
+        </SolverSection>
       )}
 
-      {result && (
-        <div className="rounded-xl border-2 border-green-700/50 bg-neutral-700/95 shadow-lg p-5 text-neutral-100 mt-6">
-          <h3 className="text-amber-400 font-semibold mb-2 text-sm uppercase tracking-wide">Solution</h3>
-          {result.phase === "go_to_star" && result.message && (
-            <p className="text-amber-200/90 mb-2">{result.message}</p>
-          )}
-          {result.goalDirection != null && result.goalDirection !== "" && (
-            <p className="text-lg">
-              Goal: cell <strong>({result.goalRow}, {result.goalCol})</strong>. Follow the turn-by-turn moves below — you will end facing the exit. Then <strong>go forward</strong> through the wall.
-            </p>
-          )}
-          {result.phase === "go_to_goal" && result.message && (
-            <p className="text-neutral-400 text-sm mt-1">{result.message}</p>
-          )}
-          {result.moves != null && result.moves.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-amber-400/90 font-medium text-sm uppercase tracking-wide mb-2">Turn-by-turn</h4>
-              {result.startRow != null && result.startCol != null && (
-                <p className="text-neutral-400 text-sm mb-2">
-                  From ({result.startRow}, {result.startCol}) facing {directionLabel[result.startFacing ?? ""] ?? result.startFacing}:
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {result.moves.map((move, i) => (
-                  <Badge key={i} variant="secondary" className="text-base">
-                    {moveLabel(move)}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      <SolverInstructions>
+        Identify the maze via the three star letters. Solve once without a goal direction to get a
+        path to the nearest star; after the defuser reads N/S/E/W, set it and solve again for the goal.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

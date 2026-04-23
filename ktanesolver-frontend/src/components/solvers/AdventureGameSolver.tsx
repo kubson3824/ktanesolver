@@ -12,10 +12,15 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
 const ENEMIES = ["Demon", "Dragon", "Eagle", "Goblin", "Golem", "Troll", "Lizard", "Wizard"];
 const WEAPONS = ["Broadsword", "Caber", "Nasty Knife", "Longbow", "Magic orb", "Grimoire"];
@@ -31,6 +36,15 @@ interface AdventureGameSolverProps {
 
 const defaultWeapons = (): [string, string, string] => ["", "", ""];
 const defaultMiscItems = (): [string, string, string, string, string] => ["", "", "", "", ""];
+
+const SELECT_CLASS =
+  "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+
+const FieldLabel = ({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) => (
+  <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium text-muted-foreground">
+    {children}
+  </label>
+);
 
 export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) {
   const [enemy, setEnemy] = useState("");
@@ -52,6 +66,7 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
   const {
     isLoading,
     error,
+    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -164,10 +179,7 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
     }
   }, []);
 
-  useSolverModulePersistence<
-    typeof moduleState,
-    AdventureGameOutput
-  >({
+  useSolverModulePersistence<typeof moduleState, AdventureGameOutput>({
     state: moduleState,
     onRestoreState,
     onRestoreSolution,
@@ -195,7 +207,7 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
     weapons: weapons.filter(Boolean).length === 3 ? weapons as [string, string, string] : [weapons[0] || WEAPONS[0], weapons[1] || WEAPONS[1], weapons[2] || WEAPONS[2]],
     miscItems: miscItems.filter(Boolean).length === 5 ? miscItems as [string, string, string, string, string] : miscItems.map((v, i) => v || MISC_ITEMS[i]) as [string, string, string, string, string],
     itemsAlreadyUsed: statsAfterItems || undefined,
-    potionUsedFirst: potionUsedFirst, // always send so backend receives true when "Potion first" is checked
+    potionUsedFirst: potionUsedFirst,
   }), [enemy, str, dex, intelligence, heightFeet, heightInches, temperatureCelsius, gravityMs2, pressureKpa, weapons, miscItems, statsAfterItems, potionUsedFirst]);
 
   const handleSolve = useCallback(async () => {
@@ -238,7 +250,7 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
     } finally {
       setIsLoading(false);
     }
-  }, [round?.id, bomb?.id, currentModule?.id, buildInput, moduleState, setIsLoading, clearError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
+  }, [round?.id, bomb?.id, currentModule?.id, buildInput, moduleState, statsAfterItems, setError, setIsLoading, clearError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
 
   const reset = useCallback(() => {
     setEnemy("");
@@ -266,51 +278,72 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
     return true;
   }, [enemy, weapons, miscItems, statsAfterItems]);
 
-  const inputClass = "w-full rounded-lg bg-neutral-800 border border-neutral-600 text-neutral-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-70";
-  const labelClass = "block text-sm text-neutral-400 mb-1";
+  const formDisabled = isLoading || isSolved;
+
+  const resultDescription = result
+    ? [
+        result.itemsToUse.length > 0
+          ? `Use items (any order): ${result.itemsToUse.join(", ")}`
+          : null,
+        `${result.itemsToUse.length > 0 ? "Then use weapon" : "Use weapon"}: ${result.weaponToUse}`,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : "";
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100 space-y-4">
-        <p className="text-sm text-neutral-300">
-          Enter enemy, player stats, world stats, and your 3 weapons + 5 items. Use the manual item table; all applicable items must be used before the weapon.
-        </p>
+      <SolverSection
+        title="Enemy"
+        description="Pick the creature shown on the module screen."
+      >
+        <select
+          id="adv-enemy"
+          value={enemy}
+          onChange={(e) => setEnemy(e.target.value)}
+          disabled={formDisabled}
+          className={SELECT_CLASS}
+          aria-label="Enemy"
+        >
+          <option value="">Select enemy</option>
+          {ENEMIES.map((e) => (
+            <option key={e} value={e}>{e}</option>
+          ))}
+        </select>
+      </SolverSection>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Enemy</label>
-            <select
-              value={enemy}
-              onChange={(e) => setEnemy(e.target.value)}
-              disabled={isLoading}
-              className={inputClass}
-            >
-              <option value="">Select enemy</option>
-              {ENEMIES.map((e) => (
-                <option key={e} value={e}>{e}</option>
-              ))}
-            </select>
-          </div>
+      <SolverSection
+        title="Player stats"
+        description="Strength, dexterity, and intelligence shown on the module."
+      >
+        <div className="grid grid-cols-3 gap-3">
+          {(["STR", "DEX", "INT"] as const).map((label, i) => {
+            const value = i === 0 ? str : i === 1 ? dex : intelligence;
+            const setter = i === 0 ? setStr : i === 1 ? setDex : setIntelligence;
+            const id = `adv-${label.toLowerCase()}`;
+            return (
+              <div key={label}>
+                <FieldLabel htmlFor={id}>{label}</FieldLabel>
+                <Input
+                  id={id}
+                  type="number"
+                  min={0}
+                  value={value || ""}
+                  onChange={(e) => setter(Number(e.target.value) || 0)}
+                  disabled={formDisabled}
+                />
+              </div>
+            );
+          })}
         </div>
+      </SolverSection>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label className={labelClass}>STR</label>
-            <input type="number" min={0} value={str || ""} onChange={(e) => setStr(Number(e.target.value) || 0)} disabled={isLoading} className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>DEX</label>
-            <input type="number" min={0} value={dex || ""} onChange={(e) => setDex(Number(e.target.value) || 0)} disabled={isLoading} className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>INT</label>
-            <input type="number" min={0} value={intelligence || ""} onChange={(e) => setIntelligence(Number(e.target.value) || 0)} disabled={isLoading} className={inputClass} />
-          </div>
-        </div>
-
-        <div className="space-y-2 text-sm text-neutral-300">
-          <p className="text-neutral-400 font-medium">Potion strategy</p>
-          <label className="flex items-center gap-2 cursor-pointer">
+      <SolverSection
+        title="Potion strategy"
+        description="By default the solver assumes Potion is used last. Use one of these toggles only when reevaluating after Potion changed your stats."
+      >
+        <div className="space-y-2 text-sm">
+          <label className={cn("flex cursor-pointer items-start gap-2", formDisabled && "cursor-not-allowed opacity-60")}>
             <input
               type="checkbox"
               checked={potionUsedFirst}
@@ -318,12 +351,14 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
                 setPotionUsedFirst(e.target.checked);
                 if (e.target.checked) setStatsAfterItems(false);
               }}
-              disabled={isLoading}
-              className="rounded border-neutral-500"
+              disabled={formDisabled}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-blue-500"
             />
-            <span>I used Potion first — these stats are after Potion (reevaluate other items + weapon)</span>
+            <span className="text-foreground">
+              I used Potion first — these stats are after Potion (reevaluate other items + weapon)
+            </span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className={cn("flex cursor-pointer items-start gap-2", formDisabled && "cursor-not-allowed opacity-60")}>
             <input
               type="checkbox"
               checked={statsAfterItems}
@@ -331,113 +366,138 @@ export default function AdventureGameSolver({ bomb }: AdventureGameSolverProps) 
                 setStatsAfterItems(e.target.checked);
                 if (e.target.checked) setPotionUsedFirst(false);
               }}
-              disabled={isLoading}
-              className="rounded border-neutral-500"
+              disabled={formDisabled}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-blue-500"
             />
-            <span>Stats are after using all items — only weapon will be computed</span>
+            <span className="text-foreground">
+              Stats are after using all items — only weapon will be computed
+            </span>
           </label>
-          <p className="text-xs text-neutral-500">Default: use other items first, then Potion last. Weapon uses current stats; if Potion changed them, use one of the options above and solve again.</p>
         </div>
+      </SolverSection>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <SolverSection
+        title="World stats"
+        description="Height, temperature, gravity, and pressure from the bomb context."
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <div>
-            <label className={labelClass}>Height (ft)</label>
-            <input type="number" min={0} value={heightFeet || ""} onChange={(e) => setHeightFeet(Number(e.target.value) || 0)} disabled={isLoading} className={inputClass} />
+            <FieldLabel htmlFor="adv-h-ft">Height (ft)</FieldLabel>
+            <Input id="adv-h-ft" type="number" min={0} value={heightFeet || ""} onChange={(e) => setHeightFeet(Number(e.target.value) || 0)} disabled={formDisabled} />
           </div>
           <div>
-            <label className={labelClass}>Height (in)</label>
-            <input type="number" min={0} max={11} value={heightInches || ""} onChange={(e) => setHeightInches(Number(e.target.value) || 0)} disabled={isLoading} className={inputClass} />
+            <FieldLabel htmlFor="adv-h-in">Height (in)</FieldLabel>
+            <Input id="adv-h-in" type="number" min={0} max={11} value={heightInches || ""} onChange={(e) => setHeightInches(Number(e.target.value) || 0)} disabled={formDisabled} />
           </div>
           <div>
-            <label className={labelClass}>Temp (°C)</label>
-            <input type="number" step={0.1} value={temperatureCelsius || ""} onChange={(e) => setTemperatureCelsius(Number(e.target.value) || 0)} disabled={isLoading} className={inputClass} />
+            <FieldLabel htmlFor="adv-temp">Temp (°C)</FieldLabel>
+            <Input id="adv-temp" type="number" step={0.1} value={temperatureCelsius || ""} onChange={(e) => setTemperatureCelsius(Number(e.target.value) || 0)} disabled={formDisabled} />
           </div>
           <div>
-            <label className={labelClass}>Gravity (m/s²)</label>
-            <input type="number" step={0.1} value={gravityMs2 || ""} onChange={(e) => setGravityMs2(Number(e.target.value) || 9.8)} disabled={isLoading} className={inputClass} />
+            <FieldLabel htmlFor="adv-grav">Gravity (m/s²)</FieldLabel>
+            <Input id="adv-grav" type="number" step={0.1} value={gravityMs2 || ""} onChange={(e) => setGravityMs2(Number(e.target.value) || 9.8)} disabled={formDisabled} />
           </div>
           <div>
-            <label className={labelClass}>Pressure (kPa)</label>
-            <input type="number" step={0.1} value={pressureKpa || ""} onChange={(e) => setPressureKpa(Number(e.target.value) || 101)} disabled={isLoading} className={inputClass} />
+            <FieldLabel htmlFor="adv-press">Pressure (kPa)</FieldLabel>
+            <Input id="adv-press" type="number" step={0.1} value={pressureKpa || ""} onChange={(e) => setPressureKpa(Number(e.target.value) || 101)} disabled={formDisabled} />
           </div>
         </div>
+      </SolverSection>
 
-        <div>
-          <span className={labelClass}>Weapons (3)</span>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
-            {[0, 1, 2].map((i) => (
+      <SolverSection
+        title="Weapons"
+        description="Select the three weapons available to your character."
+      >
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i}>
+              <FieldLabel htmlFor={`adv-weapon-${i}`}>Weapon {i + 1}</FieldLabel>
               <select
-                key={i}
+                id={`adv-weapon-${i}`}
                 value={weapons[i]}
                 onChange={(e) => setWeapons((prev) => {
                   const next = [...prev] as [string, string, string];
                   next[i] = e.target.value;
                   return next;
                 })}
-                disabled={isLoading}
-                className={inputClass}
+                disabled={formDisabled}
+                className={SELECT_CLASS}
               >
-                <option value="">Weapon {i + 1}</option>
+                <option value="">Select weapon</option>
                 {WEAPONS.map((w) => (
                   <option key={w} value={w}>{w}</option>
                 ))}
               </select>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
+      </SolverSection>
 
-        <div>
-          <span className={labelClass}>Misc items (5)</span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-1">
-            {[0, 1, 2, 3, 4].map((i) => (
+      <SolverSection
+        title="Misc items"
+        description="Select the five inventory items shown on the module."
+      >
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i}>
+              <FieldLabel htmlFor={`adv-item-${i}`}>Item {i + 1}</FieldLabel>
               <select
-                key={i}
+                id={`adv-item-${i}`}
                 value={miscItems[i]}
                 onChange={(e) => setMiscItems((prev) => {
                   const next = [...prev] as [string, string, string, string, string];
                   next[i] = e.target.value;
                   return next;
                 })}
-                disabled={isLoading}
-                className={inputClass}
+                disabled={formDisabled}
+                className={SELECT_CLASS}
               >
-                <option value="">Item {i + 1}</option>
+                <option value="">Select item</option>
                 {MISC_ITEMS.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
+      </SolverSection>
 
-        <ErrorAlert error={error ?? ""} />
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!canSolve}
+        isLoading={isLoading}
+        isSolved={isSolved}
+      />
 
-        {result && (
-          <div className="space-y-2 mt-4 p-4 rounded-lg bg-neutral-800/80">
-            {result.itemsToUse.length > 0 && (
-              <p className="font-medium text-amber-400">
-                Use these items (in any order): <strong>{result.itemsToUse.join(", ")}</strong>
-              </p>
-            )}
-            {result.itemsToUse.includes("Potion") && (
-              <p className="text-sm text-amber-300/90 mt-2">
-                Potion is last. If your STR/DEX/INT changed after using it: use &quot;I used Potion first&quot; and new stats to get other items + weapon, or &quot;Stats are after using all items&quot; to get weapon only.
-              </p>
-            )}
-            <p className="font-medium text-amber-400">
-              {result.itemsToUse.length > 0 ? "Then use weapon" : "Use weapon"}: <strong>{result.weaponToUse}</strong>
-            </p>
-          </div>
-        )}
+      <ErrorAlert error={error} />
 
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={!canSolve}
-          isLoading={isLoading}
-        />
-        <TwitchCommandDisplay command={twitchCommand} />
-      </div>
+      {result && (
+        <>
+          <SolverResult
+            variant="success"
+            title="Use these on the module"
+            description={resultDescription}
+          />
+          {result.itemsToUse.includes("Potion") && (
+            <SolverResult
+              variant="warning"
+              title="Potion changes stats"
+              description={
+                "Potion is meant to be used last. If your STR/DEX/INT change after drinking it, recheck — pick \"I used Potion first\" with the new stats to get the other items + weapon, or \"Stats are after using all items\" to get only the weapon."
+              }
+            />
+          )}
+        </>
+      )}
+
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the enemy, your stats, the world readings, and the three weapons + five inventory
+        items. Use the items in any order, then attack with the chosen weapon. If Potion changes
+        your stats, re-solve with the appropriate toggle above.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

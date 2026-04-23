@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Timer } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
@@ -7,12 +8,13 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
 
 interface TurnTheKeySolverProps {
   bomb: BombEntity | null | undefined;
@@ -161,21 +163,24 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
     return m * 60 + s;
   }, [minutes, seconds]);
   const canSolve = totalSeconds !== null && totalSeconds <= 99 * 60 + 59;
+  const disabled = isLoading || isSolved;
 
   return (
     <SolverLayout>
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">TURN THE KEY</h3>
-        <p className="text-center text-base-content/80 text-sm mb-4">
-          Enter the time shown on the module display. Turn the key when the bomb timer matches this time.
-        </p>
-
-        <div className="flex flex-wrap items-end gap-4 justify-center mb-4">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Minutes (0–99)</span>
+      <SolverSection
+        title="Module display time"
+        description="Enter the time shown on the module's display in minutes and seconds."
+      >
+        <div className="flex items-end justify-center gap-3">
+          <div className="flex flex-col items-center gap-1">
+            <label
+              htmlFor="ttk-minutes"
+              className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              Minutes
             </label>
             <Input
+              id="ttk-minutes"
               type="number"
               min={0}
               max={99}
@@ -188,16 +193,26 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
                 }
               }}
               placeholder="0"
-              className="w-20 text-center"
-              disabled={isLoading || isSolved}
+              disabled={disabled}
+              aria-label="Minutes (0–99)"
+              className="w-24 text-center font-mono text-3xl tracking-widest"
             />
           </div>
-          <span className="text-xl font-bold text-base-content/70 pb-2">:</span>
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Seconds (0–59)</span>
+          <span
+            aria-hidden
+            className="pb-2 font-mono text-3xl font-bold text-muted-foreground"
+          >
+            :
+          </span>
+          <div className="flex flex-col items-center gap-1">
+            <label
+              htmlFor="ttk-seconds"
+              className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              Seconds
             </label>
             <Input
+              id="ttk-seconds"
               type="number"
               min={0}
               max={59}
@@ -210,35 +225,50 @@ export default function TurnTheKeySolver({ bomb }: TurnTheKeySolverProps) {
                 }
               }}
               placeholder="00"
-              className="w-20 text-center"
-              disabled={isLoading || isSolved}
+              disabled={disabled}
+              aria-label="Seconds (0–59)"
+              className="w-24 text-center font-mono text-3xl tracking-widest"
             />
           </div>
         </div>
-      </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
-        isSolveDisabled={!canSolve || isSolved}
+        isSolveDisabled={!canSolve}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Set time"
       />
 
       <ErrorAlert error={error} />
 
       {result && (
-        <Alert variant="success" className="mb-4">
-          <span className="font-bold">{result.instruction}</span>
-        </Alert>
+        <SolverSection title="Turn the key" className="border-emerald-500/40">
+          <div className="flex flex-col items-center gap-3">
+            <div className="inline-flex items-center gap-3 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-2">
+              <Timer
+                className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400"
+                aria-hidden
+              />
+              <span className="font-mono text-3xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
+                {formatMmSs(result.turnWhenSeconds)}
+              </span>
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              {result.instruction}
+            </p>
+          </div>
+        </SolverSection>
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Turn the key when the bomb&apos;s timer matches the time on the display, no sooner, no later.</p>
-        <p>Enter the time shown (e.g. 1:23 = 1 min 23 sec) and use the solution as your reminder.</p>
-      </div>
+      <SolverInstructions>
+        Turn the key exactly when the bomb timer reaches the time above — no sooner,
+        no later. Enter 1:23 as minutes 1 and seconds 23.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

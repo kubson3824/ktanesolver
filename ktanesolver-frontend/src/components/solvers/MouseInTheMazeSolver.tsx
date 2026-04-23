@@ -15,25 +15,26 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
+  SegmentedControl,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
 import { cn } from "../../lib/cn";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 
-const SPHERE_OPTIONS: { value: SphereColor; label: string }[] = [
-  { value: "GREEN", label: "Green" },
-  { value: "BLUE", label: "Blue" },
-  { value: "WHITE", label: "White" },
-  { value: "YELLOW", label: "Yellow" },
+const SPHERE_OPTIONS: ReadonlyArray<{ value: SphereColor; label: string; swatch: string }> = [
+  { value: "GREEN", label: "Green", swatch: "bg-green-500" },
+  { value: "BLUE", label: "Blue", swatch: "bg-blue-500" },
+  { value: "WHITE", label: "White", swatch: "bg-gray-200 border border-border" },
+  { value: "YELLOW", label: "Yellow", swatch: "bg-yellow-400" },
 ];
 
-const DIRECTION_OPTIONS: { value: Direction; label: string }[] = [
+const DIRECTION_OPTIONS: ReadonlyArray<{ value: Direction; label: string }> = [
   { value: "UP", label: "Up" },
   { value: "DOWN", label: "Down" },
   { value: "LEFT", label: "Left" },
@@ -45,6 +46,70 @@ interface MouseInTheMazeSolverProps {
 }
 
 const STEPS_TO_WALL_INITIAL = [0, 0, 0, 0] as const;
+
+function clampStep(n: number): number {
+  return Math.min(9, Math.max(0, Number(n) || 0));
+}
+
+function DirectionArrow({ direction, className }: { direction: Direction; className?: string }) {
+  const path =
+    direction === "UP"
+      ? "M12 4l-8 8h5v8h6v-8h5L12 4z"
+      : direction === "DOWN"
+        ? "M12 20l8-8h-5V4h-6v8H4l8 8z"
+        : direction === "LEFT"
+          ? "M4 12l8 8v-5h8v-6h-8V4L4 12z"
+          : "M20 12l-8-8v5H4v6h8v5l8-8z";
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path d={path} />
+    </svg>
+  );
+}
+
+function sphereSwatch(color: SphereColor): string {
+  return SPHERE_OPTIONS.find((o) => o.value === color)?.swatch ?? "bg-muted";
+}
+
+function ColorPicker({
+  value,
+  onChange,
+  disabled,
+  ariaLabel,
+}: {
+  value: SphereColor;
+  onChange: (v: SphereColor) => void;
+  disabled?: boolean;
+  ariaLabel: string;
+}) {
+  return (
+    <div role="radiogroup" aria-label={ariaLabel} className="flex flex-wrap gap-2">
+      {SPHERE_OPTIONS.map((opt) => {
+        const selected = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            disabled={disabled}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+              selected
+                ? "border-ring bg-accent/15 text-foreground ring-2 ring-ring ring-offset-1 ring-offset-card"
+                : "border-border bg-muted/40 text-muted-foreground hover:text-foreground",
+              disabled && "cursor-not-allowed opacity-60",
+            )}
+          >
+            <span className={cn("h-3.5 w-3.5 rounded-full", opt.swatch)} aria-hidden />
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps) {
   const [sphereColorAtPosition, setSphereColorAtPosition] = useState<SphereColor>("GREEN");
@@ -116,10 +181,6 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
     },
     []
   );
-
-  function clampStep(n: number): number {
-    return Math.min(9, Math.max(0, Number(n) || 0));
-  }
 
   const onRestoreSolution = useCallback(
     (solution: MouseInTheMazeSolveResponse["output"]) => {
@@ -221,7 +282,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
       case "FORWARD":
         return "Fwd";
       case "BACKWARD":
-        return "Backward";
+        return "Back";
       case "TURN_LEFT":
         return "L";
       case "TURN_RIGHT":
@@ -231,41 +292,8 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
     }
   };
 
-  const DirectionArrow = ({ direction, className }: { direction: Direction; className?: string }) => {
-    const path =
-      direction === "UP"
-        ? "M12 4l-8 8h5v8h6v-8h5L12 4z"
-        : direction === "DOWN"
-          ? "M12 20l8-8h-5V4h-6v8H4l8 8z"
-          : direction === "LEFT"
-            ? "M4 12l8 8v-5h8v-6h-8V4L4 12z"
-            : "M20 12l-8-8v5H4v6h8v5l8-8z";
-    return (
-      <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-        <path d={path} />
-      </svg>
-    );
-  };
-
-  const sphereColorClass = (color: SphereColor): string => {
-    switch (color) {
-      case "GREEN":
-        return "bg-green-500";
-      case "BLUE":
-        return "bg-blue-500";
-      case "WHITE":
-        return "bg-gray-300 border border-base-content/20";
-      case "YELLOW":
-        return "bg-yellow-400";
-      default:
-        return "bg-base-content/30";
-    }
-  };
-
-  /** Start cell for path display: from result when using sphere identification, else not applicable. */
   const startCellForPath = result?.startCell ?? null;
 
-  /** Compute path cells and direction from start by applying moves. 1-based row/col. */
   const pathCells = useMemo(() => {
     if (!result?.moves?.length || !startCellForPath) return new Map<string, { stepIndex: number; outgoingDir: Direction | null }>();
     const turnLeft = (d: Direction): Direction =>
@@ -332,7 +360,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             <DirectionArrow
               key="start"
               direction={startDirection}
-              className="h-6 w-6 shrink-0 text-success-content"
+              className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300"
             />
           );
         } else if (isOnPath && pathInfo?.outgoingDir != null) {
@@ -340,7 +368,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             <DirectionArrow
               key="path"
               direction={pathInfo.outgoingDir}
-              className="h-4 w-4 shrink-0 text-success/90"
+              className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
             />
           );
         }
@@ -348,7 +376,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
           symbols.push(
             <div
               key={`sphere-${sphereColor}`}
-              className={cn("h-4 w-4 shrink-0 rounded-full border border-base-content/20", sphereColorClass(sphereColor))}
+              className={cn("h-3.5 w-3.5 shrink-0 rounded-full border border-border", sphereSwatch(sphereColor))}
               title={sphereColor}
             />
           );
@@ -357,7 +385,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
           symbols.push(
             <span
               key="target"
-              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-error bg-error/40 text-error-content text-xs font-bold"
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-red-500 bg-red-500/40 text-xs font-bold text-red-900 dark:text-red-100"
             >
               ✓
             </span>
@@ -372,7 +400,7 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
             aria-colindex={c}
             aria-label={
               isStart
-                ? `Start (detected), row ${r}, column ${c}, facing ${startDirection}`
+                ? `Start, row ${r}, column ${c}, facing ${startDirection}`
                 : isTarget
                   ? `Target sphere, row ${r}, column ${c}`
                   : isOnPath
@@ -382,19 +410,18 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
                       : `Cell row ${r}, column ${c}`
             }
             className={cn(
-              "relative min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 border border-base-content/25",
-              "flex items-center justify-center",
-              !isStart && !isTarget && !sphereColor && !isOnPath && "bg-base-300",
-              isStart && "bg-success/40 border-success/50",
-              isTarget && "bg-error/30 border-error/50",
-              isOnPath && !isStart && !isTarget && "bg-success/25 border-success/40",
-              sphereColor && !isTarget && !isOnPath && "bg-base-200"
+              "relative flex h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] items-center justify-center border border-border",
+              !isStart && !isTarget && !sphereColor && !isOnPath && "bg-muted/40",
+              isStart && "border-emerald-500/60 bg-emerald-500/25",
+              isTarget && "border-red-500/60 bg-red-500/20",
+              isOnPath && !isStart && !isTarget && "border-emerald-500/40 bg-emerald-500/15",
+              sphereColor && !isTarget && !isOnPath && "bg-muted",
             )}
           >
             {(hasRightWall || hasBottomWall || hasLeftWall || hasTopWall) && (
               <svg
                 viewBox="0 0 1 1"
-                className="absolute pointer-events-none text-base-content"
+                className="pointer-events-none absolute text-foreground"
                 style={{
                   left: -1,
                   top: -1,
@@ -429,39 +456,27 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
 
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Mouse In The Maze</CardTitle>
-          <CardDescription>
-            Go to the nearest sphere, report its colour and the four distances to the nearest wall (in any order — you don’t need to know which way is “up”). Enter the four distances in any order; the solver will try all combinations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Sphere colour at your position</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {SPHERE_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={sphereColorAtPosition === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSphereColorAtPosition(opt.value)}
-                  disabled={isSolved}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
+      <SolverSection
+        title="Current position"
+        description="Go to the nearest sphere, then report its colour and the four distances to the nearest wall in each direction (any order)."
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Sphere colour at your position</p>
+            <ColorPicker
+              value={sphereColorAtPosition}
+              onChange={setSphereColorAtPosition}
+              disabled={isSolved}
+              ariaLabel="Sphere colour at your position"
+            />
           </div>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Steps to wall (four distances, any order)</span>
-            </label>
-            <p className="text-sm text-base-content/70 mb-1">Number of moves before hitting a wall or edge in each direction. Enter in any order.</p>
-            <div className="flex flex-wrap gap-2 items-center">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Steps to wall (any order)</p>
+            <p className="text-xs text-muted-foreground">
+              Moves before hitting a wall or edge in each of the four directions.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
               {([0, 1, 2, 3] as const).map((i) => (
                 <Input
                   key={i}
@@ -484,132 +499,125 @@ export default function MouseInTheMazeSolver({ bomb }: MouseInTheMazeSolverProps
               ))}
             </div>
           </div>
+        </div>
+      </SolverSection>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Torus colour</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {SPHERE_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={torusColor === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTorusColor(opt.value)}
-                  disabled={isSolved}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
+      <SolverSection
+        title="Torus &amp; facing"
+        description="The torus colour (the goal marker) and the direction you are facing at the start."
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Torus colour</p>
+            <ColorPicker
+              value={torusColor}
+              onChange={setTorusColor}
+              disabled={isSolved}
+              ariaLabel="Torus colour"
+            />
           </div>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Start direction</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {DIRECTION_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={startDirection === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStartDirection(opt.value)}
-                  disabled={isSolved}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Start direction</p>
+            <SegmentedControl
+              value={startDirection}
+              onChange={setStartDirection}
+              options={DIRECTION_OPTIONS}
+              disabled={isSolved}
+              ariaLabel="Start direction"
+            />
           </div>
-        </CardContent>
-      </Card>
-
-      {result?.maze && (
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-center">Maze</CardTitle>
-            <CardDescription id={mazeGridDescId} className="text-center">
-              10×10 grid: start (arrow), colored spheres, path (green), target (✓).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              id={mazeGridId}
-              role="grid"
-              aria-label="Maze grid, 10 by 10 cells"
-              aria-describedby={mazeGridDescId}
-              className="relative inline-grid max-w-2xl mx-auto border-2 border-base-content/40 rounded overflow-hidden bg-base-content/10"
-              style={{
-                gridTemplateColumns: "auto repeat(10, 1fr)",
-                gridTemplateRows: "auto repeat(10, 1fr)",
-              }}
-            >
-              <div className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 bg-base-300" aria-hidden />
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((c) => (
-                <div
-                  key={`col-${c}`}
-                  className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 flex items-center justify-center bg-base-300 text-xs text-base-content/70 font-medium"
-                  aria-hidden
-                >
-                  {c}
-                </div>
-              ))}
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((row) => (
-                <Fragment key={`row-${row}`}>
-                  <div
-                    className="min-w-[2.25rem] min-h-[2.25rem] w-10 h-10 flex items-center justify-center bg-base-300 text-xs text-base-content/70 font-medium"
-                    aria-hidden
-                  >
-                    {row + 1}
-                  </div>
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((col) =>
-                    renderMazeGrid(result.maze!)[row * 10 + col]
-                  )}
-                </Fragment>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {result && (
-        <Card className="mb-4 border-success/50 bg-success/5">
-          <CardHeader>
-            <CardTitle className="text-success">Solution</CardTitle>
-            <CardDescription>
-              Target sphere: <strong>{result.targetSphereColor}</strong>
-              {result.targetCell && ` at (${result.targetCell.row}, ${result.targetCell.col})`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-1.5">
-              {result.moves.map((m, i) => (
-                <Badge key={i} variant="success" className="text-base gap-1">
-                  {moveLabel(m)}
-                </Badge>
-              ))}
-            </div>
-            <p className="text-sm text-base-content/70 mt-2">
-              {result.moves.length} move{result.moves.length !== 1 ? "s" : ""}
-            </p>
-            <p className="text-xs text-base-content/60 mt-2">
-              All moves are from the <strong>mouse’s perspective</strong>: L = turn left, R = turn right, Fwd = one step in the direction the mouse is facing, Backward = one step in the opposite direction.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
-        isSolveDisabled={false}
         isLoading={isLoading}
-        solveText="Solve"
+        isSolved={isSolved}
       />
 
       <ErrorAlert error={error} />
-      <TwitchCommandDisplay command={twitchCommand} />
+
+      {result && (
+        <SolverResult
+          variant="success"
+          title="Target sphere"
+          description={
+            result.targetCell
+              ? `${result.targetSphereColor} at row ${result.targetCell.row}, column ${result.targetCell.col}\nMoves: ${result.moves.length}`
+              : `${result.targetSphereColor}\nMoves: ${result.moves.length}`
+          }
+        />
+      )}
+
+      {result && result.moves.length > 0 && (
+        <SolverSection
+          title="Move sequence"
+          description="L/R turn the mouse; Fwd/Back walks relative to the way it is facing."
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {result.moves.map((m, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300"
+              >
+                {moveLabel(m)}
+              </span>
+            ))}
+          </div>
+        </SolverSection>
+      )}
+
+      {result?.maze && (
+        <SolverSection
+          title="Maze"
+          description="10×10 grid: arrow = start, coloured dots = spheres, green tint = path, red ✓ = target."
+        >
+          <div
+            id={mazeGridId}
+            role="grid"
+            aria-label="Maze grid, 10 by 10 cells"
+            aria-describedby={mazeGridDescId}
+            className="relative mx-auto inline-grid max-w-full overflow-auto rounded border border-border bg-muted/20"
+            style={{
+              gridTemplateColumns: "auto repeat(10, 1fr)",
+              gridTemplateRows: "auto repeat(10, 1fr)",
+            }}
+          >
+            <div className="h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] bg-muted/40" aria-hidden />
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((c) => (
+              <div
+                key={`col-${c}`}
+                className="flex h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] items-center justify-center bg-muted/40 text-xs font-medium text-muted-foreground"
+                aria-hidden
+              >
+                {c}
+              </div>
+            ))}
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((row) => (
+              <Fragment key={`row-${row}`}>
+                <div
+                  className="flex h-9 w-9 min-h-[2.25rem] min-w-[2.25rem] items-center justify-center bg-muted/40 text-xs font-medium text-muted-foreground"
+                  aria-hidden
+                >
+                  {row + 1}
+                </div>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((col) =>
+                  renderMazeGrid(result.maze!)[row * 10 + col]
+                )}
+              </Fragment>
+            ))}
+          </div>
+        </SolverSection>
+      )}
+
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the sphere you're standing on, the torus target colour, and the four distances. The
+        solver identifies which maze you are in and returns the shortest path to the torus sphere.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

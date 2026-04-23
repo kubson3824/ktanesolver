@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Radio } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveMorsematics as solveMorsematicsApi } from "../../services/morsematicsService";
@@ -7,52 +8,47 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
 } from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
 
 interface MorsematicsSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
 const MORSE_CODE: Record<string, string> = {
-  'A': '.-',
-  'B': '-...',
-  'C': '-.-.',
-  'D': '-..',
-  'E': '.',
-  'F': '..-.',
-  'G': '--.',
-  'H': '....',
-  'I': '..',
-  'J': '.---',
-  'K': '-.-',
-  'L': '.-..',
-  'M': '--',
-  'N': '-.',
-  'O': '---',
-  'P': '.--.',
-  'Q': '--.-',
-  'R': '.-.',
-  'S': '...',
-  'T': '-',
-  'U': '..-',
-  'V': '...-',
-  'W': '.--',
-  'X': '-..-',
-  'Y': '-.--',
-  'Z': '--..',
+  A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.",
+  G: "--.", H: "....", I: "..", J: ".---", K: "-.-", L: ".-..",
+  M: "--", N: "-.", O: "---", P: ".--.", Q: "--.-", R: ".-.",
+  S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-",
+  Y: "-.--", Z: "--..",
 };
+
+function formatMorse(morse: string): string {
+  return morse.replace(/\./g, "·").replace(/-/g, "−");
+}
+
+function MorsePatternCard({ letter }: { letter: string }) {
+  const morse = MORSE_CODE[letter];
+  return (
+    <div className="inline-flex min-w-[72px] flex-col items-center rounded-md border border-border bg-muted/40 px-3 py-2">
+      <span className="font-mono text-2xl font-bold text-foreground">{letter}</span>
+      <span className="mt-1 font-mono text-base tracking-widest text-emerald-600 dark:text-emerald-400">
+        {morse ? formatMorse(morse) : "?"}
+      </span>
+    </div>
+  );
+}
 
 export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
   const [letters, setLetters] = useState<string>("");
   const [result, setResult] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -81,20 +77,20 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (solution: { letter: string }) => {
-      if (!solution?.letter) return;
-      setResult(solution.letter);
+  const onRestoreSolution = useCallback((solution: { letter: string }) => {
+    if (!solution?.letter) return;
+    setResult(solution.letter);
+    const command = generateTwitchCommand({
+      moduleType: ModuleType.MORSEMATICS,
+      result: solution,
+    });
+    setTwitchCommand(command);
+  }, []);
 
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.MORSEMATICS,
-        result: solution,
-      });
-      setTwitchCommand(command);
-    },
-  []);
-
-  useSolverModulePersistence<{ letters: string; result: string; twitchCommand: string }, { letter: string }>({
+  useSolverModulePersistence<
+    { letters: string; result: string; twitchCommand: string },
+    { letter: string }
+  >({
     state: moduleState,
     onRestoreState,
     onRestoreSolution,
@@ -102,12 +98,14 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
       if (raw == null) return null;
       if (typeof raw === "object") {
         const anyRaw = raw as { output?: unknown; letter?: unknown };
-        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { letter: string };
+        if (anyRaw.output && typeof anyRaw.output === "object")
+          return anyRaw.output as { letter: string };
         if (typeof anyRaw.letter === "string") return { letter: anyRaw.letter };
       }
       return null;
     },
-    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
@@ -117,12 +115,10 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
       setError("Please enter exactly 3 letters");
       return;
     }
-
     if (!/^[a-zA-Z]{3}$/.test(letters)) {
       setError("Please enter only letters (A-Z)");
       return;
     }
-
     if (!round?.id || !bomb?.id || !currentModule?.id) {
       setError("Missing required information");
       return;
@@ -133,14 +129,10 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
 
     try {
       const response = await solveMorsematicsApi(round.id, bomb.id, currentModule.id, {
-        input: {
-          letters: letters.toUpperCase()
-        }
+        input: { letters: letters.toUpperCase() },
       });
 
       setResult(response.output.letter);
-
-      // Generate Twitch command
       const command = generateTwitchCommand({
         moduleType: ModuleType.MORSEMATICS,
         result: response.output,
@@ -149,107 +141,94 @@ export default function MorsematicsSolver({ bomb }: MorsematicsSolverProps) {
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve morsematics");
+      setError(err instanceof Error ? err.message : "Failed to solve Morsematics");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLetterChange = (value: string) => {
-    const filtered = value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 3);
+    const filtered = value
+      .replace(/[^a-zA-Z]/g, "")
+      .toUpperCase()
+      .slice(0, 3);
     setLetters(filtered);
     if (isSolved) {
-      reset();
+      setResult("");
+      setTwitchCommand("");
     }
   };
 
   const reset = () => {
+    setLetters("");
     setResult("");
     setTwitchCommand("");
-  };
-
-  const fullReset = () => {
-    setLetters("");
-    reset();
     resetSolverState();
   };
 
-  const displayMorseCode = (text: string) => {
-    return text.split('').map((char, index) => (
-      <div key={index} className="flex flex-col items-center">
-        <span className="text-2xl font-bold text-gray-300">{char}</span>
-        <div className="flex gap-1 mt-1">
-          {MORSE_CODE[char]?.split('').map((symbol, symbolIndex) => (
-            <span key={symbolIndex} className="text-lg text-gray-400">
-              {symbol === '.' ? '•' : '—'}
-            </span>
-          ))}
-        </div>
-      </div>
-    ));
-  };
+  const disabled = isLoading || isSolved;
+  const letterList = letters.split("");
 
   return (
     <SolverLayout>
-      {/* Input section */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <label className="block text-sm font-medium text-gray-300 mb-3">
-          Received Letters (3 letters):
-        </label>
+      <SolverSection
+        title="Received letters"
+        description="Enter the 3 letters you decoded from the module's flashing Morse lights."
+      >
         <Input
           type="text"
           value={letters}
           onChange={(e) => handleLetterChange(e.target.value)}
-          className="w-full text-center text-2xl font-mono uppercase tracking-widest"
           placeholder="ABC"
           maxLength={3}
-          disabled={isLoading}
+          disabled={disabled}
+          aria-label="Received letters"
+          className="text-center font-mono text-2xl uppercase tracking-[0.5em]"
         />
-        
-        {/* Morse code display for input */}
-        {letters.length > 0 && (
-          <div className="mt-4 flex justify-center gap-4">
-            {displayMorseCode(letters)}
+
+        {letterList.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {letterList.map((char, index) => (
+              <MorsePatternCard key={index} letter={char} />
+            ))}
           </div>
         )}
-      </div>
+      </SolverSection>
 
-      {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
-        onReset={fullReset}
+        onReset={reset}
         isSolveDisabled={letters.length !== 3}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Result */}
       {result && isSolved && (
-        <Alert variant="success" className="mb-4">
-          <span className="font-bold mb-2 block">Transmit Letter:</span>
-          <div className="flex items-center gap-4">
-            <span className="text-4xl font-mono font-bold">{result}</span>
-            <div className="flex gap-1">
-              {MORSE_CODE[result]?.split('').map((symbol, index) => (
-                <span key={index} className="text-2xl">
-                  {symbol === '.' ? '•' : '—'}
-                </span>
-              ))}
-            </div>
+        <SolverSection title="Transmit this letter" className="border-emerald-500/40">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Radio
+              className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400"
+              aria-hidden
+            />
+            <span className="font-mono text-5xl font-bold text-emerald-700 dark:text-emerald-300">
+              {result}
+            </span>
+            <span className="font-mono text-3xl tracking-widest text-emerald-600 dark:text-emerald-400">
+              {MORSE_CODE[result] ? formatMorse(MORSE_CODE[result]) : ""}
+            </span>
           </div>
-        </Alert>
+        </SolverSection>
       )}
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p>Enter the 3 letters received from the Morse code lights.</p>
-      </div>
+      <SolverInstructions>
+        Decode the Morse flashes on the module into their 3 letters, enter them here,
+        and the solver picks the correct letter to transmit back.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

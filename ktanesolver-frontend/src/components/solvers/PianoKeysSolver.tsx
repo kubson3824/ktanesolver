@@ -3,14 +3,17 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solvePianoKeys, type PianoKeysSymbol, type PianoKeysNote } from "../../services/pianoKeysService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
 } from "../common";
+import { cn } from "../../lib/cn";
 
 interface PianoKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -43,18 +46,13 @@ const NOTES: { note: PianoKeysNote; isBlack: boolean; position: number }[] = [
   { note: "B", isBlack: false, position: 6 },
 ];
 
-const getNoteDisplay = (note: PianoKeysNote): string => {
-  return note.replace("_SHARP", "♯");
-};
+const getNoteDisplay = (note: PianoKeysNote): string => note.replace("_SHARP", "♯");
 
 export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
   const [selectedSymbols, setSelectedSymbols] = useState<PianoKeysSymbol[]>([]);
-  const [solution, setSolution] = useState<{
-    notes: PianoKeysNote[];
-  } | null>(null);
+  const [solution, setSolution] = useState<{ notes: PianoKeysNote[] } | null>(null);
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
-  
-  // Use the common solver hook for shared state
+
   const {
     isLoading,
     error,
@@ -80,7 +78,6 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
       solution?: typeof solution;
       twitchCommands?: string[];
     }) => {
-      // Backend stores input as state.input.symbols; frontend uses selectedSymbols
       const symbols = state.selectedSymbols ?? state.input?.symbols;
       if (symbols && Array.isArray(symbols)) setSelectedSymbols(symbols);
       if (state.solution !== undefined) setSolution(state.solution ?? null);
@@ -89,23 +86,17 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (restored: NonNullable<typeof solution>) => {
-      if (restored && Array.isArray(restored.notes)) {
-        setSolution(restored);
-
-        const noteSequence = restored.notes.map(getNoteDisplay).join("-");
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.PIANO_KEYS,
-          result: {
-            notes: noteSequence,
-            count: restored.notes.length,
-          },
-        });
-        setTwitchCommands([command]);
-      }
-    },
-  []);
+  const onRestoreSolution = useCallback((restored: NonNullable<typeof solution>) => {
+    if (restored && Array.isArray(restored.notes)) {
+      setSolution(restored);
+      const noteSequence = restored.notes.map(getNoteDisplay).join("-");
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.PIANO_KEYS,
+        result: { notes: noteSequence, count: restored.notes.length },
+      });
+      setTwitchCommands([command]);
+    }
+  }, []);
 
   useSolverModulePersistence<
     { selectedSymbols: PianoKeysSymbol[]; solution: typeof solution; twitchCommands: string[] },
@@ -123,7 +114,6 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
           (anyRaw.solution && typeof anyRaw.solution === "object" ? anyRaw.solution : undefined) ??
           (anyRaw.result && typeof anyRaw.result === "object" ? anyRaw.result : undefined) ??
           raw;
-        // Validate that the candidate actually has a notes array
         if (candidate && typeof candidate === "object" && Array.isArray((candidate as { notes?: unknown }).notes)) {
           return candidate as NonNullable<typeof solution>;
         }
@@ -137,14 +127,10 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
 
   const handleSymbolClick = (symbol: PianoKeysSymbol) => {
     if (isSolved || isLoading) return;
-    
     clearError();
-    
     if (selectedSymbols.includes(symbol)) {
-      // Remove symbol if already selected
-      setSelectedSymbols(selectedSymbols.filter(s => s !== symbol));
+      setSelectedSymbols(selectedSymbols.filter((s) => s !== symbol));
     } else if (selectedSymbols.length < 3) {
-      // Add symbol if less than 3 selected
       setSelectedSymbols([...selectedSymbols, symbol]);
     }
     setSolution(null);
@@ -156,7 +142,6 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
       setError("Please select exactly 3 symbols");
       return;
     }
-
     if (!round?.id || !bomb?.id || !currentModule?.id) {
       setError("Missing required information");
       return;
@@ -167,13 +152,9 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
 
     try {
       const response = await solvePianoKeys(round.id, bomb.id, currentModule.id, {
-        input: {
-          symbols: selectedSymbols
-        }
+        input: { symbols: selectedSymbols },
       });
-
       setSolution(response.output);
-      
       const command = generateTwitchCommand({
         moduleType: ModuleType.PIANO_KEYS,
         result: response.output,
@@ -195,177 +176,163 @@ export default function PianoKeysSolver({ bomb }: PianoKeysSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Piano Keys Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
-        
-        {/* Symbol Selection */}
-        <div className="mb-6">
-          <p className="text-center text-gray-400 mb-3 text-sm">
-            Select the 3 symbols shown on the module:
-          </p>
-          <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {SYMBOLS.map(({ symbol, unicode, label }) => {
-              const isSelected = selectedSymbols.includes(symbol);
-              return (
-                <button
-                  key={symbol}
-                  onClick={() => handleSymbolClick(symbol)}
-                  className={`relative group transition-all duration-200 flex flex-col items-center justify-center ${
-                    isSelected
-                      ? "bg-blue-600 hover:bg-blue-500 text-white scale-105"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                  } rounded-lg p-4 border-2 h-24 ${
-                    isSelected ? "border-blue-400" : "border-gray-600"
-                  }`}
-                  disabled={isSolved || isLoading || (!isSelected && selectedSymbols.length >= 3)}
-                  title={label}
-                >
-                  <span className="text-3xl font-bold mb-1">{unicode}</span>
-                  <span className="text-xs text-center opacity-80">
-                    {label}
+      <SolverSection
+        title="Symbols on the module"
+        description={`Pick the three musical symbols shown. Selected: ${selectedSymbols.length}/3.`}
+      >
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {SYMBOLS.map(({ symbol, unicode, label }) => {
+            const isSelected = selectedSymbols.includes(symbol);
+            const order = isSelected ? selectedSymbols.indexOf(symbol) + 1 : null;
+            const disabled = isSolved || isLoading || (!isSelected && selectedSymbols.length >= 3);
+            return (
+              <button
+                key={symbol}
+                type="button"
+                onClick={() => handleSymbolClick(symbol)}
+                disabled={disabled}
+                aria-pressed={isSelected}
+                title={label}
+                className={cn(
+                  "relative flex h-24 flex-col items-center justify-center rounded-lg border-2 p-3 transition-colors",
+                  isSelected
+                    ? "border-ring bg-accent/15 text-foreground ring-2 ring-ring ring-offset-1 ring-offset-card"
+                    : "border-border bg-muted/40 text-muted-foreground hover:text-foreground",
+                  disabled && !isSelected && "cursor-not-allowed opacity-60",
+                )}
+              >
+                {order != null && (
+                  <span className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+                    {order}
                   </span>
-                </button>
-              );
-            })}
-          </div>
+                )}
+                <span className="text-3xl font-bold leading-none">{unicode}</span>
+                <span className="mt-1.5 text-center text-xs">{label}</span>
+              </button>
+            );
+          })}
         </div>
+      </SolverSection>
 
-        {/* Selected Symbols Display */}
-        {selectedSymbols.length > 0 && (
-          <div className="mt-8 pt-4 border-t border-gray-700">
-            <p className="text-center text-gray-400 mb-2 text-sm">
-              Selected Symbols ({selectedSymbols.length}/3):
-            </p>
-            <div className="flex justify-center gap-2">
-              {selectedSymbols.map((symbol, index) => {
-                const { unicode, label } = SYMBOLS.find(s => s.symbol === symbol)!;
-                return (
-                  <div
-                    key={index}
-                    className="bg-blue-600 text-white px-3 py-2 rounded-lg border border-blue-400 flex flex-col items-center"
-                  >
-                    <span className="text-2xl font-bold">{unicode}</span>
-                    <span className="text-xs opacity-80">{label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Piano Keyboard with Solution */}
-        {solution && (
-          <div className="mt-6 pt-4 border-t border-gray-700">
-            <p className="text-center text-gray-400 mb-3 text-sm">
-              Play these notes in order:
-            </p>
-
-            {/* Piano Keyboard */}
-            <div className="relative bg-gray-900 p-6 rounded-lg">
-              <div className="flex relative mx-auto" style={{ height: '160px', width: '441px' }}>
-                {/* White keys */}
-                {NOTES.filter(n => !n.isBlack).map(({ note, position }) => {
-                  const notePositions: number[] = [];
-                  solution.notes.forEach((n, idx) => {
-                    if (n === note) notePositions.push(idx);
-                  });
-                  const isHighlighted = notePositions.length > 0;
-                  return (
-                    <div
-                      key={note}
-                      className={`relative transition-all duration-300 flex flex-col items-center justify-end ${
-                        isHighlighted
-                          ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50"
-                          : "bg-white text-gray-800 hover:bg-gray-100"
-                      } border border-gray-400 rounded-b-lg cursor-pointer`}
-                      style={{
-                        width: '60px',
-                        height: '140px',
-                        marginLeft: position > 0 ? '3px' : '0'
-                      }}
-                    >
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-center">
-                        {isHighlighted && (
-                          <div className={`text-sm font-bold mb-1 ${
-                            isHighlighted ? "text-blue-100" : "text-blue-900"
-                          }`}>
-                            #{notePositions[0] + 1}{notePositions.length > 1 ? ` +${notePositions.length - 1}` : ''}
-                          </div>
-                        )}
-                        <div className="text-lg font-bold">{getNoteDisplay(note)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Black keys */}
-                {NOTES.filter(n => n.isBlack).map(({ note, position }) => {
-                  const notePositions: number[] = [];
-                  solution.notes.forEach((n, idx) => {
-                    if (n === note) notePositions.push(idx);
-                  });
-                  const isHighlighted = notePositions.length > 0;
-                  return (
-                    <div
-                      key={note}
-                      className={`absolute transition-all duration-300 flex flex-col items-center justify-end ${
-                        isHighlighted
-                          ? "bg-blue-700 text-white shadow-lg shadow-blue-700/50"
-                          : "bg-gray-900 text-gray-300 hover:bg-gray-800"
-                      } rounded-b-lg cursor-pointer z-10`}
-                      style={{
-                        width: '40px',
-                        height: '90px',
-                        left: `${Math.floor(position) * 63 + 43}px`
-                      }}
-                    >
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-center">
-                        {isHighlighted && (
-                          <div className="text-xs font-bold mb-1 text-blue-200">
-                            #{notePositions[0] + 1}{notePositions.length > 1 ? ` +${notePositions.length - 1}` : ''}
-                          </div>
-                        )}
-                        <div className="text-sm font-bold">{getNoteDisplay(note)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Note Sequence */}
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-400 mb-2">Note Sequence:</p>
-              <p className="font-mono text-lg text-blue-400">
-                {solution.notes.map(getNoteDisplay).join(" → ")}
-              </p>
-            </div>
-
-            {/* Twitch command display */}
-            <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
-          </div>
-        )}
-      </div>
-
-      {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
         isSolveDisabled={selectedSymbols.length !== 3}
         isLoading={isLoading}
-        solveText="Get Solution"
+        isSolved={isSolved}
+        solveText="Get solution"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Select the 3 musical symbols displayed on the module.</p>
-        <p className="mb-2">The solution will show you which piano keys to press in order.</p>
-        <p>Follow the numbered sequence on the highlighted keys.</p>
-      </div>
+      {solution && (
+        <SolverSection
+          title="Play these notes"
+          description="Press each key in the numbered order."
+        >
+          <Keyboard notes={solution.notes} />
+          <p className="mt-3 break-all text-center font-mono text-sm text-foreground">
+            {solution.notes.map(getNoteDisplay).join(" → ")}
+          </p>
+        </SolverSection>
+      )}
+
+      {twitchCommands.length > 0 && <TwitchCommandDisplay command={twitchCommands} />}
+
+      <SolverInstructions>
+        Pick the three symbols that appear on the module. The solver maps them to a note sequence;
+        press the highlighted keys in order.
+      </SolverInstructions>
     </SolverLayout>
+  );
+}
+
+function Keyboard({ notes }: { notes: PianoKeysNote[] }) {
+  const firstIndex = (n: PianoKeysNote): number | null => {
+    const i = notes.indexOf(n);
+    return i === -1 ? null : i;
+  };
+  const countFor = (n: PianoKeysNote): number => notes.filter((x) => x === n).length;
+
+  const WHITE_W = 56;
+  const WHITE_GAP = 2;
+  const BLACK_W = 36;
+  const BLACK_H = 90;
+  const WHITE_H = 140;
+  const whiteCount = NOTES.filter((n) => !n.isBlack).length;
+  const totalWidth = whiteCount * WHITE_W + (whiteCount - 1) * WHITE_GAP;
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border bg-muted/20 p-3">
+      <div
+        className="relative mx-auto"
+        style={{ height: `${WHITE_H}px`, width: `${totalWidth}px` }}
+      >
+        {/* White keys */}
+        <div className="flex h-full">
+          {NOTES.filter((n) => !n.isBlack).map(({ note }, idx) => {
+            const first = firstIndex(note);
+            const count = countFor(note);
+            const highlighted = first !== null;
+            return (
+              <div
+                key={note}
+                className={cn(
+                  "relative flex flex-col items-center justify-end rounded-b-md border transition-colors",
+                  highlighted
+                    ? "border-blue-600 bg-blue-500 text-white shadow-md"
+                    : "border-border bg-card text-foreground",
+                )}
+                style={{
+                  width: `${WHITE_W}px`,
+                  height: `${WHITE_H}px`,
+                  marginLeft: idx > 0 ? `${WHITE_GAP}px` : 0,
+                }}
+              >
+                <div className="flex flex-col items-center pb-2 text-center leading-tight">
+                  {highlighted && (
+                    <span className="text-xs font-bold">
+                      #{first! + 1}
+                      {count > 1 ? ` +${count - 1}` : ""}
+                    </span>
+                  )}
+                  <span className="text-sm font-bold">{getNoteDisplay(note)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Black keys */}
+        {NOTES.filter((n) => n.isBlack).map(({ note, position }) => {
+          const first = firstIndex(note);
+          const count = countFor(note);
+          const highlighted = first !== null;
+          const left = Math.floor(position) * (WHITE_W + WHITE_GAP) + WHITE_W - BLACK_W / 2;
+          return (
+            <div
+              key={note}
+              className={cn(
+                "absolute top-0 z-10 flex flex-col items-center justify-end rounded-b-md transition-colors",
+                highlighted
+                  ? "bg-blue-700 text-white shadow-md"
+                  : "bg-foreground text-background",
+              )}
+              style={{ width: `${BLACK_W}px`, height: `${BLACK_H}px`, left: `${left}px` }}
+            >
+              <div className="flex flex-col items-center pb-1.5 text-center leading-tight">
+                {highlighted && (
+                  <span className="text-[0.65rem] font-bold">
+                    #{first! + 1}
+                    {count > 1 ? ` +${count - 1}` : ""}
+                  </span>
+                )}
+                <span className="text-xs font-bold">{getNoteDisplay(note)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

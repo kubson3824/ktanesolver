@@ -13,11 +13,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 const CONNECTIVE_OPTIONS: { value: LogicConnective; symbol: string; label: string }[] = [
   { value: "AND", symbol: "∧", label: "AND" },
@@ -60,11 +63,11 @@ interface LogicSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
+const SELECT_CLASS =
+  "h-11 rounded-md border border-border bg-card px-2 text-base font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+
 export default function LogicSolver({ bomb }: LogicSolverProps) {
-  const [rows, setRows] = useState<ReturnType<typeof defaultRow>[]>(() => [
-    defaultRow(),
-    defaultRow(),
-  ]);
+  const [rows, setRows] = useState<RowState[]>(() => [defaultRow(), defaultRow()]);
   const [result, setResult] = useState<LogicOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
@@ -90,18 +93,20 @@ export default function LogicSolver({ bomb }: LogicSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (state: { rows?: typeof rows; result?: LogicOutput | null; twitchCommand?: string; input?: { rows?: LogicRowInput[] } }) => {
-      const restorableRows = state.rows?.length ? state.rows : state.input?.rows?.map((r) => ({
-        letter1: r.letter1,
-        letter2: r.letter2,
-        letter3: r.letter3,
-        connective1: r.connective1,
-        connective2: r.connective2,
-        negated1: r.negated1,
-        negated2: r.negated2,
-        negated3: r.negated3,
-        leftGrouped: r.leftGrouped,
-      }));
+    (state: { rows?: RowState[]; result?: LogicOutput | null; twitchCommand?: string; input?: { rows?: LogicRowInput[] } }) => {
+      const restorableRows = state.rows?.length
+        ? state.rows
+        : state.input?.rows?.map((r) => ({
+            letter1: r.letter1,
+            letter2: r.letter2,
+            letter3: r.letter3,
+            connective1: r.connective1,
+            connective2: r.connective2,
+            negated1: r.negated1,
+            negated2: r.negated2,
+            negated3: r.negated3,
+            leftGrouped: r.leftGrouped,
+          }));
       if (restorableRows?.length) setRows(restorableRows);
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
@@ -119,7 +124,7 @@ export default function LogicSolver({ bomb }: LogicSolverProps) {
   }, []);
 
   useSolverModulePersistence<
-    { rows: typeof rows; result: LogicOutput | null },
+    { rows: RowState[]; result: LogicOutput | null; twitchCommand: string },
     LogicOutput
   >({
     state: moduleState,
@@ -188,10 +193,19 @@ export default function LogicSolver({ bomb }: LogicSolverProps) {
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
 
-      const command = generateTwitchCommand({ moduleType: ModuleType.LOGIC, result: { answers: output.answers } });
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.LOGIC,
+        result: { answers: output.answers },
+      });
       setTwitchCommand(command);
 
-      updateModuleAfterSolve(bomb.id, currentModule.id, { rows, result: output, twitchCommand: command }, { answers: output.answers }, true);
+      updateModuleAfterSolve(
+        bomb.id,
+        currentModule.id,
+        { rows, result: output, twitchCommand: command },
+        { answers: output.answers },
+        true
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Solve failed.");
     } finally {
@@ -213,104 +227,120 @@ export default function LogicSolver({ bomb }: LogicSolverProps) {
       r.letter3.trim().length > 0
   );
 
+  const formDisabled = isLoading || isSolved;
+
+  const Statement = ({
+    rowIndex,
+    slot,
+    negated,
+    letter,
+    onToggle,
+    onLetter,
+    label,
+  }: {
+    rowIndex: number;
+    slot: 1 | 2 | 3;
+    negated: boolean;
+    letter: string;
+    onToggle: () => void;
+    onLetter: (v: string) => void;
+    label: string;
+  }) => (
+    <div className="flex flex-col items-center">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={negated}
+        aria-label={`Row ${rowIndex + 1} statement ${slot} negation LED`}
+        onClick={() => !formDisabled && onToggle()}
+        className={cn(
+          "mb-1 h-3 w-11 rounded border transition-colors sm:w-12",
+          negated
+            ? "border-red-500 bg-red-500"
+            : "border-border bg-muted/40 hover:bg-muted",
+          formDisabled && "cursor-not-allowed opacity-60",
+        )}
+      />
+      <input
+        type="text"
+        maxLength={1}
+        value={letter}
+        onChange={(e) => onLetter(e.target.value.toUpperCase())}
+        className="h-11 w-11 rounded-md border border-border bg-card text-center text-xl font-bold uppercase text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60 sm:h-12 sm:w-12 sm:text-2xl"
+        disabled={formDisabled}
+        aria-label={label}
+      />
+    </div>
+  );
+
   return (
     <SolverLayout>
-      {/* Module-style panel: gray metallic look, two rows, big SUBMIT */}
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        {/* Two rows of logic expressions */}
-        <div className="space-y-6 mb-6">
+      <SolverSection
+        title="Logic statements"
+        description="Enter the two rows shown on the module. The red LED above each statement marks it as negated. Use the (AB)C / A(BC) toggle to set the bracketing."
+      >
+        <div className="space-y-6">
           {rows.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex flex-wrap items-end justify-center gap-0.5 sm:gap-1">
-              {/* leftGrouped: ( A op1 B ) op2 C  →  open bracket before A */}
+            <div key={rowIndex} className="flex flex-wrap items-end justify-center gap-1">
               {row.leftGrouped && (
-                <span className="text-neutral-400 font-bold text-2xl sm:text-3xl leading-[2.75rem] select-none" aria-hidden>(</span>
+                <span
+                  className="select-none text-2xl font-bold leading-[2.75rem] text-muted-foreground sm:text-3xl"
+                  aria-hidden
+                >
+                  (
+                </span>
               )}
 
-              {/* Statement 1 + LED */}
-              <div className="flex flex-col items-center">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={row.negated1}
-                  aria-label="Red LED above first statement"
-                  onClick={() =>
-                    !isLoading && !isSolved &&
-                    setRow(rowIndex, (r) => ({ ...r, negated1: !r.negated1 }))
-                  }
-                  className={`w-11 sm:w-12 h-2.5 sm:h-3 rounded mb-1 transition-colors border ${
-                    row.negated1
-                      ? "bg-red-600 border-red-500/80 shadow-[0_0_8px_rgba(220,38,38,0.7)]"
-                      : "bg-neutral-600 border-neutral-500"
-                  } ${!isLoading && !isSolved ? "cursor-pointer hover:bg-neutral-500 hover:border-neutral-400" : "cursor-default"}`}
-                />
-                <input
-                  type="text"
-                  maxLength={1}
-                  value={row.letter1}
-                  onChange={(e) =>
-                    setRow(rowIndex, (r) => ({ ...r, letter1: e.target.value.toUpperCase() }))
-                  }
-                  placeholder=""
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded bg-neutral-800 border border-neutral-600 text-yellow-400 text-xl sm:text-2xl font-bold text-center uppercase focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
-                  disabled={isLoading || isSolved}
-                  aria-label={`Row ${rowIndex + 1} first letter`}
-                />
-              </div>
+              <Statement
+                rowIndex={rowIndex}
+                slot={1}
+                negated={row.negated1}
+                letter={row.letter1}
+                onToggle={() => setRow(rowIndex, (r) => ({ ...r, negated1: !r.negated1 }))}
+                onLetter={(v) => setRow(rowIndex, (r) => ({ ...r, letter1: v }))}
+                label={`Row ${rowIndex + 1} first letter`}
+              />
 
               <select
                 value={row.connective1}
                 onChange={(e) =>
                   setRow(rowIndex, (r) => ({ ...r, connective1: e.target.value as LogicConnective }))
                 }
-                className="h-11 px-1.5 rounded bg-neutral-600 border border-neutral-500 text-yellow-400 text-lg font-medium focus:outline-none focus:ring-1 focus:ring-yellow-500/50"
-                disabled={isLoading || isSolved}
+                className={SELECT_CLASS}
+                disabled={formDisabled}
                 aria-label={`Row ${rowIndex + 1} first connective`}
               >
                 {CONNECTIVE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-neutral-800">
-                    {opt.symbol}
-                  </option>
+                  <option key={opt.value} value={opt.value}>{opt.symbol}</option>
                 ))}
               </select>
 
-              {/* A(BC): opening ( before B */}
               {!row.leftGrouped && (
-                <span className="text-neutral-400 font-bold text-2xl sm:text-3xl leading-[2.75rem] select-none" aria-hidden>(</span>
+                <span
+                  className="select-none text-2xl font-bold leading-[2.75rem] text-muted-foreground sm:text-3xl"
+                  aria-hidden
+                >
+                  (
+                </span>
               )}
 
-              {/* Statement 2 + LED */}
-              <div className="flex flex-col items-center">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={row.negated2}
-                  aria-label="Red LED above second statement"
-                  onClick={() =>
-                    !isLoading && !isSolved &&
-                    setRow(rowIndex, (r) => ({ ...r, negated2: !r.negated2 }))
-                  }
-                  className={`w-11 sm:w-12 h-2.5 sm:h-3 rounded mb-1 transition-colors border ${
-                    row.negated2
-                      ? "bg-red-600 border-red-500/80 shadow-[0_0_8px_rgba(220,38,38,0.7)]"
-                      : "bg-neutral-600 border-neutral-500"
-                  } ${!isLoading && !isSolved ? "cursor-pointer hover:bg-neutral-500 hover:border-neutral-400" : "cursor-default"}`}
-                />
-                <input
-                  type="text"
-                  maxLength={1}
-                  value={row.letter2}
-                  onChange={(e) =>
-                    setRow(rowIndex, (r) => ({ ...r, letter2: e.target.value.toUpperCase() }))
-                  }
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded bg-neutral-800 border border-neutral-600 text-yellow-400 text-xl sm:text-2xl font-bold text-center uppercase focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
-                  disabled={isLoading || isSolved}
-                  aria-label={`Row ${rowIndex + 1} second letter`}
-                />
-              </div>
+              <Statement
+                rowIndex={rowIndex}
+                slot={2}
+                negated={row.negated2}
+                letter={row.letter2}
+                onToggle={() => setRow(rowIndex, (r) => ({ ...r, negated2: !r.negated2 }))}
+                onLetter={(v) => setRow(rowIndex, (r) => ({ ...r, letter2: v }))}
+                label={`Row ${rowIndex + 1} second letter`}
+              />
 
-              {/* (AB)C: closing ) after B */}
               {row.leftGrouped && (
-                <span className="text-neutral-400 font-bold text-2xl sm:text-3xl leading-[2.75rem] select-none" aria-hidden>)</span>
+                <span
+                  className="select-none text-2xl font-bold leading-[2.75rem] text-muted-foreground sm:text-3xl"
+                  aria-hidden
+                >
+                  )
+                </span>
               )}
 
               <select
@@ -318,70 +348,57 @@ export default function LogicSolver({ bomb }: LogicSolverProps) {
                 onChange={(e) =>
                   setRow(rowIndex, (r) => ({ ...r, connective2: e.target.value as LogicConnective }))
                 }
-                className="h-11 px-1.5 rounded bg-neutral-600 border border-neutral-500 text-yellow-400 text-lg font-medium focus:outline-none focus:ring-1 focus:ring-yellow-500/50"
-                disabled={isLoading || isSolved}
+                className={SELECT_CLASS}
+                disabled={formDisabled}
                 aria-label={`Row ${rowIndex + 1} second connective`}
               >
                 {CONNECTIVE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-neutral-800">
-                    {opt.symbol}
-                  </option>
+                  <option key={opt.value} value={opt.value}>{opt.symbol}</option>
                 ))}
               </select>
 
-              {/* Statement 3 + LED */}
-              <div className="flex flex-col items-center">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={row.negated3}
-                  aria-label="Red LED above third statement"
-                  onClick={() =>
-                    !isLoading && !isSolved &&
-                    setRow(rowIndex, (r) => ({ ...r, negated3: !r.negated3 }))
-                  }
-                  className={`w-11 sm:w-12 h-2.5 sm:h-3 rounded mb-1 transition-colors border ${
-                    row.negated3
-                      ? "bg-red-600 border-red-500/80 shadow-[0_0_8px_rgba(220,38,38,0.7)]"
-                      : "bg-neutral-600 border-neutral-500"
-                  } ${!isLoading && !isSolved ? "cursor-pointer hover:bg-neutral-500 hover:border-neutral-400" : "cursor-default"}`}
-                />
-                <input
-                  type="text"
-                  maxLength={1}
-                  value={row.letter3}
-                  onChange={(e) =>
-                    setRow(rowIndex, (r) => ({ ...r, letter3: e.target.value.toUpperCase() }))
-                  }
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded bg-neutral-800 border border-neutral-600 text-yellow-400 text-xl sm:text-2xl font-bold text-center uppercase focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
-                  disabled={isLoading || isSolved}
-                  aria-label={`Row ${rowIndex + 1} third letter`}
-                />
-              </div>
+              <Statement
+                rowIndex={rowIndex}
+                slot={3}
+                negated={row.negated3}
+                letter={row.letter3}
+                onToggle={() => setRow(rowIndex, (r) => ({ ...r, negated3: !r.negated3 }))}
+                onLetter={(v) => setRow(rowIndex, (r) => ({ ...r, letter3: v }))}
+                label={`Row ${rowIndex + 1} third letter`}
+              />
 
-              {/* A(BC): closing ) after C */}
               {!row.leftGrouped && (
-                <span className="text-neutral-400 font-bold text-2xl sm:text-3xl leading-[2.75rem] select-none" aria-hidden>)</span>
+                <span
+                  className="select-none text-2xl font-bold leading-[2.75rem] text-muted-foreground sm:text-3xl"
+                  aria-hidden
+                >
+                  )
+                </span>
               )}
 
-              {/* Toggle grouping: click parentheses label */}
               <button
                 type="button"
                 onClick={() =>
-                  !isLoading && !isSolved &&
-                  setRow(rowIndex, (r) => ({ ...r, leftGrouped: !r.leftGrouped }))
+                  !formDisabled && setRow(rowIndex, (r) => ({ ...r, leftGrouped: !r.leftGrouped }))
                 }
-                className="h-11 ml-1 px-2 rounded bg-neutral-600/80 border border-neutral-500 text-neutral-400 text-xs font-medium hover:bg-neutral-600 focus:outline-none focus:ring-1 focus:ring-yellow-500/50"
-                disabled={isLoading || isSolved}
+                className={cn(
+                  "ml-1 h-11 rounded-md border border-border bg-muted/40 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
+                  formDisabled && "cursor-not-allowed opacity-60",
+                )}
+                disabled={formDisabled}
                 aria-label="Toggle bracket grouping"
                 title="Toggle bracket grouping"
               >
                 {row.leftGrouped ? "(AB)C" : "A(BC)"}
               </button>
 
-              {/* T/F result box - green, shows answer after solve */}
               <div
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded flex items-center justify-center bg-green-600 border-2 border-green-500 text-white text-xl font-bold shrink-0"
+                className={cn(
+                  "ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md border-2 text-xl font-bold sm:h-12 sm:w-12",
+                  result?.answers?.[rowIndex] === true && "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                  result?.answers?.[rowIndex] === false && "border-red-500 bg-red-500/15 text-red-700 dark:text-red-300",
+                  result?.answers?.[rowIndex] === undefined && "border-border bg-muted/40 text-muted-foreground",
+                )}
                 aria-label={`Row ${rowIndex + 1} answer`}
               >
                 {result?.answers?.[rowIndex] !== undefined
@@ -393,32 +410,33 @@ export default function LogicSolver({ bomb }: LogicSolverProps) {
             </div>
           ))}
         </div>
-      </div>
+      </SolverSection>
 
-      {/* Solve + Reset (same as other modules) */}
-      <div className="mt-6">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={!canSolve}
-          isLoading={isLoading}
-          solveText="Solve"
-        />
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!canSolve}
+        isLoading={isLoading}
+        isSolved={isSolved}
+      />
 
       <ErrorAlert error={error} />
 
-      {/* Solution below */}
       {result && result.answers.length > 0 && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-bold">Submit on the module:</p>
-          <p className="text-sm mt-1">
-            {result.answers.map((a, i) => `Row ${i + 1}: ${a ? "True" : "False"}`).join(" — ")}
-          </p>
-        </Alert>
+        <SolverResult
+          variant="success"
+          title="Submit on the module"
+          description={result.answers.map((a, i) => `Row ${i + 1}: ${a ? "True" : "False"}`).join("\n")}
+        />
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the three letters and two connectives for each row, set the bracket grouping, and
+        toggle the red LED for any negated statement. The solver returns the truth value to submit
+        for each row.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

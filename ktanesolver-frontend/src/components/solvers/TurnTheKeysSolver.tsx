@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Check, KeyRound } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
@@ -7,13 +8,16 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
+  SolverResult,
 } from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
 import { Button } from "../ui/button";
+import { cn } from "../../lib/cn";
 
 interface TurnTheKeysSolverProps {
   bomb: BombEntity | null | undefined;
@@ -203,104 +207,157 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
     return priorityInput.trim() !== "" && !isNaN(p) && p >= 0 ? p : null;
   }, [priorityInput]);
   const canSolve = priorityNum !== null;
+  const bothTurned = Boolean(result?.rightKeyTurned && result?.leftKeyTurned);
 
   return (
     <SolverLayout>
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">TURN THE KEYS</h3>
-        <p className="text-center text-base-content/80 text-sm mb-4">
-          This module has two keys and a display showing its priority. Enter the priority number to see when to turn each key.
-        </p>
-
-        <div className="flex flex-wrap items-end gap-4 justify-center mb-4">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Priority (from display)</span>
-            </label>
-            <Input
-              type="number"
-              min={0}
-              value={priorityInput}
-              onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                if (v === "" || parseInt(v, 10) >= 0) {
-                  setPriorityInput(v);
-                  if (error) clearError();
-                }
-              }}
-              placeholder="0"
-              className="w-24 text-center"
-              disabled={isLoading || isSolved}
-            />
-          </div>
-        </div>
-      </div>
+      <SolverSection
+        title="Module priority"
+        description="Enter the priority number shown on the module's display."
+      >
+        <Input
+          type="number"
+          min={0}
+          value={priorityInput}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+            if (v === "" || parseInt(v, 10) >= 0) {
+              setPriorityInput(v);
+              if (error) clearError();
+            }
+          }}
+          placeholder="0"
+          disabled={isLoading || isSolved}
+          aria-label="Priority"
+          className="mx-auto block w-full max-w-xs text-center font-mono text-3xl tracking-widest"
+        />
+      </SolverSection>
 
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
-        isSolveDisabled={!canSolve || isSolved}
+        isSolveDisabled={!canSolve}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Show instructions"
       />
 
       <ErrorAlert error={error} />
 
       {result && (
-        <div className="space-y-4 mb-4">
-          <p className="text-sm text-base-content/70 font-medium">This module&apos;s priority: {result.priority}</p>
-
-          {result.canTurnRightKey && (
-            <Alert variant="success">
-              <span className="font-bold">You can turn the right key now.</span>
-            </Alert>
-          )}
-          {result.canTurnLeftKey && (
-            <Alert variant="success">
-              <span className="font-bold">You can turn the left key now.</span>
-            </Alert>
-          )}
-
-          {!result.rightKeyTurned && (
-            <Alert variant="info">
-              <span className="font-bold block mb-2">Right key</span>
-              <span className="text-sm">{result.rightKeyInstruction}</span>
-              <div className="mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTurnedRightKey}
-                  disabled={isLoading}
-                >
-                  I turned the right key
-                </Button>
-              </div>
-            </Alert>
-          )}
-          {!result.leftKeyTurned && (
-            <Alert variant="info">
-              <span className="font-bold block mb-2">Left key</span>
-              <span className="text-sm">{result.leftKeyInstruction}</span>
-              <div className="mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTurnedLeftKey}
-                  disabled={isLoading}
-                >
-                  I turned the left key
-                </Button>
-              </div>
-            </Alert>
-          )}
-        </div>
+        <SolverSection
+          title="Key instructions"
+          description={`This module's priority is ${result.priority}.`}
+        >
+          <div className="space-y-2">
+            <KeyCard
+              side="right"
+              turned={Boolean(result.rightKeyTurned)}
+              canTurn={result.canTurnRightKey}
+              instruction={result.rightKeyInstruction}
+              onTurned={handleTurnedRightKey}
+              disabled={isLoading}
+            />
+            <KeyCard
+              side="left"
+              turned={Boolean(result.leftKeyTurned)}
+              canTurn={result.canTurnLeftKey}
+              instruction={result.leftKeyInstruction}
+              onTurned={handleTurnedLeftKey}
+              disabled={isLoading}
+            />
+          </div>
+        </SolverSection>
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {bothTurned && (
+        <SolverResult
+          variant="success"
+          title="Both keys turned"
+          description="The module is defused."
+        />
+      )}
 
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Order is everything. Turn the right keys first (higher priority first), then the left keys (lower priority first), following the module rules.</p>
-      </div>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Priority determines order: turn the right keys from highest priority to lowest
+        first, then the left keys in the same order. Follow the per-key instructions
+        above each time the module tells you a key is safe to turn.
+      </SolverInstructions>
     </SolverLayout>
+  );
+}
+
+function KeyCard({
+  side,
+  turned,
+  canTurn,
+  instruction,
+  onTurned,
+  disabled,
+}: {
+  side: "left" | "right";
+  turned: boolean;
+  canTurn: boolean;
+  instruction: string;
+  onTurned: () => void;
+  disabled: boolean;
+}) {
+  const label = side === "left" ? "Left key" : "Right key";
+
+  if (turned) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2">
+        <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+          {label} turned
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-md border px-3 py-2.5",
+        canTurn
+          ? "border-emerald-500/40 bg-emerald-500/10"
+          : "border-border bg-muted/20",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <KeyRound
+          className={cn(
+            "h-4 w-4 shrink-0",
+            canTurn ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+          )}
+          aria-hidden
+        />
+        <span
+          className={cn(
+            "text-sm font-semibold",
+            canTurn ? "text-emerald-700 dark:text-emerald-300" : "text-foreground",
+          )}
+        >
+          {label}
+          {canTurn && " — safe to turn now"}
+        </span>
+      </div>
+      {instruction && (
+        <p className="mt-1.5 text-sm text-muted-foreground">{instruction}</p>
+      )}
+      <div className="mt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onTurned}
+          disabled={disabled}
+        >
+          I turned the {side} key
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -2,18 +2,25 @@ import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { solveAnagrams, type AnagramsSolveRequest, type AnagramsSolveResponse } from "../../services/anagramsService";
+import {
+  solveAnagrams,
+  type AnagramsSolveRequest,
+  type AnagramsSolveResponse,
+} from "../../services/anagramsService";
 import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
-  TwitchCommandDisplay
+  TwitchCommandDisplay,
+  SolverResult,
 } from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
 import { Badge } from "../ui/badge";
+import { cn } from "../../lib/cn";
 
 interface AnagramsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -44,18 +51,21 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (state: { displayWord?: string; result?: AnagramsSolveResponse["output"] | null; twitchCommand?: string } | { input?: {displayWord?: string}}) => {
-      // Handle both formats: with or without input wrapper (backend uses input.displayWord)
-      if ('input' in state && state.input?.displayWord) {
+    (
+      state:
+        | { displayWord?: string; result?: AnagramsSolveResponse["output"] | null; twitchCommand?: string }
+        | { input?: { displayWord?: string } },
+    ) => {
+      if ("input" in state && state.input?.displayWord) {
         setDisplayWord(state.input.displayWord);
-      } else if ('displayWord' in state && state.displayWord !== undefined) {
+      } else if ("displayWord" in state && state.displayWord !== undefined) {
         setDisplayWord(state.displayWord);
       }
 
-      if ('result' in state && state.result !== undefined) {
+      if ("result" in state && state.result !== undefined) {
         setResult(state.result);
       }
-      if ('twitchCommand' in state && state.twitchCommand !== undefined) {
+      if ("twitchCommand" in state && state.twitchCommand !== undefined) {
         setTwitchCommand(state.twitchCommand);
       }
     },
@@ -75,7 +85,8 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
         setTwitchCommand(command);
       }
     },
-  []);
+    [],
+  );
 
   useSolverModulePersistence<
     { displayWord: string; result: AnagramsSolveResponse["output"] | null; twitchCommand: string },
@@ -88,9 +99,7 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
       if (raw == null) return null;
       if (typeof raw === "object") {
         const anyRaw = raw as { output?: unknown; result?: unknown };
-        if ('result' in anyRaw) {
-          return anyRaw.result as AnagramsSolveResponse["output"];
-        }
+        if ("result" in anyRaw) return anyRaw.result as AnagramsSolveResponse["output"];
         if (anyRaw.output && typeof anyRaw.output === "object") {
           return anyRaw.output as AnagramsSolveResponse["output"];
         }
@@ -127,19 +136,17 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
 
     try {
       const input: AnagramsSolveRequest["input"] = {
-        displayWord: displayWord.trim()
+        displayWord: displayWord.trim(),
       };
 
-      const response = await solveAnagrams(round.id, bomb.id, currentModule.id, {
-        input
-      });
-      
+      const response = await solveAnagrams(round.id, bomb.id, currentModule.id, { input });
+
       setResult(response.output);
-      
+
       if (response.output.possibleSolutions.length > 0) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
+
         const command = generateTwitchCommand({
           moduleType: ModuleType.ANAGRAMS,
           result: response.output,
@@ -162,91 +169,73 @@ export default function AnagramsSolver({ bomb }: AnagramsSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Anagrams Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">ANAGRAMS MODULE</h3>
-        
-        {/* Letter Display */}
-        <div className="bg-black rounded-lg p-6 mb-4">
-          <div className="flex justify-center">
-            <div className="flex gap-1">
-              {[...Array(6)].map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-12 w-10 border-2 rounded flex items-center justify-center text-xl font-bold ${
-                    displayWord[index]
-                      ? 'bg-blue-600 border-blue-400 text-white'
-                      : 'bg-gray-700 border-gray-600 text-gray-400'
-                  }`}
-                >
-                  {displayWord[index] || ''}
-                </div>
-              ))}
+      <SolverSection
+        title="Displayed word"
+        description="Enter the letters shown on the Anagrams module."
+      >
+        <div className="mb-3 flex justify-center gap-1">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex h-12 w-10 items-center justify-center rounded border-2 text-xl font-bold",
+                displayWord[i]
+                  ? "border-ring bg-accent/15 text-foreground"
+                  : "border-border bg-muted/40 text-muted-foreground",
+              )}
+            >
+              {displayWord[i] || ""}
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Input Field */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Enter the word displayed on the module:
-          </label>
-          <Input
-            type="text"
-            value={displayWord}
-            onChange={handleDisplayWordChange}
-            placeholder="Enter the letters"
-            className="w-full max-w-md mx-auto block text-center text-xl tracking-widest"
-            maxLength={6}
-            disabled={isLoading || isSolved}
-          />
-          <div className="text-xs text-gray-500 mt-2 text-center">
-            {displayWord.length}/6 letters (minimum 3)
-          </div>
-        </div>
-      </div>
+        <Input
+          type="text"
+          value={displayWord}
+          onChange={handleDisplayWordChange}
+          placeholder="Type the letters"
+          className="text-center text-lg font-mono tracking-widest"
+          maxLength={6}
+          disabled={isLoading || isSolved}
+          aria-label="Displayed letters"
+        />
+        <p className="mt-1.5 text-center text-xs text-muted-foreground tabular-nums">
+          {displayWord.length}/6 letters (min 3)
+        </p>
+      </SolverSection>
 
-      {/* Controls */}
       <SolverControls
         onSolve={solveAnagramsModule}
         onReset={reset}
         isSolveDisabled={displayWord.length < 3}
         isLoading={isLoading}
-        solveText="Find Anagrams"
+        isSolved={isSolved}
+        solveText="Find anagrams"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Results */}
-      {result && (
-        <Alert variant={result.possibleSolutions.length > 0 ? "success" : "info"} className="mb-4">
-          <p className="font-semibold mb-2">
-            {result.possibleSolutions.length > 0 ? "Possible Solutions:" : "No Solutions"}
-          </p>
-          {result.possibleSolutions.length > 0 ? (
-            <div className="flex flex-wrap gap-2 mt-1">
+      {result &&
+        (result.possibleSolutions.length > 0 ? (
+          <SolverSection title="Possible solutions" className="border-emerald-500/40">
+            <div className="flex flex-wrap gap-2">
               {result.possibleSolutions.map((solution, index) => (
-                <Badge key={index} variant="default">{solution}</Badge>
+                <Badge key={index} variant="default" className="font-mono text-sm">
+                  {solution}
+                </Badge>
               ))}
             </div>
-          ) : (
-            <p className="text-sm">No valid anagrams found</p>
-          )}
-        </Alert>
-      )}
+          </SolverSection>
+        ) : (
+          <SolverResult variant="info" title="No solutions" description="No valid anagrams found." />
+        ))}
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Enter the word displayed on the Anagrams module.</p>
-        <p>• The solver will find all valid English words that can be formed</p>
-        <p>• Common English words are included in the word list</p>
-        <p>• Letters are automatically converted to uppercase</p>
-        <p>• Minimum 3 letters required to find solutions</p>
-      </div>
+      <SolverInstructions>
+        The solver finds all valid English words that can be formed from the displayed
+        letters. Letters are uppercased automatically.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Scissors, X } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import {
@@ -12,34 +13,63 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SegmentedControl,
+  StageIndicator,
   ErrorAlert,
   TwitchCommandDisplay,
   SolverControls,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import { cn } from "../../lib/cn";
 
 interface WireSequencesSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-const WIRE_COLORS: { color: WireColor; display: string; className: string }[] = [
-  { color: "RED", display: "Red", className: "bg-red-500" },
-  { color: "BLUE", display: "Blue", className: "bg-blue-500" },
-  { color: "BLACK", display: "Black", className: "bg-gray-900" },
-];
+interface ColorSpec {
+  color: WireColor;
+  label: string;
+  swatch: string;
+  wire: string;
+}
 
-const LETTERS: { letter: "A" | "B" | "C"; display: string }[] = [
-  { letter: "A", display: "A" },
-  { letter: "B", display: "B" },
-  { letter: "C", display: "C" },
-];
+const COLORS: readonly ColorSpec[] = [
+  {
+    color: "RED",
+    label: "Red",
+    swatch: "bg-red-500",
+    wire: "bg-gradient-to-r from-red-600 to-red-500",
+  },
+  {
+    color: "BLUE",
+    label: "Blue",
+    swatch: "bg-blue-500",
+    wire: "bg-gradient-to-r from-blue-600 to-blue-500",
+  },
+  {
+    color: "BLACK",
+    label: "Black",
+    swatch: "bg-neutral-900",
+    wire: "bg-gradient-to-r from-neutral-900 to-neutral-700",
+  },
+] as const;
+
+const LETTER_OPTIONS = [
+  { value: "A" as const, label: "A" },
+  { value: "B" as const, label: "B" },
+  { value: "C" as const, label: "C" },
+] as const;
+
+function colorSpec(c: WireColor): ColorSpec {
+  return COLORS.find((s) => s.color === c) ?? COLORS[0];
+}
 
 export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) {
   const [wires, setWires] = useState<WireSequenceCombo[]>([]);
+  const [pendingColor, setPendingColor] = useState<WireColor>("RED");
+  const [pendingLetter, setPendingLetter] = useState<"A" | "B" | "C">("A");
   const [currentStage, setCurrentStage] = useState(1);
   const [solution, setSolution] = useState<boolean[]>([]);
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
@@ -50,7 +80,6 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
   });
   const [stageSolved, setStageSolved] = useState(false);
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -87,7 +116,8 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
       if (state.wires && Array.isArray(state.wires)) setWires(state.wires);
       if (state.currentStage !== undefined) setCurrentStage(state.currentStage);
       if (state.solution && Array.isArray(state.solution)) setSolution(state.solution);
-      if (state.twitchCommands && Array.isArray(state.twitchCommands)) setTwitchCommands(state.twitchCommands);
+      if (state.twitchCommands && Array.isArray(state.twitchCommands))
+        setTwitchCommands(state.twitchCommands);
       if (state.stageSolved !== undefined) setStageSolved(state.stageSolved);
       if (state.moduleState && typeof state.moduleState === "object") {
         setModuleState(state.moduleState);
@@ -107,14 +137,17 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
   );
 
   const onRestoreSolution = useCallback(
-    (restored: {
-      cut?: boolean[];
-      finalStage?: number;
-      moduleState?: { redCount: number; blueCount: number; blackCount: number };
-    } | null) => {
+    (
+      restored: {
+        cut?: boolean[];
+        finalStage?: number;
+        moduleState?: { redCount: number; blueCount: number; blackCount: number };
+      } | null,
+    ) => {
       if (restored?.cut && Array.isArray(restored.cut)) setSolution(restored.cut);
       if (restored?.finalStage !== undefined) setCurrentStage(restored.finalStage);
-      if (restored?.moduleState && typeof restored.moduleState === "object") setModuleState(restored.moduleState);
+      if (restored?.moduleState && typeof restored.moduleState === "object")
+        setModuleState(restored.moduleState);
     },
     [],
   );
@@ -128,7 +161,11 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
       moduleState: { redCount: number; blueCount: number; blackCount: number };
       stageSolved: boolean;
     },
-    { cut?: boolean[]; finalStage?: number; moduleState?: { redCount: number; blueCount: number; blackCount: number } }
+    {
+      cut?: boolean[];
+      finalStage?: number;
+      moduleState?: { redCount: number; blueCount: number; blackCount: number };
+    }
   >({
     state: persistedState,
     onRestoreState,
@@ -142,30 +179,40 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
         finalStage?: number;
         moduleState?: { redCount: number; blueCount: number; blackCount: number };
       };
-      const cut = Array.isArray(anyRaw.cut) ? anyRaw.cut : Array.isArray(anyRaw.output?.cut) ? anyRaw.output.cut : undefined;
-      const finalStage = typeof anyRaw.finalStage === "number" ? anyRaw.finalStage : typeof anyRaw.output?.finalStage === "number" ? anyRaw.output.finalStage : undefined;
-      const moduleState = typeof anyRaw.moduleState === "object" && anyRaw.moduleState != null
-        ? (anyRaw.moduleState as { redCount: number; blueCount: number; blackCount: number })
-        : typeof anyRaw.output?.moduleState === "object" && anyRaw.output?.moduleState != null
-          ? (anyRaw.output.moduleState as { redCount: number; blueCount: number; blackCount: number })
+      const cut = Array.isArray(anyRaw.cut)
+        ? anyRaw.cut
+        : Array.isArray(anyRaw.output?.cut)
+          ? anyRaw.output.cut
           : undefined;
+      const finalStage =
+        typeof anyRaw.finalStage === "number"
+          ? anyRaw.finalStage
+          : typeof anyRaw.output?.finalStage === "number"
+            ? anyRaw.output.finalStage
+            : undefined;
+      const moduleState =
+        typeof anyRaw.moduleState === "object" && anyRaw.moduleState != null
+          ? (anyRaw.moduleState as { redCount: number; blueCount: number; blackCount: number })
+          : typeof anyRaw.output?.moduleState === "object" && anyRaw.output?.moduleState != null
+            ? (anyRaw.output.moduleState as { redCount: number; blueCount: number; blackCount: number })
+            : undefined;
       if (cut != null || finalStage != null || moduleState != null) {
         return { cut, finalStage, moduleState };
       }
       return null;
     },
-    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
 
-  const addWire = (color: WireColor, letter: "A" | "B" | "C") => {
+  const addWire = () => {
     if (wires.length >= 3) {
       setError("Maximum 3 wires per stage");
       return;
     }
-    const newWire: WireSequenceCombo = { color, letter };
-    setWires([...wires, newWire]);
+    setWires([...wires, { color: pendingColor, letter: pendingLetter }]);
     clearError();
     setSolution([]);
     setTwitchCommands([]);
@@ -197,11 +244,11 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
         input: {
           wires,
           stage: currentStage,
-        }
+        },
       };
 
       const response = await solveWireSequences(round.id, bomb.id, currentModule.id, request);
-      
+
       const cutResult = response.output.cut;
       setSolution(cutResult);
 
@@ -251,7 +298,7 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
           stageSolved: !response.solved,
         },
         { cut: cutResult },
-        response.solved
+        response.solved,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve Wire Sequences");
@@ -265,11 +312,7 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
     setCurrentStage(1);
     setSolution([]);
     setTwitchCommands([]);
-    setModuleState({
-      redCount: 0,
-      blueCount: 0,
-      blackCount: 0,
-    });
+    setModuleState({ redCount: 0, blueCount: 0, blackCount: 0 });
     setStageSolved(false);
     resetSolverState();
   };
@@ -295,232 +338,218 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
           stageSolved: false,
         },
         {},
-        false
+        false,
       );
     }
   };
 
   const solveButtonLabel = isSolved
-    ? "Module Solved"
+    ? "Module solved"
     : stageSolved && !isSolved
       ? currentStage === 4
-        ? "Module Complete"
-        : `Next Stage (${currentStage + 1}/4)`
+        ? "Module complete"
+        : `Next stage (${currentStage + 1}/4)`
       : currentStage === 4
-        ? "Final Stage"
-        : `Solve Stage ${currentStage}`;
+        ? "Final stage"
+        : `Solve stage ${currentStage}`;
 
   const handlePrimaryAction = stageSolved && !isSolved ? nextStage : handleSolve;
   const isPrimaryDisabled =
-    isLoading ||
-    isSolved ||
-    (!stageSolved && !isSolved && wires.length === 0);
+    isLoading || isSolved || (!stageSolved && !isSolved && wires.length === 0);
+
+  const completedThrough = isSolved ? 4 : stageSolved ? currentStage : currentStage - 1;
 
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-center text-lg">Wire Sequences</CardTitle>
-          {/* Stage indicator: 4 pills */}
-          <div
-            className="flex justify-center gap-2 mt-3"
-            role="tablist"
-            aria-label="Stage progress"
-          >
-            {[1, 2, 3, 4].map((stage) => (
-              <div
-                key={stage}
-                role="tab"
-                aria-current={currentStage === stage ? "step" : undefined}
-                aria-label={`Stage ${stage}`}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
-                  currentStage === stage
-                    ? "border-primary bg-primary text-primary-content"
-                    : "border-base-300 bg-base-200 text-base-content/70"
-                )}
-              >
-                {stage}
-              </div>
-            ))}
-          </div>
-          {/* Wire counters as Badges */}
-          <div className="flex justify-center gap-2 mt-2 flex-wrap">
-            <Badge variant="outline" className="gap-1">
-              <span className="w-2 h-2 rounded-full bg-red-500" aria-hidden />
-              <span>{moduleState.redCount}</span>
-            </Badge>
-            <Badge variant="outline" className="gap-1">
-              <span className="w-2 h-2 rounded-full bg-blue-500" aria-hidden />
-              <span>{moduleState.blueCount}</span>
-            </Badge>
-            <Badge variant="outline" className="gap-1">
-              <span className="w-2 h-2 rounded-full bg-base-content/80" aria-hidden />
-              <span>{moduleState.blackCount}</span>
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* Add wire input */}
-          {!isSolved && !stageSolved && (
-            <section aria-labelledby="add-wires-heading">
-              <h4
-                id="add-wires-heading"
-                className="text-sm font-medium text-base-content/80 mb-2 flex items-center gap-2"
-              >
-                Add wires
-                <Badge variant="secondary" className="font-mono">
-                  {wires.length}/3
-                </Badge>
-              </h4>
-              <p className="text-xs text-base-content/60 mb-2">
-                Pick color, then letter (A, B, or C).
-              </p>
-              <div className="space-y-2">
-                {WIRE_COLORS.map((color) => (
-                  <div
-                    key={color.color}
-                    className="flex gap-2 items-center flex-wrap"
-                  >
-                    <div
-                      className={cn("w-5 h-5 rounded shrink-0", color.className)}
-                      aria-hidden
-                    />
-                    <span className="text-sm w-12 shrink-0">{color.display}</span>
-                    {LETTERS.map((letter) => (
-                      <Button
-                        key={`${color.color}-${letter.letter}`}
-                        variant="outline"
-                        size="xs"
-                        onClick={() => addWire(color.color, letter.letter)}
-                        disabled={isLoading || wires.length >= 3}
-                        aria-label={`Add wire ${color.display} ${letter.letter}`}
-                      >
-                        {letter.display}
-                      </Button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+      <SolverSection
+        title="Wire Sequences"
+        description="Four stages. Enter the wires visible on the current page, solve, then advance."
+      >
+        <StageIndicator total={4} current={currentStage} completedThrough={completedThrough} />
 
-          {/* Current wires – wire-strip metaphor */}
-          <section aria-labelledby="current-wires-heading">
-            <h4
-              id="current-wires-heading"
-              className="text-sm font-medium text-base-content/80 mb-2"
-            >
-              {isSolved ? "All wires" : `Stage ${currentStage} wires`}
-            </h4>
-            {wires.length === 0 && !isSolved ? (
-              <p className="text-sm text-base-content/60 text-center py-2">
-                Add 1–3 wires, then solve this stage.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {wires.map((wire, index) => {
-                  const wireColorClass =
-                    wire.color === "RED"
-                      ? "bg-red-500"
-                      : wire.color === "BLUE"
-                        ? "bg-blue-500"
-                        : "bg-base-content/90";
-                  const shouldCut = solution[index];
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-red-500" />
+            <span className="font-mono tabular-nums">{moduleState.redCount}</span>
+            <span className="text-muted-foreground">red</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-blue-500" />
+            <span className="font-mono tabular-nums">{moduleState.blueCount}</span>
+            <span className="text-muted-foreground">blue</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-neutral-100" />
+            <span className="font-mono tabular-nums">{moduleState.blackCount}</span>
+            <span className="text-muted-foreground">black</span>
+          </span>
+        </div>
+      </SolverSection>
+
+      {!isSolved && !stageSolved && (
+        <SolverSection
+          title="Add wire"
+          description={`Pick color and target letter, then add (${wires.length}/3).`}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Color
+              </span>
+              <div className="flex items-center gap-2">
+                {COLORS.map((c) => {
+                  const selected = pendingColor === c.color;
                   return (
-                    <div
-                      key={index}
+                    <button
+                      key={c.color}
+                      type="button"
+                      onClick={() => setPendingColor(c.color)}
+                      disabled={isLoading}
+                      aria-pressed={selected}
+                      aria-label={`Pick ${c.label}`}
                       className={cn(
-                        "flex items-center gap-2",
-                        shouldCut === true && "ring-2 ring-success rounded-lg ring-offset-2 ring-offset-base-100",
-                        shouldCut === false && solution.length > 0 && "opacity-75"
+                        "inline-flex items-center gap-2 rounded-md border px-2.5 h-8 text-xs font-medium transition-colors",
+                        selected
+                          ? "border-ring ring-2 ring-ring ring-offset-1 ring-offset-card bg-accent/15 text-foreground"
+                          : "border-border bg-muted/40 text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      <div
-                        className="w-3 h-3 rounded-full border-2 border-base-300 bg-base-300 shrink-0"
-                        aria-hidden
-                      />
-                      <div
-                        className={cn(
-                          "flex-1 h-8 rounded flex items-center justify-center font-semibold text-sm min-w-0",
-                          wireColorClass,
-                          wire.color === "BLACK" || wire.color === "RED" || wire.color === "BLUE"
-                            ? "text-white"
-                            : "text-base-100"
-                        )}
-                      >
-                        {wire.letter}
-                      </div>
-                      <div
-                        className="w-3 h-3 rounded-full border-2 border-base-300 bg-base-300 shrink-0"
-                        aria-hidden
-                      />
-                      {!isSolved && (
-                        <Button
-                          variant="destructive"
-                          size="xs"
-                          className="shrink-0"
-                          onClick={() => removeWire(index)}
-                          disabled={isLoading}
-                          aria-label={`Remove wire ${index + 1}`}
-                        >
-                          ×
-                        </Button>
-                      )}
-                      {shouldCut !== undefined && (
-                        <span
-                          className={cn(
-                            "shrink-0 text-xs font-medium flex items-center gap-1",
-                            shouldCut ? "text-success" : "text-base-content/60"
-                          )}
-                          aria-label={shouldCut ? "Cut this wire" : "Do not cut this wire"}
-                        >
-                          {shouldCut ? (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Cut
-                            </>
-                          ) : (
-                            "Leave"
-                          )}
-                        </span>
-                      )}
-                    </div>
+                      <span className={cn("h-3 w-3 rounded-full", c.swatch)} aria-hidden />
+                      {c.label}
+                    </button>
                   );
                 })}
               </div>
-            )}
-          </section>
-
-          {/* Solution + Twitch in success callout */}
-          {solution.length > 0 && (
-            <div
-              className="rounded-lg border border-success/30 bg-success/10 p-4 space-y-3"
-              role="status"
-              aria-live="polite"
-            >
-              <h4 className="text-sm font-semibold text-success">Instructions</h4>
-              <ul className="space-y-1 text-sm">
-                {wires.map((_, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <span className="text-base-content/70">Wire #{index + 1}:</span>
-                    <span className={solution[index] ? "text-success font-medium" : "text-base-content/80"}>
-                      {solution[index] ? "Cut the wire" : "Don't cut the wire"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {twitchCommands.length > 0 && (
-                <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
-              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Controls – dynamic primary action and label */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Target letter
+              </span>
+              <SegmentedControl
+                value={pendingLetter}
+                onChange={(v) => setPendingLetter(v as "A" | "B" | "C")}
+                options={LETTER_OPTIONS}
+                size="sm"
+                ariaLabel="Target letter"
+                disabled={isLoading}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={addWire}
+              disabled={isLoading || wires.length >= 3}
+              className={cn(
+                "inline-flex h-9 items-center justify-center rounded-md border border-border bg-accent/15 px-3 text-sm font-medium text-foreground transition-colors",
+                "hover:bg-accent/25",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+              )}
+            >
+              Add wire → {colorSpec(pendingColor).label} to {pendingLetter}
+            </button>
+          </div>
+        </SolverSection>
+      )}
+
+      <SolverSection
+        title={isSolved ? "All wires" : `Stage ${currentStage} wires`}
+        description={
+          wires.length === 0 && !isSolved
+            ? "Add 1–3 wires above, then solve this stage."
+            : undefined
+        }
+      >
+        {wires.length === 0 && !isSolved ? (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            No wires yet.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {wires.map((wire, index) => {
+              const spec = colorSpec(wire.color);
+              const shouldCut = solution[index];
+              const isCut = shouldCut === true;
+              return (
+                <li
+                  key={index}
+                  className={cn(
+                    "rounded-lg border border-border bg-muted/40 p-3 transition-colors",
+                    isCut && "border-emerald-500 bg-emerald-500/10",
+                    shouldCut === false && solution.length > 0 && "opacity-80",
+                  )}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Wire #{index + 1}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {spec.label} → {wire.letter}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="h-3 w-3 shrink-0 rounded-full bg-muted-foreground/30 ring-2 ring-muted-foreground/20"
+                    />
+                    <div
+                      className={cn(
+                        "relative flex h-7 flex-1 items-center justify-center rounded-full text-sm font-semibold text-white",
+                        spec.wire,
+                      )}
+                    >
+                      {wire.letter}
+                      {isCut && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <span className="flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            <Scissors className="h-3 w-3" aria-hidden />
+                            CUT
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      aria-hidden
+                      className="h-3 w-3 shrink-0 rounded-full bg-muted-foreground/30 ring-2 ring-muted-foreground/20"
+                    />
+                    {!isSolved && !stageSolved && (
+                      <button
+                        type="button"
+                        onClick={() => removeWire(index)}
+                        disabled={isLoading}
+                        aria-label={`Remove wire ${index + 1}`}
+                        className={cn(
+                          "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors",
+                          "hover:text-red-600 hover:border-red-400",
+                          "disabled:opacity-40 disabled:cursor-not-allowed",
+                        )}
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    )}
+                  </div>
+
+                  {shouldCut !== undefined && (
+                    <div className="mt-2 text-xs font-medium">
+                      <span
+                        className={cn(
+                          shouldCut
+                            ? "text-emerald-700 dark:text-emerald-400"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {shouldCut ? "Cut this wire" : "Leave this wire"}
+                      </span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </SolverSection>
+
       <SolverControls
         onSolve={handlePrimaryAction}
         onReset={reset}
@@ -533,9 +562,12 @@ export default function WireSequencesSolver({ bomb }: WireSequencesSolverProps) 
 
       <ErrorAlert error={error} />
 
-      <CardDescription className="mt-2">
-        Wire Sequences has 4 stages. For each stage add 1–3 wires (color + letter A/B/C), solve to get cut/leave instructions, then advance. Counts are tracked across stages.
-      </CardDescription>
+      {twitchCommands.length > 0 && <TwitchCommandDisplay command={twitchCommands} />}
+
+      <SolverInstructions>
+        Wire Sequences has 4 pages. For each page, add 1–3 wires (color + target letter A/B/C),
+        solve to see cut/leave instructions, then advance. Counts persist across stages.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

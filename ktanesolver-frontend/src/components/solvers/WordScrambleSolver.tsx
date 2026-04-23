@@ -3,14 +3,24 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { solveWordScramble, type WordScrambleSolveRequest, type WordScrambleSolveResponse } from "../../services/wordScrambleService";
-import SolverLayout from "../common/SolverLayout";
-import SolverControls from "../common/SolverControls";
-import ErrorAlert from "../common/ErrorAlert";
-import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
-import { useSolver, useSolverModulePersistence } from "../common";
+import {
+  solveWordScramble,
+  type WordScrambleSolveRequest,
+  type WordScrambleSolveResponse,
+} from "../../services/wordScrambleService";
+import {
+  useSolver,
+  useSolverModulePersistence,
+  SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  SolverResult,
+} from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 interface WordScrambleSolverProps {
   bomb: BombEntity | null | undefined;
@@ -23,7 +33,18 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
 
   const currentModule = useRoundStore((state) => state.currentModule);
 
-  const { isLoading, error, isSolved, clearError, reset, setIsLoading, setError, setIsSolved, round, markModuleSolved } = useSolver();
+  const {
+    isLoading,
+    error,
+    isSolved,
+    clearError,
+    reset,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    round,
+    markModuleSolved,
+  } = useSolver();
 
   const moduleState = useMemo(
     () => ({ letters, result, twitchCommand }),
@@ -51,13 +72,18 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
         setTwitchCommand(command);
       }
     },
-  []);
+    [],
+  );
 
-  useSolverModulePersistence<{ letters: string; result: WordScrambleSolveResponse["output"] | null; twitchCommand: string }, WordScrambleSolveResponse["output"]>({
+  useSolverModulePersistence<
+    { letters: string; result: WordScrambleSolveResponse["output"] | null; twitchCommand: string },
+    WordScrambleSolveResponse["output"]
+  >({
     state: moduleState,
     onRestoreState,
     onRestoreSolution,
-    extractSolution: (raw) => (raw && typeof raw === "object" ? (raw as WordScrambleSolveResponse["output"]) : null),
+    extractSolution: (raw) =>
+      raw && typeof raw === "object" ? (raw as WordScrambleSolveResponse["output"]) : null,
     inferSolved: (solution) => Boolean(solution?.solved),
     currentModule,
     setIsSolved,
@@ -89,19 +115,17 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
 
     try {
       const input: WordScrambleSolveRequest["input"] = {
-        letters: letters
+        letters: letters,
       };
-      
-      const response = await solveWordScramble(round.id, bomb.id, currentModule.id, {
-        input
-      });
-      
+
+      const response = await solveWordScramble(round.id, bomb.id, currentModule.id, { input });
+
       setResult(response.output);
-      
+
       if (response.output) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
+
         const command = generateTwitchCommand({
           moduleType: ModuleType.WORD_SCRAMBLE,
           result: response.output,
@@ -124,47 +148,40 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Word Scramble Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">WORD SCRAMBLE MODULE</h3>
-        
-        {/* Letter Input */}
-        <div className="bg-black rounded-lg p-6 mb-4">
-          <div className="grid grid-cols-6 gap-2 max-w-md mx-auto">
-            {[...Array(6)].map((_, index) => (
-              <div
-                key={index}
-                className={`h-16 w-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold ${
-                  letters[index]
-                    ? 'bg-blue-600 border-blue-400 text-white'
-                    : 'bg-gray-700 border-gray-600 text-gray-400'
-                }`}
-              >
-                {letters[index] || ''}
-              </div>
-            ))}
-          </div>
+      <SolverSection
+        title="Scrambled letters"
+        description="Enter the six letters displayed on the module."
+      >
+        <div className="mb-3 grid grid-cols-6 gap-1.5">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex aspect-square items-center justify-center rounded-md border-2 text-xl font-bold uppercase",
+                letters[i]
+                  ? "border-ring bg-accent/15 text-foreground"
+                  : "border-border bg-muted/40 text-muted-foreground",
+              )}
+            >
+              {letters[i] || ""}
+            </div>
+          ))}
         </div>
 
-        {/* Input Field */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Enter the 6 letters you see on the module:
-          </label>
-          <Input
-            type="text"
-            value={letters}
-            onChange={handleLettersChange}
-            placeholder="Enter 6 letters"
-            className="w-full max-w-md mx-auto block text-center text-xl tracking-widest"
-            maxLength={6}
-            disabled={isLoading || isSolved}
-          />
-          <div className="text-xs text-gray-500 mt-2 text-center">
-            {letters.length}/6 letters
-          </div>
-        </div>
-      </div>
+        <Input
+          type="text"
+          value={letters}
+          onChange={handleLettersChange}
+          placeholder="Type 6 letters"
+          className="text-center text-lg font-mono tracking-widest"
+          maxLength={6}
+          disabled={isLoading || isSolved}
+          aria-label="Scrambled letters"
+        />
+        <p className="mt-1.5 text-center text-xs text-muted-foreground tabular-nums">
+          {letters.length}/6 letters
+        </p>
+      </SolverSection>
 
       <SolverControls
         onSolve={() => {
@@ -172,42 +189,33 @@ export default function WordScrambleSolver({ bomb }: WordScrambleSolverProps) {
         }}
         onReset={resetModule}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
-        isSolveDisabled={isSolved}
+        isSolveDisabled={letters.length !== 6}
       />
 
       <ErrorAlert error={error} />
 
-      {/* Results */}
       {result && (
-        <Alert variant={result.solved ? "success" : "info"} className="mb-4">
-          <div className="w-full">
-            <span className="font-bold">{result.solved ? "Solution Found!" : "No Solution"}</span>
-            <div className="mt-2">{result.instruction}</div>
-            {result.solution && (
-              <div className="mt-4">
-                <div className="font-semibold mb-2">Solution Word:</div>
-                <div className="text-2xl font-bold text-green-400 tracking-widest">
-                  {result.solution}
-                </div>
-              </div>
-            )}
-          </div>
-        </Alert>
+        <>
+          {result.solved && result.solution ? (
+            <SolverResult
+              variant="success"
+              title="Solution found"
+              description={`Word: ${result.solution}\n${result.instruction}`}
+            />
+          ) : (
+            <SolverResult variant="info" title="No solution" description={result.instruction} />
+          )}
+        </>
       )}
 
-      {twitchCommand && result && (
-        <TwitchCommandDisplay command={twitchCommand} />
-      )}
+      {twitchCommand && result && <TwitchCommandDisplay command={twitchCommand} />}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Enter the 6 letters displayed on the Word Scramble module.</p>
-        <p>• The solver will find all valid English words that can be formed</p>
-        <p>• Only common 6-letter words are included in the word list</p>
-        <p>• The first valid word found is displayed as the solution</p>
-        <p>• Letters are automatically converted to uppercase</p>
-      </div>
+      <SolverInstructions>
+        The solver searches for the first valid six-letter English word that can be
+        formed from the scrambled letters.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

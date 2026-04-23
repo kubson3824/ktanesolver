@@ -3,16 +3,19 @@ import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveConnectionCheck } from "../../services/connectionCheckService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   ErrorAlert,
   TwitchCommandDisplay,
   SolverControls,
   SolverResult,
 } from "../common";
 import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
 interface NumberPair {
   one: number;
@@ -23,17 +26,18 @@ interface ConnectionCheckSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
+const EMPTY_PAIRS: NumberPair[] = [
+  { one: 0, two: 0 },
+  { one: 0, two: 0 },
+  { one: 0, two: 0 },
+  { one: 0, two: 0 },
+];
+
 export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverProps) {
-  const [pairs, setPairs] = useState<NumberPair[]>([
-    { one: 0, two: 0 },
-    { one: 0, two: 0 },
-    { one: 0, two: 0 },
-    { one: 0, two: 0 },
-  ]);
+  const [pairs, setPairs] = useState<NumberPair[]>(EMPTY_PAIRS);
   const [result, setResult] = useState<boolean[]>([false, false, false, false]);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
-  
-  // Use the common solver hook for shared state
+
   const {
     isLoading,
     error,
@@ -54,15 +58,17 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
   );
 
   const onRestoreState = useCallback(
-    (restored: { pairs: NumberPair[]; result: boolean[]; twitchCommand: string } | { input?: { pairs?: NumberPair[] } }) => {
-      // Handle both formats: with or without input wrapper
+    (
+      restored:
+        | { pairs: NumberPair[]; result: boolean[]; twitchCommand: string }
+        | { input?: { pairs?: NumberPair[] } },
+    ) => {
       if ('input' in restored && restored.input?.pairs) {
         setPairs(restored.input.pairs);
       } else if ('pairs' in restored && Array.isArray(restored.pairs)) {
         setPairs(restored.pairs);
       }
-      
-      // These properties only exist in the full state format
+
       if ('result' in restored && Array.isArray(restored.result)) {
         setResult(restored.result);
       }
@@ -90,12 +96,12 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
       });
       setTwitchCommand(command);
     },
-  []);
-
+    [],
+  );
 
   useSolverModulePersistence<
-      { pairs: NumberPair[]; result: boolean[]; twitchCommand: string } | { input?: { pairs?: NumberPair[] } },
-      { led1?: boolean; led2?: boolean; led3?: boolean; led4?: boolean }
+    { pairs: NumberPair[]; result: boolean[]; twitchCommand: string } | { input?: { pairs?: NumberPair[] } },
+    { led1?: boolean; led2?: boolean; led3?: boolean; led4?: boolean }
   >({
     state: moduleState,
     onRestoreState,
@@ -134,21 +140,22 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
     currentModule,
     setIsSolved,
   });
+
   const handlePairChange = (index: number, field: 'one' | 'two', value: string) => {
     const numValue = parseInt(value) || 0;
     const clampedValue = Math.max(1, Math.min(8, numValue));
-    
+
     const newPairs = [...pairs];
     newPairs[index] = { ...newPairs[index], [field]: clampedValue };
     setPairs(newPairs);
+    clearError();
   };
 
   const solveModule = async () => {
     clearError();
     setIsLoading(true);
 
-    // Validate all pairs are filled
-    const hasInvalidPairs = pairs.some(pair => pair.one === 0 || pair.two === 0);
+    const hasInvalidPairs = pairs.some((pair) => pair.one === 0 || pair.two === 0);
     if (hasInvalidPairs) {
       setError("Please fill in all number pairs (values 1-8)");
       setIsLoading(false);
@@ -161,12 +168,9 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
     }
 
     try {
-      const response = await solveConnectionCheck(
-        round.id,
-        bomb.id,
-        currentModule.id,
-        { input: { pairs } }
-      );
+      const response = await solveConnectionCheck(round.id, bomb.id, currentModule.id, {
+        input: { pairs },
+      });
 
       const ledStates = [
         response.output.led1,
@@ -174,17 +178,16 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
         response.output.led3,
         response.output.led4,
       ];
-      
+
       setResult(ledStates);
       setIsSolved(true);
-      
-      // Generate Twitch command
+
       const command = generateTwitchCommand({
         moduleType: ModuleType.CONNECTION_CHECK,
         result: { ledStates: ledStates },
       });
       setTwitchCommand(command);
-      
+
       markModuleSolved(bomb.id, currentModule.id);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to solve module");
@@ -194,47 +197,41 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
   };
 
   const resetModule = () => {
-    setPairs([
-      { one: 0, two: 0 },
-      { one: 0, two: 0 },
-      { one: 0, two: 0 },
-      { one: 0, two: 0 },
-    ]);
+    setPairs(EMPTY_PAIRS);
     setResult([false, false, false, false]);
     setTwitchCommand("");
     resetSolverState();
   };
 
+  const isInvalid = pairs.some((p) => p.one === 0 || p.two === 0);
+
   return (
     <SolverLayout>
-      
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-2 text-sm font-medium">CONNECTION CHECK</h3>
-        <p className="text-gray-400 text-center mb-4 text-sm">
-          Enter the 4 number pairs from the module (each number 1–8).
-        </p>
-
-        <h4 className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-3">Number pairs</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <SolverSection
+        title="Number pairs"
+        description="Enter the 4 number pairs shown on the module (each digit 1–8)."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {pairs.map((pair, index) => (
             <div
               key={index}
-              className="rounded-lg border border-base-300 bg-base-200/90 p-4 shadow-sm"
+              className="rounded-lg border border-border bg-muted/40 p-3"
             >
-              <label className="block text-xs font-medium text-base-content/60 uppercase tracking-wider mb-3">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Pair {index + 1}
-              </label>
-              <div className="flex items-center gap-3">
+              </div>
+              <div className="flex items-center justify-center gap-2">
                 <Input
                   type="number"
                   min={1}
                   max={8}
                   value={pair.one || ""}
                   onChange={(e) => handlePairChange(index, "one", e.target.value)}
-                  disabled={isSolved}
+                  disabled={isSolved || isLoading}
+                  aria-label={`Pair ${index + 1} first digit`}
                   className="w-14 text-center text-lg font-semibold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <span className="text-base-content/40 font-medium select-none" aria-hidden>
+                <span className="text-muted-foreground font-medium select-none" aria-hidden>
                   –
                 </span>
                 <Input
@@ -243,50 +240,71 @@ export default function ConnectionCheckSolver({ bomb }: ConnectionCheckSolverPro
                   max={8}
                   value={pair.two || ""}
                   onChange={(e) => handlePairChange(index, "two", e.target.value)}
-                  disabled={isSolved}
+                  disabled={isSolved || isLoading}
+                  aria-label={`Pair ${index + 1} second digit`}
                   className="w-14 text-center text-lg font-semibold tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
           ))}
         </div>
+      </SolverSection>
 
-
-      {/* Controls */}
       <SolverControls
         onSolve={solveModule}
         onReset={resetModule}
-        isSolveDisabled={pairs.some(p => p.one === 0 || p.two === 0)}
+        isSolveDisabled={isInvalid}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
       />
 
       <ErrorAlert error={error} />
 
       {isSolved && (
-        <div className="mb-4">
-          <SolverResult variant="success" title="Solution — LED states" />
-          <div className="mt-3 grid grid-cols-4 gap-3">
+        <>
+          <SolverResult variant="success" title="LED states" />
+          <div className="grid grid-cols-4 gap-2">
             {result.map((led, index) => (
               <div
                 key={index}
-                className="text-center bg-gray-900 rounded-lg p-4 border border-gray-700"
+                className={cn(
+                  "rounded-lg border p-3 text-center transition-colors",
+                  led
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-border bg-muted/40",
+                )}
               >
-                <div className="text-xs font-medium text-gray-400 mb-1">LED {index + 1}</div>
-                <div className={`text-xl font-bold ${led ? "text-lime-400" : "text-gray-500"}`}>
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  LED {index + 1}
+                </div>
+                <div
+                  className={cn(
+                    "mt-1 text-base font-bold",
+                    led ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground",
+                  )}
+                >
                   {led ? "ON" : "OFF"}
                 </div>
                 <div
-                  className={`mt-2 w-full h-2 rounded-full ${led ? "bg-lime-400" : "bg-gray-600"}`}
+                  aria-hidden
+                  className={cn(
+                    "mx-auto mt-2 h-1.5 w-full rounded-full",
+                    led ? "bg-emerald-500" : "bg-muted-foreground/30",
+                  )}
                 />
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
-      </div>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the four 1–8 number pairs from the module; the solver returns which LEDs should be
+        lit.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

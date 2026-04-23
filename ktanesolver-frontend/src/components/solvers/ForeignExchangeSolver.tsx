@@ -2,21 +2,33 @@ import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { solveForeignExchange, type ForeignExchangeInput, type ForeignExchangeOutput } from "../../services/foreignExchangeService";
+import {
+  solveForeignExchange,
+  type ForeignExchangeInput,
+  type ForeignExchangeOutput,
+} from "../../services/foreignExchangeService";
 import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  SegmentedControl,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
+  SolverResult,
 } from "../common";
-import { Loader2 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 interface ForeignExchangeSolverProps {
   bomb: BombEntity | null | undefined;
 }
+
+const LED_OPTIONS = [
+  { value: "green" as const, label: "Green" },
+  { value: "red" as const, label: "Red" },
+] as const;
 
 export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverProps) {
   const [baseCurrency, setBaseCurrency] = useState<string>("");
@@ -26,7 +38,6 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
   const [result, setResult] = useState<ForeignExchangeOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -65,21 +76,26 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (solution: ForeignExchangeOutput) => {
-      if (solution?.keyPosition === undefined) return;
-      setResult(solution);
+  const onRestoreSolution = useCallback((solution: ForeignExchangeOutput) => {
+    if (solution?.keyPosition === undefined) return;
+    setResult(solution);
 
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
-        result: solution,
-      });
-      setTwitchCommand(command);
-    },
-  []);
+    const command = generateTwitchCommand({
+      moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
+      result: solution,
+    });
+    setTwitchCommand(command);
+  }, []);
 
   useSolverModulePersistence<
-    { baseCurrency: string; targetCurrency: string; amount: string; hasGreenLights: boolean; result: ForeignExchangeOutput | null; twitchCommand: string },
+    {
+      baseCurrency: string;
+      targetCurrency: string;
+      amount: string;
+      hasGreenLights: boolean;
+      result: ForeignExchangeOutput | null;
+      twitchCommand: string;
+    },
     ForeignExchangeOutput
   >({
     state: moduleState,
@@ -129,26 +145,20 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
         baseCurrency: baseCurrency.toUpperCase(),
         targetCurrency: targetCurrency.toUpperCase(),
         amount,
-        hasGreenLights
+        hasGreenLights,
       };
 
-      const response = await solveForeignExchange(
-        round.id,
-        bomb.id,
-        currentModule.id,
-        { input }
-      );
+      const response = await solveForeignExchange(round.id, bomb.id, currentModule.id, { input });
 
       setResult(response.output);
       setIsSolved(true);
-      
-      // Generate Twitch command
+
       const command = generateTwitchCommand({
         moduleType: ModuleType.FOREIGN_EXCHANGE_RATES,
         result: response.output,
       });
       setTwitchCommand(command);
-      
+
       markModuleSolved(bomb.id, currentModule.id);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to solve module");
@@ -167,133 +177,102 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
     resetSolverState();
   };
 
+  const keyLabel =
+    result?.keyPosition === 0
+      ? "Key 1 (top-left)"
+      : result != null
+        ? `Key ${result.keyPosition}`
+        : "";
+
   return (
     <SolverLayout>
-      {/* Module visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
-        
-        {!isSolved ? (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">LED Status</label>
-              <div className="flex gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={hasGreenLights}
-                    onChange={() => {
-                      setHasGreenLights(true);
-                    }}
-                    className="mr-2"
-                  />
-                  <span className="text-green-400">Green Lights (API Available)</span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={!hasGreenLights}
-                    onChange={() => {
-                      setHasGreenLights(false);
-                    }}
-                    className="mr-2"
-                  />
-                  <span className="text-red-400">Red Lights (API Failed)</span>
-                </label>
-              </div>
-            </div>
+      <SolverSection
+        title="Module state"
+        description="Pick the LED color showing on the module."
+        actions={
+          <SegmentedControl
+            value={hasGreenLights ? "green" : "red"}
+            onChange={(v) => setHasGreenLights(v === "green")}
+            options={LED_OPTIONS}
+            size="sm"
+            ariaLabel="LED color"
+            disabled={isLoading || isSolved}
+          />
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Base currency
+            </span>
+            <Input
+              type="text"
+              value={baseCurrency}
+              onChange={(e) => setBaseCurrency(e.target.value.toUpperCase())}
+              placeholder="USD"
+              maxLength={3}
+              disabled={isLoading || isSolved}
+              className="font-mono uppercase"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Target currency
+            </span>
+            <Input
+              type="text"
+              value={targetCurrency}
+              onChange={(e) => setTargetCurrency(e.target.value.toUpperCase())}
+              placeholder="EUR"
+              maxLength={3}
+              disabled={isLoading || isSolved}
+              className="font-mono uppercase"
+            />
+          </label>
+        </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Base Currency (3-letter code)</label>
-                <input
-                  type="text"
-                  value={baseCurrency}
-                  onChange={(e) => {
-                    setBaseCurrency(e.target.value.toUpperCase());
-                  }}
-                  placeholder="e.g., USD"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
-                  disabled={isLoading}
-                  maxLength={3}
-                  style={{ textTransform: "uppercase" }}
-                />
-              </div>
+        <label className="mt-3 block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Amount (3 digits)
+          </span>
+          <Input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="000"
+            min={0}
+            max={999}
+            disabled={isLoading || isSolved}
+            className="font-mono"
+          />
+        </label>
+      </SolverSection>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Target Currency (3-letter code)</label>
-                <input
-                  type="text"
-                  value={targetCurrency}
-                  onChange={(e) => {
-                    setTargetCurrency(e.target.value.toUpperCase());
-                  }}
-                  placeholder="e.g., EUR"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
-                  disabled={isLoading}
-                  maxLength={3}
-                  style={{ textTransform: "uppercase" }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Amount (3-digit number)</label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => {
-                  setAmount(e.target.value);
-                }}
-                placeholder="Enter 3-digit amount..."
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:border-primary focus:outline-none"
-                disabled={isLoading}
-                min="0"
-                max="999"
-              />
-            </div>
-
-            <Button
-              variant="default"
-              className="w-full"
-              onClick={solveForeignExchangeModule}
-              disabled={isLoading || !baseCurrency || !targetCurrency || !amount}
-            >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
-              {isLoading ? "Solving..." : "Solve"}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-green-900/50 border border-green-600 rounded-lg p-4">
-              <h3 className="font-bold text-lg mb-2 text-green-300">Solution</h3>
-              <p className="text-lg text-gray-100">
-                Press key <span className="font-bold text-xl text-green-300">
-                  {result?.keyPosition === 0 ? "1 (top-left)" : result?.keyPosition}
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 mt-2">
-                Count keys from left to right, top to bottom
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Controls */}
       <SolverControls
         onSolve={solveForeignExchangeModule}
         onReset={reset}
         isSolveDisabled={!baseCurrency || !targetCurrency || !amount}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {result && (
+        <SolverResult
+          variant="success"
+          title="Press this key"
+          description={`Position: ${keyLabel}\nCount keys left-to-right, top-to-bottom.`}
+        />
+      )}
+
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Green LEDs mean the exchange API is available; red means rates come from the
+        bomb edgework only.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

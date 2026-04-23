@@ -7,13 +7,16 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 const FILES = ["a", "b", "c", "d", "e", "f"] as const;
 const RANKS = [1, 2, 3, 4, 5, 6] as const;
@@ -227,53 +230,65 @@ export default function ChessSolver({ bomb }: ChessSolverProps) {
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-center text-neutral-300 text-sm mb-4">
-          Enter the six coordinates in order (position 1 to 6 as shown by the module&apos;s numbered buttons). Letter then number (e.g. a1, f6).
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+      <SolverSection
+        title="Numbered positions"
+        description="Enter the six coordinates in order (position 1 to 6 on the module's numbered buttons). Format is letter then digit, e.g. a1, f6."
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {coordinates.map((coord, i) => (
-            <div key={i} className="form-control">
-              <label className="label py-0.5">
-                <span className="label-text text-neutral-400">Position {i + 1}</span>
+            <div key={i} className="space-y-1">
+              <label htmlFor={`chess-coord-${i}`} className="text-xs font-medium text-muted-foreground">
+                Position {i + 1}
               </label>
               <Input
+                id={`chess-coord-${i}`}
                 type="text"
                 maxLength={2}
                 value={coord}
                 onChange={(e) => setCoord(i, e.target.value)}
                 placeholder="a1"
-                className="w-full bg-neutral-800 border-neutral-600 text-yellow-400 font-mono uppercase"
+                className="w-full font-mono uppercase"
                 disabled={isLoading || isSolved}
                 aria-label={`Position ${i + 1} coordinate`}
               />
             </div>
           ))}
         </div>
-        {/* 6×6 board reference with piece icons after solve */}
-        <div className="flex justify-center mb-2">
-          <div className="inline-grid grid-cols-6 border-2 border-neutral-500" style={{ width: "min(12rem, 90vw)" }}>
+      </SolverSection>
+
+      <SolverSection
+        title="Board"
+        description="6×6 reference (a1 bottom-left). After solving, the chess pieces and target square are highlighted."
+      >
+        <div className="flex justify-center">
+          <div
+            className="inline-grid grid-cols-6 overflow-hidden rounded border border-border"
+            style={{ width: "min(16rem, 90vw)" }}
+          >
             {RANKS.slice().reverse().map((rank) =>
               FILES.map((file) => {
                 const sq = file + rank;
-                const isWhite = (FILES.indexOf(file) + rank) % 2 === 0;
+                const isLight = (FILES.indexOf(file) + rank) % 2 === 0;
                 const piece = result?.pieceAssignments?.[sq];
                 const isSolution = result?.coordinate === sq;
                 return (
                   <div
                     key={sq}
-                    className="aspect-square flex items-center justify-center text-[0.5rem] font-mono text-neutral-500"
-                    style={{ backgroundColor: isWhite ? "#4a5568" : "#2d3748" }}
+                    className={cn(
+                      "relative flex aspect-square items-center justify-center text-[0.55rem] font-mono",
+                      isLight ? "bg-muted/40" : "bg-muted",
+                      isSolution && "ring-2 ring-inset ring-emerald-500",
+                    )}
                     title={piece ? `${piece} on ${sq}` : isSolution ? `Solution: ${sq}` : sq}
                   >
                     {piece ? (
-                      <span className="text-lg leading-none text-amber-200" aria-hidden>
+                      <span className="text-xl leading-none text-foreground" aria-hidden>
                         {PIECE_SYMBOLS[piece] ?? piece.charAt(0)}
                       </span>
                     ) : isSolution ? (
-                      <span className="text-green-400 font-bold">{sq}</span>
+                      <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{sq}</span>
                     ) : (
-                      sq
+                      <span className="text-muted-foreground">{sq}</span>
                     )}
                   </div>
                 );
@@ -281,31 +296,32 @@ export default function ChessSolver({ bomb }: ChessSolverProps) {
             )}
           </div>
         </div>
-        <p className="text-center text-neutral-500 text-xs">Board reference (a1 bottom-left)</p>
-      </div>
+      </SolverSection>
 
-      <div className="mt-6">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={!canSolve || isSolved}
-          isLoading={isLoading}
-          solveText="Solve"
-        />
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!canSolve}
+        isLoading={isLoading}
+        isSolved={isSolved}
+      />
 
       <ErrorAlert error={error} />
 
       {result?.coordinate && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-bold">Submit on the module:</p>
-          <p className="text-lg font-mono mt-1">
-            Press letter <strong>{result.coordinate[0].toUpperCase()}</strong>, then number <strong>{result.coordinate[1]}</strong>
-          </p>
-        </Alert>
+        <SolverResult
+          variant="success"
+          title="Submit on the module"
+          description={`Letter: ${result.coordinate[0].toUpperCase()}\nNumber: ${result.coordinate[1]}`}
+        />
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        The module shows six chess pieces by coordinate. Type each one in order; the solver returns
+        the square to submit.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

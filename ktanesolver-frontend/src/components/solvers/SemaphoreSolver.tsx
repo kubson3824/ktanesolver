@@ -1,19 +1,27 @@
 import { useCallback, useMemo, useState } from "react";
+import { X } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { solveSemaphore, getDisplayLabel, type SemaphoreOutput, type SemaphoreInput } from "../../services/semaphoreService";
+import {
+  solveSemaphore,
+  getDisplayLabel,
+  type SemaphoreOutput,
+  type SemaphoreInput,
+} from "../../services/semaphoreService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
+  SolverResult,
 } from "../common";
 import SemaphoreFlagSelector from "../SemaphoreFlagSelector";
 import { Button } from "../ui/button";
-import { Alert } from "../ui/alert";
 
 interface SemaphoreSolverProps {
   bomb: BombEntity | null | undefined;
@@ -30,7 +38,6 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
   const [result, setResult] = useState<SemaphoreOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -51,7 +58,12 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (state: { sequence?: FlagAngles[]; result?: SemaphoreOutput | null; twitchCommand?: string; input?: { sequence?: FlagAngles[] } }) => {
+    (state: {
+      sequence?: FlagAngles[];
+      result?: SemaphoreOutput | null;
+      twitchCommand?: string;
+      input?: { sequence?: FlagAngles[] };
+    }) => {
       const enrich = (seq: FlagAngles[]) =>
         seq.map((pos) => ({
           ...pos,
@@ -65,19 +77,16 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (restored: SemaphoreOutput) => {
-      if (restored) {
-        setResult(restored);
-
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.SEMAPHORE,
-          result: { character: restored.missingCharacter },
-        });
-        setTwitchCommand(command);
-      }
-    },
-  []);
+  const onRestoreSolution = useCallback((restored: SemaphoreOutput) => {
+    if (restored) {
+      setResult(restored);
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.SEMAPHORE,
+        result: { character: restored.missingCharacter },
+      });
+      setTwitchCommand(command);
+    }
+  }, []);
 
   useSolverModulePersistence<
     { sequence: FlagAngles[]; result: SemaphoreOutput | null; twitchCommand: string },
@@ -90,24 +99,32 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
       if (raw == null) return null;
       if (typeof raw === "object") {
         const anyRaw = raw as { output?: unknown; result?: unknown; solution?: unknown };
-        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as SemaphoreOutput;
-        if (anyRaw.result && typeof anyRaw.result === "object") return anyRaw.result as SemaphoreOutput;
-        if (anyRaw.solution && typeof anyRaw.solution === "object") return anyRaw.solution as SemaphoreOutput;
+        if (anyRaw.output && typeof anyRaw.output === "object")
+          return anyRaw.output as SemaphoreOutput;
+        if (anyRaw.result && typeof anyRaw.result === "object")
+          return anyRaw.result as SemaphoreOutput;
+        if (anyRaw.solution && typeof anyRaw.solution === "object")
+          return anyRaw.solution as SemaphoreOutput;
         return raw as SemaphoreOutput;
       }
       return null;
     },
-    inferSolved: (_sol, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
 
   const addPosition = (character: string, leftFlagAngle: number, rightFlagAngle: number) => {
-    setSequence(prev => [...prev, { leftFlagAngle, rightFlagAngle, character }]);
+    setSequence((prev) => [...prev, { leftFlagAngle, rightFlagAngle, character }]);
+  };
+
+  const removeAt = (index: number) => {
+    setSequence((prev) => prev.filter((_, i) => i !== index));
   };
 
   const removeLastPosition = () => {
-    setSequence(prev => prev.slice(0, -1));
+    setSequence((prev) => prev.slice(0, -1));
   };
 
   const clearSequence = () => {
@@ -115,7 +132,6 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
     setResult(null);
     setTwitchCommand("");
   };
-
 
   const solveSemaphoreModule = async () => {
     if (sequence.length === 0) {
@@ -132,18 +148,13 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
     clearError();
 
     try {
-      const input: SemaphoreInput = {
-        sequence
-      };
-
+      const input: SemaphoreInput = { sequence };
       const response = await solveSemaphore(round.id, bomb.id, currentModule.id, { input });
-
       setResult(response.output);
 
       if (response.output.resolved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-
         const command = generateTwitchCommand({
           moduleType: ModuleType.SEMAPHORE,
           result: response.output,
@@ -162,102 +173,108 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
     resetSolverState();
   };
 
+  const disabled = isLoading || isSolved;
+
   return (
     <SolverLayout>
-      {/* Semaphore Module Visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4 flex flex-col min-h-0">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium flex-shrink-0">SEMAPHORE MODULE</h3>
-
-        {/* Display area */}
-        <div className="bg-black rounded-lg p-4 mb-4 min-h-[120px] flex flex-col items-center justify-center flex-shrink-0">
-          <div className="text-center">
-            <div className="text-sm text-gray-400 mb-2">Sequence Builder</div>
-            <div className="text-lg font-mono text-gray-300 mb-4">
-              {sequence.length > 0 ? sequence.map(pos =>
-                pos.character ?? getDisplayLabel(pos.leftFlagAngle, pos.rightFlagAngle)
-              ).join(' ') : 'No positions entered'}
+      <SolverSection
+        title="Sequence"
+        description="Record each flag position as it's displayed on the module."
+      >
+        {sequence.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
+            No positions entered yet. Pick a position below.
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {sequence.map((pos, index) => {
+                const label = pos.character ?? getDisplayLabel(pos.leftFlagAngle, pos.rightFlagAngle);
+                return (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 font-mono text-xs font-semibold text-foreground"
+                  >
+                    <span className="tabular-nums text-muted-foreground">{index + 1}.</span>
+                    {label}
+                    {!disabled && (
+                      <button
+                        type="button"
+                        onClick={() => removeAt(index)}
+                        aria-label={`Remove position ${index + 1}`}
+                        className="ml-0.5 inline-flex rounded text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </span>
+                );
+              })}
             </div>
-            {sequence.length > 0 && (
-              <div className="text-sm text-gray-400">
-                {sequence.length} position{sequence.length !== 1 ? 's' : ''} in sequence
-              </div>
-            )}
-          </div>
-        </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {sequence.length} position{sequence.length !== 1 ? "s" : ""} in sequence
+            </p>
+          </>
+        )}
 
-        {/* Flag selector - fills available space */}
-        <div className="mb-4 flex-1 min-h-0 flex flex-col">
-          <SemaphoreFlagSelector
-            onPositionSelect={addPosition}
-            disabled={isLoading || isSolved}
-          />
-        </div>
-
-        {/* Sequence controls */}
-        <div className="flex gap-2">
+        <div className="mt-3 flex gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="flex-1"
             onClick={removeLastPosition}
-            disabled={sequence.length === 0 || isLoading || isSolved}
+            disabled={sequence.length === 0 || disabled}
           >
-            Remove Last
+            Remove last
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="flex-1"
             onClick={clearSequence}
-            disabled={sequence.length === 0 || isLoading || isSolved}
+            disabled={sequence.length === 0 || disabled}
           >
-            Clear All
+            Clear all
           </Button>
         </div>
-      </div>
+      </SolverSection>
 
-      {/* Controls */}
+      <SolverSection
+        title="Flag positions"
+        description="Click the position matching what the module shows. Use NUMERALS / LETTERS to switch mode mid-sequence."
+      >
+        <SemaphoreFlagSelector onPositionSelect={addPosition} disabled={disabled} />
+      </SolverSection>
+
       <SolverControls
         onSolve={solveSemaphoreModule}
         onReset={reset}
         isSolveDisabled={sequence.length === 0}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Press OK"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Results */}
       {result && (
-        <Alert variant={result.resolved ? "success" : "warning"} className="mb-4">
-          <div>
-            {result.resolved ? (
-              <div>
-                <span className="font-bold">Correct! The missing character is:</span>
-                <div className="mt-2 font-mono text-2xl">{result.missingCharacter}</div>
-              </div>
-            ) : (
-              <div>
-                <span className="font-bold">Missing character:</span>
-                <div className="mt-2 font-mono text-2xl">{result.missingCharacter}</div>
-              </div>
-            )}
-          </div>
-        </Alert>
+        <SolverResult
+          variant={result.resolved ? "success" : "warning"}
+          title={result.resolved ? "Missing character" : "Best guess"}
+          description={
+            result.resolved
+              ? `Type this into the module: ${result.missingCharacter}`
+              : `Likely missing character: ${result.missingCharacter}. Confirm the sequence.`
+          }
+        />
       )}
 
-      {/* Twitch command display */}
       {twitchCommand && result && result.resolved && (
         <TwitchCommandDisplay command={twitchCommand} />
       )}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Enter the semaphore sequence you see on the module to find the character not in the serial number.</p>
-        <p>• Select positions in order from left to right</p>
-        <p>• The system will automatically find which character is missing from the serial number</p>
-      </div>
+      <SolverInstructions>
+        Enter every semaphore position shown on the module. The solver compares against the
+        bomb's serial number to find the character missing from the sequence.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

@@ -14,11 +14,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls,
 } from "../common";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 interface AstrologySolverProps {
   bomb: BombEntity | null | undefined;
@@ -26,30 +29,11 @@ interface AstrologySolverProps {
 
 const ELEMENT_OPTIONS: AstrologyElementType[] = ["FIRE", "WATER", "EARTH", "AIR"];
 const PLANET_OPTIONS: AstrologyPlanetType[] = [
-  "SUN",
-  "MOON",
-  "MERCURY",
-  "VENUS",
-  "MARS",
-  "JUPITER",
-  "SATURN",
-  "URANUS",
-  "NEPTUNE",
-  "PLUTO",
+  "SUN", "MOON", "MERCURY", "VENUS", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE", "PLUTO",
 ];
 const ZODIAC_OPTIONS: AstrologyZodiacType[] = [
-  "ARIES",
-  "TAURUS",
-  "GEMINI",
-  "CANCER",
-  "LEO",
-  "VIRGO",
-  "LIBRA",
-  "SCORPIO",
-  "SAGITTARIUS",
-  "CAPRICORN",
-  "AQUARIUS",
-  "PISCES",
+  "ARIES", "TAURUS", "GEMINI", "CANCER", "LEO", "VIRGO",
+  "LIBRA", "SCORPIO", "SAGITTARIUS", "CAPRICORN", "AQUARIUS", "PISCES",
 ];
 
 const ELEMENT_GLYPH: Record<AstrologyElementType, string> = {
@@ -60,31 +44,15 @@ const ELEMENT_GLYPH: Record<AstrologyElementType, string> = {
 };
 
 const ZODIAC_GLYPH: Record<AstrologyZodiacType, string> = {
-  ARIES: "\u2648",
-  TAURUS: "\u2649",
-  GEMINI: "\u264A",
-  CANCER: "\u264B",
-  LEO: "\u264C",
-  VIRGO: "\u264D",
-  LIBRA: "\u264E",
-  SCORPIO: "\u264F",
-  SAGITTARIUS: "\u2650",
-  CAPRICORN: "\u2651",
-  AQUARIUS: "\u2652",
-  PISCES: "\u2653",
+  ARIES: "\u2648", TAURUS: "\u2649", GEMINI: "\u264A", CANCER: "\u264B",
+  LEO: "\u264C", VIRGO: "\u264D", LIBRA: "\u264E", SCORPIO: "\u264F",
+  SAGITTARIUS: "\u2650", CAPRICORN: "\u2651", AQUARIUS: "\u2652", PISCES: "\u2653",
 };
 
 const PLANET_GLYPH: Record<AstrologyPlanetType, string> = {
-  SUN: "\u2609",
-  MOON: "\u263D",
-  MERCURY: "\u263F",
-  VENUS: "\u2640",
-  MARS: "\u2642",
-  JUPITER: "\u2643",
-  SATURN: "\u2644",
-  URANUS: "\u2645",
-  NEPTUNE: "\u2646",
-  PLUTO: "\u2647",
+  SUN: "\u2609", MOON: "\u263D", MERCURY: "\u263F", VENUS: "\u2640",
+  MARS: "\u2642", JUPITER: "\u2643", SATURN: "\u2644", URANUS: "\u2645",
+  NEPTUNE: "\u2646", PLUTO: "\u2647",
 };
 
 const astrologyImageUrl = (prefix: "e" | "p" | "a", value: string) =>
@@ -109,24 +77,9 @@ interface SymbolButtonProps {
   onSelect: () => void;
 }
 
-function SymbolButton({
-  kind,
-  value,
-  glyph,
-  selected,
-  disabled,
-  imagePrefix,
-  onSelect,
-}: SymbolButtonProps) {
+function SymbolButton({ value, glyph, selected, disabled, imagePrefix, onSelect }: SymbolButtonProps) {
   const label = prettify(value);
   const [imageFailed, setImageFailed] = useState(false);
-
-  const accent =
-    kind === "element"
-      ? "from-orange-500/30 to-amber-500/10 ring-orange-400"
-      : kind === "planet"
-        ? "from-sky-500/30 to-indigo-500/10 ring-sky-400"
-        : "from-fuchsia-500/30 to-purple-500/10 ring-fuchsia-400";
 
   return (
     <button
@@ -136,35 +89,29 @@ function SymbolButton({
       title={label}
       disabled={disabled}
       onClick={onSelect}
-      className={`group relative flex min-w-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border p-2 transition-all duration-150
-        ${
-          selected
-            ? `border-transparent bg-gradient-to-br ${accent} ring-2 shadow-lg shadow-black/30 scale-[1.02]`
-            : "border-gray-700 bg-gray-900/60 hover:border-gray-500 hover:bg-gray-900"
-        }
-        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      className={cn(
+        "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-colors",
+        selected
+          ? "border-ring bg-accent/15 text-foreground ring-2 ring-ring ring-offset-1 ring-offset-card"
+          : "border-border bg-muted/40 text-muted-foreground hover:text-foreground",
+        disabled && !selected && "cursor-not-allowed opacity-60",
+      )}
     >
       <div className="flex h-12 w-full items-center justify-center">
         {imageFailed ? (
-          <span className="text-3xl leading-none" aria-hidden>
-            {glyph}
-          </span>
+          <span className="text-3xl leading-none" aria-hidden>{glyph}</span>
         ) : (
           <img
             src={astrologyImageUrl(imagePrefix, value)}
             alt=""
             aria-hidden
-            className="max-h-12 w-auto object-contain drop-shadow"
+            className="max-h-12 w-auto object-contain"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
         )}
       </div>
-      <span
-        className={`w-full text-center text-[10px] font-medium uppercase leading-tight break-words ${
-          selected ? "text-white" : "text-gray-400 group-hover:text-gray-200"
-        }`}
-      >
+      <span className="w-full break-words text-center text-[0.65rem] font-medium uppercase leading-tight">
         {label}
       </span>
     </button>
@@ -228,7 +175,6 @@ export default function AstrologySolver({ bomb }: AstrologySolverProps) {
   const onRestoreSolution = useCallback((solution: AstrologyOutput) => {
     if (!solution || typeof (solution as AstrologyOutput).omenScore !== "number") return;
     setResult(solution);
-
     const command = generateTwitchCommand({
       moduleType: ModuleType.ASTROLOGY,
       result: { omenScore: solution.omenScore },
@@ -274,7 +220,6 @@ export default function AstrologySolver({ bomb }: AstrologySolverProps) {
       setError("Please select an element, planet, and zodiac");
       return;
     }
-
     if (!round?.id || !bomb?.id || !currentModule?.id) {
       setError("Missing required information");
       return;
@@ -323,8 +268,8 @@ export default function AstrologySolver({ bomb }: AstrologySolverProps) {
           ? "poor"
           : "none";
 
-  const omenAlertVariant =
-    omenKind === "good" ? "success" : omenKind === "poor" ? "destructive" : "warning";
+  const omenVariant: "success" | "warning" | "info" =
+    omenKind === "good" ? "success" : omenKind === "poor" ? "warning" : "info";
 
   const omenButton =
     omenKind === "good" ? "GOOD OMEN" : omenKind === "poor" ? "POOR OMEN" : "NO OMEN";
@@ -334,163 +279,106 @@ export default function AstrologySolver({ bomb }: AstrologySolverProps) {
 
   return (
     <SolverLayout>
-      <div className="relative overflow-hidden rounded-lg border border-indigo-500/20 bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 p-6 mb-4 shadow-xl">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              "radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 60%, #fff, transparent), radial-gradient(1.5px 1.5px at 40% 80%, #fff, transparent), radial-gradient(1px 1px at 85% 20%, #fff, transparent), radial-gradient(1px 1px at 10% 75%, #fff, transparent)",
-          }}
-          aria-hidden
-        />
-
-        <div className="relative">
-          <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-200">
-              Astrology Module
-            </h3>
-            <div className="text-xs text-indigo-300/70">
-              {element && planet && zodiac ? "Ready to solve" : "Pick 3 symbols"}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-orange-300">
-                  Element
-                </label>
-                <span className="text-xs text-gray-400">
-                  {element ? prettify(element) : "—"}
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {ELEMENT_OPTIONS.map((opt) => (
-                  <SymbolButton
-                    key={opt}
-                    kind="element"
-                    value={opt}
-                    glyph={ELEMENT_GLYPH[opt]}
-                    selected={element === opt}
-                    disabled={controlsDisabled}
-                    imagePrefix="e"
-                    onSelect={() => {
-                      setElement(opt);
-                      clearError();
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-sky-300">
-                  Planet
-                </label>
-                <span className="text-xs text-gray-400">
-                  {planet ? prettify(planet) : "—"}
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {PLANET_OPTIONS.map((opt) => (
-                  <SymbolButton
-                    key={opt}
-                    kind="planet"
-                    value={opt}
-                    glyph={PLANET_GLYPH[opt]}
-                    selected={planet === opt}
-                    disabled={controlsDisabled}
-                    imagePrefix="p"
-                    onSelect={() => {
-                      setPlanet(opt);
-                      clearError();
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-fuchsia-300">
-                  Zodiac
-                </label>
-                <span className="text-xs text-gray-400">
-                  {zodiac ? prettify(zodiac) : "—"}
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {ZODIAC_OPTIONS.map((opt) => (
-                  <SymbolButton
-                    key={opt}
-                    kind="zodiac"
-                    value={opt}
-                    glyph={ZODIAC_GLYPH[opt]}
-                    selected={zodiac === opt}
-                    disabled={controlsDisabled}
-                    imagePrefix="a"
-                    onSelect={() => {
-                      setZodiac(opt);
-                      clearError();
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+      <SolverSection
+        title="Element"
+        description={element ? prettify(element) : "Pick the element shown on the module."}
+      >
+        <div className="grid grid-cols-4 gap-2">
+          {ELEMENT_OPTIONS.map((opt) => (
+            <SymbolButton
+              key={opt}
+              kind="element"
+              value={opt}
+              glyph={ELEMENT_GLYPH[opt]}
+              selected={element === opt}
+              disabled={controlsDisabled}
+              imagePrefix="e"
+              onSelect={() => {
+                setElement(opt);
+                clearError();
+              }}
+            />
+          ))}
         </div>
-      </div>
+      </SolverSection>
+
+      <SolverSection
+        title="Planet"
+        description={planet ? prettify(planet) : "Pick the planet shown on the module."}
+      >
+        <div className="grid grid-cols-5 gap-2">
+          {PLANET_OPTIONS.map((opt) => (
+            <SymbolButton
+              key={opt}
+              kind="planet"
+              value={opt}
+              glyph={PLANET_GLYPH[opt]}
+              selected={planet === opt}
+              disabled={controlsDisabled}
+              imagePrefix="p"
+              onSelect={() => {
+                setPlanet(opt);
+                clearError();
+              }}
+            />
+          ))}
+        </div>
+      </SolverSection>
+
+      <SolverSection
+        title="Zodiac"
+        description={zodiac ? prettify(zodiac) : "Pick the zodiac sign shown on the module."}
+      >
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {ZODIAC_OPTIONS.map((opt) => (
+            <SymbolButton
+              key={opt}
+              kind="zodiac"
+              value={opt}
+              glyph={ZODIAC_GLYPH[opt]}
+              selected={zodiac === opt}
+              disabled={controlsDisabled}
+              imagePrefix="a"
+              onSelect={() => {
+                setZodiac(opt);
+                clearError();
+              }}
+            />
+          ))}
+        </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={solveModule}
         onReset={reset}
         isSolveDisabled={isSolveDisabled}
         isLoading={isLoading}
-        solveText="Solve"
+        isSolved={isSolved}
       />
 
       <ErrorAlert error={error} />
 
       {result != null && typeof result.omenScore === "number" && (
-        <Alert variant={omenAlertVariant} className="mb-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider opacity-80">
-                Omen Score
-              </div>
-              <div className="font-mono text-3xl font-bold leading-tight">
-                {result.omenScore > 0 ? `+${result.omenScore}` : result.omenScore}
-              </div>
-            </div>
-            <div className="rounded-md border border-current px-3 py-1 text-sm font-bold">
-              {omenButton}
-            </div>
-          </div>
-          <div className="mt-3 text-sm">
-            {omenKind === "none" ? (
-              <span>
-                Press <span className="font-bold">NO OMEN</span> at any time.
-              </span>
-            ) : (
-              <span>
-                Press <span className="font-bold">{omenButton}</span> anytime{" "}
-                <span className="font-mono font-semibold">{digitList}</span> {digitVerb} a digit in
-                the timer.
-              </span>
-            )}
-          </div>
-        </Alert>
+        <SolverResult
+          variant={omenVariant}
+          title={`${omenButton} (omen score ${result.omenScore > 0 ? `+${result.omenScore}` : result.omenScore})`}
+          description={
+            omenKind === "none"
+              ? "Press NO OMEN at any time."
+              : `Press ${omenButton} any time ${digitList} ${digitVerb} a digit in the timer.`
+          }
+        />
       )}
 
       {result != null && typeof result.omenScore === "number" && twitchCommand && (
         <TwitchCommandDisplay command={twitchCommand} />
       )}
 
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Select the element, planet, and zodiac shown on the module.</p>
-        <p>The solver will compute the omen score based on those symbols and your bomb serial number.</p>
-      </div>
+      <SolverInstructions>
+        Pick the element, planet, and zodiac shown on the module. The solver computes the omen
+        score from those symbols and your bomb's serial number, then tells you which button to
+        press and when.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

@@ -7,11 +7,13 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
 } from "../common";
-import { Alert } from "../ui/alert";
 
 interface ListeningSolverProps {
   bomb: BombEntity | null | undefined;
@@ -26,15 +28,17 @@ const SOUND_OPTIONS = [
   "Ballpoint Pen Writing", "Oboe", "Rattling Iron Chain", "Saxophone", "Book Page Turning",
   "Tuba", "Table Tennis", "Marimba", "Squeaky Toy", "Phone Ringing",
   "Helicopter", "Tibetan Nuns", "Firework Exploding", "Throat Singing", "Glass Shattering",
-  "Beach"
+  "Beach",
 ];
+
+const SELECT_CLASS =
+  "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function ListeningSolver({ bomb }: ListeningSolverProps) {
   const [selectedSound, setSelectedSound] = useState<string>("");
   const [result, setResult] = useState<ListeningOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -63,18 +67,15 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (solution: ListeningOutput) => {
-      if (!solution?.code) return;
-      setResult(solution);
-
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.LISTENING,
-        result: { code: solution.code },
-      });
-      setTwitchCommand(command);
-    },
-  []);
+  const onRestoreSolution = useCallback((solution: ListeningOutput) => {
+    if (!solution?.code) return;
+    setResult(solution);
+    const command = generateTwitchCommand({
+      moduleType: ModuleType.LISTENING,
+      result: { code: solution.code },
+    });
+    setTwitchCommand(command);
+  }, []);
 
   useSolverModulePersistence<
     { selectedSound: string; result: ListeningOutput | null; twitchCommand: string },
@@ -113,20 +114,15 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
     clearError();
 
     try {
-      const input: ListeningInput = {
-        soundDescription: selectedSound,
-      };
-      
-      const response = await solveListening(round.id, bomb.id, currentModule.id, {
-        input
-      });
-      
+      const input: ListeningInput = { soundDescription: selectedSound };
+      const response = await solveListening(round.id, bomb.id, currentModule.id, { input });
+
       setResult(response.output);
-      
+
       if (response.output.code) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        
+
         const command = generateTwitchCommand({
           moduleType: ModuleType.LISTENING,
           result: response.output,
@@ -149,70 +145,68 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
 
   return (
     <SolverLayout>
-      {/* Listening Module Interface */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">LISTENING MODULE</h3>
-        
-        {/* Sound Selection */}
-        <div className="mb-4">
-          <p className="text-sm text-gray-400 mb-2">Play the sound on the module, then select it below.</p>
-          <select
-            value={selectedSound}
-            onChange={(e) => setSelectedSound(e.target.value)}
-            className="select select-bordered w-full"
-            disabled={isLoading || isSolved}
-          >
-            <option value="">Select a sound...</option>
-            {SOUND_OPTIONS.map((sound) => (
-              <option key={sound} value={sound}>{sound}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <SolverSection
+        title="Sound on the module"
+        description="Press play on the module, identify the sound, and pick it from the list."
+      >
+        <select
+          value={selectedSound}
+          onChange={(e) => setSelectedSound(e.target.value)}
+          className={SELECT_CLASS}
+          disabled={isLoading || isSolved}
+          aria-label="Sound"
+        >
+          <option value="">Select a sound…</option>
+          {SOUND_OPTIONS.map((sound) => (
+            <option key={sound} value={sound}>{sound}</option>
+          ))}
+        </select>
+      </SolverSection>
 
-      {/* Controls */}
       <SolverControls
         onSolve={solveListeningModule}
         onReset={reset}
         isSolveDisabled={!selectedSound}
         isLoading={isLoading}
-        solveText="Get Code"
+        isSolved={isSolved}
+        solveText="Get code"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Results */}
-      {result && (
-        <Alert variant={result.code ? "success" : "info"} className="mb-4">
-          <div className="w-full">
-            <span className="font-bold">{result.code ? "Code Found!" : "Sound not found"}</span>
-            {result.code && (
-              <div className="mt-4">
-                <div className="font-semibold mb-2">Enter this code:</div>
-                <div className="flex justify-center gap-2">
-                  {result.code.split('').map((symbol, index) => (
-                    <div key={index} className="w-12 h-12 bg-gray-900 border-2 border-green-500 rounded flex items-center justify-center text-2xl font-mono text-green-400">
-                      {symbol}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </Alert>
+      {result && !result.code && (
+        <SolverResult
+          variant="info"
+          title="Sound not found"
+          description="Try a different selection — the solver did not recognise this sound."
+        />
       )}
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {result?.code && (
+        <SolverSection
+          title="Enter this code"
+          description="Use the $ * & # buttons on the module to input the symbols."
+        >
+          <div className="flex flex-wrap justify-center gap-2">
+            {result.code.split("").map((symbol, index) => (
+              <div
+                key={index}
+                className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-emerald-500 bg-emerald-500/10 font-mono text-2xl text-emerald-700 dark:text-emerald-300"
+              >
+                {symbol}
+              </div>
+            ))}
+          </div>
+        </SolverSection>
+      )}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Play the sound on the module, then select it from the list above.</p>
-        <p>• The solver will provide the code to enter</p>
-        <p>• Enter the code using the $ * & # buttons on the module</p>
-        <p>• Pressing play on the module clears any previously entered code</p>
-      </div>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Press play on the module to hear the sound, identify it from the list, then enter the
+        returned code on the module using the $ * &amp; # buttons. Pressing play again clears any
+        previously entered code.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

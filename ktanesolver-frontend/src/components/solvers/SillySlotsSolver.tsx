@@ -14,11 +14,18 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
+  SolverResult,
 } from "../common";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { cn } from "../../lib/cn";
+
+interface SillySlotsSolverProps {
+  bomb: BombEntity | null | undefined;
+}
 
 const KEYWORDS: { value: Keyword; label: string }[] = [
   { value: "SASSY", label: "Sassy" },
@@ -44,29 +51,40 @@ const NOUNS: { value: Noun; label: string }[] = [
   { value: "STEVEN", label: "Steven" },
 ];
 
+/** Visual color for a colour-typed keyword when used as a slot's colour. */
+const COLOUR_SWATCH: Record<Keyword, string> = {
+  BLUE: "bg-blue-500",
+  RED: "bg-red-500",
+  GREEN: "bg-green-500",
+  CHERRY: "bg-rose-500",
+  GRAPE: "bg-purple-500",
+  BOMB: "bg-neutral-800 dark:bg-neutral-200",
+  COIN: "bg-amber-400",
+  SASSY: "bg-muted",
+};
+
 const DEFAULT_SLOT: Slot = { adjective: "SASSY", noun: "SALLY", colour: "BLUE" };
 
 function defaultSlots(): [Slot, Slot, Slot] {
-  return [
-    { ...DEFAULT_SLOT },
-    { ...DEFAULT_SLOT },
-    { ...DEFAULT_SLOT },
-  ];
+  return [{ ...DEFAULT_SLOT }, { ...DEFAULT_SLOT }, { ...DEFAULT_SLOT }];
 }
 
-interface SillySlotsSolverProps {
-  bomb: BombEntity | null | undefined;
-}
+const SELECT_CLASS =
+  "rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
   const [keyword, setKeyword] = useState<Keyword>("SASSY");
   const [slots, setSlots] = useState<[Slot, Slot, Slot]>(defaultSlots());
-  const [result, setResult] = useState<{ legal: boolean; illegalRuleNumber?: number } | null>(null);
+  const [result, setResult] = useState<{
+    legal: boolean;
+    illegalRuleNumber?: number;
+  } | null>(null);
   const [twitchCommand, setTwitchCommand] = useState("");
 
   const {
     isLoading,
     error,
+    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -80,33 +98,54 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
 
   const moduleState = useMemo(
     () => ({ keyword, slots, result, twitchCommand }),
-    [keyword, slots, result, twitchCommand]
+    [keyword, slots, result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
-    (state: { keyword?: Keyword; slots?: Slot[]; result?: { legal: boolean; illegalRuleNumber?: number } | null; twitchCommand?: string }) => {
-      if (state.keyword != null && KEYWORDS.some((o) => o.value === state.keyword)) setKeyword(state.keyword);
+    (state: {
+      keyword?: Keyword;
+      slots?: Slot[];
+      result?: { legal: boolean; illegalRuleNumber?: number } | null;
+      twitchCommand?: string;
+    }) => {
+      if (state.keyword != null && KEYWORDS.some((o) => o.value === state.keyword))
+        setKeyword(state.keyword);
       if (Array.isArray(state.slots) && state.slots.length >= 3) {
         setSlots([
-          { ...state.slots[0], adjective: state.slots[0].adjective ?? "SASSY", noun: state.slots[0].noun ?? "SALLY", colour: state.slots[0].colour ?? "BLUE" },
-          { ...state.slots[1], adjective: state.slots[1].adjective ?? "SASSY", noun: state.slots[1].noun ?? "SALLY", colour: state.slots[1].colour ?? "BLUE" },
-          { ...state.slots[2], adjective: state.slots[2].adjective ?? "SASSY", noun: state.slots[2].noun ?? "SALLY", colour: state.slots[2].colour ?? "BLUE" },
+          {
+            adjective: state.slots[0].adjective ?? "SASSY",
+            noun: state.slots[0].noun ?? "SALLY",
+            colour: state.slots[0].colour ?? "BLUE",
+          },
+          {
+            adjective: state.slots[1].adjective ?? "SASSY",
+            noun: state.slots[1].noun ?? "SALLY",
+            colour: state.slots[1].colour ?? "BLUE",
+          },
+          {
+            adjective: state.slots[2].adjective ?? "SASSY",
+            noun: state.slots[2].noun ?? "SALLY",
+            colour: state.slots[2].colour ?? "BLUE",
+          },
         ]);
       }
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand != null) setTwitchCommand(state.twitchCommand);
     },
-    []
+    [],
   );
 
   const onRestoreSolution = useCallback(
     (solution: { legal: boolean; illegalRuleNumber?: number }) => {
       setResult(solution);
       setTwitchCommand(
-        generateTwitchCommand({ moduleType: ModuleType.SILLY_SLOTS, result: solution })
+        generateTwitchCommand({
+          moduleType: ModuleType.SILLY_SLOTS,
+          result: solution,
+        }),
       );
     },
-    []
+    [],
   );
 
   useSolverModulePersistence<
@@ -133,13 +172,16 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
     setIsSolved,
   });
 
-  const setSlot = useCallback((index: 0 | 1 | 2, field: keyof Slot, value: Adjective | Noun | Keyword) => {
-    setSlots((prev) => {
-      const next: [Slot, Slot, Slot] = [...prev];
-      next[index] = { ...next[index], [field]: value };
-      return next;
-    });
-  }, []);
+  const setSlot = useCallback(
+    (index: 0 | 1 | 2, field: keyof Slot, value: Adjective | Noun | Keyword) => {
+      setSlots((prev) => {
+        const next: [Slot, Slot, Slot] = [...prev];
+        next[index] = { ...next[index], [field]: value };
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleSolve = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -164,7 +206,13 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
         });
         setTwitchCommand(command);
         const solved = Boolean(response.solved);
-        updateModuleAfterSolve(bomb.id, currentModule.id, moduleState, response.output, solved);
+        updateModuleAfterSolve(
+          bomb.id,
+          currentModule.id,
+          moduleState,
+          response.output,
+          solved,
+        );
         if (solved) {
           setIsSolved(true);
           markModuleSolved(bomb.id, currentModule.id);
@@ -185,93 +233,127 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
     resetSolverState();
   };
 
+  const disabled = isLoading || isSolved;
+
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Silly Slots</CardTitle>
-          <CardDescription>
-            Enter the keyword on the display and the three slots (adjective + noun + colour). Press KEEP when legal, pull the lever when illegal. Module defuses after 4 lever pulls.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Keyword (display)</span>
-            </label>
-            <select
-              className="select select-bordered w-full max-w-xs"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value as Keyword)}
-            >
-              {KEYWORDS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+      <SolverSection
+        title="Display keyword"
+        description="Pick the keyword shown on the module display."
+      >
+        <select
+          className={cn(SELECT_CLASS, "w-full max-w-xs")}
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value as Keyword)}
+          disabled={disabled}
+          aria-label="Display keyword"
+        >
+          {KEYWORDS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </SolverSection>
 
-          <div className="space-y-3">
-            <label className="label">
-              <span className="label-text">Slots (left to right)</span>
-            </label>
-            {([0, 1, 2] as const).map((i) => (
-              <div key={i} className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-base-200/50">
-                <span className="text-sm font-medium w-6">Slot {i + 1}</span>
+      <SolverSection
+        title="Current slot display"
+        description="Read each slot left to right: adjective, noun, and background colour."
+      >
+        <div className="space-y-2">
+          {([0, 1, 2] as const).map((i) => {
+            const slot = slots[i];
+            return (
+              <div
+                key={i}
+                className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2"
+              >
+                <span className="w-12 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Slot {i + 1}
+                </span>
                 <select
-                  className="select select-bordered select-sm"
-                  value={slots[i].adjective}
+                  className={SELECT_CLASS}
+                  value={slot.adjective}
                   onChange={(e) => setSlot(i, "adjective", e.target.value as Adjective)}
+                  disabled={disabled}
+                  aria-label={`Slot ${i + 1} adjective`}
                 >
                   {ADJECTIVES.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
                 <select
-                  className="select select-bordered select-sm"
-                  value={slots[i].noun}
+                  className={SELECT_CLASS}
+                  value={slot.noun}
                   onChange={(e) => setSlot(i, "noun", e.target.value as Noun)}
+                  disabled={disabled}
+                  aria-label={`Slot ${i + 1} noun`}
                 >
                   {NOUNS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
-                <select
-                  className="select select-bordered select-sm"
-                  value={slots[i].colour}
-                  onChange={(e) => setSlot(i, "colour", e.target.value as Keyword)}
-                >
-                  {KEYWORDS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                <div className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "h-4 w-4 rounded-full border border-border",
+                      COLOUR_SWATCH[slot.colour],
+                    )}
+                  />
+                  <select
+                    className={SELECT_CLASS}
+                    value={slot.colour}
+                    onChange={(e) => setSlot(i, "colour", e.target.value as Keyword)}
+                    disabled={disabled}
+                    aria-label={`Slot ${i + 1} colour`}
+                  >
+                    {KEYWORDS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
+      </SolverSection>
 
-          <ErrorAlert error={error} onDismiss={clearError} />
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isLoading={isLoading}
+        isSolved={isSolved}
+        solveText="Check legality"
+      />
 
-          {result != null && (
-            <div
-              className={`p-4 rounded-lg font-semibold text-center ${
-                result.legal ? "bg-success/20 text-success-content" : "bg-error/20 text-error-content"
-              }`}
-            >
-              {result.legal ? "Press KEEP" : "Pull the LEVER"}
-              {result.illegalRuleNumber != null && !result.legal && (
-                <span className="block text-sm font-normal mt-1">Rule {result.illegalRuleNumber}</span>
-              )}
-            </div>
-          )}
+      <ErrorAlert error={error} onDismiss={clearError} />
 
-          {twitchCommand && (
-            <TwitchCommandDisplay command={twitchCommand} />
-          )}
-        </CardContent>
-      </Card>
+      {result != null && (
+        <SolverResult
+          variant={result.legal ? "success" : "warning"}
+          title={result.legal ? "Press KEEP" : "Pull the LEVER"}
+          description={
+            result.legal
+              ? "This slot display is legal — keep it."
+              : `Illegal (rule ${result.illegalRuleNumber ?? "?"}). Pull the lever to re-roll.`
+          }
+        />
+      )}
 
-      <SolverControls onSolve={handleSolve} onReset={reset} isLoading={isLoading} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the display keyword and the current slot reels each spin. The solver
+        applies the rules in order and tells you whether to press KEEP or pull the
+        lever. Four lever pulls defuse the module.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

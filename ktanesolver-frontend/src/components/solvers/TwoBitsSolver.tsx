@@ -1,21 +1,35 @@
 import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { useRoundStore } from "../../store/useRoundStore";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
-import { solveTwoBits, type TwoBitsInput, type TwoBitsOutput } from "../../services/twoBitsService";
-import SolverLayout from "../common/SolverLayout";
-import SolverControls from "../common/SolverControls";
-import ErrorAlert from "../common/ErrorAlert";
-import TwitchCommandDisplay from "../common/TwitchCommandDisplay";
-import { useSolver, useSolverModulePersistence } from "../common";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  solveTwoBits,
+  type TwoBitsInput,
+  type TwoBitsOutput,
+} from "../../services/twoBitsService";
+import {
+  useSolver,
+  useSolverModulePersistence,
+  SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  StageIndicator,
+  ErrorAlert,
+  TwitchCommandDisplay,
+  SolverResult,
+} from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
 
 interface TwoBitsSolverProps {
   bomb: BombEntity | null | undefined;
 }
+
+const STAGE_LABELS: Record<number, string> = {
+  1: "Calculate",
+  2: "Enter number",
+  3: "Final",
+};
 
 export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
   const [currentStage, setCurrentStage] = useState(1);
@@ -23,8 +37,19 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
   const [result, setResult] = useState<TwoBitsOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  const currentModule = useRoundStore((state) => state.currentModule);
-  const { isLoading, error, isSolved, clearError, reset, setIsLoading, setError, setIsSolved, round, markModuleSolved } = useSolver();
+  const {
+    isLoading,
+    error,
+    isSolved,
+    clearError,
+    reset,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    currentModule,
+    round,
+    markModuleSolved,
+  } = useSolver();
 
   const moduleState = useMemo(
     () => ({ currentStage, inputNumber, result, twitchCommand }),
@@ -32,7 +57,12 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (state: { currentStage?: number; inputNumber?: string; result?: TwoBitsOutput | null; twitchCommand?: string }) => {
+    (state: {
+      currentStage?: number;
+      inputNumber?: string;
+      result?: TwoBitsOutput | null;
+      twitchCommand?: string;
+    }) => {
       // Never restore to stage 3 unless the module is actually solved (avoids stale/partial backend state)
       const canRestoreStage3 = state.currentStage === 3 && currentModule?.solved;
       const stageToRestore =
@@ -58,9 +88,6 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       });
       setTwitchCommand(command);
 
-      // Derive the next stage from how many stages the backend has completed.
-      // Hardcoding stage 3 caused stage 2 to be skipped whenever the websocket
-      // refresh repopulated currentModule.solution after stage 1.
       const solved = Boolean(currentModule?.solved);
       if (solved) {
         setCurrentStage(3);
@@ -71,10 +98,16 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
         setCurrentStage(Math.min(3, Math.max(1, completed + 1)));
       }
     },
-  [currentModule?.solved]);
+    [currentModule?.solved],
+  );
 
   useSolverModulePersistence<
-    { currentStage: number; inputNumber: string; result: TwoBitsOutput | null; twitchCommand: string },
+    {
+      currentStage: number;
+      inputNumber: string;
+      result: TwoBitsOutput | null;
+      twitchCommand: string;
+    },
     TwoBitsOutput
   >({
     state: moduleState,
@@ -108,7 +141,7 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       };
 
       const response = await solveTwoBits(round.id, bomb.id, currentModule.id, { input });
-      
+
       setResult(response.output);
       const command = generateTwitchCommand({
         moduleType: ModuleType.TWO_BITS,
@@ -146,153 +179,138 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
     reset();
   };
 
+  const disabled = isLoading || isSolved;
+  const stageIsAutomatic = currentStage === 1;
+  const canSolve = stageIsAutomatic || inputNumber.trim().length > 0;
+
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-center text-base-content/70 text-sm font-medium">
-            TWO BITS MODULE
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Stage indicator: visible stages with labels */}
-          <div className="flex flex-col items-center gap-4">
-            <p className="text-center text-base-content/50 text-xs font-medium uppercase tracking-wider">
-              Current stage
-            </p>
-            <p className="text-4xl font-bold text-primary tabular-nums">
-              {currentStage} / 3
-            </p>
-            <div className="flex w-full items-center justify-center gap-2 sm:gap-4">
-              {[
-                { step: 1, label: "Calculate" },
-                { step: 2, label: "Enter number" },
-                { step: 3, label: "Final" },
-              ].map(({ step, label }) => (
-                <div
-                  key={step}
-                  className={`flex flex-1 flex-col items-center rounded-lg border-2 px-3 py-2 transition-colors ${
-                    step === currentStage
-                      ? "border-primary bg-primary/10"
-                      : step < currentStage
-                        ? "border-base-300 bg-base-200/50"
-                        : "border-base-200 bg-base-200/30"
-                  }`}
-                >
-                  <span className="text-lg font-bold tabular-nums">{step}</span>
-                  <span className="text-xs text-base-content/70">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      <SolverSection
+        title="Stage progress"
+        description={
+          isSolved
+            ? "All 3 stages complete."
+            : `Currently on stage ${currentStage}: ${STAGE_LABELS[currentStage] ?? ""}`
+        }
+      >
+        <StageIndicator
+          total={3}
+          current={isSolved ? 4 : currentStage}
+          completedThrough={isSolved ? 3 : currentStage - 1}
+        />
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((step) => {
+            const isDone = step < currentStage || isSolved;
+            const isCurrent = step === currentStage && !isSolved;
+            return (
+              <div
+                key={step}
+                className={
+                  isCurrent
+                    ? "flex flex-col items-center rounded-md border border-accent bg-accent/10 px-2 py-2 text-center"
+                    : isDone
+                      ? "flex flex-col items-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-2 text-center"
+                      : "flex flex-col items-center rounded-md border border-border bg-muted/20 px-2 py-2 text-center"
+                }
+              >
+                <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                  Stage {step}
+                </span>
+                <span className="text-xs font-medium text-foreground">
+                  {STAGE_LABELS[step]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </SolverSection>
 
-          {/* Progress bar */}
-          <div className="w-full bg-base-200 rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStage / 3) * 100}%` }}
-            />
-          </div>
-
-          {currentStage === 1 ? (
-            <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-              <p className="text-sm text-center text-base-content/80">
-                Stage 1 uses a number calculated from bomb properties (serial letter, batteries, ports).
-              </p>
-            </div>
+      {!isSolved && (
+        <SolverSection
+          title={stageIsAutomatic ? "Stage 1 input" : "Module display"}
+          description={
+            stageIsAutomatic
+              ? "Stage 1 derives its number from bomb edgework (serial letter, batteries, ports). Just press Calculate."
+              : `Enter the two-digit number currently on the module for stage ${currentStage}.`
+          }
+        >
+          {stageIsAutomatic ? (
+            <p className="rounded-md border border-border bg-muted/20 px-3 py-3 text-center text-sm text-muted-foreground">
+              No input required — press Calculate Stage 1 below.
+            </p>
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-base-content/80 mb-2">
-                Number on the module (0–99)
-              </label>
-              <Input
-                type="number"
-                min="0"
-                max="99"
-                value={inputNumber}
-                onChange={(e) => handleNumberChange(e.target.value)}
-                className="w-full max-w-md mx-auto block text-center text-2xl tracking-widest"
-                placeholder="00"
-                disabled={isLoading || isSolved}
-              />
-            </div>
+            <Input
+              type="number"
+              min={0}
+              max={99}
+              value={inputNumber}
+              onChange={(e) => handleNumberChange(e.target.value)}
+              placeholder="00"
+              disabled={disabled}
+              aria-label={`Stage ${currentStage} number`}
+              className="mx-auto block w-full max-w-sm text-center font-mono text-3xl tracking-widest"
+            />
           )}
-        </CardContent>
-      </Card>
+        </SolverSection>
+      )}
 
       <SolverControls
         onSolve={solveTwoBitsModule}
         onReset={resetModule}
+        isSolveDisabled={!canSolve}
         isSolved={isSolved}
         isLoading={isLoading}
-        solveButtonText={currentStage === 1 ? "Calculate Stage 1" : `Solve Stage ${currentStage}`}
-        showReset={isSolved}
+        solveButtonText={
+          stageIsAutomatic ? "Calculate stage 1" : `Solve stage ${currentStage}`
+        }
       />
 
       <ErrorAlert error={error} />
 
-      {isSolved && (
-        <Alert variant="success" className="mb-4">
-          <span>Module Solved!</span>
-        </Alert>
-      )}
+      {isSolved && <SolverResult variant="success" title="Module solved!" />}
 
       {result?.stages && result.stages.length > 0 && (
-        <Card className="mb-4 border-base-300/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-center text-base-content/70 text-sm font-medium">
-              Stage history
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {result.stages.map((stage, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-center gap-2 text-base font-mono"
-                >
-                  <span className="text-base-content/70">Stage {index + 1}:</span>
-                  <span className="font-semibold tabular-nums">{stage.number}</span>
-                  <span className="text-base-content/50">→</span>
-                  <span className="font-semibold text-primary">{stage.letters}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <SolverSection title="Stage history">
+          <ul className="space-y-1.5">
+            {result.stages.map((stage, index) => (
+              <li
+                key={index}
+                className="flex items-center justify-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-1.5 font-mono text-sm"
+              >
+                <span className="text-muted-foreground">Stage {index + 1}:</span>
+                <span className="font-semibold tabular-nums text-foreground">
+                  {stage.number}
+                </span>
+                <span aria-hidden className="text-muted-foreground">
+                  →
+                </span>
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  {stage.letters}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </SolverSection>
       )}
 
       {result && (
-        <Card className="mb-4 border-success/30 bg-success/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-center text-success text-sm font-medium">
-              SOLUTION
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl md:text-4xl font-mono font-semibold text-center text-success break-all">
-              {result.letters}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {isSolved && twitchCommand && (
-        <TwitchCommandDisplay command={twitchCommand} />
-      )}
-
-      <Card className="mt-4 border-base-300/50">
-        <CardContent className="pt-4">
-          <p className="text-sm text-base-content/60 mb-2">
-            Enter the number displayed on the Two Bits module for each stage.
+        <SolverSection title="Solution" className="border-emerald-500/40">
+          <p className="break-all text-center font-mono text-3xl font-semibold text-emerald-700 dark:text-emerald-400 md:text-4xl">
+            {result.letters}
           </p>
-          <ul className="text-sm text-base-content/60 space-y-1 list-disc list-inside">
-            <li>Stage 1 is calculated automatically from bomb properties</li>
-            <li>For stages 2 and 3, enter the number shown on the module</li>
-            <li>The solver will provide the corresponding letter sequence</li>
-          </ul>
-        </CardContent>
-      </Card>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Type these letters into the module.
+          </p>
+        </SolverSection>
+      )}
+
+      {isSolved && twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the number shown on the Two Bits module each stage. Stage 1 is calculated
+        automatically from bomb edgework; stages 2 and 3 need the number the module
+        displays.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

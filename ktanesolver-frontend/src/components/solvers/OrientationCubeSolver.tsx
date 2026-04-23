@@ -4,14 +4,18 @@ import { ModuleType } from "../../types";
 import { solveOrientationCube as solveOrientationCubeApi } from "../../services/orientationCubeService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { useRoundStore } from "../../store/useRoundStore";
-import { 
+import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
 } from "../common";
+import { cn } from "../../lib/cn";
 
 type OrientationCubeFace = "LEFT" | "RIGHT" | "FRONT" | "BACK" | null;
 type OrientationCubeRotation = "ROTATE_LEFT" | "ROTATE_RIGHT" | "ROTATE_CLOCKWISE" | "ROTATE_COUNTERCLOCKWISE";
@@ -20,12 +24,21 @@ interface OrientationCubeSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-const FACES: { face: OrientationCubeFace; display: string; className: string }[] = [
-  { face: "FRONT", display: "Front", className: "bg-blue-500" },
-  { face: "BACK", display: "Back", className: "bg-green-500" },
-  { face: "LEFT", display: "Left", className: "bg-red-500" },
-  { face: "RIGHT", display: "Right", className: "bg-yellow-500" },
-  { face: null, display: "Empty", className: "bg-gray-700" },
+interface FaceSpec {
+  face: OrientationCubeFace;
+  display: string;
+  /** Solid color backdrop when this face is picked. */
+  swatch: string;
+  /** Text colour readable on the swatch. */
+  text: string;
+}
+
+const FACES: readonly FaceSpec[] = [
+  { face: "FRONT", display: "Front", swatch: "bg-blue-500", text: "text-white" },
+  { face: "BACK", display: "Back", swatch: "bg-green-500", text: "text-white" },
+  { face: "LEFT", display: "Left", swatch: "bg-red-500", text: "text-white" },
+  { face: "RIGHT", display: "Right", swatch: "bg-yellow-400", text: "text-yellow-950" },
+  { face: null, display: "Empty", swatch: "bg-muted", text: "text-muted-foreground" },
 ];
 
 const ROTATION_DISPLAY: Record<OrientationCubeRotation, string> = {
@@ -35,12 +48,16 @@ const ROTATION_DISPLAY: Record<OrientationCubeRotation, string> = {
   ROTATE_COUNTERCLOCKWISE: "↺ CCW",
 };
 
-const ROTATION_COLORS: Record<OrientationCubeRotation, string> = {
-  ROTATE_LEFT: "text-orange-400",
-  ROTATE_RIGHT: "text-cyan-400",
-  ROTATE_CLOCKWISE: "text-green-400",
-  ROTATE_COUNTERCLOCKWISE: "text-purple-400",
+const ROTATION_ACCENT: Record<OrientationCubeRotation, string> = {
+  ROTATE_LEFT: "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  ROTATE_RIGHT: "border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  ROTATE_CLOCKWISE: "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  ROTATE_COUNTERCLOCKWISE: "border-fuchsia-500/50 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300",
 };
+
+function faceSpec(face: OrientationCubeFace): FaceSpec {
+  return FACES.find((f) => f.face === face) ?? FACES[FACES.length - 1];
+}
 
 export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverProps) {
   const [initialFace, setInitialFace] = useState<OrientationCubeFace>(null);
@@ -49,7 +66,6 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
   const [needsUpdatedFace, setNeedsUpdatedFace] = useState(false);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -101,7 +117,8 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
         setTwitchCommand(command);
       }
     },
-  []);
+    [],
+  );
 
   useSolverModulePersistence<
     { initialFace: OrientationCubeFace; updatedFace: OrientationCubeFace; needsUpdatedFace: boolean; result: OrientationCubeRotation[]; twitchCommand: string },
@@ -127,6 +144,8 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
     setIsSolved,
   });
 
+  const showUpdatedFace = needsUpdatedFace && !isSolved;
+
   const handleSolve = async () => {
     if (!initialFace) {
       setError("Please select the initial face");
@@ -150,8 +169,8 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
       const response = await solveOrientationCubeApi(round.id, bomb.id, currentModule.id, {
         input: {
           initialFace,
-          updatedFace: needsUpdatedFace ? updatedFace : undefined
-        }
+          updatedFace: needsUpdatedFace ? updatedFace : undefined,
+        },
       });
 
       setResult(response.output.rotations);
@@ -159,11 +178,7 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
 
       if (response.output.needsUpdatedFace) {
         setTwitchCommand("");
-      }
-
-      // Only mark as solved and generate commands if we don't need updated face
-      if (!response.output.needsUpdatedFace) {
-        // Generate Twitch command
+      } else {
         const command = generateTwitchCommand({
           moduleType: ModuleType.ORIENTATION_CUBE,
           result: response.output,
@@ -171,7 +186,6 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
         setTwitchCommand(command);
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        // Persist state and solution so returning to this module shows initial face and sequence
         updateModuleAfterSolve(
           bomb.id,
           currentModule.id,
@@ -186,7 +200,7 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
             rotations: response.output.rotations,
             needsUpdatedFace: response.output.needsUpdatedFace,
           },
-          true
+          true,
         );
       }
     } catch (err) {
@@ -196,142 +210,167 @@ export default function OrientationCubeSolver({ bomb }: OrientationCubeSolverPro
     }
   };
 
-  const handleInitialFaceClick = () => {
-    const currentIndex = FACES.findIndex((f) => f.face === initialFace);
-    const nextIndex = (currentIndex + 1) % FACES.length;
-    setInitialFace(FACES[nextIndex].face);
-    reset();
-  };
-
-  const handleUpdatedFaceClick = () => {
-    const currentIndex = FACES.findIndex((f) => f.face === updatedFace);
-    const nextIndex = (currentIndex + 1) % FACES.length;
-    setUpdatedFace(FACES[nextIndex].face);
-  };
-
-  const reset = () => {
+  const softReset = () => {
     setResult([]);
     setNeedsUpdatedFace(false);
     setUpdatedFace(null);
     setTwitchCommand("");
   };
 
+  const pickInitialFace = (f: OrientationCubeFace) => {
+    setInitialFace(f);
+    softReset();
+  };
+
   const fullReset = () => {
     setInitialFace(null);
     setUpdatedFace(null);
-    reset();
+    softReset();
     resetSolverState();
   };
 
-  const currentFaceClass = FACES.find((f) => f.face === initialFace)?.className || "bg-gray-700";
+  const FacePicker = ({
+    value,
+    onChange,
+    disabled,
+    ariaLabel,
+  }: {
+    value: OrientationCubeFace;
+    onChange: (f: OrientationCubeFace) => void;
+    disabled?: boolean;
+    ariaLabel: string;
+  }) => (
+    <div role="radiogroup" aria-label={ariaLabel} className="flex flex-wrap gap-2">
+      {FACES.filter((f) => f.face !== null).map((f) => {
+        const selected = value === f.face;
+        return (
+          <button
+            key={f.face}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            disabled={disabled}
+            onClick={() => onChange(f.face)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+              selected
+                ? "border-ring bg-accent/15 text-foreground ring-2 ring-ring ring-offset-1 ring-offset-card"
+                : "border-border bg-muted/40 text-muted-foreground hover:text-foreground",
+              disabled && "cursor-not-allowed opacity-60",
+            )}
+          >
+            <span className={cn("h-4 w-4 rounded", f.swatch)} aria-hidden />
+            {f.display}
+          </button>
+        );
+      })}
+    </div>
+  );
 
-  // Check if we need to show the updated face based on backend response
-  const showUpdatedFace = needsUpdatedFace && !isSolved;
+  const initialSpec = faceSpec(initialFace);
+  const updatedSpec = faceSpec(updatedFace);
 
   return (
     <SolverLayout>
-      {/* Cube visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <div className="space-y-4">
-          {/* Initial face selector */}
-          <div>
-            <p className="text-center text-gray-400 mb-3">Initial Face:</p>
-            <div className="flex justify-center">
-              <button
-                onClick={handleInitialFaceClick}
-                className={`w-32 h-32 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200 ${currentFaceClass} ${
-                  isSolved ? "ring-4 ring-green-400 ring-opacity-75" : "hover:opacity-90"
-                }`}
-                title="Click to change face"
-              >
-                <span className="text-white font-bold text-lg">
-                  {FACES.find((f) => f.face === initialFace)?.display || "?"}
-                </span>
-              </button>
-            </div>
+      <SolverSection
+        title="Initial face"
+        description="Which face of the cube is currently pointing toward you?"
+      >
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-6">
+          <div
+            className={cn(
+              "flex h-28 w-28 items-center justify-center rounded-xl border border-border shadow-sm",
+              initialSpec.swatch,
+              initialSpec.text,
+            )}
+            aria-hidden
+          >
+            <span className="text-lg font-bold">{initialFace ? initialSpec.display : "?"}</span>
           </div>
-
-          {/* Updated face selector - shown conditionally */}
-          {showUpdatedFace && (
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <p className="text-center text-gray-400 mb-3">Updated Face:</p>
-              <div className="flex justify-center">
-                <button
-                  onClick={handleUpdatedFaceClick}
-                  className={`w-24 h-24 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200 ${
-                    FACES.find((f) => f.face === updatedFace)?.className || "bg-gray-700"
-                  } ${updatedFace ? "shadow-lg" : ""}`}
-                  title="Click to change face"
-                >
-                  <span className="text-white font-bold">
-                    {FACES.find((f) => f.face === updatedFace)?.display || "?"}
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
+          <FacePicker
+            value={initialFace}
+            onChange={pickInitialFace}
+            disabled={isSolved}
+            ariaLabel="Initial face"
+          />
         </div>
-      </div>
+      </SolverSection>
 
-      {/* Controls */}
+      {showUpdatedFace && (
+        <SolverSection
+          title="Updated face"
+          description="After the first check, the module asks which face is now in front."
+        >
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <div
+              className={cn(
+                "flex h-24 w-24 items-center justify-center rounded-xl border border-border shadow-sm",
+                updatedSpec.swatch,
+                updatedSpec.text,
+              )}
+              aria-hidden
+            >
+              <span className="text-base font-bold">{updatedFace ? updatedSpec.display : "?"}</span>
+            </div>
+            <FacePicker
+              value={updatedFace}
+              onChange={setUpdatedFace}
+              disabled={isSolved}
+              ariaLabel="Updated face"
+            />
+          </div>
+        </SolverSection>
+      )}
+
       <SolverControls
         onSolve={handleSolve}
         onReset={fullReset}
         isSolveDisabled={!initialFace || (showUpdatedFace && !updatedFace)}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText={showUpdatedFace ? "Solve" : "Check"}
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Result - only show when fully solved */}
       {result.length > 0 && isSolved && (
-        <div className="rounded-lg border border-success/30 bg-success/10 text-success p-4 mb-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="stroke-current shrink-0 h-6 w-6 mt-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div className="min-w-0">
-              <p className="font-bold mb-1">Rotation Sequence</p>
-              <p className="text-sm opacity-90 mb-3">
-                Initial face: {FACES.find((f) => f.face === initialFace)?.display ?? "?"}
-              </p>
-              <ol className="list-decimal list-inside space-y-2">
-                {result.map((rotation, index) => (
-                  <li
-                    key={index}
-                    className={`text-lg font-mono font-bold ${ROTATION_COLORS[rotation]}`}
-                  >
-                    {ROTATION_DISPLAY[rotation]}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        </div>
+        <>
+          <SolverResult
+            variant="success"
+            title="Rotation sequence"
+            description={`Initial face: ${initialSpec.display}\nSteps: ${result.length}`}
+          />
+
+          <SolverSection
+            title="Perform in order"
+            description="Apply each rotation to the cube in the order listed."
+          >
+            <ol className="flex flex-col gap-2">
+              {result.map((rotation, index) => (
+                <li
+                  key={index}
+                  className={cn(
+                    "inline-flex items-center gap-3 rounded-md border px-3 py-1.5 text-sm font-semibold",
+                    ROTATION_ACCENT[rotation],
+                  )}
+                >
+                  <span className="w-6 text-right font-mono text-xs text-muted-foreground">
+                    {index + 1}.
+                  </span>
+                  <span className="font-mono">{ROTATION_DISPLAY[rotation]}</span>
+                </li>
+              ))}
+            </ol>
+          </SolverSection>
+        </>
       )}
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Click the face to cycle through: Front → Back → Left → Right</p>
-        {showUpdatedFace && (
-          <p className="text-warning">Please select the updated face.</p>
-        )}
-      </div>
+      <SolverInstructions>
+        Pick the front face, press Check. If the module asks for an update, pick the new face and
+        Solve to get the full rotation sequence.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

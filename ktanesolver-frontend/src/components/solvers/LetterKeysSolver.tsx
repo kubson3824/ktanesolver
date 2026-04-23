@@ -7,22 +7,26 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
 } from "../common";
-import { Alert } from "../ui/alert";
+import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
 interface LetterKeysSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
+const BUTTONS: readonly string[] = ["A", "B", "C", "D"] as const;
+
 export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
   const [number, setNumber] = useState<string>("");
-  const [result, setResult] = useState<string>("");
+  const [pressedLetter, setPressedLetter] = useState<string>("");
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
-  // Use the common solver hook for shared state
   const {
     isLoading,
     error,
@@ -38,34 +42,50 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
   } = useSolver();
 
   const moduleState = useMemo(
-    () => ({ number, result, twitchCommand }),
-    [number, result, twitchCommand],
+    () => ({ number, pressedLetter, twitchCommand }),
+    [number, pressedLetter, twitchCommand],
   );
 
   const onRestoreState = useCallback(
-    (state: { number?: string; input?: { number?: number }; result?: string; twitchCommand?: string }) => {
-      const restoredNumber = state.number ?? (state.input?.number !== undefined ? String(state.input.number) : undefined);
-      if (restoredNumber !== undefined) setNumber(restoredNumber);
-      if (state.result !== undefined) setResult(state.result);
-      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+    (
+      state:
+        | { number?: string; pressedLetter?: string; result?: string; twitchCommand?: string }
+        | { input?: { number?: number } },
+    ) => {
+      if ("input" in state && state.input?.number !== undefined) {
+        setNumber(String(state.input.number));
+      } else if ("number" in state && state.number !== undefined) {
+        setNumber(state.number);
+      }
+      // Back-compat with prior "result" string form
+      if ("pressedLetter" in state && state.pressedLetter !== undefined) {
+        setPressedLetter(state.pressedLetter);
+      } else if ("result" in state && typeof state.result === "string") {
+        const match = state.result.match(/Press button ([A-D])/);
+        if (match) setPressedLetter(match[1]);
+      }
+      if ("twitchCommand" in state && state.twitchCommand !== undefined) {
+        setTwitchCommand(state.twitchCommand);
+      }
     },
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (solution: { letter: string }) => {
-      if (!solution?.letter) return;
-      setResult(`Press button ${solution.letter}`);
+  const onRestoreSolution = useCallback((solution: { letter: string }) => {
+    if (!solution?.letter) return;
+    setPressedLetter(solution.letter);
 
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.LETTER_KEYS,
-        result: { letter: solution.letter },
-      });
-      setTwitchCommand(command);
-    },
-  []);
+    const command = generateTwitchCommand({
+      moduleType: ModuleType.LETTER_KEYS,
+      result: { letter: solution.letter },
+    });
+    setTwitchCommand(command);
+  }, []);
 
-  useSolverModulePersistence<{ number: string; result: string; twitchCommand: string }, { letter: string }>({
+  useSolverModulePersistence<
+    { number: string; pressedLetter: string; twitchCommand: string },
+    { letter: string }
+  >({
     state: moduleState,
     onRestoreState,
     onRestoreSolution,
@@ -85,7 +105,7 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
 
   const handleSolve = async () => {
     const numValue = parseInt(number);
-    
+
     if (!number || isNaN(numValue) || numValue < 0 || numValue > 99) {
       setError("Please enter a valid two-digit number (00-99)");
       return;
@@ -101,17 +121,14 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
 
     try {
       const response = await solveLetterKeysApi(round.id, bomb.id, currentModule.id, {
-        input: {
-          number: numValue
-        }
+        input: { number: numValue },
       });
 
       const letter = response.output.letter;
-      setResult(`Press button ${letter}`);
+      setPressedLetter(letter);
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
 
-      // Generate Twitch command
       const command = generateTwitchCommand({
         moduleType: ModuleType.LETTER_KEYS,
         result: { letter },
@@ -125,8 +142,7 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
   };
 
   const handleNumberChange = (value: string) => {
-    // Only allow numbers and limit to 2 digits
-    if (value === "" || (/^\d{0,2}$/.test(value))) {
+    if (value === "" || /^\d{0,2}$/.test(value)) {
       setNumber(value);
       if (error) clearError();
     }
@@ -134,69 +150,68 @@ export default function LetterKeysSolver({ bomb }: LetterKeysSolverProps) {
 
   const reset = () => {
     setNumber("");
-    setResult("");
+    setPressedLetter("");
     setTwitchCommand("");
     resetSolverState();
   };
 
   return (
     <SolverLayout>
-      
-      {/* Module visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <div className="flex justify-center mb-6">
-          <div className="bg-gray-900 rounded-lg p-4">
-            <input
-              type="text"
-              value={number}
-              onChange={(e) => handleNumberChange(e.target.value)}
-              placeholder="00"
-              className="text-4xl font-mono font-bold text-green-400 bg-transparent text-center min-w-[120px] outline-none"
-              maxLength={2}
-              disabled={isLoading || isSolved}
-            />
-          </div>
-        </div>
-        
-        {/* Four buttons visualization */}
-        <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto">
-          {['A', 'B', 'C', 'D'].map((letter) => (
-            <div
-              key={letter}
-              className={`h-16 rounded-lg flex items-center justify-center text-xl font-bold transition-all ${
-                result.includes(letter)
-                  ? 'bg-green-500 text-white ring-4 ring-green-400 ring-opacity-75'
-                  : 'bg-gray-700 text-gray-400'
-              }`}
-            >
-              {letter}
-            </div>
-          ))}
-        </div>
-      </div>
+      <SolverSection
+        title="Display"
+        description="Enter the two-digit number shown on the module display."
+      >
+        <Input
+          type="text"
+          value={number}
+          onChange={(e) => handleNumberChange(e.target.value)}
+          placeholder="00"
+          className="text-center font-mono text-4xl tracking-widest"
+          maxLength={2}
+          disabled={isLoading || isSolved}
+          aria-label="Module display number"
+        />
+      </SolverSection>
 
+      <SolverSection title="Buttons" description="The letter to press will be highlighted.">
+        <div className="mx-auto grid max-w-xs grid-cols-2 gap-3">
+          {BUTTONS.map((letter) => {
+            const isTarget = pressedLetter === letter;
+            return (
+              <div
+                key={letter}
+                className={cn(
+                  "flex h-16 items-center justify-center rounded-md border-2 text-2xl font-bold transition-colors",
+                  isTarget
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-2 ring-emerald-500/40"
+                    : "border-border bg-muted/40 text-muted-foreground",
+                )}
+                aria-label={`Button ${letter}${isTarget ? " (press this)" : ""}`}
+              >
+                {letter}
+              </div>
+            );
+          })}
+        </div>
+      </SolverSection>
 
-      {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
         isSolveDisabled={!number}
         isLoading={isLoading}
+        isSolved={isSolved}
         solveText="Solve"
       />
 
-      {/* Error display */}
       <ErrorAlert error={error} />
 
-      {/* Result */}
-      {result && (
-        <Alert variant="success" className="mb-4">
-          <span className="font-bold">{result}</span>
-        </Alert>
-      )}
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      {/* Twitch command display */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      <SolverInstructions>
+        The solver picks the single button to press based on the displayed number and
+        bomb edgework.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

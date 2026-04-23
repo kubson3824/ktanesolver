@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { X } from "lucide-react";
 
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
@@ -13,11 +14,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   ErrorAlert,
   TwitchCommandDisplay,
   SolverControls,
+  SolverResult,
 } from "../common";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { cn } from "../../lib/cn";
 
 interface NumberPadSolverProps {
   bomb: BombEntity | null | undefined;
@@ -36,31 +40,34 @@ const COLORS: NumberPadColor[] = ["BLUE", "GREEN", "RED", "WHITE", "YELLOW"];
 
 const EMPTY_BUTTON_COLORS: Array<NumberPadColor | null> = Array.from({ length: 10 }, () => null);
 
-const COLOR_CLASSES: Record<NumberPadColor, { button: string; swatch: string; text: string }> = {
+const COLOR_CLASSES: Record<
+  NumberPadColor,
+  { button: string; swatch: string; label: string }
+> = {
   BLUE: {
     button: "bg-blue-600 text-white border-blue-400",
     swatch: "bg-blue-600",
-    text: "text-blue-300",
+    label: "Blue",
   },
   GREEN: {
-    button: "bg-green-600 text-white border-green-400",
-    swatch: "bg-green-600",
-    text: "text-green-300",
+    button: "bg-emerald-600 text-white border-emerald-400",
+    swatch: "bg-emerald-600",
+    label: "Green",
   },
   RED: {
     button: "bg-red-600 text-white border-red-400",
     swatch: "bg-red-600",
-    text: "text-red-300",
+    label: "Red",
   },
   WHITE: {
-    button: "bg-slate-100 text-slate-900 border-slate-300",
-    swatch: "bg-slate-100",
-    text: "text-slate-200",
+    button: "bg-neutral-100 text-neutral-900 border-neutral-300",
+    swatch: "bg-neutral-100 border border-border",
+    label: "White",
   },
   YELLOW: {
-    button: "bg-yellow-400 text-slate-900 border-yellow-200",
+    button: "bg-yellow-400 text-neutral-900 border-yellow-300",
     swatch: "bg-yellow-400",
-    text: "text-yellow-300",
+    label: "Yellow",
   },
 };
 
@@ -110,13 +117,11 @@ export default function NumberPadSolver({ bomb }: NumberPadSolverProps) {
   );
 
   const onRestoreState = useCallback(
-    (
-      state: {
-        buttonColors?: Array<NumberPadColor | null>;
-        selectedDigit?: number;
-        twitchCommand?: string;
-      },
-    ) => {
+    (state: {
+      buttonColors?: Array<NumberPadColor | null>;
+      selectedDigit?: number;
+      twitchCommand?: string;
+    }) => {
       if (Array.isArray(state.buttonColors) && state.buttonColors.length === 10) {
         setButtonColors(state.buttonColors as Array<NumberPadColor | null>);
       }
@@ -164,7 +169,8 @@ export default function NumberPadSolver({ bomb }: NumberPadSolverProps) {
       }
       return null;
     },
-    inferSolved: (_solution, current) => Boolean((current as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_solution, current) =>
+      Boolean((current as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
@@ -216,7 +222,9 @@ export default function NumberPadSolver({ bomb }: NumberPadSolverProps) {
     try {
       const response = await solveNumberPad(round.id, bomb.id, currentModule.id, {
         input: {
-          buttonColors: buttonColors.filter((color): color is NumberPadColor => color !== null),
+          buttonColors: buttonColors.filter(
+            (color): color is NumberPadColor => color !== null,
+          ),
         },
       });
 
@@ -241,7 +249,9 @@ export default function NumberPadSolver({ bomb }: NumberPadSolverProps) {
         true,
       );
     } catch (solveError) {
-      setError(solveError instanceof Error ? solveError.message : "Failed to solve Number Pad");
+      setError(
+        solveError instanceof Error ? solveError.message : "Failed to solve Number Pad",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -257,111 +267,98 @@ export default function NumberPadSolver({ bomb }: NumberPadSolverProps) {
 
   return (
     <SolverLayout>
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-center text-sm font-medium text-base-content/70">
-            NUMBER PAD
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="rounded-lg border border-base-300 bg-base-200/60 p-3 text-sm">
-            <p className="font-medium text-base-content">
-              Selected digit: <span className="text-accent">{selectedDigit}</span>
-            </p>
-            <p className="text-base-content/70">
-              Fill the keypad in numpad order. The solver uses the stored bomb edgework for ports,
-              batteries, and serial checks.
-            </p>
-          </div>
-
-          <div className="flex justify-center">
-            <div className="grid gap-3">
-              {DIGIT_LAYOUT.map((row) => (
-                <div
-                  key={row.join("-")}
-                  className={`grid gap-3 ${row.length === 1 ? "justify-center" : "grid-cols-3"}`}
-                >
-                  {row.map((digit) => {
-                    const color = buttonColors[digit];
-                    const isSelected = selectedDigit === digit;
-
-                    return (
-                      <button
-                        key={digit}
-                        type="button"
-                        onClick={() => setSelectedDigit(digit)}
-                        disabled={isLoading}
-                        className={[
-                          "flex h-20 w-20 flex-col items-center justify-center rounded-xl border-2 transition-all",
-                          isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
-                          color
-                            ? COLOR_CLASSES[color].button
-                            : "border-base-300 bg-base-100 text-base-content hover:border-primary/60",
-                        ].join(" ")}
-                      >
-                        <span className="text-2xl font-bold">{digit}</span>
-                        <span className="mt-1 text-[11px] uppercase tracking-wide">
-                          {color ?? "Unset"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3 rounded-lg border border-base-300 bg-base-100 p-4">
-            <p className="text-center text-sm font-medium text-base-content/80">
-              Assign a color to digit {selectedDigit}
-            </p>
-            <div className="flex justify-center gap-3">
-              {COLORS.map((color) => {
-                const isSelected = buttonColors[selectedDigit] === color;
-
-                return (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setDigitColor(selectedDigit, color)}
-                    disabled={isSolved || isLoading}
-                    aria-label={color}
-                    title={color}
-                    className={[
-                      "h-10 w-10 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                      COLOR_CLASSES[color].swatch,
-                      isSelected
-                        ? "scale-110 border-ring shadow-md"
-                        : color === "WHITE"
-                          ? "border-slate-300 opacity-70 hover:opacity-100 hover:scale-105"
-                          : "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
-                    ].join(" ")}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex justify-between gap-3 text-xs text-base-content/70">
-              <span>{assignedCount}/10 digits assigned</span>
-              <button
-                type="button"
-                onClick={() => clearDigitColor(selectedDigit)}
-                disabled={isSolved || isLoading || buttonColors[selectedDigit] === null}
-                className="underline underline-offset-2 disabled:no-underline disabled:opacity-50"
+      <SolverSection
+        title="Keypad"
+        description={`Select a digit, then assign its color. ${assignedCount}/10 assigned.`}
+      >
+        <div className="flex justify-center">
+          <div className="grid gap-2">
+            {DIGIT_LAYOUT.map((row) => (
+              <div
+                key={row.join("-")}
+                className={cn(
+                  "grid gap-2",
+                  row.length === 1 ? "justify-center" : "grid-cols-3",
+                )}
               >
-                Clear selected digit
-              </button>
-            </div>
-          </div>
+                {row.map((digit) => {
+                  const color = buttonColors[digit];
+                  const isSelected = selectedDigit === digit;
 
-          {solution && (
-            <div className="rounded-lg border border-emerald-500 bg-emerald-500/10 p-4 text-center">
-              <p className="text-sm uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Code</p>
-              <p className="font-mono-code text-4xl font-bold text-base-content">{solution.code}</p>
-              <p className="mt-2 text-sm text-base-content/70">{solution.instruction}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  return (
+                    <button
+                      key={digit}
+                      type="button"
+                      onClick={() => setSelectedDigit(digit)}
+                      disabled={isLoading}
+                      aria-pressed={isSelected}
+                      aria-label={`Digit ${digit}${color ? `, ${COLOR_CLASSES[color].label}` : ", unset"}`}
+                      className={cn(
+                        "flex h-16 w-16 flex-col items-center justify-center rounded-xl border-2 transition-all",
+                        isSelected &&
+                          "ring-2 ring-ring ring-offset-2 ring-offset-card",
+                        color
+                          ? COLOR_CLASSES[color].button
+                          : "border-border bg-muted/40 text-foreground hover:border-ring",
+                      )}
+                    >
+                      <span className="text-2xl font-bold">{digit}</span>
+                      <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wide opacity-80">
+                        {color ? COLOR_CLASSES[color].label : "—"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </SolverSection>
+
+      <SolverSection
+        title={`Assign color to ${selectedDigit}`}
+        description="Tap a color swatch. The selection auto-advances to the next unset digit."
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex justify-center gap-2">
+            {COLORS.map((color) => {
+              const isSelected = buttonColors[selectedDigit] === color;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setDigitColor(selectedDigit, color)}
+                  disabled={isSolved || isLoading}
+                  aria-label={COLOR_CLASSES[color].label}
+                  aria-pressed={isSelected}
+                  title={COLOR_CLASSES[color].label}
+                  className={cn(
+                    "h-10 w-10 rounded-full transition-all",
+                    COLOR_CLASSES[color].swatch,
+                    isSelected
+                      ? "ring-2 ring-ring ring-offset-2 ring-offset-card scale-110"
+                      : "opacity-70 hover:opacity-100",
+                    (isSolved || isLoading) && "cursor-not-allowed",
+                  )}
+                />
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => clearDigitColor(selectedDigit)}
+            disabled={isSolved || isLoading || buttonColors[selectedDigit] === null}
+            className={cn(
+              "inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-xs text-muted-foreground transition-colors",
+              "hover:text-foreground hover:border-foreground/40",
+              "disabled:opacity-40 disabled:cursor-not-allowed",
+            )}
+          >
+            <X className="h-3 w-3" aria-hidden />
+            Clear digit {selectedDigit}
+          </button>
+        </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={handleSolve}
@@ -369,15 +366,25 @@ export default function NumberPadSolver({ bomb }: NumberPadSolverProps) {
         isSolveDisabled={assignedCount !== 10}
         isLoading={isLoading}
         isSolved={isSolved}
-        solveText="Get Code"
+        solveText="Get code"
       />
 
       <ErrorAlert error={error} />
-      <TwitchCommandDisplay command={twitchCommand} />
 
-      <div className="text-sm text-base-content/60">
-        <p>Once all ten digits are assigned, the backend returns the 4-digit code and a Twitch Plays submit command.</p>
-      </div>
+      {solution && (
+        <SolverResult
+          variant="success"
+          title="Code"
+          description={`${solution.code}\n${solution.instruction}`}
+        />
+      )}
+
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Assign every digit's color (from the module's keypad), then solve. The backend returns the
+        4-digit code and a Twitch Plays submit command.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

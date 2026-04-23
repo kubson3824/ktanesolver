@@ -12,11 +12,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { useRoundStore } from "../../store/useRoundStore";
+import { cn } from "../../lib/cn";
 
 interface ProbingSolverProps {
   bomb: BombEntity | null | undefined;
@@ -58,8 +61,7 @@ export default function ProbingSolver({ bomb }: ProbingSolverProps) {
       result?: ProbingOutput | null;
       twitchCommand?: string;
     }) => {
-      if (state.frequencies && Array.isArray(state.frequencies))
-        setFrequencies(state.frequencies);
+      if (state.frequencies && Array.isArray(state.frequencies)) setFrequencies(state.frequencies);
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
@@ -74,7 +76,11 @@ export default function ProbingSolver({ bomb }: ProbingSolverProps) {
   }, []);
 
   useSolverModulePersistence<
-    { frequencies: (ProbingFrequency | null)[]; result: ProbingOutput | null; twitchCommand: string },
+    {
+      frequencies: (ProbingFrequency | null)[];
+      result: ProbingOutput | null;
+      twitchCommand: string;
+    },
     ProbingOutput
   >({
     state: moduleState,
@@ -92,8 +98,7 @@ export default function ProbingSolver({ bomb }: ProbingSolverProps) {
       }
       return null;
     },
-    inferSolved: (_sol, mod) =>
-      Boolean((mod as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_sol, mod) => Boolean((mod as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
@@ -112,12 +117,9 @@ export default function ProbingSolver({ bomb }: ProbingSolverProps) {
     clearError();
 
     try {
-      const response = await solveProbing(
-        round.id,
-        bomb.id,
-        currentModule.id,
-        { input: { missingFrequenciesByWire: frequencies as number[] } },
-      );
+      const response = await solveProbing(round.id, bomb.id, currentModule.id, {
+        input: { missingFrequenciesByWire: frequencies as number[] },
+      });
       const output = response.output;
       setResult(output);
       setIsSolved(true);
@@ -159,89 +161,127 @@ export default function ProbingSolver({ bomb }: ProbingSolverProps) {
   };
 
   const allSelected = frequencies.every((f) => f !== null);
+  const disabled = isLoading || isSolved;
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100 space-y-3">
-        {Array.from({ length: WIRE_COUNT }, (_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="text-xs text-neutral-400 w-12 shrink-0 uppercase tracking-wide">
-              Wire {i + 1}
-            </span>
-            <div className="flex gap-1 flex-wrap">
-              {PROBING_FREQUENCIES.map((freq) => {
-                const selected = frequencies[i] === freq;
-                return (
-                  <button
-                    key={freq}
-                    onClick={() => setWireFrequency(i, freq)}
-                    disabled={isSolved}
-                    className={`px-3 py-1 rounded text-sm font-mono font-medium transition-colors ${
-                      selected
-                        ? "bg-sky-500 text-white"
-                        : "bg-neutral-600 text-neutral-300 hover:bg-neutral-500"
-                    }`}
-                  >
-                    {freq}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {result && (
-        <div className="mt-4 rounded-xl border-2 border-neutral-600 bg-neutral-800/80 p-5 space-y-3">
-          <div className="flex gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-              <span className="text-sm text-neutral-200">
-                Red clip &rarr; <span className="font-bold text-red-300">Wire {result.redClipWire}</span>
+      <SolverSection
+        title="Wire frequencies"
+        description="Probe each wire pair and record the missing frequency for each of the 6 wires."
+      >
+        <div className="space-y-2">
+          {Array.from({ length: WIRE_COUNT }, (_, i) => (
+            <div
+              key={i}
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2"
+            >
+              <span className="w-14 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Wire {i + 1}
               </span>
+              <div className="flex flex-wrap gap-1">
+                {PROBING_FREQUENCIES.map((freq) => {
+                  const selected = frequencies[i] === freq;
+                  return (
+                    <button
+                      key={freq}
+                      type="button"
+                      onClick={() => setWireFrequency(i, freq)}
+                      disabled={disabled}
+                      aria-pressed={selected}
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-md border px-2.5 py-1 font-mono text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        selected
+                          ? "border-blue-500 bg-blue-500/15 text-blue-700 dark:text-blue-300"
+                          : "border-border bg-muted/40 text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                        disabled && "cursor-not-allowed opacity-60",
+                      )}
+                    >
+                      {freq}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-blue-500 shrink-0" />
-              <span className="text-sm text-neutral-200">
-                Blue clip &rarr; <span className="font-bold text-blue-300">Wire {result.blueClipWire}</span>
-              </span>
-            </div>
-          </div>
-
-          <p className="text-xs text-neutral-400">{result.instruction}</p>
-
-          {result.redClipCandidates.length > 1 && (
-            <p className="text-xs text-neutral-500">
-              Other red candidates:{" "}
-              {result.redClipCandidates
-                .filter((w) => w !== result.redClipWire)
-                .join(", ")}
-            </p>
-          )}
-          {result.blueClipCandidates.length > 1 && (
-            <p className="text-xs text-neutral-500">
-              Other blue candidates:{" "}
-              {result.blueClipCandidates
-                .filter((w) => w !== result.blueClipWire)
-                .join(", ")}
-            </p>
-          )}
+          ))}
         </div>
-      )}
+      </SolverSection>
 
-      <div className="mt-4">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={!allSelected}
-          isLoading={isLoading}
-          isSolved={isSolved}
-          solveText="Solve"
-        />
-      </div>
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!allSelected}
+        isLoading={isLoading}
+        isSolved={isSolved}
+        solveText="Solve"
+      />
 
       <ErrorAlert error={error} />
-      <TwitchCommandDisplay command={twitchCommand} />
+
+      {result && (
+        <SolverSection title="Clip placement" className="border-emerald-500/40">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="flex items-center gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2">
+              <span
+                aria-hidden
+                className="inline-flex h-3 w-3 shrink-0 rounded-full bg-red-500"
+              />
+              <span className="text-sm text-foreground">
+                Red clip →{" "}
+                <span className="font-semibold text-red-700 dark:text-red-300">
+                  Wire {result.redClipWire}
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-blue-500/40 bg-blue-500/10 px-3 py-2">
+              <span
+                aria-hidden
+                className="inline-flex h-3 w-3 shrink-0 rounded-full bg-blue-500"
+              />
+              <span className="text-sm text-foreground">
+                Blue clip →{" "}
+                <span className="font-semibold text-blue-700 dark:text-blue-300">
+                  Wire {result.blueClipWire}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <p className="mt-3 text-sm text-muted-foreground">{result.instruction}</p>
+
+          {(result.redClipCandidates.length > 1 || result.blueClipCandidates.length > 1) && (
+            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+              {result.redClipCandidates.length > 1 && (
+                <p>
+                  Other red candidates:{" "}
+                  <span className="font-mono">
+                    {result.redClipCandidates
+                      .filter((w) => w !== result.redClipWire)
+                      .join(", ")}
+                  </span>
+                </p>
+              )}
+              {result.blueClipCandidates.length > 1 && (
+                <p>
+                  Other blue candidates:{" "}
+                  <span className="font-mono">
+                    {result.blueClipCandidates
+                      .filter((w) => w !== result.blueClipWire)
+                      .join(", ")}
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
+        </SolverSection>
+      )}
+
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Probe every pair of wires to learn which two frequencies are present on each
+        wire. Record the missing frequency for each wire; the solver identifies where
+        the red and blue clips go.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

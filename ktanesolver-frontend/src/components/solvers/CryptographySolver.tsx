@@ -11,11 +11,13 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 interface CryptographySolverProps {
   bomb: BombEntity | null | undefined;
@@ -32,6 +34,7 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
   const {
     isLoading,
     error,
+    isSolved,
     setError,
     setIsLoading,
     setIsSolved,
@@ -46,7 +49,7 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
 
   const moduleState = useMemo(
     () => ({ ciphertext, keyLetters, result, twitchCommand }),
-    [ciphertext, keyLetters, result, twitchCommand]
+    [ciphertext, keyLetters, result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
@@ -57,12 +60,11 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
       twitchCommand?: string;
     }) => {
       if (state.ciphertext !== undefined) setCiphertext(state.ciphertext);
-      if (state.keyLetters !== undefined && state.keyLetters.length === 5)
-        setKeyLetters(state.keyLetters);
+      if (state.keyLetters !== undefined && state.keyLetters.length === 5) setKeyLetters(state.keyLetters);
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
-    []
+    [],
   );
 
   const onRestoreSolution = useCallback((solution: CryptographyOutput) => {
@@ -72,7 +74,7 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
         generateTwitchCommand({
           moduleType: ModuleType.CRYPTOGRAPHY,
           result: { keyOrder: solution.keyOrder },
-        })
+        }),
       );
     }
   }, []);
@@ -87,11 +89,7 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
     extractSolution: (raw) => {
       if (raw == null) return null;
       const o = raw as { plaintext?: unknown; keyOrder?: unknown };
-      if (
-        typeof o.plaintext === "string" &&
-        Array.isArray(o.keyOrder) &&
-        o.keyOrder.length === 5
-      ) {
+      if (typeof o.plaintext === "string" && Array.isArray(o.keyOrder) && o.keyOrder.length === 5) {
         return raw as CryptographyOutput;
       }
       return null;
@@ -120,17 +118,12 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
     clearError();
 
     try {
-      const response = await solveCryptography(
-        round.id,
-        bomb.id,
-        currentModule.id,
-        {
-          input: {
-            ciphertext: ciphertext.trim(),
-            keyLetters: keys,
-          },
-        }
-      );
+      const response = await solveCryptography(round.id, bomb.id, currentModule.id, {
+        input: {
+          ciphertext: ciphertext.trim(),
+          keyLetters: keys,
+        },
+      });
 
       const output = response.output;
       setResult(output);
@@ -153,7 +146,7 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
           twitchCommand: command,
         },
         { plaintext: output.plaintext, keyOrder: output.keyOrder },
-        true
+        true,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Solve failed.");
@@ -176,94 +169,91 @@ export default function CryptographySolver({ bomb }: CryptographySolverProps) {
     resetSolverState();
   };
 
-  const canSolve =
-    ciphertext.trim().length > 0 &&
-    keyLetters.every((k) => k.trim().length === 1);
+  const canSolve = ciphertext.trim().length > 0 && keyLetters.every((k) => k.trim().length === 1);
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          The module shows ciphertext from &quot;A Christmas Carol&quot; (substitution cipher). E always decrypts to E; no other letter maps to itself. Enter the ciphertext and the five letters on the keys, then solve to get the decrypted text and the order to press the keys (first appearance in plaintext).
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-200 mb-1">
-              Ciphertext
-            </label>
-            <textarea
-              className="w-full rounded-lg bg-neutral-800 border border-neutral-600 px-3 py-2 font-mono text-sm text-neutral-100 placeholder-neutral-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              rows={3}
-              placeholder={PLACEHOLDER_CIPHERTEXT}
-              value={ciphertext}
-              onChange={(e) => setCiphertext(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-200 mb-2">
-              Key letters (5 keys, any order)
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <input
-                  key={i}
-                  type="text"
-                  maxLength={1}
-                  className="w-12 rounded-lg bg-neutral-800 border border-neutral-600 px-2 py-2 text-center font-mono text-lg font-bold text-neutral-100 uppercase focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="?"
-                  value={keyLetters[i] ?? ""}
-                  onChange={(e) => setKeyLetter(i, e.target.value)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {result && (
-          <div className="mt-6 space-y-3 rounded-lg bg-neutral-800/80 border border-neutral-600 p-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-neutral-400 mb-1">
-                Plaintext
-              </p>
-              <p className="text-neutral-100 font-mono text-sm leading-relaxed">
-                {result.plaintext}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-neutral-400 mb-1">
-                Press keys in order
-              </p>
-              <p className="text-amber-400 font-mono font-bold text-lg">
-                {result.keyOrder.join(" → ")}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={!canSolve}
-          isLoading={isLoading}
-          solveText="Solve"
+      <SolverSection
+        title="Ciphertext"
+        description='Copy the substitution ciphertext shown on the module ("A Christmas Carol").'
+      >
+        <textarea
+          className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          rows={3}
+          placeholder={PLACEHOLDER_CIPHERTEXT}
+          value={ciphertext}
+          onChange={(e) => setCiphertext(e.target.value)}
+          disabled={isLoading || isSolved}
+          aria-label="Ciphertext"
         />
-      </div>
+      </SolverSection>
+
+      <SolverSection
+        title="Key letters"
+        description="Enter the five letters on the module's keys in any order."
+      >
+        <div className="flex flex-wrap justify-center gap-2">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <input
+              key={i}
+              type="text"
+              maxLength={1}
+              className={cn(
+                "h-12 w-12 rounded-md border-2 px-2 text-center font-mono text-lg font-bold uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
+                keyLetters[i]
+                  ? "border-ring bg-accent/15 text-foreground"
+                  : "border-border bg-muted/40 text-muted-foreground",
+              )}
+              placeholder="?"
+              value={keyLetters[i] ?? ""}
+              onChange={(e) => setKeyLetter(i, e.target.value)}
+              disabled={isLoading || isSolved}
+              aria-label={`Key ${i + 1}`}
+            />
+          ))}
+        </div>
+      </SolverSection>
+
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!canSolve}
+        isLoading={isLoading}
+        isSolved={isSolved}
+        solveText="Solve"
+      />
 
       <ErrorAlert error={error} />
 
       {result && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-bold">On the module</p>
-          <p className="text-sm mt-1">
-            Press the five keys once each in this order: {result.keyOrder.join(", ")}.
+        <SolverSection title="Decrypted plaintext" className="border-emerald-500/40">
+          <p className="mb-3 font-mono text-sm leading-relaxed text-foreground">
+            {result.plaintext}
           </p>
-        </Alert>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Press keys in order
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {result.keyOrder.map((letter, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {i > 0 && <span aria-hidden className="text-muted-foreground">→</span>}
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/10 font-mono text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                    {letter}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SolverSection>
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        E always decrypts to E; no other letter maps to itself. Press keys in the order
+        their letters first appear in the plaintext.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

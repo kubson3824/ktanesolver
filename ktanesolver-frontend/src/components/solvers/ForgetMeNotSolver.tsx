@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { solveForgetMeNot as solveForgetMeNotApi } from "../../services/forgetMeNotService";
@@ -7,13 +8,16 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls
+  SolverResult,
 } from "../common";
-import { Alert } from "../ui/alert";
-import { Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
 interface ForgetMeNotSolverProps {
   bomb: BombEntity | null | undefined;
@@ -32,19 +36,31 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
   const [showSequence, setShowSequence] = useState<boolean>(false);
   const [allModulesCompleted, setAllModulesCompleted] = useState<boolean>(false);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
-  const [reminderShown, setReminderShown] = useState<boolean>(false);
 
-  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
-
-  // Show reminder when component mounts
-  useEffect(() => {
-    if (!reminderShown) {
-      setReminderShown(true);
-    }
-  }, [reminderShown]);
+  const {
+    isLoading,
+    error,
+    isSolved,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    clearError,
+    reset: resetSolverState,
+    currentModule,
+    round,
+    markModuleSolved,
+  } = useSolver();
 
   const moduleState = useMemo(
-    () => ({ display, stage, stages, sequence, showSequence, allModulesCompleted, twitchCommand }),
+    () => ({
+      display,
+      stage,
+      stages,
+      sequence,
+      showSequence,
+      allModulesCompleted,
+      twitchCommand,
+    }),
     [display, stage, stages, sequence, showSequence, allModulesCompleted, twitchCommand],
   );
 
@@ -92,21 +108,19 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (solution: { sequence: number[] } | number[]) => {
-      const seq = Array.isArray(solution) ? solution : solution.sequence;
-      if (!seq || !Array.isArray(seq) || seq.length === 0) return;
-      setSequence(seq);
-      setShowSequence(true);
-      setAllModulesCompleted(true);
-      setTwitchCommand(
-        generateTwitchCommand({
-          moduleType: ModuleType.FORGET_ME_NOT,
-          result: { sequence: seq },
-        }),
-      );
-    },
-  []);
+  const onRestoreSolution = useCallback((solution: { sequence: number[] } | number[]) => {
+    const seq = Array.isArray(solution) ? solution : solution.sequence;
+    if (!seq || !Array.isArray(seq) || seq.length === 0) return;
+    setSequence(seq);
+    setShowSequence(true);
+    setAllModulesCompleted(true);
+    setTwitchCommand(
+      generateTwitchCommand({
+        moduleType: ModuleType.FORGET_ME_NOT,
+        result: { sequence: seq },
+      }),
+    );
+  }, []);
 
   useSolverModulePersistence<
     {
@@ -127,13 +141,15 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
       if (raw == null) return null;
       if (typeof raw === "object") {
         const anyRaw = raw as { output?: unknown; sequence?: unknown };
-        if (anyRaw.output && typeof anyRaw.output === "object") return anyRaw.output as { sequence: number[] };
+        if (anyRaw.output && typeof anyRaw.output === "object")
+          return anyRaw.output as { sequence: number[] };
         if (Array.isArray(anyRaw.sequence)) return { sequence: anyRaw.sequence as number[] };
       }
       if (Array.isArray(raw)) return raw as number[];
       return null;
     },
-    inferSolved: (_solution, currentModule) => Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
+    inferSolved: (_solution, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     onlyRestoreSolutionWhenSolved: true,
     currentModule,
     setIsSolved,
@@ -141,7 +157,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
 
   const handleSolve = async () => {
     const displayValue = parseInt(display);
-    
+
     if (display === "" || isNaN(displayValue) || displayValue < 0 || displayValue > 9) {
       setError("Please enter a valid digit (0-9)");
       return;
@@ -160,33 +176,34 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         input: {
           display: displayValue,
           stage: stage,
-          allModulesCompleted: allModulesCompleted
-        }
+          allModulesCompleted: allModulesCompleted,
+        },
       });
 
       const newSequence = response.output.sequence;
       const newStage: Stage = {
         display: displayValue,
-        calculated: stage === 1 ? newSequence[0] : (stage > 1 ? newSequence[stage - 1] : 0)
+        calculated:
+          stage === 1 ? newSequence[0] : stage > 1 ? newSequence[stage - 1] : 0,
       };
 
       setStages([...stages, newStage]);
       setSequence(newSequence);
 
       if (allModulesCompleted && displayValue === -1) {
-        // All modules completed, show final sequence
         setShowSequence(true);
         setIsSolved(true);
-        setTwitchCommand(generateTwitchCommand({
-          moduleType: ModuleType.FORGET_ME_NOT,
-          result: { sequence: newSequence },
-        }));
+        setTwitchCommand(
+          generateTwitchCommand({
+            moduleType: ModuleType.FORGET_ME_NOT,
+            result: { sequence: newSequence },
+          }),
+        );
 
         if (bomb?.id && currentModule?.id) {
           markModuleSolved(bomb.id, currentModule.id);
         }
       } else {
-        // Move to next stage
         setStage(stage + 1);
         setDisplay("");
       }
@@ -198,19 +215,10 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
   };
 
   const handleDisplayChange = (value: string) => {
-    // Only allow numbers and limit to 1 digit
-    if (value === "" || (/^\d$/.test(value))) {
+    if (value === "" || /^\d$/.test(value)) {
       setDisplay(value);
       if (error) clearError();
     }
-  };
-
-  const handleAllModulesCompleted = async () => {
-    setAllModulesCompleted(true);
-    setDisplay("-1");
-    
-    // Automatically trigger the solve with display -1
-    await handleFinalSolve();
   };
 
   const handleFinalSolve = async () => {
@@ -227,18 +235,20 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
         input: {
           display: -1,
           stage: stage,
-          allModulesCompleted: true
-        }
+          allModulesCompleted: true,
+        },
       });
 
       const newSequence = response.output.sequence;
       setSequence(newSequence);
       setShowSequence(true);
       setIsSolved(true);
-      setTwitchCommand(generateTwitchCommand({
-        moduleType: ModuleType.FORGET_ME_NOT,
-        result: { sequence: newSequence },
-      }));
+      setTwitchCommand(
+        generateTwitchCommand({
+          moduleType: ModuleType.FORGET_ME_NOT,
+          result: { sequence: newSequence },
+        }),
+      );
 
       if (bomb?.id && currentModule?.id) {
         markModuleSolved(bomb.id, currentModule.id);
@@ -248,6 +258,12 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAllModulesCompleted = async () => {
+    setAllModulesCompleted(true);
+    setDisplay("-1");
+    await handleFinalSolve();
   };
 
   const reset = () => {
@@ -261,130 +277,127 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
     resetSolverState();
   };
 
+  const disabled = isLoading || showSequence || isSolved;
+  const useCompactSequence = sequence.length > 20;
+
   return (
     <SolverLayout>
-      
-      {/* Reminder alert */}
-      {reminderShown && (
-        <Alert variant="warning" className="mb-4">
-          <h3 className="font-bold">Reminder: Check Forget Me Not!</h3>
-          <p className="text-sm">Don't forget to check the Forget Me Not module display and enter the number shown.</p>
-        </Alert>
-      )}
-
-      {/* Module visualization */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <div className="flex justify-center mb-6">
-          <div className="bg-gray-900 rounded-lg p-6">
-            <div className="text-center mb-2">
-              <span className="text-sm text-gray-400">Stage {stage}</span>
-            </div>
-            <input
+      <SolverSection
+        title="Stage display"
+        description="Record each digit the Forget Me Not module shows. Advance between other modules and come back after each change."
+      >
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Stage {stage}
+          </span>
+          <div className="rounded-md border border-border bg-muted/30 px-6 py-4">
+            <Input
               type="text"
               value={display}
               onChange={(e) => handleDisplayChange(e.target.value)}
               placeholder="0"
-              className="text-6xl font-mono font-bold text-green-400 bg-transparent text-center w-full outline-none"
               maxLength={1}
-              disabled={isLoading || showSequence}
+              disabled={disabled}
+              aria-label={`Stage ${stage} digit`}
+              className="h-auto w-24 border-0 bg-transparent text-center font-mono text-5xl font-bold text-emerald-600 focus-visible:ring-0 dark:text-emerald-400"
             />
           </div>
         </div>
+      </SolverSection>
 
-        {/* Stage history */}
-        {stages.length > 0 && (
-          <div className="mt-6">
-            {stages.length > 10 ? (
-              <details className="group" open={false}>
-                <summary className="text-sm font-medium text-gray-400 cursor-pointer list-none flex items-center gap-1">
-                  <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                  Stage history ({stages.length})
-                </summary>
-                <div className="mt-2 max-h-48 overflow-y-auto rounded border border-gray-600 p-2 space-y-0.5">
-                  {stages.map((s, index) => (
-                    <div key={index} className="flex justify-center gap-2 text-xs">
-                      <span className="text-gray-500">{index + 1}:</span>
-                      <span className="text-green-400">{s.display}</span>
-                      <span className="text-gray-500">→</span>
-                      <span className="text-blue-400">{s.calculated}</span>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            ) : (
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Stage history:</h4>
-                <div className="max-h-48 overflow-y-auto rounded border border-gray-600 p-2 space-y-0.5">
-                  {stages.map((s, index) => (
-                    <div key={index} className="flex justify-center gap-2 text-xs">
-                      <span className="text-gray-500">{index + 1}:</span>
-                      <span className="text-green-400">{s.display}</span>
-                      <span className="text-gray-500">→</span>
-                      <span className="text-blue-400">{s.calculated}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Final sequence */}
-        {showSequence && sequence.length > 0 && (
-          <div className="mt-6 p-4 bg-green-900/30 rounded-lg border border-green-500">
-            <h4 className="text-lg font-bold text-green-400 mb-2 text-center">Final Sequence</h4>
-            <div className="grid grid-cols-10 gap-1 justify-center mx-auto w-fit">
-              {sequence.map((num, index) => (
-                <div
+      {stages.length > 0 && (
+        <SolverSection
+          title="Stage history"
+          description={`${stages.length} stage${stages.length === 1 ? "" : "s"} recorded`}
+        >
+          <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-muted/20 p-2">
+            <ul className="space-y-0.5">
+              {stages.map((s, index) => (
+                <li
                   key={index}
-                  className={`bg-green-500 rounded flex items-center justify-center text-white font-bold ${
-                    sequence.length > 20 ? "w-7 h-7 text-sm" : "w-10 h-10 text-lg"
-                  }`}
+                  className="flex items-center justify-center gap-2 font-mono text-xs"
                 >
-                  {num}
-                </div>
+                  <span className="w-6 text-right tabular-nums text-muted-foreground">
+                    {index + 1}:
+                  </span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {s.display}
+                  </span>
+                  <span className="text-muted-foreground" aria-hidden>
+                    →
+                  </span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                    {s.calculated}
+                  </span>
+                </li>
               ))}
-            </div>
-            <p className="text-sm text-green-300 mt-2 text-center">Press the numbers in this order!</p>
+            </ul>
           </div>
-        )}
-      </div>
+        </SolverSection>
+      )}
 
-      {/* Controls */}
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
         isSolveDisabled={!display || isSolved}
         isLoading={isLoading}
-        solveText={allModulesCompleted ? "Get Sequence" : "Calculate Stage"}
-        loadingText={allModulesCompleted ? "Getting Sequence..." : "Calculating..."}
+        isSolved={isSolved}
+        solveText={allModulesCompleted ? "Get sequence" : "Record stage"}
+        loadingText={allModulesCompleted ? "Getting sequence…" : "Recording…"}
       />
 
-      {/* All modules completed button */}
       {!allModulesCompleted && stages.length > 0 && !isSolved && (
-        <div className="mb-4">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={handleAllModulesCompleted}
-            disabled={isLoading}
-          >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent inline" /> : ""}
-            {isLoading ? "Getting Sequence..." : "All Modules Solved"}
-          </Button>
-        </div>
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={handleAllModulesCompleted}
+          disabled={isLoading}
+        >
+          All other modules solved
+        </Button>
       )}
 
-      {/* Error */}
       <ErrorAlert error={error} />
 
-      {/* Twitch Command */}
-      <TwitchCommandDisplay command={twitchCommand} />
+      {showSequence && sequence.length > 0 && (
+        <>
+          <SolverResult
+            variant="success"
+            title="Final sequence"
+            description="Press the numbers on the module in this exact order."
+          />
+          <SolverSection title="Press order" className="border-emerald-500/40">
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {sequence.map((num, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "inline-flex items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/15 font-mono font-bold text-emerald-700 dark:text-emerald-300",
+                    useCompactSequence ? "h-8 w-8 text-sm" : "h-10 w-10 text-lg",
+                  )}
+                  aria-label={`Press ${index + 1}: ${num}`}
+                >
+                  {num}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <CheckCircle2
+                className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400"
+                aria-hidden
+              />
+              {sequence.length} button{sequence.length === 1 ? "" : "s"} to press
+            </p>
+          </SolverSection>
+        </>
+      )}
 
-      {/* Instructions */}
-      <div className="text-sm text-base-content/60">
-        <p>Enter the digit shown on the Forget Me Not module display. Click "All Modules Solved" when all other modules are solved to get the final sequence.</p>
-      </div>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the digit the module shows each stage. Click "All other modules solved"
+        once every other module on the bomb is disarmed to reveal the final sequence.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

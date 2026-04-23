@@ -12,10 +12,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
+import { cn } from "../../lib/cn";
 
 const CELL_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8"] as const;
 
@@ -145,7 +149,7 @@ export default function MysticSquareSolver({ bomb }: MysticSquareSolverProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [grid, round?.id, bomb?.id, currentModule?.id, validateGrid, setIsLoading, clearError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
+  }, [grid, round?.id, bomb?.id, currentModule?.id, validateGrid, setIsLoading, setError, clearError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
 
   const reset = useCallback(() => {
     setGrid([...DEFAULT_GRID]);
@@ -160,19 +164,25 @@ export default function MysticSquareSolver({ bomb }: MysticSquareSolverProps) {
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          Enter the current 3×3 grid. One cell must be empty; the rest must be 1–8, each once.
-        </p>
-        <div className="grid grid-cols-3 gap-2 w-fit mx-auto mb-6">
+      <SolverSection
+        title="Current grid"
+        description="Enter the 3×3 grid. Exactly one cell must be empty; the rest are 1–8, each once."
+      >
+        <div className="mx-auto grid w-fit grid-cols-3 gap-2">
           {grid.map((value, i) => (
             <select
               key={i}
               value={value === null ? "" : String(value)}
               onChange={(e) => setCell(i, e.target.value)}
               disabled={isLoading || isSolved}
-              className="w-14 h-14 rounded-lg bg-neutral-800 border border-neutral-600 text-yellow-400 text-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-yellow-500/50 disabled:opacity-70"
-              aria-label={`Cell ${Math.floor(i / 3) + 1},${(i % 3) + 1}`}
+              className={cn(
+                "h-14 w-14 rounded-lg border text-center text-xl font-bold",
+                "border-border bg-muted/40 text-foreground",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
+                "disabled:opacity-70",
+                value === null && "text-muted-foreground",
+              )}
+              aria-label={`Cell row ${Math.floor(i / 3) + 1}, column ${(i % 3) + 1}`}
             >
               {CELL_OPTIONS.map((opt) => (
                 <option key={opt || "empty"} value={opt}>
@@ -182,38 +192,55 @@ export default function MysticSquareSolver({ bomb }: MysticSquareSolverProps) {
             </select>
           ))}
         </div>
+      </SolverSection>
 
-        <ErrorAlert message={error} onDismiss={clearError} />
+      <SolverControls
+        onSolve={handleSolve}
+        onReset={reset}
+        isSolveDisabled={!canSolve}
+        isLoading={isLoading}
+        isSolved={isSolved}
+      />
 
-        {result && (
-          <div className="space-y-4 mt-4 p-4 rounded-lg bg-neutral-800/80">
-            <p className="font-medium text-amber-400">
-              Skull position: row {skullRowCol?.row}, column {skullRowCol?.col} (do not uncover before the knight).
-            </p>
-            <p className="text-sm text-neutral-300">Target constellation (arrange the sliders to match):</p>
-            <div className="grid grid-cols-3 gap-2 w-fit">
+      <ErrorAlert error={error} />
+
+      {result && (
+        <>
+          <SolverResult
+            variant="success"
+            title="Skull position"
+            description={`Row ${skullRowCol?.row}, column ${skullRowCol?.col}. Do not uncover before the knight.`}
+          />
+
+          <SolverSection
+            title="Target constellation"
+            description="Arrange the sliders to match this layout. The default (1–2–3 / 4–5–6 / 7–8–empty) is always acceptable."
+          >
+            <div className="mx-auto grid w-fit grid-cols-3 gap-2">
               {(result.targetConstellation ?? []).map((v, i) => (
                 <div
                   key={i}
-                  className="w-14 h-14 rounded-lg border border-neutral-600 bg-neutral-700 flex items-center justify-center text-xl font-bold text-yellow-400"
+                  className={cn(
+                    "flex h-14 w-14 items-center justify-center rounded-lg border text-xl font-bold",
+                    v === null
+                      ? "border-dashed border-border bg-muted/20 text-muted-foreground"
+                      : "border-emerald-500/40 bg-emerald-500/10 text-foreground",
+                  )}
                 >
                   {v ?? "—"}
                 </div>
               ))}
             </div>
-            <p className="text-xs text-neutral-400">Default (1–2–3 / 4–5–6 / 7–8–empty) is always acceptable.</p>
-          </div>
-        )}
+          </SolverSection>
+        </>
+      )}
 
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          canSolve={canSolve}
-          isLoading={isLoading}
-          isSolved={isSolved}
-        />
-        <TwitchCommandDisplay command={twitchCommand} />
-      </div>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Enter the current tile layout. The solver returns the skull's location and the target
+        constellation to slide tiles into.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type ClipboardEvent } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ClipboardEvent,
+} from "react";
 import { useRoundStore } from "../../store/useRoundStore";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
@@ -11,12 +18,14 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
 import { Input } from "../ui/input";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 interface CaesarCipherSolverProps {
   bomb: BombEntity | null | undefined;
@@ -64,9 +73,7 @@ export default function CaesarCipherSolver({ bomb }: CaesarCipherSolverProps) {
     ) => {
       const fillFromString = (text: string) => {
         const chars = text.toUpperCase().replace(/[^A-Z]/g, "").slice(0, CIPHER_LENGTH).split("");
-        setLetters(
-          Array.from({ length: CIPHER_LENGTH }, (_, i) => chars[i] ?? ""),
-        );
+        setLetters(Array.from({ length: CIPHER_LENGTH }, (_, i) => chars[i] ?? ""));
       };
       if ("input" in state && state.input?.ciphertext) {
         fillFromString(state.input.ciphertext);
@@ -145,34 +152,6 @@ export default function CaesarCipherSolver({ bomb }: CaesarCipherSolverProps) {
     }
   };
 
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !letters[index] && index > 0) {
-      e.preventDefault();
-      setLetters((prev) => {
-        const next = [...prev];
-        next[index - 1] = "";
-        return next;
-      });
-      inputRefs.current[index - 1]?.focus();
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      e.preventDefault();
-      inputRefs.current[index - 1]?.focus();
-    } else if (e.key === "ArrowRight" && index < CIPHER_LENGTH - 1) {
-      e.preventDefault();
-      inputRefs.current[index + 1]?.focus();
-    } else if (e.key === "Enter" && allFilled && !isLoading && !isSolved) {
-      e.preventDefault();
-      void solveModule();
-    }
-  };
-
-  const handlePaste = (index: number, e: ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData("text");
-    if (!pasted) return;
-    e.preventDefault();
-    handleLetterChange(index, pasted);
-  };
-
   const solveModule = useCallback(async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
       setError("Missing required information");
@@ -213,7 +192,47 @@ export default function CaesarCipherSolver({ bomb }: CaesarCipherSolverProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [round?.id, bomb?.id, currentModule?.id, ciphertext, allFilled, clearError, setIsLoading, setError, setIsSolved, markModuleSolved, updateModuleAfterSolve]);
+  }, [
+    round?.id,
+    bomb?.id,
+    currentModule?.id,
+    ciphertext,
+    allFilled,
+    clearError,
+    setIsLoading,
+    setError,
+    setIsSolved,
+    markModuleSolved,
+    updateModuleAfterSolve,
+  ]);
+
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !letters[index] && index > 0) {
+      e.preventDefault();
+      setLetters((prev) => {
+        const next = [...prev];
+        next[index - 1] = "";
+        return next;
+      });
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < CIPHER_LENGTH - 1) {
+      e.preventDefault();
+      inputRefs.current[index + 1]?.focus();
+    } else if (e.key === "Enter" && allFilled && !isLoading && !isSolved) {
+      e.preventDefault();
+      void solveModule();
+    }
+  };
+
+  const handlePaste = (index: number, e: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData("text");
+    if (!pasted) return;
+    e.preventDefault();
+    handleLetterChange(index, pasted);
+  };
 
   const reset = useCallback(() => {
     setLetters(EMPTY_LETTERS);
@@ -231,35 +250,29 @@ export default function CaesarCipherSolver({ bomb }: CaesarCipherSolverProps) {
 
   return (
     <SolverLayout>
-      <div className="rounded-lg border border-amber-900/40 bg-gradient-to-b from-gray-800 to-gray-900 p-6 mb-4 shadow-inner">
-        <div className="flex items-center justify-center gap-2 mb-5">
-          <span className="h-px w-6 bg-amber-700/50" aria-hidden />
-          <h3 className="text-amber-300/90 text-xs font-semibold tracking-[0.3em] uppercase">
-            Caesar Cipher
-          </h3>
-          <span className="h-px w-6 bg-amber-700/50" aria-hidden />
-        </div>
-
-        <label className="block text-xs font-medium text-gray-400 mb-3 text-center uppercase tracking-wider">
-          Ciphertext on module
-        </label>
-
-        <div className="flex justify-center gap-2 mb-2">
+      <SolverSection
+        title="Ciphertext"
+        description="Enter the five letters displayed on the module."
+      >
+        <div className="flex justify-center gap-2">
           {letters.map((letter, i) => (
             <Input
               key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
+              ref={(el) => {
+                inputRefs.current[i] = el;
+              }}
               type="text"
               value={letter}
               onChange={(e) => handleLetterChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               onPaste={(e) => handlePaste(i, e)}
               onFocus={(e) => e.currentTarget.select()}
-              className={`h-14 w-12 px-0 text-center text-2xl font-bold font-mono rounded-md border-2 transition-colors ${
+              className={cn(
+                "h-14 w-12 px-0 text-center text-2xl font-bold font-mono rounded-md border-2 transition-colors",
                 letter
-                  ? "bg-amber-600/90 border-amber-400 text-white shadow-[0_0_12px_rgba(251,191,36,0.25)]"
-                  : "bg-gray-700/60 border-gray-600 text-gray-400"
-              }`}
+                  ? "border-amber-500 bg-amber-500/10 text-foreground"
+                  : "border-border bg-muted/40 text-muted-foreground",
+              )}
               maxLength={1}
               autoComplete="off"
               autoCapitalize="characters"
@@ -269,11 +282,10 @@ export default function CaesarCipherSolver({ bomb }: CaesarCipherSolverProps) {
             />
           ))}
         </div>
-
-        <div className="text-xs text-gray-500 mt-2 text-center tabular-nums">
+        <p className="mt-2 text-center text-xs text-muted-foreground tabular-nums">
           {letters.filter((l) => l).length}/{CIPHER_LENGTH} letters
-        </div>
-      </div>
+        </p>
+      </SolverSection>
 
       <SolverControls
         onSolve={solveModule}
@@ -287,44 +299,54 @@ export default function CaesarCipherSolver({ bomb }: CaesarCipherSolverProps) {
       <ErrorAlert error={error} />
 
       {result && (
-        <Alert variant="success" className="mb-4">
-          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-            <p className="font-semibold">Decoded word</p>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-600/20 border border-amber-500/40 px-2.5 py-0.5 text-xs font-semibold text-amber-200 tabular-nums">
-              shift {offsetLabel}
+        <SolverSection title="Decoded word" className="border-emerald-500/40">
+          <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Cipher shift
+            </p>
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400 tabular-nums">
+              {offsetLabel}
             </span>
           </div>
-
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <LetterRow letters={ciphertext.split("")} tone="muted" />
-            <span className="text-amber-400 text-xl" aria-hidden>→</span>
+            <span className="text-lg text-muted-foreground" aria-hidden>
+              →
+            </span>
             <LetterRow letters={result.solution.split("")} tone="solution" />
           </div>
-        </Alert>
+        </SolverSection>
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      <div className="text-sm text-base-content/60 space-y-1">
-        <p>Enter the ciphertext exactly as shown on the module.</p>
-        <p>• The solver uses the bomb edgework to calculate the Caesar shift.</p>
-        <p>• Submit the decoded five-letter word on the module.</p>
-        <p>• A parallel port plus a lit NSA indicator forces the offset to 0.</p>
-      </div>
+      <SolverInstructions>
+        The solver uses the bomb edgework to calculate the Caesar shift. A parallel
+        port plus a lit NSA indicator forces the offset to 0.
+      </SolverInstructions>
     </SolverLayout>
   );
 }
 
-function LetterRow({ letters, tone }: { letters: string[]; tone: "muted" | "solution" }) {
-  const base = "h-10 w-9 rounded flex items-center justify-center text-lg font-mono font-bold border";
-  const toneClass =
-    tone === "solution"
-      ? "bg-emerald-600/90 border-emerald-400 text-white"
-      : "bg-gray-700/60 border-gray-600 text-gray-300";
+function LetterRow({
+  letters,
+  tone,
+}: {
+  letters: string[];
+  tone: "muted" | "solution";
+}) {
   return (
     <div className="flex gap-1.5">
       {letters.map((ch, i) => (
-        <div key={i} className={`${base} ${toneClass}`}>
+        <div
+          key={i}
+          className={cn(
+            "flex h-10 w-9 items-center justify-center rounded border text-lg font-mono font-bold",
+            tone === "solution"
+              ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "border-border bg-muted/60 text-muted-foreground",
+          )}
+        >
           {ch}
         </div>
       ))}

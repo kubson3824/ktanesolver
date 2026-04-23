@@ -12,11 +12,13 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
-import { Alert } from "../ui/alert";
 
 type LaundrySymbolDefinition = {
   label: string;
@@ -52,10 +54,7 @@ const SYMBOL_DEFINITIONS: Record<LaundrySymbol, LaundrySymbolDefinition> = {
   NO_STEAM: { label: "No steam", fileName: "no steam.png" },
   BLEACH: { label: "Bleach", fileName: "bleach.png" },
   DO_NOT_BLEACH: { label: "Do not bleach", fileName: "do not bleach.png" },
-  NON_CHLORINE_BLEACH: {
-    label: "Non-chlorine bleach",
-    fileName: "non-chlorine bleach.png",
-  },
+  NON_CHLORINE_BLEACH: { label: "Non-chlorine bleach", fileName: "non-chlorine bleach.png" },
   ANY_SOLVENT: { label: "Any solvent", fileName: "any solvent.png" },
   NO_TETRACHLORETHYLENE: {
     label: "Any solvent except tetrachlorethylene",
@@ -70,10 +69,7 @@ const SYMBOL_DEFINITIONS: Record<LaundrySymbol, LaundrySymbolDefinition> = {
   SHORT_CYCLE: { label: "Short cycle", fileName: "short cycle.png" },
   REDUCED_MOISTURE: { label: "Reduced moisture", fileName: "reduced moisture.png" },
   LOW_HEAT: { label: "Low heat", fileName: "low heat.png" },
-  NO_STEAM_FINISHING: {
-    label: "No steam finishing",
-    fileName: "no steam finishing.png",
-  },
+  NO_STEAM_FINISHING: { label: "No steam finishing", fileName: "no steam finishing.png" },
   CIRCLE_TOP_LEFT: { label: "Circle top left", custom: "circleTopLeft" },
 };
 
@@ -110,7 +106,7 @@ function laundryImageUrl(fileName: string): string {
 
 function CircleTopLeftSymbol() {
   return (
-    <svg viewBox="0 0 64 64" className="w-16 h-16 text-sky-100" aria-hidden>
+    <svg viewBox="0 0 64 64" className="h-16 w-16 text-foreground" aria-hidden>
       <circle cx="32" cy="32" r="18" fill="none" stroke="currentColor" strokeWidth="4" />
       <line
         x1="10"
@@ -135,21 +131,25 @@ function LaundrySymbolSlot({
   const definition = symbol ? SYMBOL_DEFINITIONS[symbol] : null;
 
   return (
-    <div className="rounded-lg border border-neutral-600 bg-neutral-800/80 p-4 flex flex-col items-center justify-center min-h-36">
-      <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 mb-3">
+    <div className="flex min-h-36 flex-col items-center justify-center rounded-lg border border-border bg-muted/40 p-4">
+      <span className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
         {title}
       </span>
       {!definition ? (
-        <div className="w-16 h-16 rounded border border-dashed border-neutral-600" />
+        <div className="h-16 w-16 rounded border border-dashed border-border" />
       ) : definition.custom === "circleTopLeft" ? (
         <CircleTopLeftSymbol />
       ) : (
         <img
           src={laundryImageUrl(definition.fileName!)}
           alt={definition.label}
-          className="w-16 h-16 object-contain"
+          title={definition.label}
+          className="h-16 w-16 object-contain"
           loading="lazy"
         />
+      )}
+      {definition && (
+        <span className="mt-2 text-center text-xs text-foreground">{definition.label}</span>
       )}
     </div>
   );
@@ -309,66 +309,49 @@ export default function LaundrySolver({ bomb }: LaundrySolverProps) {
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          Laundry is fully automatic here. The solver uses the bomb&apos;s live edgework plus
-          current solved and unsolved module counts, so solve it when you are ready to insert
-          the machine settings on the module.
-        </p>
+      <SolverSection
+        title="Laundry"
+        description="Fully automatic — uses the bomb's live edgework plus current solved/unsolved counts. Solve when you're ready to dial in the machine settings."
+      >
+        <SolverControls
+          onSolve={handleSolve}
+          onReset={reset}
+          isLoading={isLoading}
+          isSolved={isSolved}
+        />
+      </SolverSection>
 
-        {result?.bobShortcut ? (
-          <div className="rounded-lg border border-emerald-500/60 bg-emerald-950/40 p-6 text-center">
-            <div className="mx-auto mb-4 w-16 h-16 rounded-full border-4 border-amber-300 bg-neutral-900/80 flex items-center justify-center">
-              <div className="w-5 h-10 rounded-full border-2 border-amber-300" />
-            </div>
-            <p className="text-lg font-semibold text-emerald-200">Insert the coin.</p>
-            <p className="text-sm text-emerald-100/80 mt-2">
-              Lit BOB with exactly 4 batteries in 2 holders overrides all other Laundry rules.
-            </p>
-          </div>
-        ) : result ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <ErrorAlert error={error} />
+
+      {result?.bobShortcut ? (
+        <SolverResult
+          variant="success"
+          title="BOB shortcut — insert the coin"
+          description="Lit BOB with exactly 4 batteries in 2 holders overrides all other Laundry rules. No symbols needed."
+        />
+      ) : result ? (
+        <>
+          <SolverSection
+            title="Set these symbols"
+            description={`Item: ${ITEM_LABELS[result.item]} • Material: ${MATERIAL_LABELS[result.material]} • Color: ${COLOR_LABELS[result.color]}`}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <LaundrySymbolSlot title="Top Left" symbol={result.washingSymbol} />
               <LaundrySymbolSlot title="Top Right" symbol={result.dryingSymbol} />
               <LaundrySymbolSlot title="Top Display" symbol={result.ironingSymbol} />
               <LaundrySymbolSlot title="Bottom Display" symbol={result.specialSymbol} />
             </div>
-            <p className="text-center text-xs text-neutral-400 uppercase tracking-wide">
-              {ITEM_LABELS[result.item]} / {MATERIAL_LABELS[result.material]} / {COLOR_LABELS[result.color]}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <LaundrySymbolSlot title="Top Left" symbol={null} />
-            <LaundrySymbolSlot title="Top Right" symbol={null} />
-            <LaundrySymbolSlot title="Top Display" symbol={null} />
-            <LaundrySymbolSlot title="Bottom Display" symbol={null} />
-          </div>
-        )}
-      </div>
+          </SolverSection>
+        </>
+      ) : null}
 
-      <div className="mt-6">
-        <SolverControls
-          onSolve={handleSolve}
-          onReset={reset}
-          isSolveDisabled={false}
-          isLoading={isLoading}
-          isSolved={isSolved}
-          solveText="Solve"
-        />
-      </div>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
-      <ErrorAlert error={error} />
-
-      {result?.bobShortcut && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-bold">BOB did the work.</p>
-          <p className="text-sm mt-1">Insert the coin immediately; no laundry symbols are needed.</p>
-        </Alert>
-      )}
-
-      <TwitchCommandDisplay command={twitchCommand} />
+      <SolverInstructions>
+        Press solve when you're ready to enter the laundry settings. The solver reads the bomb's
+        current edgework and module state to compute the symbols, item, material, and color to
+        dial in. If a BOB shortcut applies, just insert the coin.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

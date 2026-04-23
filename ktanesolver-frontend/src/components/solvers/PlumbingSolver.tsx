@@ -11,13 +11,23 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
   SolverControls,
+  SolverResult,
   ErrorAlert,
   TwitchCommandDisplay,
 } from "../common";
-import { Alert } from "../ui/alert";
+import { cn } from "../../lib/cn";
 
 const PIPE_COLORS = ["Red", "Yellow", "Green", "Blue"] as const;
+
+const PIPE_ACTIVE: Record<(typeof PIPE_COLORS)[number], string> = {
+  Red: "bg-red-500 text-white border-red-600",
+  Yellow: "bg-yellow-400 text-yellow-950 border-yellow-500",
+  Green: "bg-green-500 text-white border-green-600",
+  Blue: "bg-blue-500 text-white border-blue-600",
+};
 
 interface PlumbingSolverProps {
   bomb: BombEntity | null | undefined;
@@ -30,6 +40,7 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
   const {
     isLoading,
     error,
+    isSolved,
     setIsLoading,
     setError,
     setIsSolved,
@@ -147,110 +158,89 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
   const activeInputLabels = result
     ? result.activeInputs
         .map((active, i) => (active ? PIPE_COLORS[i] : null))
-        .filter(Boolean)
+        .filter((s): s is (typeof PIPE_COLORS)[number] => Boolean(s))
     : [];
   const activeOutputLabels = result
     ? result.activeOutputs
         .map((active, i) => (active ? PIPE_COLORS[i] : null))
-        .filter(Boolean)
+        .filter((s): s is (typeof PIPE_COLORS)[number] => Boolean(s))
     : [];
+
+  const PipeChip = ({
+    color,
+    active,
+  }: {
+    color: (typeof PIPE_COLORS)[number];
+    active: boolean;
+  }) => (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-medium",
+        active
+          ? PIPE_ACTIVE[color]
+          : "border-border bg-muted/40 text-muted-foreground line-through",
+      )}
+    >
+      {color}
+    </span>
+  );
 
   return (
     <SolverLayout>
-      <div className="rounded-xl border-2 border-neutral-600 bg-neutral-700/95 shadow-lg p-5 text-neutral-100">
-        <p className="text-sm text-neutral-300 mb-4">
-          The solver uses the bomb&apos;s serial, batteries, ports, and indicators to determine which input pipes (left) and output pipes (right) are active. Connect each active input to an active output through the 6×6 grid on the module.
-        </p>
-
-        {result && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-lg bg-neutral-800/80 border border-neutral-600 p-4">
-                <h3 className="text-amber-400 font-semibold mb-2 text-sm uppercase tracking-wide">
-                  Active inputs (left)
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {PIPE_COLORS.map((color, i) => (
-                    <span
-                      key={color}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-sm font-medium ${
-                        result.activeInputs[i]
-                          ? color === "Red"
-                            ? "bg-red-600/80 text-white"
-                            : color === "Yellow"
-                              ? "bg-amber-500/80 text-neutral-900"
-                              : color === "Green"
-                                ? "bg-green-600/80 text-white"
-                                : "bg-blue-600/80 text-white"
-                          : "bg-neutral-600/60 text-neutral-500 line-through"
-                      }`}
-                    >
-                      {color}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-neutral-400 text-xs mt-2">
-                  Connect these: {activeInputLabels.join(", ") || "—"}
-                </p>
-              </div>
-              <div className="rounded-lg bg-neutral-800/80 border border-neutral-600 p-4">
-                <h3 className="text-amber-400 font-semibold mb-2 text-sm uppercase tracking-wide">
-                  Active outputs (right)
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {PIPE_COLORS.map((color, i) => (
-                    <span
-                      key={color}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-sm font-medium ${
-                        result.activeOutputs[i]
-                          ? color === "Red"
-                            ? "bg-red-600/80 text-white"
-                            : color === "Yellow"
-                              ? "bg-amber-500/80 text-neutral-900"
-                              : color === "Green"
-                                ? "bg-green-600/80 text-white"
-                                : "bg-blue-600/80 text-white"
-                          : "bg-neutral-600/60 text-neutral-500 line-through"
-                      }`}
-                    >
-                      {color}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-neutral-400 text-xs mt-2">
-                  To these: {activeOutputLabels.join(", ") || "—"}
-                </p>
-              </div>
-            </div>
-            <p className="text-neutral-400 text-sm">
-              Rotate pipes in the 6×6 grid so every active input is connected to an active output. Do not connect inactive pipes. Press CHECK on the module to verify.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6">
+      <SolverSection
+        title="Plumbing"
+        description="The solver uses serial, batteries, ports, and indicators to pick which input and output pipes are active. Connect each active input to an active output through the 6×6 grid."
+      >
         <SolverControls
           onSolve={handleSolve}
           onReset={reset}
-          isSolveDisabled={false}
           isLoading={isLoading}
-          solveText="Solve"
+          isSolved={isSolved}
         />
-      </div>
+      </SolverSection>
 
       <ErrorAlert error={error} />
 
       {result && (
-        <Alert variant="success" className="mb-4">
-          <p className="font-bold">On the module</p>
-          <p className="text-sm mt-1">
-            Connect active inputs ({activeInputLabels.join(", ")}) to active outputs ({activeOutputLabels.join(", ")}) through the grid, then press CHECK.
-          </p>
-        </Alert>
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SolverSection
+              title="Active inputs (left)"
+              description="Connect pipes on the left side."
+            >
+              <div className="flex flex-wrap gap-2">
+                {PIPE_COLORS.map((color, i) => (
+                  <PipeChip key={color} color={color} active={Boolean(result.activeInputs[i])} />
+                ))}
+              </div>
+            </SolverSection>
+
+            <SolverSection
+              title="Active outputs (right)"
+              description="Route to pipes on the right side."
+            >
+              <div className="flex flex-wrap gap-2">
+                {PIPE_COLORS.map((color, i) => (
+                  <PipeChip key={color} color={color} active={Boolean(result.activeOutputs[i])} />
+                ))}
+              </div>
+            </SolverSection>
+          </div>
+
+          <SolverResult
+            variant="success"
+            title="On the module"
+            description={`Inputs: ${activeInputLabels.join(", ") || "—"}\nOutputs: ${activeOutputLabels.join(", ") || "—"}`}
+          />
+        </>
       )}
 
-      <TwitchCommandDisplay command={twitchCommand} />
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+
+      <SolverInstructions>
+        Rotate pipes in the grid so every active input connects to an active output. Leave inactive
+        pipes unconnected, then press CHECK on the module to verify.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

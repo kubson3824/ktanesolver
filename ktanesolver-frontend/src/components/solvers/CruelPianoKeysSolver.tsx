@@ -11,24 +11,24 @@ import {
   useSolver,
   useSolverModulePersistence,
   SolverLayout,
+  SolverSection,
+  SolverInstructions,
+  SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverControls,
 } from "../common";
+import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
 interface CruelPianoKeysSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-// Double bow – 10× viewBox/path for finer lines, auto rendering to avoid blocky edges
 const DOUBLE_BOW_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="42" viewBox="0 0 19 21.1" preserveAspectRatio="xMidYMid meet" shape-rendering="auto"><path d="M0 0v21h2.1V6.5h14.8V21.1h2.1V0H0"/></svg>';
-// Quarter rest – 10× viewBox/path; extra space at bottom so it sits higher in the button
 const QUARTER_REST_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="105" viewBox="0 0 17.8 60" preserveAspectRatio="xMidYMid meet" shape-rendering="auto"><path d="M17.8 40.8c-2.8-4.5-8.5-9.4-8.5-13 0-2.4 2.1-6.1 6.4-11.3L3.7 0C2.9 1 2.5 4 2.5 9c0 0 5 5.9 5 9.5 0 3.5-2.3 7.3-7 11.6 5.3 6.5 8.2 9.6 10.3 12.9a8.8 8.8 0 0 0-4-1.2c-4.2 0-6.8 4-6.8 8 0 4.8 8.1 10.7 9.7 10.7.3 0 .5-.1.5-.4C7.4 49.2 6 46.7 6 44.3c0-3.1 2.6-4.9 6-4.9 1.9 0 3.9.5 5.8 1.4"/></svg>';
 
-// Actual symbols from the manual (Unicode musical glyphs + letters); label is for tooltip only.
-// Symbols with `svg` use custom SVG; others use .music-symbol (OpusStd) display.
 const SYMBOLS: {
   symbol: CruelPianoKeysSymbol;
   display: string;
@@ -66,16 +66,24 @@ const NOTES: { note: CruelPianoKeysNote; isBlack: boolean; position: number }[] 
   { note: "B", isBlack: false, position: 6 },
 ];
 
-const getNoteDisplay = (note: CruelPianoKeysNote): string => {
-  return note.replace("_SHARP", "♯");
-};
+const getNoteDisplay = (note: CruelPianoKeysNote): string => note.replace("_SHARP", "♯");
+
+function SymbolGlyph({ display, svg }: { display: string; svg?: string }) {
+  if (svg) {
+    return (
+      <span
+        className="inline-flex h-[1.6em] select-none items-center justify-center [&_svg]:h-full [&_svg]:w-auto [&_svg]:fill-current [&_svg]:stroke-current"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    );
+  }
+  return <span className="music-symbol inline-block select-none">{display}</span>;
+}
 
 export default function CruelPianoKeysSolver({ bomb }: CruelPianoKeysSolverProps) {
   const [selectedSymbols, setSelectedSymbols] = useState<CruelPianoKeysSymbol[]>([]);
   const [minutesRemaining, setMinutesRemaining] = useState<number | "">("");
-  const [solution, setSolution] = useState<{
-    notes: CruelPianoKeysNote[];
-  } | null>(null);
+  const [solution, setSolution] = useState<{ notes: CruelPianoKeysNote[] } | null>(null);
   const [twitchCommands, setTwitchCommands] = useState<string[]>([]);
 
   const {
@@ -113,23 +121,17 @@ export default function CruelPianoKeysSolver({ bomb }: CruelPianoKeysSolverProps
     [],
   );
 
-  const onRestoreSolution = useCallback(
-    (restored: NonNullable<typeof solution>) => {
-      if (restored && Array.isArray(restored.notes)) {
-        setSolution(restored);
-        const noteSequence = restored.notes.map(getNoteDisplay).join("-");
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.CRUEL_PIANO_KEYS,
-          result: {
-            notes: noteSequence,
-            count: restored.notes.length,
-          },
-        });
-        setTwitchCommands([command]);
-      }
-    },
-    [],
-  );
+  const onRestoreSolution = useCallback((restored: NonNullable<typeof solution>) => {
+    if (restored && Array.isArray(restored.notes)) {
+      setSolution(restored);
+      const noteSequence = restored.notes.map(getNoteDisplay).join("-");
+      const command = generateTwitchCommand({
+        moduleType: ModuleType.CRUEL_PIANO_KEYS,
+        result: { notes: noteSequence, count: restored.notes.length },
+      });
+      setTwitchCommands([command]);
+    }
+  }, []);
 
   useSolverModulePersistence<
     {
@@ -201,9 +203,7 @@ export default function CruelPianoKeysSolver({ bomb }: CruelPianoKeysSolverProps
         symbols: selectedSymbols,
       };
       if (typeof minutesRemaining === "number") input.minutesRemaining = minutesRemaining;
-      const response = await solveCruelPianoKeys(round.id, bomb.id, currentModule.id, {
-        input,
-      });
+      const response = await solveCruelPianoKeys(round.id, bomb.id, currentModule.id, { input });
       setSolution(response.output);
       const command = generateTwitchCommand({
         moduleType: ModuleType.CRUEL_PIANO_KEYS,
@@ -231,202 +231,184 @@ export default function CruelPianoKeysSolver({ bomb }: CruelPianoKeysSolverProps
 
   return (
     <SolverLayout>
-      <div className="bg-gray-800 rounded-lg p-6 mb-4">
-        <h3 className="text-center text-gray-400 mb-4 text-sm font-medium">MODULE VIEW</h3>
-
-        <div className="mb-6">
-          <p className="text-center text-gray-400 mb-3 text-sm">
-            Select the 4 symbols shown on the module:
-          </p>
-          <div className="grid grid-cols-5 gap-2 max-w-2xl mx-auto sm:grid-cols-7">
-            {SYMBOLS.map(({ symbol, display, label, svg }) => {
-              const isSelected = selectedSymbols.includes(symbol);
-              return (
-                <button
-                  key={symbol}
-                  onClick={() => handleSymbolClick(symbol)}
-                  className={`relative transition-all duration-200 flex items-center justify-center ${
-                    isSelected
-                      ? "bg-blue-600 hover:bg-blue-500 text-white scale-105"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                  } rounded-lg p-3 border-2 min-h-[72px] ${
-                    isSelected ? "border-blue-400" : "border-gray-600"
-                  }`}
-                  disabled={
-                    isSolved || isLoading || (!isSelected && selectedSymbols.length >= 4)
-                  }
-                  title={label}
-                  aria-label={label}
-                >
-                  {svg ? (
-                    <span
-                      className="select-none inline-flex h-[1.6em] items-center justify-center [&_svg]:h-full [&_svg]:w-auto [&_svg]:fill-current [&_svg]:stroke-current"
-                      dangerouslySetInnerHTML={{ __html: svg }}
-                    />
-                  ) : (
-                    <span className="music-symbol select-none inline-block">
-                      {display}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      <SolverSection
+        title="Symbols on the module"
+        description={`Pick the four symbols shown. Selected: ${selectedSymbols.length}/4.`}
+      >
+        <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
+          {SYMBOLS.map(({ symbol, display, label, svg }) => {
+            const isSelected = selectedSymbols.includes(symbol);
+            const order = isSelected ? selectedSymbols.indexOf(symbol) + 1 : null;
+            const disabled = isSolved || isLoading || (!isSelected && selectedSymbols.length >= 4);
+            return (
+              <button
+                key={symbol}
+                type="button"
+                onClick={() => handleSymbolClick(symbol)}
+                disabled={disabled}
+                aria-pressed={isSelected}
+                aria-label={label}
+                title={label}
+                className={cn(
+                  "relative flex min-h-[72px] items-center justify-center rounded-lg border-2 p-2 transition-colors",
+                  isSelected
+                    ? "border-ring bg-accent/15 text-foreground ring-2 ring-ring ring-offset-1 ring-offset-card"
+                    : "border-border bg-muted/40 text-muted-foreground hover:text-foreground",
+                  disabled && !isSelected && "cursor-not-allowed opacity-60",
+                )}
+              >
+                {order != null && (
+                  <span className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+                    {order}
+                  </span>
+                )}
+                <SymbolGlyph display={display} svg={svg} />
+              </button>
+            );
+          })}
         </div>
+      </SolverSection>
 
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
-          <label className="text-gray-400 text-sm flex items-center gap-2">
-            Minutes remaining (optional):
-            <input
-              type="number"
-              min={0}
-              max={99}
-              value={minutesRemaining === "" ? "" : minutesRemaining}
-              onChange={(e) => {
-                const v = e.target.value;
-                setMinutesRemaining(v === "" ? "" : Math.max(0, parseInt(v, 10) || 0));
-              }}
-              className="w-16 rounded bg-gray-700 border border-gray-600 text-white px-2 py-1 text-center"
-            />
+      <SolverSection
+        title="Bomb time (optional)"
+        description="If the module's behaviour depends on remaining minutes, enter that here."
+      >
+        <div className="flex items-center gap-2">
+          <label htmlFor="cruel-piano-mins" className="text-sm text-muted-foreground">
+            Minutes remaining
           </label>
+          <Input
+            id="cruel-piano-mins"
+            type="number"
+            min={0}
+            max={99}
+            value={minutesRemaining === "" ? "" : minutesRemaining}
+            onChange={(e) => {
+              const v = e.target.value;
+              setMinutesRemaining(v === "" ? "" : Math.max(0, parseInt(v, 10) || 0));
+            }}
+            disabled={isSolved}
+            className="w-20 text-center"
+          />
         </div>
-
-        {selectedSymbols.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-gray-700">
-            <p className="text-center text-gray-400 mb-2 text-sm">
-              Selected ({selectedSymbols.length}/4):
-            </p>
-            <div className="flex justify-center gap-2 flex-wrap">
-              {selectedSymbols.map((symbol, index) => {
-                const { display, label, svg } = SYMBOLS.find((s) => s.symbol === symbol)!;
-                return (
-                  <div
-                    key={index}
-                    className="bg-blue-600 text-white px-3 py-2 rounded-lg border border-blue-400 flex items-center justify-center min-w-[3rem]"
-                    title={label}
-                  >
-                    {svg ? (
-                      <span
-                        className="select-none inline-flex h-[1.6em] items-center justify-center [&_svg]:h-full [&_svg]:w-auto [&_svg]:fill-current [&_svg]:stroke-current"
-                        dangerouslySetInnerHTML={{ __html: svg }}
-                      />
-                    ) : (
-                      <span className="music-symbol select-none inline-block">
-                        {display}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {solution && (
-          <div className="mt-6 pt-4 border-t border-gray-700">
-            <p className="text-center text-gray-400 mb-3 text-sm">
-              Play these 12 notes in order:
-            </p>
-            <div className="relative bg-gray-900 p-6 rounded-lg">
-              <div className="flex relative mx-auto" style={{ height: "160px", width: "441px" }}>
-                {NOTES.filter((n) => !n.isBlack).map(({ note, position }) => {
-                  const notePositions: number[] = [];
-                  solution.notes.forEach((n, idx) => {
-                    if (n === note) notePositions.push(idx);
-                  });
-                  const isHighlighted = notePositions.length > 0;
-                  return (
-                    <div
-                      key={note}
-                      className={`relative transition-all duration-300 flex flex-col items-center justify-end ${
-                        isHighlighted
-                          ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50"
-                          : "bg-white text-gray-800 hover:bg-gray-100"
-                      } border border-gray-400 rounded-b-lg cursor-pointer`}
-                      style={{
-                        width: "60px",
-                        height: "140px",
-                        marginLeft: position > 0 ? "3px" : "0",
-                      }}
-                    >
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-center">
-                        {isHighlighted && (
-                          <div
-                            className={`text-sm font-bold mb-1 ${
-                              isHighlighted ? "text-blue-100" : "text-blue-900"
-                            }`}
-                          >
-                            #{notePositions[0] + 1}
-                            {notePositions.length > 1
-                              ? ` +${notePositions.length - 1}`
-                              : ""}
-                          </div>
-                        )}
-                        <div className="text-lg font-bold">{getNoteDisplay(note)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {NOTES.filter((n) => n.isBlack).map(({ note, position }) => {
-                  const notePositions: number[] = [];
-                  solution.notes.forEach((n, idx) => {
-                    if (n === note) notePositions.push(idx);
-                  });
-                  const isHighlighted = notePositions.length > 0;
-                  return (
-                    <div
-                      key={note}
-                      className={`absolute transition-all duration-300 flex flex-col items-center justify-end z-10 ${
-                        isHighlighted
-                          ? "bg-blue-700 text-white shadow-lg shadow-blue-700/50"
-                          : "bg-gray-900 text-gray-300 hover:bg-gray-800"
-                      } rounded-b-lg cursor-pointer`}
-                      style={{
-                        width: "40px",
-                        height: "90px",
-                        left: `${Math.floor(position) * 63 + 43}px`,
-                      }}
-                    >
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-center">
-                        {isHighlighted && (
-                          <div className="text-xs font-bold mb-1 text-blue-200">
-                            #{notePositions[0] + 1}
-                            {notePositions.length > 1
-                              ? ` +${notePositions.length - 1}`
-                              : ""}
-                          </div>
-                        )}
-                        <div className="text-sm font-bold">{getNoteDisplay(note)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-400 mb-2">Note Sequence:</p>
-              <p className="font-mono text-lg text-blue-400">
-                {solution.notes.map(getNoteDisplay).join(" → ")}
-              </p>
-            </div>
-            <TwitchCommandDisplay command={twitchCommands} className="mb-0" />
-          </div>
-        )}
-      </div>
+      </SolverSection>
 
       <SolverControls
         onSolve={handleSolve}
         onReset={reset}
         isSolveDisabled={selectedSymbols.length !== 4}
         isLoading={isLoading}
-        solveText="Get Solution"
+        isSolved={isSolved}
+        solveText="Get solution"
       />
+
       <ErrorAlert error={error} />
-      <div className="text-sm text-base-content/60">
-        <p className="mb-2">Select the 4 symbols displayed on the Cruel Piano Keys module.</p>
-        <p className="mb-2">The solution is a 12-note sequence to play in order.</p>
-        <p>Follow the numbered sequence on the highlighted keys.</p>
-      </div>
+
+      {solution && (
+        <SolverSection
+          title="Play these notes"
+          description={`${solution.notes.length}-note sequence — press each key in the numbered order.`}
+        >
+          <Keyboard notes={solution.notes} />
+          <p className="mt-3 break-all text-center font-mono text-sm text-foreground">
+            {solution.notes.map(getNoteDisplay).join(" → ")}
+          </p>
+        </SolverSection>
+      )}
+
+      {twitchCommands.length > 0 && <TwitchCommandDisplay command={twitchCommands} />}
+
+      <SolverInstructions>
+        Cruel Piano Keys uses a wider symbol set; the solver returns a 12-note sequence to perform.
+      </SolverInstructions>
     </SolverLayout>
+  );
+}
+
+function Keyboard({ notes }: { notes: CruelPianoKeysNote[] }) {
+  const firstIndex = (n: CruelPianoKeysNote): number | null => {
+    const i = notes.indexOf(n);
+    return i === -1 ? null : i;
+  };
+  const countFor = (n: CruelPianoKeysNote): number => notes.filter((x) => x === n).length;
+
+  const WHITE_W = 56;
+  const WHITE_GAP = 2;
+  const BLACK_W = 36;
+  const BLACK_H = 90;
+  const WHITE_H = 140;
+  const whiteCount = NOTES.filter((n) => !n.isBlack).length;
+  const totalWidth = whiteCount * WHITE_W + (whiteCount - 1) * WHITE_GAP;
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border bg-muted/20 p-3">
+      <div
+        className="relative mx-auto"
+        style={{ height: `${WHITE_H}px`, width: `${totalWidth}px` }}
+      >
+        <div className="flex h-full">
+          {NOTES.filter((n) => !n.isBlack).map(({ note }, idx) => {
+            const first = firstIndex(note);
+            const count = countFor(note);
+            const highlighted = first !== null;
+            return (
+              <div
+                key={note}
+                className={cn(
+                  "relative flex flex-col items-center justify-end rounded-b-md border transition-colors",
+                  highlighted
+                    ? "border-blue-600 bg-blue-500 text-white shadow-md"
+                    : "border-border bg-card text-foreground",
+                )}
+                style={{
+                  width: `${WHITE_W}px`,
+                  height: `${WHITE_H}px`,
+                  marginLeft: idx > 0 ? `${WHITE_GAP}px` : 0,
+                }}
+              >
+                <div className="flex flex-col items-center pb-2 text-center leading-tight">
+                  {highlighted && (
+                    <span className="text-xs font-bold">
+                      #{first! + 1}
+                      {count > 1 ? ` +${count - 1}` : ""}
+                    </span>
+                  )}
+                  <span className="text-sm font-bold">{getNoteDisplay(note)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {NOTES.filter((n) => n.isBlack).map(({ note, position }) => {
+          const first = firstIndex(note);
+          const count = countFor(note);
+          const highlighted = first !== null;
+          const left = Math.floor(position) * (WHITE_W + WHITE_GAP) + WHITE_W - BLACK_W / 2;
+          return (
+            <div
+              key={note}
+              className={cn(
+                "absolute top-0 z-10 flex flex-col items-center justify-end rounded-b-md transition-colors",
+                highlighted
+                  ? "bg-blue-700 text-white shadow-md"
+                  : "bg-foreground text-background",
+              )}
+              style={{ width: `${BLACK_W}px`, height: `${BLACK_H}px`, left: `${left}px` }}
+            >
+              <div className="flex flex-col items-center pb-1.5 text-center leading-tight">
+                {highlighted && (
+                  <span className="text-[0.65rem] font-bold">
+                    #{first! + 1}
+                    {count > 1 ? ` +${count - 1}` : ""}
+                  </span>
+                )}
+                <span className="text-xs font-bold">{getNoteDisplay(note)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
