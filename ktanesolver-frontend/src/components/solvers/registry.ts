@@ -28,6 +28,7 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
   [ModuleType.PIANO_KEYS]: { load: () => import("./PianoKeysSolver") },
   [ModuleType.SEMAPHORE]: { load: () => import("./SemaphoreSolver") },
   [ModuleType.MATH]: { load: () => import("./MathSolver") },
+  [ModuleType.PERSPECTIVE_PEGS]: { load: () => import("./PerspectivePegsSolver") },
   [ModuleType.EMOJI_MATH]: { load: () => import("./EmojiMathSolver") },
   [ModuleType.SWITCHES]: { load: () => import("./SwitchesSolver") },
   [ModuleType.TWO_BITS]: { load: () => import("./TwoBitsSolver") },
@@ -69,7 +70,7 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
 };
 
 /**
- * Stable map of pre-built React.lazy() references — one per module type.
+ * Stable map of pre-built React.lazy() references - one per module type.
  * Built once at module load time so the same moduleType always returns the
  * identical lazy() reference, preventing unnecessary remounts.
  */
