@@ -349,6 +349,19 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} alphabet unknown`;
     }
 
+    case ModuleType.MICROCONTROLLER: {
+      const pins = Array.isArray(raw.pins) ? raw.pins : [];
+      if (pins.length) {
+        const sequence = pins
+          .map((pin) => asRecord(pin).color)
+          .filter((color): color is string => typeof color === "string")
+          .map((color) => color.toLowerCase())
+          .join(" ");
+        return `!${TWITCH_PLACEHOLDER} microcontroller ${sequence}`;
+      }
+      return `!${TWITCH_PLACEHOLDER} microcontroller unknown`;
+    }
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;
