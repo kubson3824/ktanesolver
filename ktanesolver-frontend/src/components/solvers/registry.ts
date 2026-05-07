@@ -64,6 +64,7 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
   [ModuleType.LAUNDRY]: { load: () => import("./LaundrySolver") },
   [ModuleType.PROBING]: { load: () => import("./ProbingSolver") },
   [ModuleType.ALPHABET]: { load: () => import("./AlphabetSolver") },
+  [ModuleType.MICROCONTROLLER]: { load: () => import("./MicrocontrollerSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },

@@ -53,6 +53,7 @@ export enum ModuleType {
   LAUNDRY = "LAUNDRY",
   PROBING = "PROBING",
   ALPHABET = "ALPHABET",
+  MICROCONTROLLER = "MICROCONTROLLER",
 }
 
 export enum PortType {
