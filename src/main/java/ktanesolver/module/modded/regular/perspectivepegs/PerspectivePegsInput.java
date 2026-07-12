@@ -5,9 +5,8 @@ import java.util.List;
 import ktanesolver.logic.ModuleInput;
 
 public record PerspectivePegsInput(
-	List<Peg> pegs,
-	List<List<String>> candidateSequences
+	List<Peg> pegs
 ) implements ModuleInput {
-	public record Peg(String color, Integer sides) {
+	public record Peg(List<String> sideColors) {
 	}
 }

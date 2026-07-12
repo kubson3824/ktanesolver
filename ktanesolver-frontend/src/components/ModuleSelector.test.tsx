@@ -60,14 +60,18 @@ describe("ModuleSelector", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps the visible module order after selecting a module", () => {
+  function setCatalog(items: ModuleCatalogItem[]) {
     useCatalogStore.setState({
-      catalog,
+      catalog: items,
       loaded: true,
       loading: false,
       error: undefined,
       fetchCatalog: vi.fn().mockResolvedValue(undefined),
     });
+  }
+
+  it("keeps the visible module order after selecting a module", () => {
+    setCatalog(catalog);
 
     const onSelectionChange = vi.fn();
     const { container } = render(<ModuleSelector onSelectionChange={onSelectionChange} />);
@@ -79,5 +83,58 @@ describe("ModuleSelector", () => {
     });
 
     expect(getVisibleModuleNames(container)).toEqual(["Alpha", "Beta", "Gamma"]);
+  });
+
+  it("toggles selection on card click and adjusts count via stepper", () => {
+    setCatalog(catalog);
+
+    const onSelectionChange = vi.fn();
+    render(<ModuleSelector onSelectionChange={onSelectionChange} />);
+
+    act(() => {
+      fireEvent.click(screen.getByText("Gamma"));
+    });
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ GAMMA: 1 });
+    expect(screen.getByText("Selected: 1 module")).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByLabelText("Increase Gamma count"));
+    });
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ GAMMA: 2 });
+
+    // clicking the card body again deselects (count back to 0, tray hidden)
+    act(() => {
+      fireEvent.click(screen.getByText("Gamma"));
+    });
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ GAMMA: 0 });
+    expect(screen.queryByText(/^Selected:/)).not.toBeInTheDocument();
+  });
+
+  it("collapses the chip tray to 6 chips with a +N more toggle", () => {
+    const bigCatalog: ModuleCatalogItem[] = Array.from({ length: 8 }, (_, i) => ({
+      ...catalog[0],
+      id: `mod-${i}`,
+      name: `Module ${i}`,
+      type: `MOD_${i}`,
+    }));
+    setCatalog(bigCatalog);
+
+    render(<ModuleSelector onSelectionChange={vi.fn()} />);
+
+    bigCatalog.forEach((m) => {
+      act(() => {
+        fireEvent.click(screen.getByText(m.name));
+      });
+    });
+
+    expect(screen.getByText("Selected: 8 modules")).toBeInTheDocument();
+    expect(screen.getByText("+2 more")).toBeInTheDocument();
+    expect(screen.queryByText("Module 7 × 1")).not.toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByText("+2 more"));
+    });
+    expect(screen.getByText("Module 7 × 1")).toBeInTheDocument();
+    expect(screen.getByText("Show less")).toBeInTheDocument();
   });
 });

@@ -362,6 +362,29 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} microcontroller unknown`;
     }
 
+    case ModuleType.MURDER: {
+      const suspect = getString(raw.suspect)?.toLowerCase().replaceAll("_", " ") ?? "unknown";
+      const weapon = getString(raw.weapon)?.toLowerCase().replaceAll("_", " ") ?? "unknown";
+      const location = getString(raw.location)?.toLowerCase().replaceAll("_", " ") ?? "unknown";
+      return `!${TWITCH_PLACEHOLDER} accuse ${suspect}, ${weapon}, ${location}`;
+    }
+
+    case ModuleType.GAMEPAD: {
+      const sequence = getStringArray(raw.sequence);
+      return `!${TWITCH_PLACEHOLDER} press ${sequence?.join(" ").toLowerCase() ?? "unknown"}`;
+    }
+
+    case ModuleType.TIC_TAC_TOE:
+      return getString(raw.action) === "PASS"
+        ? `!${TWITCH_PLACEHOLDER} press pass`
+        : `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.number) ?? "unknown"}`;
+
+    case ModuleType.MONSPLODE_FIGHT:
+      return `!${TWITCH_PLACEHOLDER} press ${getString(raw.move)?.toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.FOLLOW_THE_LEADER:
+      return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutPlugs) ? raw.cutPlugs.join(" ") : "unknown"}`;
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;

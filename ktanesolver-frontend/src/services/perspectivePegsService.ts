@@ -1,22 +1,17 @@
 import { api, withErrorWrapping } from "../lib/api";
 
 export interface PerspectivePeg {
-  color: string;
-  sides: number;
+  sideColors: string[];
 }
 
 export interface PerspectivePegsInput {
   pegs: PerspectivePeg[];
-  candidateSequences: string[][];
 }
 
 export interface PerspectivePegsOutput {
   keyColor: string;
   currentSequence: string[];
   keySequence: string[];
-  viewNumber: number;
-  direction: string;
-  pressPositions: number[];
 }
 
 export interface PerspectivePegsSolveRequest {

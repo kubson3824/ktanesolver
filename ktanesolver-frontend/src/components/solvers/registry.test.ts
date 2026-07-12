@@ -28,6 +28,10 @@ describe("solver registry", () => {
     expect(first).toBe(second);
   });
 
+  it("returns null for module types without a solver UI", () => {
+    expect(getLazySolver("BACKEND_ONLY_MODULE")).toBeNull();
+  });
+
   it("registers needy placeholder solvers in the shared registry", () => {
     expect(getLazySolver(ModuleType.KNOBS)).not.toBeNull();
     expect(getLazySolver(ModuleType.VENTING_GAS)).not.toBeNull();

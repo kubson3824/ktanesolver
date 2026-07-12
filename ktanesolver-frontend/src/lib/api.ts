@@ -28,3 +28,17 @@ export const withErrorWrapping = async <T>(fn: () => Promise<T>) => {
     throw error;
   }
 };
+
+export const solveModule = async <TInput, TResponse>(
+  roundId: string,
+  bombId: string,
+  moduleId: string,
+  input: TInput,
+): Promise<TResponse> =>
+  withErrorWrapping(async () => {
+    const response = await api.post<TResponse>(
+      `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
+      { input },
+    );
+    return response.data;
+  });

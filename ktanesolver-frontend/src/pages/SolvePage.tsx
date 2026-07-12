@@ -31,7 +31,7 @@ function SolverContent({
   bomb,
   onBack,
 }: {
-  moduleType?: ModuleType;
+  moduleType?: string;
   bomb: BombEntity | null | undefined;
   onBack: () => void;
 }) {

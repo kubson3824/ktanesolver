@@ -71,7 +71,7 @@ public class ButtonSolver extends AbstractModuleSolver<ButtonInput, ButtonOutput
 
 	private SolveResult<ButtonOutput> hold() {
 		ButtonOutput output = new ButtonOutput(true, "Hold the button", null);
-		return success(output);
+		return success(output, false);
 	}
 
 	private SolveResult<ButtonOutput> solved() {

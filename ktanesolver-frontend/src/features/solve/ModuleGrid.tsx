@@ -23,7 +23,7 @@ export default function ModuleGrid({
   return (
     <div>
       {/* Bomb selector tabs */}
-      <div className="flex gap-1.5 mb-4 flex-wrap">
+      <div className="flex gap-2 mb-4 flex-wrap">
         {bombs.map((bomb, index) => {
           const isActive = currentBomb?.id === bomb.id;
           const serial = bomb.serialNumber ? bomb.serialNumber.slice(0, 6) : "???";
@@ -33,21 +33,21 @@ export default function ModuleGrid({
               type="button"
               onClick={() => onSelectBomb(bomb.id)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-sm font-medium font-mono border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "h-[34px] px-3.5 rounded-lg text-[13px] font-medium font-mono border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background text-foreground border-border hover:bg-muted"
               )}
             >
               Bomb {index + 1}{" "}
-              <span className="text-xs opacity-70">{serial}</span>
+              <span className="text-[11px] opacity-70">{serial}</span>
             </button>
           );
         })}
       </div>
 
       {/* Module grid */}
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5">
         {regularModules.length === 0 && (
           <div className="col-span-full text-center py-12 px-4">
             <p className="text-sm text-muted-foreground">No regular modules.</p>
@@ -70,7 +70,7 @@ export default function ModuleGrid({
               aria-busy={isOpening}
               className={cn(
                 "rounded-lg border bg-card transition-all overflow-hidden cursor-pointer hover:shadow-md",
-                module.solved && "border-emerald-200 dark:border-emerald-900 opacity-60",
+                module.solved && "border-[#A7F3D0] opacity-60",
                 isOpening && "border-accent/50 ring-2 ring-accent/30 opacity-80",
                 !isOpening && !module.solved && "border-border hover:border-accent/40"
               )}
@@ -86,12 +86,12 @@ export default function ModuleGrid({
               {/* Status top bar */}
               <div
                 className={cn(
-                  "h-0.5 w-full",
-                  module.solved ? "bg-emerald-500" : "bg-transparent"
+                  "h-[3px] w-full",
+                  module.solved ? "bg-[#2FA876]" : "bg-transparent"
                 )}
               />
 
-              <div className="p-2">
+              <div className="p-2.5">
                 <p className="text-xs font-semibold text-foreground text-center truncate">
                   {name}
                 </p>

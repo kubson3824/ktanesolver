@@ -120,7 +120,9 @@ export function useSolverModulePersistence<TState, TSolution = unknown>(
       const rawSolution = currentModule.solution as unknown;
       const parsed = extractSolutionRef.current
         ? extractSolutionRef.current(rawSolution)
-        : (rawSolution as TSolution);
+        : rawSolution && typeof rawSolution === "object" && !Array.isArray(rawSolution) && Object.keys(rawSolution).length === 0
+          ? null
+          : (rawSolution as TSolution);
 
       debugModuleSync("solverRestore:solution", {
         moduleId: currentModule.id,

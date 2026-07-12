@@ -50,7 +50,7 @@ const COLORS: readonly ColorSpec[] = [
   {
     color: "BLACK",
     label: "Black",
-    swatch: "bg-neutral-900",
+    swatch: "bg-neutral-900 border border-neutral-500",
     wire: "bg-gradient-to-r from-neutral-900 to-neutral-700",
     onColor: "text-white",
   },

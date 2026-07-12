@@ -54,6 +54,15 @@ export enum ModuleType {
   PROBING = "PROBING",
   ALPHABET = "ALPHABET",
   MICROCONTROLLER = "MICROCONTROLLER",
+  MURDER = "MURDER",
+  GAMEPAD = "GAMEPAD",
+  TIC_TAC_TOE = "TIC_TAC_TOE",
+  MONSPLODE_FIGHT = "MONSPLODE_FIGHT",
+  SHAPE_SHIFT = "SHAPE_SHIFT",
+  FOLLOW_THE_LEADER = "FOLLOW_THE_LEADER",
+  FRIENDSHIP = "FRIENDSHIP",
+  THE_BULB = "THE_BULB",
+  BLIND_ALLEY = "BLIND_ALLEY",
 }
 
 export enum PortType {
@@ -82,7 +91,7 @@ export type JsonRecord = Record<string, unknown>;
 
 export interface ModuleEntity {
   id: string;
-  type: ModuleType;
+  type: string;
   solved: boolean;
   state: JsonRecord;
   solution: JsonRecord;
@@ -114,6 +123,15 @@ export interface RoundEntity {
   roundState: JsonRecord;
 }
 
+export interface BombSummary {
+  serialNumber?: string;
+  aaBatteryCount: number;
+  dBatteryCount: number;
+  indicators: Record<string, boolean>;
+  ports: PortType[];
+  moduleTypes: string[];
+}
+
 export interface RoundSummary {
   id: string;
   status: RoundStatus;
@@ -121,6 +139,7 @@ export interface RoundSummary {
   version?: number;
   bombCount: number;
   moduleCount: number;
+  bombs: BombSummary[];
 }
 
 export interface CreateBombRequest {
@@ -129,7 +148,7 @@ export interface CreateBombRequest {
   dBatteryCount: number;
   indicators: Record<string, boolean>;
   portPlates: PortType[][];
-  modules?: Partial<Record<ModuleType, number>>;
+  modules?: Record<string, number>;
 }
 
 export interface BombConfig {
@@ -144,12 +163,12 @@ export interface ModuleCatalogItem {
   id: string;
   name: string;
   category: ModuleCategory;
-  type: string;  // Changed from ModuleType to string
+  type: string;
   tags: string[];
   description: string;
   hasInput: boolean;
   hasOutput: boolean;
-  checkFirst?: boolean;  // Show in "check these first" strip on Solve page
+  checkFirst?: boolean;
 }
 
 export enum ModuleCategory {
@@ -160,7 +179,7 @@ export enum ModuleCategory {
 }
 
 export interface AddModulesRequest {
-  type: ModuleType;
+  type: string;
   count: number;
 }
 

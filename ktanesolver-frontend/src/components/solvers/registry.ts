@@ -9,10 +9,10 @@ type SolverRegistryEntry = {
 };
 
 /**
- * Registry mapping every ModuleType to its lazy-loaded solver component.
- * Adding a new solver only requires adding one entry here.
+ * Registry mapping module types with a frontend UI to lazy-loaded solver components.
+ * Backend-only modules still appear in the catalog and fall back to "Coming soon".
  */
-export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = {
+export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.WIRES]: { load: () => import("./WireSolver") },
   [ModuleType.BUTTON]: { load: () => import("./ButtonSolver") },
   [ModuleType.KEYPADS]: { load: () => import("./KeypadsSolver") },
@@ -65,22 +65,30 @@ export const solverRegistry: Partial<Record<ModuleType, SolverRegistryEntry>> = 
   [ModuleType.PROBING]: { load: () => import("./ProbingSolver") },
   [ModuleType.ALPHABET]: { load: () => import("./AlphabetSolver") },
   [ModuleType.MICROCONTROLLER]: { load: () => import("./MicrocontrollerSolver") },
+  [ModuleType.MURDER]: { load: () => import("./MurderSolver") },
+  [ModuleType.GAMEPAD]: { load: () => import("./GamepadSolver") },
+  [ModuleType.TIC_TAC_TOE]: { load: () => import("./TicTacToeSolver") },
+  [ModuleType.MONSPLODE_FIGHT]: { load: () => import("./MonsplodeFightSolver") },
+  [ModuleType.SHAPE_SHIFT]: { load: () => import("./ShapeShiftSolver") },
+  [ModuleType.FOLLOW_THE_LEADER]: { load: () => import("./FollowTheLeaderSolver") },
+  [ModuleType.FRIENDSHIP]: { load: () => import("./FriendshipSolver") },
+  [ModuleType.THE_BULB]: { load: () => import("./TheBulbSolver") },
+  [ModuleType.BLIND_ALLEY]: { load: () => import("./BlindAlleySolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },
 };
 
 /**
- * Stable map of pre-built React.lazy() references - one per module type.
+ * Stable map of pre-built React.lazy() references for registered solver UIs.
  * Built once at module load time so the same moduleType always returns the
  * identical lazy() reference, preventing unnecessary remounts.
  */
 export const lazySolverRegistry = Object.fromEntries(
-  Object.entries(solverRegistry).map(([moduleType, entry]) => [
-    moduleType,
-    lazy(entry.load),
-  ]),
-) as Partial<Record<ModuleType, LazyExoticComponent<ComponentType<SolverProps>>>>;
+  Object.entries(solverRegistry).flatMap(([moduleType, entry]) =>
+    entry ? [[moduleType, lazy(entry.load)] as const] : [],
+  ),
+) as Partial<Record<string, LazyExoticComponent<ComponentType<SolverProps>>>>;
 
 function isNeedyCategory(category: ModuleCategory): boolean {
   return (
@@ -103,7 +111,7 @@ export function isNeedyModuleType(
     return isNeedyCategory(catalogEntry.category);
   }
 
-  const registryEntry = solverRegistry[moduleType as ModuleType];
+  const registryEntry = solverRegistry[moduleType];
   return Boolean(registryEntry?.isNeedy);
 }
 
@@ -111,6 +119,7 @@ export function isNeedyModuleType(
  * Returns a stable React.lazy component for the given module type, or null if
  * no solver is registered. Always returns the same reference for the same type.
  */
-export function getLazySolver(moduleType: ModuleType) {
+export function getLazySolver(moduleType?: string) {
+  if (!moduleType) return null;
   return lazySolverRegistry[moduleType] ?? null;
 }

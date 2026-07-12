@@ -1,4 +1,4 @@
-import { api, withErrorWrapping } from "../lib/api";
+import { solveModule } from "../lib/api";
 
 export interface AlphabetSolveRequest {
     input: {
@@ -16,13 +16,11 @@ export const solveAlphabet = async (
     roundId: string,
     bombId: string,
     moduleId: string,
-    input: AlphabetSolveRequest
-): Promise<AlphabetSolveResponse> => {
-    return withErrorWrapping(async () => {
-        const response = await api.post<AlphabetSolveResponse>(
-            `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-            input
-        );
-        return response.data;
-    });
-};
+    input: AlphabetSolveRequest["input"]
+): Promise<AlphabetSolveResponse> =>
+    solveModule<AlphabetSolveRequest["input"], AlphabetSolveResponse>(
+        roundId,
+        bombId,
+        moduleId,
+        input,
+    );

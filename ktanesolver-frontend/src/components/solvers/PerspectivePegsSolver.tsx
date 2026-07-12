@@ -1,8 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRoundStore } from "../../store/useRoundStore";
 import type { BombEntity } from "../../types";
-import { ModuleType } from "../../types";
-import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   solvePerspectivePegs,
   type PerspectivePeg,
@@ -17,12 +15,10 @@ import {
   SolverInstructions,
   SolverControls,
   ErrorAlert,
-  TwitchCommandDisplay,
   SolverResult,
-  ColorSwatchPicker,
   type ColorSwatchOption,
 } from "../common";
-import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
 interface PerspectivePegsSolverProps {
   bomb: BombEntity | null | undefined;
@@ -40,11 +36,33 @@ const COLOR_OPTIONS: ReadonlyArray<ColorSwatchOption<PegColor>> = [
 
 const COLOR_VALUES = COLOR_OPTIONS.map((option) => option.value);
 
-const defaultPegs = (): PerspectivePeg[] =>
-  Array.from({ length: 5 }, () => ({ color: "", sides: 3 }));
+const SIDE_LABELS = ["Top", "Upper right", "Lower right", "Lower left", "Upper left"] as const;
+// Pentagon (flat-top) sliced into 5 triangles from the center to each edge.
+// Each side triangle: center (50,50) + the two vertices forming that edge.
+const SIDE_POLYGONS = [
+  "50,50 23.6,13.6 76.4,13.6", // Top
+  "50,50 76.4,13.6 92.8,63.9", // Upper right
+  "50,50 92.8,63.9 50,95",     // Lower right
+  "50,50 50,95 7.2,63.9",      // Lower left
+  "50,50 7.2,63.9 23.6,13.6",  // Upper left
+] as const;
+const PEG_LAYOUT = [
+  { label: "Top", short: "TOP", left: "50%", top: "18%" },
+  { label: "Upper right", short: "UR", left: "80%", top: "42%" },
+  { label: "Lower right", short: "LR", left: "68%", top: "80%" },
+  { label: "Lower left", short: "LL", left: "32%", top: "80%" },
+  { label: "Upper left", short: "UL", left: "20%", top: "42%" },
+] as const;
+const COLOR_HEX: Record<PegColor, string> = {
+  Red: "#ef4444",
+  Yellow: "#facc15",
+  Green: "#22c55e",
+  Blue: "#3b82f6",
+  Purple: "#a855f7",
+};
 
-const defaultCandidates = (): string[][] =>
-  Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => ""));
+const defaultPegs = (): PerspectivePeg[] =>
+  Array.from({ length: 5 }, () => ({ sideColors: Array.from({ length: 5 }, () => "") }));
 
 function isPegColor(value: string): value is PegColor {
   return COLOR_VALUES.includes(value as PegColor);
@@ -53,22 +71,21 @@ function isPegColor(value: string): value is PegColor {
 function normalizePegs(value: PerspectivePeg[] | undefined): PerspectivePeg[] | null {
   if (!Array.isArray(value) || value.length !== 5) return null;
   return value.map((peg) => ({
-    color: typeof peg.color === "string" ? peg.color : "",
-    sides: Number(peg.sides) || 0,
+    sideColors: normalizeSideColors(peg),
   }));
 }
 
-function normalizeCandidates(value: string[][] | undefined): string[][] | null {
-  if (!Array.isArray(value) || value.length !== 5) return null;
-  if (!value.every((row) => Array.isArray(row) && row.length === 5)) return null;
-  return value.map((row) => row.map((color) => typeof color === "string" ? color : ""));
+function normalizeSideColors(peg: PerspectivePeg | undefined): string[] {
+  if (Array.isArray(peg?.sideColors) && peg.sideColors.length === 5) {
+    return peg.sideColors.map((color) => typeof color === "string" ? color : "");
+  }
+  return Array.from({ length: 5 }, () => "");
 }
 
 export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverProps) {
   const [pegs, setPegs] = useState<PerspectivePeg[]>(() => defaultPegs());
-  const [candidateSequences, setCandidateSequences] = useState<string[][]>(() => defaultCandidates());
+  const [selectedColor, setSelectedColor] = useState<PegColor>("Red");
   const [result, setResult] = useState<PerspectivePegsOutput | null>(null);
-  const [twitchCommand, setTwitchCommand] = useState("");
 
   const {
     isLoading,
@@ -87,30 +104,23 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
   const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
   const moduleState = useMemo(
-    () => ({ pegs, candidateSequences, result, twitchCommand }),
-    [pegs, candidateSequences, result, twitchCommand],
+    () => ({ pegs, result }),
+    [pegs, result],
   );
 
   const onRestoreState = useCallback((state: {
     pegs?: PerspectivePeg[];
-    candidateSequences?: string[][];
     result?: PerspectivePegsOutput | null;
-    twitchCommand?: string;
     input?: PerspectivePegsInput;
   }) => {
     const restoredPegs = normalizePegs(state.pegs) ?? normalizePegs(state.input?.pegs);
-    const restoredCandidates = normalizeCandidates(state.candidateSequences)
-      ?? normalizeCandidates(state.input?.candidateSequences);
     if (restoredPegs) setPegs(restoredPegs);
-    if (restoredCandidates) setCandidateSequences(restoredCandidates);
     if (state.result !== undefined) setResult(state.result);
-    if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
   }, []);
 
   const onRestoreSolution = useCallback((solution: PerspectivePegsOutput) => {
-    if (!solution?.pressPositions) return;
+    if (!solution?.keySequence?.length) return;
     setResult(solution);
-    setTwitchCommand(generateTwitchCommand({ moduleType: ModuleType.PERSPECTIVE_PEGS, result: solution }));
   }, []);
 
   useSolverModulePersistence<
@@ -122,11 +132,11 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
     onRestoreSolution,
     extractSolution: (raw) => {
       if (raw == null || typeof raw !== "object") return null;
-      const candidate = raw as { output?: unknown; pressPositions?: unknown };
+      const candidate = raw as { output?: unknown; keySequence?: unknown };
       const output = candidate.output && typeof candidate.output === "object"
         ? candidate.output as PerspectivePegsOutput
         : candidate as PerspectivePegsOutput;
-      return Array.isArray(output.pressPositions) ? output : null;
+      return Array.isArray(output.keySequence) ? output : null;
     },
     inferSolved: (_sol, mod) => Boolean((mod as { solved?: boolean } | undefined)?.solved),
     currentModule,
@@ -135,36 +145,27 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
 
   const clearStaleSolution = useCallback(() => {
     setResult(null);
-    setTwitchCommand("");
     clearError();
   }, [clearError]);
 
-  const updatePegColor = (index: number, color: PegColor | null) => {
-    setPegs((prev) => prev.map((peg, i) => i === index ? { ...peg, color: color ?? "" } : peg));
-    clearStaleSolution();
-  };
-
-  const updatePegSides = (index: number, sides: number) => {
-    setPegs((prev) => prev.map((peg, i) => i === index ? { ...peg, sides } : peg));
-    clearStaleSolution();
-  };
-
-  const updateCandidateColor = (viewIndex: number, colorIndex: number, color: PegColor | null) => {
-    setCandidateSequences((prev) => prev.map((row, r) =>
-      r === viewIndex ? row.map((value, c) => c === colorIndex ? color ?? "" : value) : row
-    ));
+  const updatePegSideColor = (pegIndex: number, sideIndex: number, color: PegColor) => {
+    if (isLoading || isSolved) return;
+    setPegs((prev) => prev.map((peg, i) => {
+      if (i !== pegIndex) return peg;
+      const sideColors = normalizeSideColors(peg);
+      sideColors[sideIndex] = color;
+      return { ...peg, sideColors };
+    }));
     clearStaleSolution();
   };
 
   const buildInput = useCallback((): PerspectivePegsInput => ({
     pegs,
-    candidateSequences,
-  }), [pegs, candidateSequences]);
+  }), [pegs]);
 
   const canSolve = useMemo(() => {
-    return pegs.every((peg) => isPegColor(peg.color) && Number(peg.sides) > 0)
-      && candidateSequences.every((row) => row.length === 5 && row.every(isPegColor));
-  }, [pegs, candidateSequences]);
+    return pegs.every((peg) => normalizeSideColors(peg).every(isPegColor));
+  }, [pegs]);
 
   const solveModule = useCallback(async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -172,7 +173,7 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
       return;
     }
     if (!canSolve) {
-      setError("Fill all peg colors, side counts, and candidate view colors.");
+      setError("Fill all peg side colors.");
       return;
     }
 
@@ -182,16 +183,14 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
     try {
       const response = await solvePerspectivePegs(round.id, bomb.id, currentModule.id, { input: buildInput() });
       const output = response.output;
-      const command = generateTwitchCommand({ moduleType: ModuleType.PERSPECTIVE_PEGS, result: output });
 
       setResult(output);
-      setTwitchCommand(command);
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
       updateModuleAfterSolve(
         bomb.id,
         currentModule.id,
-        { pegs, candidateSequences, result: output, twitchCommand: command },
+        { pegs, result: output },
         output,
         true,
       );
@@ -200,73 +199,106 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
     } finally {
       setIsLoading(false);
     }
-  }, [round?.id, bomb?.id, currentModule?.id, canSolve, clearError, setIsLoading, setError, setIsSolved, markModuleSolved, updateModuleAfterSolve, buildInput, pegs, candidateSequences]);
+  }, [round?.id, bomb?.id, currentModule?.id, canSolve, clearError, setIsLoading, setError, setIsSolved, markModuleSolved, updateModuleAfterSolve, buildInput, pegs]);
 
   const reset = useCallback(() => {
     setPegs(defaultPegs());
-    setCandidateSequences(defaultCandidates());
     setResult(null);
-    setTwitchCommand("");
     resetSolverState();
   }, [resetSolverState]);
 
   return (
     <SolverLayout>
       <SolverSection
-        title="Clockwise pegs"
-        description="Enter each peg's outer facing color and number of sides, starting anywhere and moving clockwise."
+        title="Fixed pegs"
+        description="Enter the five side colors for each peg in the fixed module positions."
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
-          {pegs.map((peg, index) => (
-            <div key={index} className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-              <p className="text-xs font-medium text-muted-foreground">Peg {index + 1}</p>
-              <ColorSwatchPicker
-                value={isPegColor(peg.color) ? peg.color : null}
-                options={COLOR_OPTIONS}
-                onChange={(color) => updatePegColor(index, color)}
-                disabled={isLoading || isSolved}
-                size="sm"
-                ariaLabel={`Peg ${index + 1} color`}
-              />
-              <Input
-                type="number"
-                min={1}
-                value={peg.sides || ""}
-                onChange={(event) => updatePegSides(index, Number(event.target.value) || 0)}
-                disabled={isLoading || isSolved}
-                aria-label={`Peg ${index + 1} sides`}
-                className="h-8"
-              />
-            </div>
+        <div className="relative z-10 mb-6 flex flex-wrap items-center justify-center gap-2" role="radiogroup" aria-label="Paint color">
+          {COLOR_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={selectedColor === option.value}
+              aria-label={option.label}
+              title={option.label}
+              disabled={isLoading || isSolved}
+              onClick={() => setSelectedColor(option.value)}
+              className={cn(
+                "h-8 w-8 rounded-full border border-border text-[10px] font-semibold text-white shadow-sm transition-all",
+                selectedColor === option.value
+                  ? "ring-2 ring-ring ring-offset-2 ring-offset-card"
+                  : "opacity-75 hover:opacity-100",
+                option.value === "Yellow" && "text-slate-950",
+                (isLoading || isSolved) && "cursor-not-allowed opacity-60",
+              )}
+              style={{ backgroundColor: COLOR_HEX[option.value] }}
+            >
+              {option.value[0]}
+            </button>
           ))}
         </div>
-      </SolverSection>
 
-      <SolverSection
-        title="Candidate views"
-        description="For each perspective, enter the five colors facing you from left to right."
-      >
-        <div className="space-y-3">
-          {candidateSequences.map((row, viewIndex) => (
-            <div key={viewIndex} className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-              <p className="text-xs font-medium text-muted-foreground">View {viewIndex + 1}</p>
-              <div className="grid grid-cols-5 gap-2">
-                {row.map((color, colorIndex) => (
-                  <ColorSwatchPicker
-                    key={colorIndex}
-                    value={isPegColor(color) ? color : null}
-                    options={COLOR_OPTIONS}
-                    onChange={(nextColor) => updateCandidateColor(viewIndex, colorIndex, nextColor)}
-                    disabled={isLoading || isSolved}
-                    clearable={false}
-                    size="sm"
-                    ariaLabel={`View ${viewIndex + 1} color ${colorIndex + 1}`}
-                    className="justify-center"
+        <div className="relative mx-auto aspect-square w-full max-w-[560px] overflow-hidden rounded-md border border-border bg-muted/10">
+          {pegs.map((peg, pegIndex) => {
+            const layout = PEG_LAYOUT[pegIndex];
+            const sideColors = normalizeSideColors(peg);
+            return (
+              <div
+                key={layout.label}
+                className="absolute h-[clamp(4.5rem,14vw,6.5rem)] w-[clamp(4.5rem,14vw,6.5rem)] -translate-x-1/2 -translate-y-1/2"
+                style={{ left: layout.left, top: layout.top }}
+              >
+                <svg viewBox="0 0 100 100" className="h-full w-full drop-shadow-sm" aria-label={`${layout.label} peg`}>
+                  {sideColors.map((color, sideIndex) => {
+                    const fill = isPegColor(color) ? COLOR_HEX[color] : "#f8fafc";
+                    return (
+                      <polygon
+                        key={sideIndex}
+                        points={SIDE_POLYGONS[sideIndex]}
+                        fill={fill}
+                        stroke="#0f172a"
+                        strokeWidth="1.5"
+                        role="button"
+                        tabIndex={isLoading || isSolved ? -1 : 0}
+                        aria-label={`${layout.label} peg ${SIDE_LABELS[sideIndex]} side`}
+                        onClick={() => updatePegSideColor(pegIndex, sideIndex, selectedColor)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            updatePegSideColor(pegIndex, sideIndex, selectedColor);
+                          }
+                        }}
+                        className={cn(
+                          "transition-opacity",
+                          isLoading || isSolved ? "cursor-not-allowed opacity-80" : "cursor-pointer hover:opacity-80",
+                        )}
+                      />
+                    );
+                  })}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="14"
+                    fill="hsl(var(--card))"
+                    stroke="#0f172a"
+                    strokeWidth="1.5"
+                    pointerEvents="none"
                   />
-                ))}
+                  <text
+                    x="50"
+                    y="51"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-foreground text-[11px] font-semibold"
+                    pointerEvents="none"
+                  >
+                    {layout.short}
+                  </text>
+                </svg>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SolverSection>
 
@@ -284,19 +316,16 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
       {result && (
         <SolverResult
           variant="success"
-          title="Press sequence"
-          description={`View: ${result.viewNumber}
-Positions: ${result.pressPositions.join(", ")} (${result.direction.toLowerCase()})
-Key color: ${result.keyColor}
+          title="Key sequence"
+          description={`Key color: ${result.keyColor}
 Current sequence: ${result.currentSequence.join(" ")}
-Key sequence: ${result.keySequence.join(" ")}`}
+Key sequence: ${result.keySequence.join(" ")}
+Find this three-color sequence in one visible line and press those three pegs manually.`}
         />
       )}
 
-      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
-
       <SolverInstructions>
-        First find the key color from the serial number, then the solver applies the battery-column permutations and locates the resulting three-color sequence in one candidate view.
+        The solver determines the key color and transformed sequence from the fixed peg positions. Use the returned three-color key sequence to find the matching visible line on the module and press those pegs yourself.
       </SolverInstructions>
     </SolverLayout>
   );

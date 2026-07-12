@@ -1,6 +1,7 @@
 import { type BombEntity, BombStatus } from "../../types";
-import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import PortIcon from "../../components/PortIcon";
+import { portLabel } from "../../lib/ports";
 import { Trash2, Pencil } from "lucide-react";
 import { cn } from "../../lib/cn";
 
@@ -20,14 +21,12 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
 
     return (
         <div
-            className={cn(
-                "rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden animate-fade-in",
-                isActive && "border-l-4 border-l-emerald-500"
-            )}
+            className="rounded-lg border border-border bg-card text-card-foreground shadow-sm overflow-hidden animate-fade-in"
             style={{ animationDelay: `${animationDelay}ms`, animationFillMode: "backwards" }}
         >
+            <div className="h-[3px]" style={{ background: isActive ? "#2FA876" : "transparent" }} />
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/40">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
                 <span className="font-semibold text-sm text-foreground">
                     Bomb {index + 1}
                 </span>
@@ -100,14 +99,24 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
 
                 <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Port plates</p>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                         {bomb.portPlates.length === 0 ? (
                             <span className="text-xs text-muted-foreground">—</span>
                         ) : (
                             bomb.portPlates.map((plate, plateIndex) => (
-                                <Badge key={`${bomb.id}-plate-${plateIndex}`} variant="outline" className="text-xs font-mono">
-                                    {plate.ports?.length ? plate.ports.join(", ") : "Empty"}
-                                </Badge>
+                                <span
+                                    key={`${bomb.id}-plate-${plateIndex}`}
+                                    className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/60 px-2 py-1 min-h-[28px]"
+                                    title={plate.ports?.length ? plate.ports.map(portLabel).join(", ") : "Empty plate"}
+                                >
+                                    {plate.ports?.length ? (
+                                        plate.ports.map((port, portIndex) => (
+                                            <PortIcon key={`${port}-${portIndex}`} port={port} className="h-4 w-auto" />
+                                        ))
+                                    ) : (
+                                        <span className="text-[11px] text-muted-foreground italic">Empty</span>
+                                    )}
+                                </span>
                             ))
                         )}
                     </div>
@@ -115,12 +124,19 @@ export default function BombCard({ bomb, index, onEditEdgework, onAddModules, on
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/40">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted">
                 <div className="flex items-center gap-2">
-                    <Badge variant={hasModules ? "info" : "secondary"} className="text-xs">
+                    <span
+                        className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold",
+                            !hasModules && "bg-muted text-muted-foreground"
+                        )}
+                        style={hasModules
+                            ? { background: "rgba(90,150,220,0.18)", color: "#3D6FB0" }
+                            : undefined}
+                    >
                         {moduleCount} module{moduleCount !== 1 ? "s" : ""}
-                    </Badge>
-                    {isActive && <Badge variant="success" className="text-xs">Active</Badge>}
+                    </span>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => onAddModules(bomb)}>
                     {hasModules ? "Configure Modules" : "Add Modules"}

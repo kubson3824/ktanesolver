@@ -6,7 +6,6 @@ import {
     type BombEntity,
     type CreateBombRequest,
     type ModuleEntity,
-    ModuleType,
     type RoundEntity,
     type RoundSummary,
 
@@ -21,7 +20,7 @@ type RoundStoreState = {
     moduleNumbers: Record<string, number>;
     currentModule?: ModuleEntity & {
         bomb: BombEntity;
-        moduleType: ModuleType;
+        moduleType: string;
     };
     manualUrl?: string;
     loading: boolean;
@@ -49,7 +48,7 @@ type RoundStoreActions = {
     removeModule: (bombId: string, moduleId: string) => Promise<void>;
     startRound: () => Promise<RoundEntity>;
     selectBomb: (bombId: string) => void;
-    selectModule: (bombId: string, moduleType: ModuleType) => void;
+    selectModule: (bombId: string, moduleType: string) => void;
     selectModuleById: (bombId: string, moduleId: string) => void;
     clearModule: () => void;
     setManualUrl: (url: string) => void;
@@ -67,7 +66,7 @@ type RoundStoreActions = {
     addStrike: (bombId: string) => Promise<BombEntity>;
 };
 
-const attachManualUrl = (moduleType: ModuleType): string | undefined => {
+const attachManualUrl = (moduleType: string): string | undefined => {
     const { catalog } = useCatalogStore.getState();
     const item = catalog.find((m) => m.type === moduleType);
     if (!item) {
@@ -164,14 +163,13 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         : undefined;
 
                     let nextModule:
-                        | (ModuleEntity & { bomb: BombEntity; moduleType: ModuleType })
+                        | (ModuleEntity & { bomb: BombEntity; moduleType: string })
                         | undefined;
 
                     if (nextBomb && prevModuleId) {
                         const module = nextBomb.modules.find((m) => m.id === prevModuleId);
                         if (module) {
-                            const moduleType = module.type as ModuleType;
-                            nextModule = { ...module, bomb: nextBomb, moduleType };
+                            nextModule = { ...module, bomb: nextBomb, moduleType: module.type };
                         }
                     }
 
@@ -182,8 +180,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                             const bombInRound = round.bombs.find((b) => b.id === currentNow.bomb?.id);
                             const moduleInBomb = bombInRound?.modules.find((m) => m.id === currentNow.id);
                             if (bombInRound && moduleInBomb) {
-                                const moduleType = moduleInBomb.type as ModuleType;
-                                nextModule = { ...moduleInBomb, bomb: bombInRound, moduleType };
+                                nextModule = { ...moduleInBomb, bomb: bombInRound, moduleType: moduleInBomb.type };
                                 nextBomb = bombInRound;
                             }
                         }
@@ -525,7 +522,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                     return;
                 }
 
-                const moduleType = module.type as ModuleType;
+                const moduleType = module.type;
 
                 debugModuleSync("selectModuleById:set", {
                     bombId,

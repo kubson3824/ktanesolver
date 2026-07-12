@@ -23,7 +23,7 @@ import ktanesolver.module.modded.regular.perspectivepegs.PerspectivePegsInput.Pe
 	id = "perspective-pegs",
 	name = "Perspective Pegs",
 	category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-	description = "Permute the clockwise peg colors, then locate the resulting key sequence in one viewed color line.",
+	description = "Permute the clockwise peg colors to determine the key sequence for manual matching.",
 	tags = { "pegs", "colors", "sequence", "perspective", "modded" },
 	hasInput = true,
 	hasOutput = true
@@ -95,39 +95,29 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 			if (peg == null) {
 				return failure("Peg " + (i + 1) + " is missing.");
 			}
-			Color color = parseColor(peg.color(), "peg " + (i + 1));
-			Integer sides = peg.sides();
-			if (sides == null || sides < 1) {
-				return failure("Peg " + (i + 1) + " must have a positive side count.");
-			}
-			if (color == keyColor && sides >= 3) {
+			List<Color> sideColors = parsePegSideColors(peg, i);
+			Color outerColor = sideColors.get(PegPosition.values()[i].sideIndex);
+			long keyColorSideCount = sideColors.stream().filter(color -> color == keyColor).count();
+			if (keyColorSideCount >= 3) {
 				if (startIndex >= 0) {
-					return failure("More than one peg has the key color and at least 3 sides.");
+					return failure("More than one peg has at least three sides in the key color.");
 				}
 				startIndex = i;
 			}
-			pegColors.add(color);
+			pegColors.add(outerColor);
 		}
 		if (startIndex < 0) {
-			return failure("No peg has the key color and at least 3 sides.");
+			return failure("No peg has at least three sides in the key color.");
 		}
 
 		List<Color> initialSequence = readClockwiseFrom(pegColors, startIndex);
 		List<Color> currentSequence = applyRules(initialSequence, getRules(bomb));
 		List<Color> keySequence = currentSequence.subList(0, 3);
 
-		Match match = findMatch(input.candidateSequences(), keySequence);
-		if (match == null) {
-			return failure("The key sequence must appear exactly once across the five candidate views.");
-		}
-
 		PerspectivePegsOutput output = new PerspectivePegsOutput(
 			keyColor.displayName,
 			toDisplayNames(currentSequence),
-			toDisplayNames(keySequence),
-			match.viewNumber,
-			match.direction,
-			match.pressPositions
+			toDisplayNames(keySequence)
 		);
 		storeState(module, "input", input);
 		storeState(module, "keyColor", output.keyColor());
@@ -179,6 +169,18 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 		return result;
 	}
 
+	private static List<Color> parsePegSideColors(Peg peg, int pegIndex) {
+		if (peg.sideColors() == null || peg.sideColors().size() != 5) {
+			throw new IllegalArgumentException("Peg " + (pegIndex + 1) + " must have exactly 5 side colors.");
+		}
+
+		List<Color> colors = new ArrayList<>();
+		for (int side = 0; side < peg.sideColors().size(); side++) {
+			colors.add(parseColor(peg.sideColors().get(side), "peg " + (pegIndex + 1) + " " + PegSide.values()[side].displayName + " side"));
+		}
+		return colors;
+	}
+
 	private static List<Color> applyRules(List<Color> original, List<Rule> rules) {
 		List<Color> current = new ArrayList<>(original);
 		for (Rule rule : rules) {
@@ -194,46 +196,6 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 			}
 		}
 		return current;
-	}
-
-	private Match findMatch(List<List<String>> rawCandidates, List<Color> keySequence) {
-		if (rawCandidates == null || rawCandidates.size() != 5) {
-			return null;
-		}
-
-		List<Color> reversedKey = reversed(keySequence);
-		List<Match> matches = new ArrayList<>();
-		for (int view = 0; view < rawCandidates.size(); view++) {
-			List<String> rawCandidate = rawCandidates.get(view);
-			if (rawCandidate == null || rawCandidate.size() != 5) {
-				return null;
-			}
-			List<Color> candidate = new ArrayList<>();
-			for (int i = 0; i < rawCandidate.size(); i++) {
-				candidate.add(parseColor(rawCandidate.get(i), "view " + (view + 1) + " color " + (i + 1)));
-			}
-
-			for (int index = 0; index <= 2; index++) {
-				List<Color> window = candidate.subList(index, index + 3);
-				boolean forward = window.equals(keySequence);
-				boolean reverse = !keySequence.equals(reversedKey) && window.equals(reversedKey);
-				if (forward || reverse) {
-					matches.add(toMatch(view, index, forward ? "FORWARD" : "REVERSE"));
-				}
-			}
-		}
-
-		return matches.size() == 1 ? matches.get(0) : null;
-	}
-
-	private static Match toMatch(int zeroBasedView, int zeroBasedIndex, String direction) {
-		List<Integer> positions;
-		if ("REVERSE".equals(direction)) {
-			positions = List.of(zeroBasedIndex + 3, zeroBasedIndex + 2, zeroBasedIndex + 1);
-		} else {
-			positions = List.of(zeroBasedIndex + 1, zeroBasedIndex + 2, zeroBasedIndex + 3);
-		}
-		return new Match(zeroBasedView + 1, direction, positions);
 	}
 
 	private static int firstIndexOf(List<Color> sequence, List<Color> target) {
@@ -309,9 +271,40 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 		}
 	}
 
-	private record Rule(List<Color> prime, List<Color> alternate) {
+	private enum PegSide {
+		TOP("top"),
+		UPPER_RIGHT("upper-right"),
+		LOWER_RIGHT("lower-right"),
+		LOWER_LEFT("lower-left"),
+		UPPER_LEFT("upper-left");
+
+		private final String displayName;
+
+		PegSide(String displayName) {
+			this.displayName = displayName;
+		}
 	}
 
-	private record Match(int viewNumber, String direction, List<Integer> pressPositions) {
+	private enum PegPosition {
+		TOP("Top", 0.0, -1.0, PegSide.TOP.ordinal()),
+		UPPER_RIGHT("Upper right", 1.0, 0.0, PegSide.UPPER_RIGHT.ordinal()),
+		LOWER_RIGHT("Lower right", 0.6, 1.0, PegSide.LOWER_RIGHT.ordinal()),
+		LOWER_LEFT("Lower left", -0.6, 1.0, PegSide.LOWER_LEFT.ordinal()),
+		UPPER_LEFT("Upper left", -1.0, 0.0, PegSide.UPPER_LEFT.ordinal());
+
+		private final String displayName;
+		private final double x;
+		private final double y;
+		private final int sideIndex;
+
+		PegPosition(String displayName, double x, double y, int sideIndex) {
+			this.displayName = displayName;
+			this.x = x;
+			this.y = y;
+			this.sideIndex = sideIndex;
+		}
+	}
+
+	private record Rule(List<Color> prime, List<Color> alternate) {
 	}
 }

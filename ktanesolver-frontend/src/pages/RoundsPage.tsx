@@ -1,9 +1,17 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRoundStore } from "../store/useRoundStore";
+import { useCatalogStore } from "../store/useCatalogStore";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader from "../components/layout/PageHeader";
 import RoundCard from "../features/rounds/RoundCard";
+import RoundFilterBar from "../features/rounds/RoundFilterBar";
+import {
+    type RoundFilterCriteria,
+    EMPTY_CRITERIA,
+    collectFilterOptions,
+    filterRounds,
+} from "../features/rounds/roundFilters";
 import { Button } from "../components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 import { Skeleton } from "../components/ui/skeleton";
@@ -16,10 +24,17 @@ export default function RoundsPage() {
     const deleteRound = useRoundStore((state) => state.deleteRound);
     const loading = useRoundStore((state) => state.loading);
     const error = useRoundStore((state) => state.error);
+    const catalog = useCatalogStore((state) => state.catalog);
+    const catalogLoaded = useCatalogStore((state) => state.loaded);
+    const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
+    const [criteria, setCriteria] = useState<RoundFilterCriteria>(EMPTY_CRITERIA);
 
     useEffect(() => {
         fetchAllRounds();
-    }, [fetchAllRounds]);
+        if (!catalogLoaded) {
+            fetchCatalog();
+        }
+    }, [fetchAllRounds, catalogLoaded, fetchCatalog]);
 
     const handleCreateNewRound = async () => {
         const round = await createRound();
@@ -47,6 +62,13 @@ export default function RoundsPage() {
             return dateB.getTime() - dateA.getTime();
         });
     }, [allRounds]);
+
+    const filterOptions = useMemo(() => collectFilterOptions(sortedRounds), [sortedRounds]);
+
+    const filteredRounds = useMemo(
+        () => filterRounds(sortedRounds, criteria, catalog),
+        [sortedRounds, criteria, catalog]
+    );
 
     if (loading) {
         return (
@@ -109,15 +131,27 @@ export default function RoundsPage() {
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {sortedRounds.map((round) => (
-                        <RoundCard
-                            key={round.id}
-                            round={round}
-                            onNavigate={(id) => navigate(`/round/${id}/setup`)}
-                            onDelete={handleDeleteRound}
-                            loading={loading}
-                        />
-                    ))}
+                    <RoundFilterBar
+                        criteria={criteria}
+                        onChange={setCriteria}
+                        options={filterOptions}
+                        catalog={catalog}
+                    />
+                    {filteredRounds.length === 0 ? (
+                        <p className="text-center py-8 text-sm text-muted-foreground">
+                            No rounds match the current filters.
+                        </p>
+                    ) : (
+                        filteredRounds.map((round) => (
+                            <RoundCard
+                                key={round.id}
+                                round={round}
+                                onNavigate={(id) => navigate(`/round/${id}/setup`)}
+                                onDelete={handleDeleteRound}
+                                loading={loading}
+                            />
+                        ))
+                    )}
                 </div>
             )}
         </PageContainer>

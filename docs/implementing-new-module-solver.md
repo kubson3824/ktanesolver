@@ -2,10 +2,37 @@
 
 This is the current end-to-end checklist for adding a module safely in this repo.
 
+## Short Path
+
+Most new modules touch these files, in this order:
+
+1. Backend enum: `src/main/java/ktanesolver/enums/ModuleType.java`
+2. Backend input/output records: same package as the solver
+3. Backend solver: `src/main/java/ktanesolver/module/.../YourModuleSolver.java`
+4. Backend solver test: `src/test/java/ktanesolver/module/.../YourModuleSolverTest.java`
+5. Frontend service: `ktanesolver-frontend/src/services/yourModuleService.ts`
+6. Frontend component: `ktanesolver-frontend/src/components/solvers/YourModuleSolver.tsx`
+7. Frontend registry: `ktanesolver-frontend/src/components/solvers/registry.ts`
+8. Optional frontend constant: `ktanesolver-frontend/src/types/index.ts`
+
+Do not add manual wiring to `ModuleSolverRegistry`; `@Service` plus `@ModuleInfo` is enough.
+Do not add Flyway migrations unless the module needs new tables or columns.
+
+Before writing the React component, copy the closest existing solver shape:
+
+| Need | Copy first |
+|---|---|
+| Simple input -> answer | `AlphabetSolver`, `MathSolver`, `CombinationLockSolver` |
+| Multi-stage state | `MemorySolver`, `WireSequencesSolver`, `SimonStatesSolver` |
+| Needy module | `KnobsSolver` |
+| Color or symbol picking | `SimonSolver`, `KeypadsSolver`, `RoundKeypadSolver` |
+| Grid/path display | `MazeSolver`, `ChessSolver`, `ThreeDMazeSolver` |
+
 ## What Changed Recently
 
 - The backend now returns explicit errors for unsupported module types and invalid solve input.
 - The module catalog contract now uses `hasInput` and `hasOutput`.
+- The frontend treats catalog module types as backend strings. `ModuleType` is only a convenience constant for implemented solver UIs and Twitch commands.
 - The frontend uses one shared catalog store and one shared solver registry.
 - New module types no longer require a Flyway migration just to satisfy the old `modules.type` check constraint. That constraint was removed in `V17__drop_module_type_check_constraint.sql`.
 
@@ -104,9 +131,9 @@ If those values are wrong, the frontend layout will be wrong even if the solve l
 
 ## Frontend Checklist
 
-### 1. Add the frontend enum entry
+### 1. Add a frontend constant when useful
 
-Add the module in `ktanesolver-frontend/src/types/index.ts`.
+The setup flow reads module types from the backend catalog, so this is not required for backend-only modules. Add the module in `ktanesolver-frontend/src/types/index.ts` when the solver UI or Twitch command code needs a named constant.
 
 ```ts
 export enum ModuleType {
@@ -120,13 +147,11 @@ export enum ModuleType {
 Create a module service under `ktanesolver-frontend/src/services/`.
 
 ```ts
-import { api, withErrorWrapping } from "../lib/api";
+import { solveModule } from "../lib/api";
 
-export interface YourModuleSolveRequest {
-  input: {
-    field1: string;
-    field2: number;
-  };
+export interface YourModuleInput {
+  field1: string;
+  field2: number;
 }
 
 export interface YourModuleSolveResponse {
@@ -140,16 +165,17 @@ export const solveYourModule = async (
   roundId: string,
   bombId: string,
   moduleId: string,
-  input: YourModuleSolveRequest["input"],
+  input: YourModuleInput,
 ): Promise<YourModuleSolveResponse> =>
-  withErrorWrapping(async () => {
-    const response = await api.post<YourModuleSolveResponse>(
-      `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-      { input },
-    );
-    return response.data;
-  });
+  solveModule<YourModuleInput, YourModuleSolveResponse>(
+    roundId,
+    bombId,
+    moduleId,
+    input,
+  );
 ```
+
+This keeps the endpoint shape in one helper: every solve request still sends `{ input: ... }`.
 
 ### 3. Add the solver component
 
@@ -195,14 +221,16 @@ Needy solver:
 ```
 
 Do not add a separate switch anywhere else for new solvers.
+`registry.test.ts` covers known registrations and the fallback for backend modules without a solver UI.
 
 ### 5. Let the catalog drive placement
 
-The setup and solve flows now consume the shared catalog store from `ktanesolver-frontend/src/store/useCatalogStore.ts`.
+The setup and solve flows consume the shared catalog store from `ktanesolver-frontend/src/store/useCatalogStore.ts`.
 
 - The catalog is fetched from `/api/modules`.
 - `SolvePage` and `ModuleSelector` both use that shared store.
 - Solve-page regular vs needy grouping is driven by catalog category when available, with registry metadata only as a fallback.
+- A registry entry is required only when the selected module should open a custom solver component.
 
 If the backend `@ModuleInfo.category` is correct and the frontend registry entry exists, the module should land in the right place.
 
@@ -224,8 +252,9 @@ If the backend `@ModuleInfo.category` is correct and the frontend registry entry
 ### Frontend
 
 - Add or update a focused Vitest test under `ktanesolver-frontend/src`.
-- Registering a solver should be covered through the shared registry.
+- Registering a solver, or deliberately leaving it as backend-only, should be covered through the shared registry tests.
 - If the module changes placement behavior, cover that metadata-driven classification.
+- Run `npm run build` and `npm run lint` from `ktanesolver-frontend/`.
 
 ### Manual verification
 
@@ -241,8 +270,9 @@ If the backend `@ModuleInfo.category` is correct and the frontend registry entry
 
 Check:
 
-- `ModuleType` was added in both backend and frontend.
-- The solver component was added to `src/components/solvers/registry.ts`.
+- Java `ModuleType` was added.
+- Frontend `ModuleType` was added only if the solver UI/Twitch command code uses it.
+- The solver component was added to `src/components/solvers/registry.ts` if a UI exists.
 - The frontend is using the shared catalog store successfully.
 
 ### Module exists in the database but solve fails immediately

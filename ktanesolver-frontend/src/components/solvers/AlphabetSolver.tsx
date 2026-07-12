@@ -119,9 +119,7 @@ export default function AlphabetSolver({ bomb }: AlphabetSolverProps) {
     setIsLoading(true);
 
     try {
-      const response = await solveAlphabet(round.id, bomb.id, currentModule.id, {
-        input: { letters },
-      });
+      const response = await solveAlphabet(round.id, bomb.id, currentModule.id, { letters });
 
       const output = response.output;
       setResult(output);

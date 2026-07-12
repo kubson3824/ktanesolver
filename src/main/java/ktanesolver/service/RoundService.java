@@ -112,7 +112,39 @@ public class RoundService {
 
 	@Transactional(readOnly = true)
 	public List<RoundSummaryDto> getAllRoundSummaries() {
-		return roundRepo.findAllSummaries();
+		// ponytail: lazy-loads each bomb's collections (N+1); switch to fetch joins if round history grows large
+		return roundRepo.findAll().stream()
+				.map(this::toSummary)
+				.toList();
+	}
+
+	private RoundSummaryDto toSummary(RoundEntity round) {
+		List<RoundSummaryDto.BombSummaryDto> bombs = round.getBombs().stream()
+				.map(bomb -> new RoundSummaryDto.BombSummaryDto(
+						bomb.getSerialNumber(),
+						bomb.getAaBatteryCount(),
+						bomb.getDBatteryCount(),
+						Map.copyOf(bomb.getIndicators()),
+						bomb.getPortPlates().stream()
+								.flatMap(plate -> plate.getPorts().stream())
+								.distinct()
+								.toList(),
+						bomb.getModules().stream()
+								.map(ModuleEntity::getType)
+								.toList()
+				))
+				.toList();
+
+		long moduleCount = bombs.stream().mapToLong(b -> b.moduleTypes().size()).sum();
+		return new RoundSummaryDto(
+				round.getId(),
+				round.getStatus(),
+				round.getStartTime(),
+				round.getVersion(),
+				bombs.size(),
+				moduleCount,
+				bombs
+		);
 	}
 
 	@Transactional

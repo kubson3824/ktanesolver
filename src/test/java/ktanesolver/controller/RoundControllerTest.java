@@ -35,7 +35,7 @@ class RoundControllerTest {
     }
 
     @Test
-    void getAllRoundsReturnsSummaryCountsWithoutSerializingBombCollections() throws Exception {
+    void getAllRoundsReturnsSummaryCountsAndBombs() throws Exception {
         UUID roundId = UUID.randomUUID();
         when(roundService.getAllRoundSummaries()).thenReturn(List.of(
                 new RoundSummaryDto(
@@ -44,7 +44,8 @@ class RoundControllerTest {
                         Instant.parse("2026-04-10T12:00:00Z"),
                         3L,
                         2L,
-                        11L)
+                        11L,
+                        List.of())
         ));
 
         mockMvc.perform(get("/rounds"))
@@ -53,6 +54,6 @@ class RoundControllerTest {
                 .andExpect(jsonPath("$[0].status").value("ACTIVE"))
                 .andExpect(jsonPath("$[0].bombCount").value(2))
                 .andExpect(jsonPath("$[0].moduleCount").value(11))
-                .andExpect(jsonPath("$[0].bombs").doesNotExist());
+                .andExpect(jsonPath("$[0].bombs").isEmpty());
     }
 }

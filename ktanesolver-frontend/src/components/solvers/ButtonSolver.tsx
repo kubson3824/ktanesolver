@@ -176,8 +176,8 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
       }
       return null;
     },
-    inferSolved: (sol, currentModule) =>
-      Boolean((currentModule as { solved?: boolean } | undefined)?.solved) || Boolean(sol),
+    inferSolved: (_sol, currentModule) =>
+      Boolean((currentModule as { solved?: boolean } | undefined)?.solved),
     currentModule,
     setIsSolved,
   });
