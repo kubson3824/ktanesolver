@@ -77,6 +77,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.SEA_SHELLS]: { load: () => import("./SeaShellsSolver") },
   [ModuleType.ENGLISH_TEST]: { load: () => import("./EnglishTestSolver") },
   [ModuleType.ROCK_PAPER_SCISSORS_LIZARD_SPOCK]: { load: () => import("./RockPaperScissorsLizardSpockSolver") },
+  [ModuleType.SQUARE_BUTTON]: { load: () => import("./SquareButtonSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },
