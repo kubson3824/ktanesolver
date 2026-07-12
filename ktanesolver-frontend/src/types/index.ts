@@ -63,6 +63,8 @@ export enum ModuleType {
   FRIENDSHIP = "FRIENDSHIP",
   THE_BULB = "THE_BULB",
   BLIND_ALLEY = "BLIND_ALLEY",
+  SEA_SHELLS = "SEA_SHELLS",
+  ENGLISH_TEST = "ENGLISH_TEST",
 }
 
 export enum PortType {

@@ -385,6 +385,12 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     case ModuleType.FOLLOW_THE_LEADER:
       return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutPlugs) ? raw.cutPlugs.join(" ") : "unknown"}`;
 
+    case ModuleType.SEA_SHELLS:
+      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.pressOrder)?.join(" ") ?? "unknown"}`;
+
+    case ModuleType.ENGLISH_TEST:
+      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.correctAnswer) ?? "unknown"}`;
+
     case ModuleType.TURN_THE_KEY: {
       const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
       const instr = (result as { instruction?: string }).instruction;
