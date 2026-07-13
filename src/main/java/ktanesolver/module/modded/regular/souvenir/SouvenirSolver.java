@@ -95,6 +95,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SEA_SHELLS -> seaShellsAnswerIndex(source.getState(), q, answers);
 			case SHAPE_SHIFT -> shapeShiftAnswerIndex(source.getState(), answers);
 			case SILLY_SLOTS -> sillySlotsAnswerIndex(source.getState(), q, answers);
+			case SIMON_SCREAMS -> simonScreamsAnswerIndex(source.getState(), q, answers);
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
@@ -144,6 +145,25 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		List<String> selected = colors.stream().filter(color -> negative != flashes.stream().map(String::valueOf).anyMatch(color::equals)).toList();
 		String value = selected.isEmpty() ? "none" : selected.size() == 4 ? "all 4" : String.join(", ", selected);
 		return answerIndex(answers, value);
+	}
+
+	private static int simonScreamsAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		if (question.contains("final sequence")) {
+			return answerIndex(answers, nested(state, "flashHistory", -1, ordinal(question)));
+		}
+		Object raw = state.get("ruleHistory");
+		if (!(raw instanceof List<?> rules) || rules.size() != 3) return -1;
+		for (Object candidate : rules) {
+			String rule = normalize(candidate);
+			if ("otherwise".equals(rule) || !question.contains(rule)) continue;
+			List<Integer> stages = new ArrayList<>();
+			for (int stage = 0; stage < rules.size(); stage++) if (normalize(rules.get(stage)).equals(rule)) stages.add(stage);
+			String value = stages.size() == 3 ? "all of them" : stages.stream()
+				.map(stage -> List.of("first", "second", "third").get(stage))
+				.reduce((left, right) -> left + " and " + right).orElse(null);
+			return answerIndex(answers, value);
+		}
+		return -1;
 	}
 
 	private static int switchesAnswerIndex(Map<String, Object> state, List<String> answers) {

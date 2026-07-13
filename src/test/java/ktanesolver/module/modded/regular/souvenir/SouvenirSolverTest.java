@@ -113,6 +113,35 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("Defuse", 2));
 	}
 
+	@Test
+	void resolvesEverySimonScreamsQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity screams = module(ModuleType.SIMON_SCREAMS, true, Map.of(
+			"flashHistory", List.of(
+				List.of("ORANGE", "GREEN", "PURPLE"),
+				List.of("ORANGE", "GREEN", "PURPLE", "RED"),
+				List.of("ORANGE", "GREEN", "PURPLE", "RED", "YELLOW")),
+			"ruleHistory", List.of(
+				"at most one color flashed out of red, yellow, and blue",
+				"at most one color flashed out of red, yellow, and blue",
+				"two adjacent colors flashed in clockwise order")));
+		bomb.setModules(List.of(souvenir, screams));
+
+		assertThat(solve(bomb, souvenir, screams.getId(),
+			"Which color flashed second in the final sequence in Simon Screams?",
+			List.of("Red", "Orange", "Green", "Purple", "Yellow", "Blue"), false))
+			.isEqualTo(new SouvenirOutput("Green", 3));
+		assertThat(solve(bomb, souvenir, screams.getId(),
+			"In which stage(s) of Simon Screams was “two adjacent colors flashed in clockwise order” the applicable rule?",
+			List.of("first", "second", "third", "first and third"), false))
+			.isEqualTo(new SouvenirOutput("third", 3));
+		assertThat(solve(bomb, souvenir, screams.getId(),
+			"In which stage(s) of Simon Screams was “at most one color flashed out of red, yellow, and blue” the applicable rule?",
+			List.of("first", "second", "third", "first and second"), false))
+			.isEqualTo(new SouvenirOutput("first and second", 4));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

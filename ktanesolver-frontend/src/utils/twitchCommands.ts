@@ -328,6 +328,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     case ModuleType.SIMON_STATES:
       return `!${TWITCH_PLACEHOLDER} press ${(result as { press: string }).press}`;
 
+    case ModuleType.SIMON_SCREAMS:
+      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.press)?.join(" ").toLowerCase() ?? "unknown"}`;
+
     case ModuleType.SILLY_SLOTS: {
       const legal = getBoolean(raw.legal);
       return legal ? `!${TWITCH_PLACEHOLDER} press KEEP` : `!${TWITCH_PLACEHOLDER} pull lever`;
