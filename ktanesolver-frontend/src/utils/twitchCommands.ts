@@ -160,6 +160,11 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     
     case ModuleType.WORD_SCRAMBLE:
       return `!${TWITCH_PLACEHOLDER} word ${getString(raw.solution) ?? getString(raw.instruction) ?? 'unknown'}`;
+
+    case ModuleType.BROKEN_BUTTONS:
+      return getString(raw.action) === "SUBMIT"
+        ? `!${TWITCH_PLACEHOLDER} submit ${getString(raw.submitSide)?.toLowerCase() ?? "unknown"}`
+        : `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.column) ?? "?"} ${getNumber(raw.row) ?? "?"}`;
     
     case ModuleType.ANAGRAMS:
       if (getStringArray(raw.possibleSolutions)?.length) {
