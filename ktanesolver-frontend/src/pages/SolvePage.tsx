@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState, useCallback } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
@@ -83,6 +83,25 @@ export default function SolvePage() {
   const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
   const [showFmnReminder, setShowFmnReminder] = useState(false);
+  // Manual/solver split: draggable divider, % width of the manual panel on lg screens.
+  const [manualPct, setManualPct] = useState(() => {
+    const stored = Number(localStorage.getItem("solve-manual-pct"));
+    return stored >= 25 && stored <= 75 ? stored : 60;
+  });
+  const splitRef = useRef<HTMLDivElement>(null);
+  const splitDragging = useRef(false);
+  const onSplitDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    splitDragging.current = true;
+    // Capture so the drag keeps working while the pointer crosses the manual iframe.
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* synthetic events have no active pointer */ }
+  };
+  const onSplitMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!splitDragging.current || !(e.buttons & 1) || !splitRef.current) return;
+    const rect = splitRef.current.getBoundingClientRect();
+    const pct = Math.min(75, Math.max(25, ((e.clientX - rect.left) / rect.width) * 100));
+    setManualPct(pct);
+    localStorage.setItem("solve-manual-pct", String(Math.round(pct)));
+  };
 
   useEffect(() => {
     if (!catalogLoaded && !catalogLoading) {
@@ -364,17 +383,31 @@ export default function SolvePage() {
           </div>
         ) : (
           /* Solver view */
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div ref={splitRef} className="flex flex-col gap-4 lg:flex-row lg:gap-0">
             {/* Left: ManualPanel */}
-            <div className="lg:col-span-3">
+            <div className="min-w-0 lg:shrink-0" style={{ flexBasis: `${manualPct}%` }}>
               <ManualPanel
                 manualUrl={manualUrl}
                 moduleType={currentModule.moduleType}
               />
             </div>
 
+            {/* Divider: drag to resize both panels */}
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize manual and solver panels"
+              className="group hidden w-4 shrink-0 cursor-col-resize touch-none lg:block"
+              onPointerDown={onSplitDown}
+              onPointerMove={onSplitMove}
+              onPointerUp={() => { splitDragging.current = false; }}
+              onLostPointerCapture={() => { splitDragging.current = false; }}
+            >
+              <div className="mx-auto h-full w-1 rounded bg-border transition-colors group-hover:bg-accent" />
+            </div>
+
             {/* Right: Solver card */}
-            <div className="lg:col-span-2">
+            <div className="min-w-0 flex-1">
               <div className="rounded-xl border border-border bg-card shadow-sm h-full flex flex-col">
                 {/* Card header */}
                 <div className="bg-muted/40 border-b border-border px-4 py-3">

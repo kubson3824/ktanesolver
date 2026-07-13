@@ -303,6 +303,11 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} go to ${target}${moves}`;
     }
 
+    case ModuleType.HEXAMAZE: {
+      const moves = (result as { moves?: string[] })?.moves;
+      return `!${TWITCH_PLACEHOLDER} ${moves?.length ? moves.join(" ").toLowerCase() : "unknown"}`;
+    }
+
     case ModuleType.THREE_D_MAZE: {
       const r = result as { goalRow?: number; goalCol?: number; goalDirection?: string | null; moves?: string[]; phase?: string };
       const row = r?.goalRow ?? "?";
@@ -347,6 +352,11 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
         return `!${TWITCH_PLACEHOLDER} alphabet ${pressOrder.join(' ')}`;
       }
       return `!${TWITCH_PLACEHOLDER} alphabet unknown`;
+    }
+
+    case ModuleType.ADJACENT_LETTERS: {
+      const letters = getStringArray(raw.pressLetters);
+      return `!${TWITCH_PLACEHOLDER} ${letters?.length ? `submit ${letters.join("")}` : "submit!"}`;
     }
 
     case ModuleType.MICROCONTROLLER: {
