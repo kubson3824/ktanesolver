@@ -62,6 +62,7 @@ public class TicTacToeSolver extends AbstractModuleSolver<TicTacToeInput, TicTac
 		int startingRow = startingRow(bomb);
 		int row = input.strike() ? startingRow : stateNumber(module, "row", startingRow);
 		int passes = input.strike() ? 0 : stateNumber(module, "passes", 0);
+		if (input.strike() || !module.getState().containsKey("initialBoard")) module.getState().put("initialBoard", board);
 		module.getState().put("board", board);
 		module.getState().put("nextPiece", piece);
 		int column = column(board, piece);

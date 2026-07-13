@@ -12,9 +12,10 @@ public record SillySlotsState(
 	boolean hadSassySausageInAnyPreviousStage,
 	boolean lastStageHadSillySteven,
 	boolean previousStageHadSausage,
-	int leverPullCount
+	int leverPullCount,
+	List<List<String>> displayHistory
 ) {
 	public SillySlotsState() {
-		this(null, null, false, false, false, false, 0);
+		this(null, null, false, false, false, false, 0, new java.util.ArrayList<>());
 	}
 }

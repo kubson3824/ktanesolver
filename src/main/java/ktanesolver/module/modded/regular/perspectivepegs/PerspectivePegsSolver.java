@@ -120,6 +120,7 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 			toDisplayNames(keySequence)
 		);
 		storeState(module, "input", input);
+		storeState(module, "initialSequence", toDisplayNames(initialSequence));
 		storeState(module, "keyColor", output.keyColor());
 		storeState(module, "currentSequence", output.currentSequence());
 		storeState(module, "keySequence", output.keySequence());

@@ -34,6 +34,7 @@ public class TheBulbSolver extends AbstractModuleSolver<TheBulbInput, TheBulbOut
 		int step;
 		TheBulbInput.Color color;
 		boolean opaque;
+		boolean initiallyOn;
 		String firstButton = null;
 		String secondButton = null;
 		String rememberedIndicator = null;
@@ -47,6 +48,8 @@ public class TheBulbSolver extends AbstractModuleSolver<TheBulbInput, TheBulbOut
 			}
 			color = input.color();
 			opaque = input.opaque();
+			initiallyOn = input.lightOn();
+			storeState(module, "initiallyOn", initiallyOn);
 			actions = new ArrayList<>();
 			continueFrom = 0;
 			if (input.lightOn()) {
@@ -61,7 +64,7 @@ public class TheBulbSolver extends AbstractModuleSolver<TheBulbInput, TheBulbOut
 			if (module.getState() == null || module.getState().isEmpty()) return failure("Start with the bulb's initial appearance");
 			if (input.observation() == null) return failure("Answer the displayed observation question");
 			TheBulbState state = module.getStateAs(TheBulbState.class, () -> null);
-			step = state.step(); color = state.color(); opaque = state.opaque();
+			step = state.step(); color = state.color(); opaque = state.opaque(); initiallyOn = state.initiallyOn();
 			firstButton = state.firstButton(); secondButton = state.secondButton(); rememberedIndicator = state.rememberedIndicator();
 			actions = new ArrayList<>(state.actions());
 			continueFrom = actions.size();
@@ -86,11 +89,11 @@ public class TheBulbSolver extends AbstractModuleSolver<TheBulbInput, TheBulbOut
 					press(actions, hasIndicator ? "I" : "O"); step = hasIndicator ? 9 : 10;
 				}
 				case 5 -> {
-					if (input.observation() == null) return pause(module, step, color, opaque, firstButton, secondButton, null, actions, "Did the light go off at Step 1?");
+					if (input.observation() == null) return pause(module, step, color, opaque, initiallyOn, firstButton, secondButton, null, actions, "Did the light go off at Step 1?");
 					press(actions, input.observation() ? firstButton : opposite(firstButton)); screw(actions); return done(actions, continueFrom);
 				}
 				case 6 -> {
-					if (input.observation() == null) return pause(module, step, color, opaque, firstButton, secondButton, null, actions, "Did the bulb go off when you pressed I?");
+					if (input.observation() == null) return pause(module, step, color, opaque, initiallyOn, firstButton, secondButton, null, actions, "Did the bulb go off when you pressed I?");
 					press(actions, input.observation() ? firstButton : secondButton); screw(actions); return done(actions, continueFrom);
 				}
 				case 7 -> {
@@ -127,11 +130,11 @@ public class TheBulbSolver extends AbstractModuleSolver<TheBulbInput, TheBulbOut
 				}
 				case 11 -> { press(actions, bomb.hasIndicator(rememberedIndicator) ? "I" : "O"); screw(actions); return done(actions, continueFrom); }
 				case 12 -> {
-					if (input.observation() == null) return pause(module, step, color, opaque, firstButton, secondButton, rememberedIndicator, actions, "Is the light now on?");
+					if (input.observation() == null) return pause(module, step, color, opaque, initiallyOn, firstButton, secondButton, rememberedIndicator, actions, "Is the light now on?");
 					press(actions, input.observation() ? "I" : "O"); return done(actions, continueFrom);
 				}
 				case 13 -> {
-					if (input.observation() == null) return pause(module, step, color, opaque, firstButton, secondButton, rememberedIndicator, actions, "Is the light now on?");
+					if (input.observation() == null) return pause(module, step, color, opaque, initiallyOn, firstButton, secondButton, rememberedIndicator, actions, "Is the light now on?");
 					press(actions, input.observation() ? "O" : "I"); return done(actions, continueFrom);
 				}
 				case 14 -> { press(actions, opaque ? "I" : "O"); screw(actions); return done(actions, continueFrom); }
@@ -141,9 +144,9 @@ public class TheBulbSolver extends AbstractModuleSolver<TheBulbInput, TheBulbOut
 		}
 	}
 
-	private SolveResult<TheBulbOutput> pause(ModuleEntity module, int step, TheBulbInput.Color color, boolean opaque,
+	private SolveResult<TheBulbOutput> pause(ModuleEntity module, int step, TheBulbInput.Color color, boolean opaque, boolean initiallyOn,
 		String firstButton, String secondButton, String rememberedIndicator, List<String> actions, String prompt) {
-		storeTypedState(module, new TheBulbState(step, color, opaque, firstButton, secondButton, rememberedIndicator, List.copyOf(actions)));
+		storeTypedState(module, new TheBulbState(step, color, opaque, initiallyOn, firstButton, secondButton, rememberedIndicator, List.copyOf(actions)));
 		return success(new TheBulbOutput(List.copyOf(actions), 0, prompt), false);
 	}
 

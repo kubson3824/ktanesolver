@@ -19,7 +19,7 @@ interface ListeningSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-const SOUND_OPTIONS = [
+export const SOUND_OPTIONS = [
   "Taxi Dispatch", "Dial-up Internet", "Cow", "Police Radio Scanner", "Extractor Fan",
   "Censorship Bleep", "Train Station", "Medieval Weapons", "Arcade", "Door Closing",
   "Casino", "Chainsaw", "Supermarket", "Compressed Air", "Soccer Match",

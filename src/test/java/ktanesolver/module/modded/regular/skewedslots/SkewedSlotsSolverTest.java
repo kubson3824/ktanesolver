@@ -71,6 +71,18 @@ class SkewedSlotsSolverTest {
 	}
 
 	@Test
+	void solveRecordsOriginalNumberForSouvenirIncludingLeadingZero() {
+		ModuleEntity module = module();
+		SolveResult<SkewedSlotsOutput> result = solver.solve(
+			new RoundEntity(), bomb("ABCD16", 1, 0, Map.of(), List.of()), module,
+			new SkewedSlotsInput(List.of(0, 2, 7))
+		);
+
+		assertThat(result).isInstanceOf(SolveSuccess.class);
+		assertThat(module.getState()).containsEntry("originalNumber", "027");
+	}
+
+	@Test
 	void solveRejectsMissingSerialDigits() {
 		ModuleEntity module = module();
 		SolveResult<SkewedSlotsOutput> result = solver.solve(

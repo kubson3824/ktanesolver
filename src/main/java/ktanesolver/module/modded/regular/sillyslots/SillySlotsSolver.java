@@ -56,6 +56,8 @@ public class SillySlotsSolver extends AbstractModuleSolver<SillySlotsInput, Sill
 		List<ResolvedSlot> current = input.slots().stream()
 			.map(s -> ResolvedSlot.of(s, keyword))
 			.toList();
+		List<List<String>> displayHistory = state.displayHistory() == null ? new ArrayList<>() : new ArrayList<>(state.displayHistory());
+		displayHistory.add(current.stream().map(slot -> (slot.colour() + " " + slot.nounMeaning()).toLowerCase()).toList());
 
 		Keyword sillySubst = SillySlotsMatrix.substitute("SILLY", keyword);
 		Keyword sassySubst = keyword; // Sassy placeholder = keyword
@@ -103,13 +105,19 @@ public class SillySlotsSolver extends AbstractModuleSolver<SillySlotsInput, Sill
 				hadSassySausage,
 				lastSillySteven,
 				prevSausage,
-				nextPulls
+				nextPulls,
+				displayHistory
 			);
 			storeTypedState(module, newState);
 			boolean solved = nextPulls >= 4;
 			return success(new SillySlotsOutput(legal, illegalRule), solved);
 		}
 
+		storeTypedState(module, new SillySlotsState(
+			state.previousStageSlots(), state.twoStagesAgoSlots(), state.hadSoggySausageInAnyPreviousStage(),
+			state.hadSassySausageInAnyPreviousStage(), state.lastStageHadSillySteven(),
+			state.previousStageHadSausage(), state.leverPullCount(), displayHistory
+		));
 		return success(new SillySlotsOutput(legal, illegalRule), false);
 	}
 

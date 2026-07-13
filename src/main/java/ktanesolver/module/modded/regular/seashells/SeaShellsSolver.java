@@ -1,5 +1,6 @@
 package ktanesolver.module.modded.regular.seashells;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,10 @@ public class SeaShellsSolver extends AbstractModuleSolver<SeaShellsInput, SeaShe
 			.toList();
 		storeState(module, "stage", stage);
 		storeState(module, "input", input);
+		List<Object> inputHistory = module.getState().get("inputHistory") instanceof List<?> list
+			? new ArrayList<>(list) : new ArrayList<>();
+		inputHistory.add(input);
+		storeState(module, "inputHistory", inputHistory);
 		return success(new SeaShellsOutput(pressOrder, stage), stage == 3);
 	}
 

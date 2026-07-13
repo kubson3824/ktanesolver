@@ -38,7 +38,7 @@ public class SimonStatesSolver extends AbstractModuleSolver<SimonStatesInput, Si
 		RoundEntity round, BombEntity bomb, ModuleEntity module, SimonStatesInput input
 	) {
 		SimonStatesState state = module.getStateAs(
-			SimonStatesState.class, () -> new SimonStatesState(new ArrayList<>(), input.topLeft())
+			SimonStatesState.class, () -> new SimonStatesState(new ArrayList<>(), input.topLeft(), new ArrayList<>())
 		);
 
 		if (input.stage() != state.pressHistory().size() + 1) {
@@ -58,7 +58,9 @@ public class SimonStatesSolver extends AbstractModuleSolver<SimonStatesInput, Si
 
 		List<SimonStatesColor> newHistory = new ArrayList<>(state.pressHistory());
 		newHistory.add(press);
-		module.setState(new SimonStatesState(newHistory, state.topLeft()));
+		List<List<SimonStatesColor>> flashHistory = state.flashHistory() == null ? new ArrayList<>() : new ArrayList<>(state.flashHistory());
+		flashHistory.add(List.copyOf(input.flashes()));
+		module.setState(new SimonStatesState(newHistory, state.topLeft(), flashHistory));
 
 		return success(new SimonStatesOutput(press), input.stage() == 4);
 	}

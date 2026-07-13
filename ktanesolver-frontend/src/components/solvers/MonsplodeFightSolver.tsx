@@ -19,13 +19,13 @@ import {
 } from "../common";
 import { Input } from "../ui/input";
 
-const OPPONENTS = [
+export const OPPONENTS = [
   "Buhar", "Lanaluff", "Bob", "Mountoise", "Nibs", "Aluga", "Lugirit", "Caadarim",
   "Vellarim", "Flaurim", "Gloorim", "Melbor", "Clondar", "Docsplode", "Magmy", "Pouse",
   "Ukkens", "Asteran", "Violan", "Zenlad", "Zapra", "Myrchat", "Percy", "Cutie Pie",
 ];
 
-const MOVES = [
+export const MOVES = [
   "Appearify", "Battery Power", "Bedrock", "Boo", "Boom", "Bug Spray", "Countdown",
   "Dark Portal", "Fiery Soul", "Finale", "Freak Out", "Glyph", "Last Word", "Sendify",
   "Shock", "Shrink", "Sidestep", "Stretch", "Void", "Defuse", "Candle", "Cave In",
@@ -37,7 +37,7 @@ const MOVES = [
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm";
 
 // ponytail: hotlinks the official manual repo; vendor the PNGs locally if offline use matters
-const opponentIconUrl = (name: string) =>
+export const opponentIconUrl = (name: string) =>
   `https://ktane.timwi.de/HTML/img/Monsplode/${name.toLowerCase().replace(/\s/g, "")}.png`;
 
 interface Props { bomb: BombEntity | null | undefined }

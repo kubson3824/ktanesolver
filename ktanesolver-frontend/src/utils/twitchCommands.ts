@@ -110,6 +110,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
     
     case ModuleType.WHOS_ON_FIRST:
+    case ModuleType.THIRD_BASE:
       return `!${TWITCH_PLACEHOLDER} press ${getString(raw.button) ?? getString(raw.buttonText) ?? "unknown"}`;
     
     case ModuleType.VENTING_GAS:

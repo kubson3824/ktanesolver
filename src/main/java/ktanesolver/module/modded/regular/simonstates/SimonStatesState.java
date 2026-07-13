@@ -5,5 +5,6 @@ import java.util.List;
 
 public record SimonStatesState(
 	List<SimonStatesColor> pressHistory,
-	SimonStatesColor topLeft
+	SimonStatesColor topLeft,
+	List<List<SimonStatesColor>> flashHistory
 ) {}

@@ -50,6 +50,9 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 		if (!ThreeDMazeDefinitions.isKnownMazeTriple(sortedTriple)) {
 			return failure("Unknown or ambiguous marker letters.");
 		}
+		storeState(module, "markings", sortedTriple);
+		String recordedDirection = normalizeDirection(input.goalDirection());
+		if (recordedDirection != null) storeState(module, "cardinalDirection", directionName(recordedDirection));
 
 		int goalRow = computeRow(bomb);
 		int goalCol = computeColumn(bomb);
@@ -320,6 +323,10 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 		if (direction == null) return null;
 		String u = direction.trim().toUpperCase();
 		return ThreeDMazeDefinitions.isValidDirection(u) ? u : null;
+	}
+
+	private static String directionName(String direction) {
+		return switch (direction) { case "N" -> "North"; case "S" -> "South"; case "E" -> "East"; default -> "West"; };
 	}
 
 	/**

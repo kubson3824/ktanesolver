@@ -43,6 +43,10 @@ public class SkewedSlotsSolver extends AbstractModuleSolver<SkewedSlotsInput, Sk
 			return failure("Skewed Slots requires a serial number with at least one digit");
 		}
 
+		storeState(module, "originalNumber", originalDigits.stream()
+			.map(String::valueOf)
+			.reduce("", String::concat));
+
 		int litIndicatorCount = (int) BombEdgeworkUtils.getLitIndicatorCount(bomb);
 		int unlitIndicatorCount = (int) BombEdgeworkUtils.getUnlitIndicatorCount(bomb);
 		int batteryCount = bomb.getBatteryCount();

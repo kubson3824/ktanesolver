@@ -48,6 +48,7 @@ public class ColoredSquaresSolver extends AbstractModuleSolver<ColoredSquaresInp
 	) {
 		if (input == null || input.previousGroup() == null) return failure("Select the group that was pressed");
 		if (input.whiteCount() < 1 || input.whiteCount() > 16) return failure("White-square count must be between 1 and 16");
+		if (!module.getState().containsKey("firstGroup")) storeState(module, "firstGroup", input.previousGroup());
 
 		storeState(module, Map.of(
 			"whiteCount", input.whiteCount(),

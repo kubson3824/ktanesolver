@@ -27,6 +27,17 @@ interface WhosOnFirstSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
+export interface SixButtonWordSolverConfig {
+  moduleType: ModuleType;
+  name: string;
+  solve: typeof solveWhosOnFirst;
+  displayDescription: string;
+  instructions: string;
+  displaySuggestions?: readonly string[];
+  buttonOptions?: readonly string[];
+  allowBlankDisplay?: boolean;
+}
+
 const BUTTON_POSITIONS: { position: ButtonPosition; label: string }[] = [
   { position: "TOP_LEFT", label: "Top-left" },
   { position: "TOP_RIGHT", label: "Top-right" },
@@ -41,6 +52,16 @@ const COMMON_WORDS = [
   "LED", "LEAD", "READ", "RED", "GREEN", "BLUE", "STREET", "WHEN",
   "PRESS", "YOU", "YOUR", "YOU'RE",
 ];
+
+const WHOS_ON_FIRST_CONFIG: SixButtonWordSolverConfig = {
+  moduleType: ModuleType.WHOS_ON_FIRST,
+  name: "Who's On First",
+  solve: solveWhosOnFirst,
+  displayDescription: "The word printed on the small screen. Leave blank if the display is empty.",
+  instructions: "Enter the display word (or leave blank) and all six button labels. Press the revealed button, then repeat for three stages.",
+  displaySuggestions: COMMON_WORDS,
+  allowBlankDisplay: true,
+};
 
 const EMPTY_BUTTONS: Record<ButtonPosition, string> = {
   TOP_LEFT: "", TOP_RIGHT: "", MIDDLE_LEFT: "", MIDDLE_RIGHT: "",
@@ -94,7 +115,10 @@ function MiniPositionGrid({ pressedPosition }: { pressedPosition: ButtonPosition
   );
 }
 
-export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
+export function SixButtonWordSolver({
+  bomb,
+  config,
+}: WhosOnFirstSolverProps & { config: SixButtonWordSolverConfig }) {
   const [currentStage, setCurrentStage] = useState(1);
   const [displayWord, setDisplayWord] = useState("");
   const [buttons, setButtons] = useState<Record<ButtonPosition, string>>(EMPTY_BUTTONS);
@@ -261,7 +285,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
   });
 
   const handleDisplayChange = (value: string) => {
-    const processed = value === "" ? " " : value.toUpperCase();
+    const processed = value === "" && config.allowBlankDisplay ? " " : value.toUpperCase();
     setDisplayWord(processed);
     clearError();
     setSolution(null);
@@ -297,7 +321,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
           ) as Record<ButtonPosition, string>,
         },
       };
-      const response = await solveWhosOnFirst(
+      const response = await config.solve(
         round.id,
         bomb.id,
         currentModule.id,
@@ -316,7 +340,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       ]);
       setTwitchCommands([
         generateTwitchCommand({
-          moduleType: ModuleType.WHOS_ON_FIRST,
+          moduleType: config.moduleType,
           result: {
             position: response.output.position.replace("_", " "),
             button: response.output.buttonText,
@@ -334,7 +358,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
         setTwitchCommands([]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to solve Who's On First");
+      setError(err instanceof Error ? err.message : `Failed to solve ${config.name}`);
     } finally {
       setIsLoading(false);
     }
@@ -360,21 +384,21 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       </SolverSection>
 
       <SolverSection
-        title="Display word"
-        description="The word printed on the small screen. Leave blank if the display is empty."
+        title="Display label"
+        description={config.displayDescription}
       >
         <Input
           type="text"
           value={displayValue}
           onChange={(e) => handleDisplayChange(e.target.value)}
-          placeholder="(blank)"
+          placeholder={config.allowBlankDisplay ? "(blank)" : "LABEL"}
           disabled={isSolved || isLoading}
           aria-label="Display word"
           className="text-center font-mono text-lg uppercase tracking-widest"
         />
         {!isSolved && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {COMMON_WORDS.map((word) => (
+            {config.displaySuggestions?.map((word) => (
               <button
                 key={word}
                 type="button"
@@ -391,8 +415,13 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
 
       <SolverSection
         title="Button labels"
-        description="Enter the word on each of the six buttons."
+        description="Enter the label on each of the six buttons."
       >
+        {config.buttonOptions && (
+          <datalist id={`${config.moduleType}-button-labels`}>
+            {config.buttonOptions.map((label) => <option key={label} value={label} />)}
+          </datalist>
+        )}
         <div className="grid grid-cols-2 gap-2">
           {BUTTON_POSITIONS.map(({ position, label }) => {
             const isAnswer = solution?.position === position && !isSolved;
@@ -418,6 +447,7 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
                 </div>
                 <Input
                   type="text"
+                  list={config.buttonOptions ? `${config.moduleType}-button-labels` : undefined}
                   value={buttons[position]}
                   onChange={(e) => handleButtonTextChange(position, e.target.value)}
                   placeholder="WORD"
@@ -434,7 +464,10 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       <SolverControls
         onSolve={handleCheckAnswer}
         onReset={reset}
-        isSolveDisabled={Object.values(buttons).some((b) => !b.trim())}
+        isSolveDisabled={
+          Object.values(buttons).some((b) => !b.trim()) ||
+          (!config.allowBlankDisplay && !displayWord.trim())
+        }
         isLoading={isLoading}
         isSolved={isSolved}
         solveText={
@@ -483,11 +516,12 @@ export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
       )}
 
       <SolverInstructions>
-        Three stages total. Enter the display word (or leave blank) and the text
-        of all six buttons — the solver reveals which one to press. Pressing
-        correctly advances the module; the buttons may change for the next
-        stage.
+        {config.instructions}
       </SolverInstructions>
     </SolverLayout>
   );
+}
+
+export default function WhosOnFirstSolver({ bomb }: WhosOnFirstSolverProps) {
+  return <SixButtonWordSolver bomb={bomb} config={WHOS_ON_FIRST_CONFIG} />;
 }

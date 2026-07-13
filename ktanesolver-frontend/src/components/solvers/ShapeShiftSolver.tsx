@@ -5,7 +5,7 @@ import type { BombEntity } from "../../types";
 import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, useSolver, useSolverModulePersistence } from "../common";
 import { Button } from "../ui/button";
 
-const EDGES: ShapeEdge[] = ["SQUARE", "ROUND", "POINT", "CONCAVE"];
+export const EDGES: ShapeEdge[] = ["SQUARE", "ROUND", "POINT", "CONCAVE"];
 const LABELS: Record<ShapeEdge, string> = { SQUARE: "Square", ROUND: "Round", POINT: "Point", CONCAVE: "Concave" };
 
 function edgePath(edge: ShapeEdge, side: "left" | "right") {
@@ -20,7 +20,7 @@ function edgePath(edge: ShapeEdge, side: "left" | "right") {
   return `Q ${inside} ${startY} ${inside} 40 Q ${inside} ${endY} ${x} ${endY}`;
 }
 
-function Shape({ left, right, className = "h-20 w-32" }: { left: ShapeEdge; right: ShapeEdge; className?: string }) {
+export function Shape({ left, right, className = "h-20 w-32" }: { left: ShapeEdge; right: ShapeEdge; className?: string }) {
   const path = `M 25 15 L 95 15 ${edgePath(right, "right")} L 25 65 ${edgePath(left, "left")} Z`;
   return <svg viewBox="0 0 120 80" className={className} aria-label={`${LABELS[left]} left, ${LABELS[right]} right`}><path d={path} fill="currentColor" fillOpacity=".12" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" /></svg>;
 }
