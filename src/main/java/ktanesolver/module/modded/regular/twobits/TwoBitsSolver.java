@@ -27,7 +27,7 @@ public class TwoBitsSolver extends AbstractModuleSolver<TwoBitsInput, TwoBitsOut
 		{"ez", "ek", "dv", "cg", "ve", "dp", "bk", "pg", "gk", "gz"}, {"kt", "ct", "zz", "vg", "gd", "cp", "be", "zt", "vk", "dc"}};
 
 	private static final int FIRST_STAGE = 1;
-	private static final int FINAL_STAGE = 3;
+	private static final int FINAL_STAGE = 4;
 	private static final int MAX_NUMBER = 99;
 	private static final int NUMBER_BASE = 10;
 	private static final int MODULO_100 = 100;
@@ -47,7 +47,7 @@ public class TwoBitsSolver extends AbstractModuleSolver<TwoBitsInput, TwoBitsOut
 
 	private void validateInput(TwoBitsInput input) {
 		if(input.stage() < FIRST_STAGE || input.stage() > FINAL_STAGE) {
-			throw new IllegalArgumentException("Stage must be between 1 and 3");
+			throw new IllegalArgumentException("Stage must be between 1 and 4");
 		}
 		if(input.number() < 0 || input.number() > MAX_NUMBER) {
 			throw new IllegalArgumentException("Number must be between 0 and 99");

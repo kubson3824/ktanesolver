@@ -108,7 +108,7 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
   const sources = useMemo(
-    () => bomb?.modules.filter((source) => source.solved && source.id !== currentModule?.id && source.type !== ModuleType.SOUVENIR) ?? [],
+    () => bomb?.modules.filter((source) => source.solved && source.id !== currentModule?.id) ?? [],
     [bomb?.modules, currentModule?.id],
   );
   const selectedSource = sources.find((source) => source.id === sourceModuleId);

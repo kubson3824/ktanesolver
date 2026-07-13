@@ -28,7 +28,8 @@ interface TwoBitsSolverProps {
 const STAGE_LABELS: Record<number, string> = {
   1: "Calculate",
   2: "Enter number",
-  3: "Final",
+  3: "Enter number",
+  4: "Submit",
 };
 
 export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
@@ -63,10 +64,8 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       result?: TwoBitsOutput | null;
       twitchCommand?: string;
     }) => {
-      // Never restore to stage 3 unless the module is actually solved (avoids stale/partial backend state)
-      const canRestoreStage3 = state.currentStage === 3 && currentModule?.solved;
       const stageToRestore =
-        state.currentStage != null && (state.currentStage <= 2 || canRestoreStage3)
+        state.currentStage != null && state.currentStage >= 1 && state.currentStage <= 4
           ? state.currentStage
           : undefined;
 
@@ -75,7 +74,7 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       if (stageToRestore != null && state.result) setResult(state.result);
       if (currentModule?.solved && state.twitchCommand) setTwitchCommand(state.twitchCommand);
     },
-    [currentModule?.solved],
+    [],
   );
 
   const onRestoreSolution = useCallback(
@@ -90,12 +89,12 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
 
       const solved = Boolean(currentModule?.solved);
       if (solved) {
-        setCurrentStage(3);
+        setCurrentStage(4);
         return;
       }
       const completed = solution.stages?.length;
       if (typeof completed === "number") {
-        setCurrentStage(Math.min(3, Math.max(1, completed + 1)));
+        setCurrentStage(Math.min(4, Math.max(1, completed + 1)));
       }
     },
     [currentModule?.solved],
@@ -189,17 +188,17 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
         title="Stage progress"
         description={
           isSolved
-            ? "All 3 stages complete."
+            ? "All 4 steps complete."
             : `Currently on stage ${currentStage}: ${STAGE_LABELS[currentStage] ?? ""}`
         }
       >
         <StageIndicator
-          total={3}
-          current={isSolved ? 4 : currentStage}
-          completedThrough={isSolved ? 3 : currentStage - 1}
+          total={4}
+          current={isSolved ? 5 : currentStage}
+          completedThrough={isSolved ? 4 : currentStage - 1}
         />
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {[1, 2, 3].map((step) => {
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[1, 2, 3, 4].map((step) => {
             const isDone = step < currentStage || isSolved;
             const isCurrent = step === currentStage && !isSolved;
             return (
@@ -299,7 +298,7 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
             {result.letters}
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Type these letters into the module.
+            Type these letters, then {result.stages?.length === 4 ? "submit" : "query"}.
           </p>
         </SolverSection>
       )}
@@ -307,9 +306,8 @@ export default function TwoBitsSolver({ bomb }: TwoBitsSolverProps) {
       {isSolved && twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
       <SolverInstructions>
-        Enter the number shown on the Two Bits module each stage. Stage 1 is calculated
-        automatically from bomb edgework; stages 2 and 3 need the number the module
-        displays.
+        Stage 1 calculates the initial query. Enter each of the module’s three response
+        numbers in stages 2–4; query the first three letter pairs and submit the fourth.
       </SolverInstructions>
     </SolverLayout>
   );

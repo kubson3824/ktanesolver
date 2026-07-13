@@ -142,6 +142,39 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("first and second", 4));
 	}
 
+	@Test
+	void resolvesForgetMeNotSimonSaysTwoBitsAndAnotherSouvenir() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity forgetMeNot = module(ModuleType.FORGET_ME_NOT, true, Map.of(
+			"displayNumbers", List.of(7, 2), "calculatedNumbers", List.of(1, 4)));
+		ModuleEntity simonSays = module(ModuleType.SIMON_SAYS, true, Map.of(
+			"input", Map.of("flashes", List.of("RED", "BLUE"))));
+		ModuleEntity twoBits = module(ModuleType.TWO_BITS, true, Map.of("stages", List.of(
+			Map.of("number", 5, "letters", "kp"),
+			Map.of("number", 7, "letters", "vt"),
+			Map.of("number", 3, "letters", "tk"),
+			Map.of("number", 9, "letters", "dt"))));
+		ModuleEntity otherSouvenir = module(ModuleType.SOUVENIR, true, Map.of("history", List.of(Map.of(
+			"sourceModuleType", "FORGET_ME_NOT",
+			"question", "What was the digit displayed in the first stage of Forget Me Not?"))));
+		bomb.setModules(List.of(souvenir, forgetMeNot, simonSays, twoBits, otherSouvenir));
+
+		assertThat(solve(bomb, souvenir, forgetMeNot.getId(),
+			"What was the digit displayed in the second stage of Forget Me Not?",
+			List.of("1", "2", "4", "7"), false)).isEqualTo(new SouvenirOutput("2", 2));
+		assertThat(solve(bomb, souvenir, simonSays.getId(),
+			"What color flashed second in the final sequence in Simon Says?",
+			List.of("Red", "Blue", "Green", "Yellow"), false)).isEqualTo(new SouvenirOutput("Blue", 2));
+		assertThat(solve(bomb, souvenir, twoBits.getId(),
+			"What was the third correct query response from Two Bits?",
+			List.of("03", "07", "09"), false)).isEqualTo(new SouvenirOutput("09", 3));
+		assertThat(solve(bomb, souvenir, otherSouvenir.getId(),
+			"What was the first module asked about in the other Souvenir on this bomb?",
+			List.of("Forget Me Not", "Simon Says", "Two Bits"), false))
+			.isEqualTo(new SouvenirOutput("Forget Me Not", 1));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

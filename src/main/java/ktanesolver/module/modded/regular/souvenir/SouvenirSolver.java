@@ -65,6 +65,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		List<Map<String, Object>> history = history(module);
 		history.add(Map.of(
 			"sourceModuleId", source.getId().toString(),
+			"sourceModuleType", source.getType().name(),
 			"question", input.question().trim(),
 			"answer", answer,
 			"answerIndex", answerIndex + 1
@@ -78,6 +79,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return switch (source.getType()) {
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
+			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
 			case GAMEPAD -> answerIndex(answers, nested(source.getState(), "input", ordinal(q) == 1 ? "y" : "x"));
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
@@ -95,15 +97,45 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SEA_SHELLS -> seaShellsAnswerIndex(source.getState(), q, answers);
 			case SHAPE_SHIFT -> shapeShiftAnswerIndex(source.getState(), answers);
 			case SILLY_SLOTS -> sillySlotsAnswerIndex(source.getState(), q, answers);
+			case SIMON_SAYS -> answerIndex(answers, nested(source.getState(), "input", "flashes", ordinal(q)));
 			case SIMON_SCREAMS -> simonScreamsAnswerIndex(source.getState(), q, answers);
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
+			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
 			case THREE_D_MAZE -> answerIndex(answers, source.getState().get(q.contains("markings") ? "markings" : "cardinalDirection"));
 			case TIC_TAC_TOE -> answerIndex(answers, nested(source.getState(), "initialBoard", ticTacToePosition(q)));
+			case TWO_BITS -> twoBitsAnswerIndex(source.getState(), q, answers);
 			default -> null;
 		};
+	}
+
+	private static int otherSouvenirAnswerIndex(Map<String, Object> state, List<String> answers) {
+		Object raw = state.get("history");
+		if (!(raw instanceof List<?> history) || history.isEmpty() || !(history.getFirst() instanceof Map<?, ?> first)) return -1;
+		Object type = first.get("sourceModuleType");
+		if (type != null) {
+			Set<String> typeWords = words(String.valueOf(type).replace('_', ' '));
+			for (int i = 0; i < answers.size(); i++) if (words(answers.get(i)).equals(typeWords)) return i;
+		}
+		Object question = first.get("question");
+		if (question == null) return -1;
+		Set<String> questionWords = words(String.valueOf(question));
+		int result = -1;
+		for (int i = 0; i < answers.size(); i++) {
+			if (!questionWords.containsAll(words(answers.get(i)))) continue;
+			if (result >= 0) return -1;
+			result = i;
+		}
+		return result;
+	}
+
+	private static int twoBitsAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		int response = ordinal(question);
+		if (response < 0) return -1;
+		Object value = nested(state, "stages", response + 1, "number");
+		return answerIndex(answers, value instanceof Number number ? String.format(Locale.ROOT, "%02d", number.intValue()) : null);
 	}
 
 	private static int murderAnswerIndex(ModuleEntity source, String question, List<String> answers) {
@@ -263,7 +295,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		for (Object part : path) {
 			if (value instanceof Map<?, ?> current && part instanceof String key) value = current.get(key);
 			else if (value instanceof List<?> current && part instanceof Integer i && !current.isEmpty()) {
-				value = current.get(i < 0 ? current.size() - 1 : i);
+				int index = i < 0 ? current.size() - 1 : i;
+				if (index >= current.size()) return null;
+				value = current.get(index);
 			} else return null;
 		}
 		return value;

@@ -165,6 +165,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return getString(raw.action) === "SUBMIT"
         ? `!${TWITCH_PLACEHOLDER} submit ${getString(raw.submitSide)?.toLowerCase() ?? "unknown"}`
         : `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.column) ?? "?"} ${getNumber(raw.row) ?? "?"}`;
+
+    case ModuleType.COMPLICATED_BUTTONS:
+      return `!${TWITCH_PLACEHOLDER} press ${Array.isArray(raw.pressOrder) ? raw.pressOrder.join(" ") : "unknown"}`;
     
     case ModuleType.ANAGRAMS:
       if (getStringArray(raw.possibleSolutions)?.length) {

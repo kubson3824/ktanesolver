@@ -36,6 +36,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.WORD_SCRAMBLE]: { load: () => import("./WordScrambleSolver") },
   [ModuleType.WORD_SEARCH]: { load: () => import("./WordSearchSolver") },
   [ModuleType.BROKEN_BUTTONS]: { load: () => import("./BrokenButtonsSolver") },
+  [ModuleType.COMPLICATED_BUTTONS]: { load: () => import("./ComplicatedButtonsSolver") },
   [ModuleType.ANAGRAMS]: { load: () => import("./AnagramsSolver") },
   [ModuleType.COMBINATION_LOCK]: { load: () => import("./CombinationLockSolver") },
   [ModuleType.ROUND_KEYPAD]: { load: () => import("./RoundKeypadSolver") },
