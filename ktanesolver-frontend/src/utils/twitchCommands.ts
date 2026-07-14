@@ -410,6 +410,64 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     case ModuleType.WIRE_PLACEMENT:
       return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutWires) ? raw.cutWires.map((wire) => getString(asRecord(wire).coordinate)).filter(Boolean).join(" ") : "unknown"}`;
 
+    case ModuleType.DOUBLE_OH: {
+      const aliases: Record<string, string> = {
+        SINGLE_VERTICAL: "vert1",
+        SINGLE_HORIZONTAL: "horiz1",
+        DOUBLE_HORIZONTAL: "horiz2",
+        DOUBLE_VERTICAL: "vert2",
+        SQUARE: "submit",
+      };
+      return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.presses)?.map((press) => aliases[press] ?? press).join(" ") ?? "unknown"}`;
+    }
+
+    case ModuleType.CHEAP_CHECKOUT:
+      return raw.needsSecondPayment
+        ? `!${TWITCH_PLACEHOLDER} submit`
+        : `!${TWITCH_PLACEHOLDER} submit ${getNumber(raw.change)?.toFixed(2) ?? "unknown"}`;
+
+    case ModuleType.COORDINATES: {
+      const clues = getStringArray(raw.matchingClues);
+      return clues?.length === 2
+        ? clues.map((clue) => `!${TWITCH_PLACEHOLDER} submit ${clue.replace(/\s+/g, " ")}`).join("; ")
+        : `!${TWITCH_PLACEHOLDER} submit unknown`;
+    }
+
+    case ModuleType.LIGHT_CYCLE: {
+      const codes: Record<string, string> = { RED: "R", YELLOW: "Y", GREEN: "G", BLUE: "B", MAGENTA: "M", WHITE: "W" };
+      return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.sequence)?.map((color) => codes[color] ?? color).join(" ") ?? "unknown"}`;
+    }
+
+    case ModuleType.RHYTHMS: {
+      if (getBoolean(raw.mash)) return `!${TWITCH_PLACEHOLDER} mash`;
+      const actions = Array.isArray(raw.actions) ? raw.actions.map(asRecord) : [];
+      return actions.length
+        ? actions.map((action) => {
+            const beeps = getNumber(action.beeps) ?? 0;
+            return `!${TWITCH_PLACEHOLDER} press ${getString(action.button) ?? "unknown"}${beeps ? ` ${beeps}` : ""}`;
+          }).join("; ")
+        : `!${TWITCH_PLACEHOLDER} unknown`;
+    }
+
+    case ModuleType.COLOR_MATH: {
+      const codes: Record<string, string> = { BLUE: "B", GREEN: "G", PURPLE: "P", YELLOW: "Y", WHITE: "W", MAGENTA: "M", RED: "R", ORANGE: "O", GRAY: "A", BLACK: "K" };
+      const colors = getStringArray(raw.colors);
+      return `!${TWITCH_PLACEHOLDER} set ${colors?.map((color) => codes[color] ?? color).join(",") ?? "unknown"}; !${TWITCH_PLACEHOLDER} submit`;
+    }
+
+    case ModuleType.ONLY_CONNECT: {
+      const position = getNumber(raw.position);
+      if (position) return `!${TWITCH_PLACEHOLDER} press ${position}`;
+      const groups = Array.isArray(raw.groups) ? raw.groups.map(asRecord) : [];
+      return groups.slice(0, 2).map((group) => `!${TWITCH_PLACEHOLDER} press ${getStringArray(group.letters)?.join(" ") ?? "unknown"}`).join("; ");
+    }
+
+    case ModuleType.CHORD_QUALITIES:
+      return `!${TWITCH_PLACEHOLDER} submit ${getStringArray(raw.answerNotes)?.map((note) => note.replace("♯", "#")).join(" ") ?? "unknown"}`;
+
+    case ModuleType.CREATION:
+      return `!${TWITCH_PLACEHOLDER} combine ${getString(raw.first)?.toLowerCase() ?? "unknown"} ${getString(raw.second)?.toLowerCase() ?? "unknown"}`;
+
     case ModuleType.SEA_SHELLS:
       return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.pressOrder)?.join(" ") ?? "unknown"}`;
 

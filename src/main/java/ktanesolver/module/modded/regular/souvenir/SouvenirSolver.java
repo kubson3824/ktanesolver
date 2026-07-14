@@ -47,7 +47,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			return failure("Enter the 2 to 6 answers shown on Souvenir");
 		}
 		if (input.answers().stream().anyMatch(answer -> answer == null || answer.isBlank())) return failure("Answer labels cannot be blank");
-		if (input.answers().stream().map(SouvenirSolver::normalize).distinct().count() != input.answers().size()) {
+		if (input.answers().stream().map(SouvenirSolver::answerLabel).distinct().count() != input.answers().size()) {
 			return failure("Answer labels must be unique");
 		}
 
@@ -78,6 +78,10 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		String q = normalize(question);
 		return switch (source.getType()) {
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
+			case CHEAP_CHECKOUT -> cheapCheckoutAnswerIndex(source.getState(), q, answers);
+			case CHORD_QUALITIES -> chordQualitiesAnswerIndex(source.getState(), answers);
+			case CREATION -> answerIndex(answers, source.getState().get("firstWeather"));
+			case COORDINATES -> answerIndex(answers, source.getState().get("gridSizeClue"));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
 			case GAMEPAD -> answerIndex(answers, nested(source.getState(), "input", ordinal(q) == 1 ? "y" : "x"));
@@ -89,11 +93,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case MORSEMATICS -> membershipAnswerIndex(answers, source.getState().get("letters"), null, q.contains("not present"));
 			case MURDER -> murderAnswerIndex(source, q, answers);
 			case MYSTIC_SQUARE -> answerIndex(answers, nested(source.getState(), "input", "grid", 4));
+			case NEUTRALIZATION -> answerIndex(answers, source.getState().get(q.contains("volume") ? "acidVolume" : "acidColor"));
+			case ONLY_CONNECT -> answerIndex(answers, nested(source.getState(), "hieroglyphs", onlyConnectPosition(q)));
 			case PERSPECTIVE_PEGS -> answerIndex(answers, nested(source.getState(), "initialSequence", ordinal(q)));
 			case PROBING -> {
 				Object frequency = nested(source.getState(), "missingFrequenciesByWire", probingWireIndex(q));
 				yield answerIndex(answers, frequency == null ? null : frequency + "Hz");
 			}
+			case RHYTHMS -> answerIndex(answers, source.getState().get("lastSuccessfulColor"));
 			case SEA_SHELLS -> seaShellsAnswerIndex(source.getState(), q, answers);
 			case SHAPE_SHIFT -> shapeShiftAnswerIndex(source.getState(), answers);
 			case SILLY_SLOTS -> sillySlotsAnswerIndex(source.getState(), q, answers);
@@ -109,6 +116,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case TWO_BITS -> twoBitsAnswerIndex(source.getState(), q, answers);
 			default -> null;
 		};
+	}
+
+	private static int cheapCheckoutAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		Object raw = state.get("paidAmounts");
+		if (!(raw instanceof List<?> paidAmounts) || paidAmounts.isEmpty()) return -1;
+		int index = ordinal(question);
+		if (index < 0 && paidAmounts.size() == 1) index = 0;
+		return index >= 0 && index < paidAmounts.size() ? answerIndex(answers, paidAmounts.get(index)) : -1;
 	}
 
 	private static int otherSouvenirAnswerIndex(Map<String, Object> state, List<String> answers) {
@@ -222,6 +237,18 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return result;
 	}
 
+	private static int chordQualitiesAnswerIndex(Map<String, Object> state, List<String> answers) {
+		if (!(state.get("givenNotes") instanceof Collection<?> notes)) return -1;
+		Set<String> given = notes.stream().map(note -> String.valueOf(note).replace('♯', '#').toUpperCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet());
+		int result = -1;
+		for (int i = 0; i < answers.size(); i++) {
+			if (!given.contains(answers.get(i).trim().replace('♯', '#').toUpperCase(Locale.ROOT))) continue;
+			if (result >= 0) return -1;
+			result = i;
+		}
+		return result;
+	}
+
 	private int resolveFromRecordedFacts(ModuleEntity source, String question, List<String> answers) {
 		List<Fact> facts = new ArrayList<>();
 		collect(source.getState(), "state", -1, false, facts);
@@ -318,6 +345,12 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return -1;
 	}
 
+	private static int onlyConnectPosition(String question) {
+		String[] positions = {"top left", "top middle", "top right", "bottom left", "bottom middle", "bottom right"};
+		for (int i = 0; i < positions.length; i++) if (question.contains(positions[i])) return i;
+		return -1;
+	}
+
 	private static Integer answerIndex(List<String> answers, Object answer) {
 		if (answer == null) return -1;
 		if (answer instanceof Collection<?> accepted) {
@@ -371,6 +404,10 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		if (value instanceof Collection<?> collection) value = collection.stream().map(String::valueOf).toList();
 		return String.valueOf(value).replaceAll("([a-z])([A-Z])", "$1 $2")
 			.replaceAll("[^\\p{L}\\p{N}]+", " ").trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+	}
+
+	private static String answerLabel(String value) {
+		return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
 	}
 
 	@SuppressWarnings("unchecked")

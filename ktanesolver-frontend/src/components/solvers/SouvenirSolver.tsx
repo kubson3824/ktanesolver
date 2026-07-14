@@ -13,6 +13,7 @@ import { SOUND_OPTIONS } from "./ListeningSolver";
 import { MOVES, OPPONENTS, opponentIconUrl } from "./MonsplodeFightSolver";
 import { EDGES, Shape } from "./ShapeShiftSolver";
 import type { ShapeEdge } from "../../services/shapeShiftService";
+import { ONLY_CONNECT_HIEROGLYPHS, OnlyConnectHieroglyph } from "./OnlyConnectSolver";
 
 type HistoryEntry = { question: string; answer: string; answerIndex: number };
 type SouvenirState = {
@@ -28,6 +29,10 @@ type SouvenirState = {
 const emptyAnswers = () => ["", ""];
 const humanize = (type: string) => type.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const asRecord = (value: unknown) => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const CREATION_WEATHERS = [
+  { value: "Clear", icon: "☀️" }, { value: "Heat Wave", icon: "🌡️" },
+  { value: "Meteor Shower", icon: "☄️" }, { value: "Rain", icon: "🌧️" }, { value: "Windy", icon: "💨" },
+];
 
 function SwitchPattern({ value }: { value: string | boolean[] }) {
   const switches = typeof value === "string" ? value.split("") : value.map((up) => up ? "Q" : "R");
@@ -42,13 +47,17 @@ function AnswerField({ sourceType, question, value, onChange, disabled, index }:
   const lowerQuestion = question.toLowerCase();
   const options = sourceType === ModuleType.LISTENING ? SOUND_OPTIONS
     : sourceType === ModuleType.MONSPLODE_FIGHT && lowerQuestion.includes("creature") ? OPPONENTS
-    : sourceType === ModuleType.MONSPLODE_FIGHT && lowerQuestion.includes("move") ? MOVES : null;
+    : sourceType === ModuleType.MONSPLODE_FIGHT && lowerQuestion.includes("move") ? MOVES
+    : sourceType === ModuleType.ONLY_CONNECT ? ONLY_CONNECT_HIEROGLYPHS
+    : sourceType === ModuleType.CREATION ? CREATION_WEATHERS.map(({ value }) => value) : null;
   if (options) return <div className="flex flex-1 items-center gap-2">
     <select value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} aria-label={`Answer ${index + 1}`} className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm">
       <option value="">Choose answer {index + 1}…</option>
       {options.map((option) => <option key={option}>{option}</option>)}
     </select>
     {sourceType === ModuleType.MONSPLODE_FIGHT && lowerQuestion.includes("creature") && value && <img src={opponentIconUrl(value)} alt={value} className="h-10 w-10 rounded border object-contain p-1" />}
+    {sourceType === ModuleType.ONLY_CONNECT && value && <OnlyConnectHieroglyph name={value} className="h-10 w-10 shrink-0 rounded border p-1" />}
+    {sourceType === ModuleType.CREATION && value && <span className="text-2xl" role="img" aria-label={value}>{CREATION_WEATHERS.find((weather) => weather.value === value)?.icon}</span>}
   </div>;
   if (sourceType === ModuleType.SHAPE_SHIFT) {
     const [left = "", right = ""] = value.split("|");
@@ -91,6 +100,13 @@ function RecordedTarget({ source, question }: { source: BombEntity["modules"][nu
     return EDGES.includes(left) && EDGES.includes(right) ? <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-2 text-center"><div className="text-xs text-muted-foreground">Recorded target shape</div><Shape left={left} right={right} className="mx-auto h-20 w-32 text-primary" /></div> : null;
   }
   if (source.type === ModuleType.SWITCHES && Array.isArray(state.currentSwitches)) return <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3"><div className="mb-2 text-center text-xs text-muted-foreground">Recorded initial switches</div><SwitchPattern value={state.currentSwitches.map(Boolean)} /></div>;
+  if (source.type === ModuleType.ONLY_CONNECT && Array.isArray(state.hieroglyphs)) {
+    const positions = ["top left", "top middle", "top right", "bottom left", "bottom middle", "bottom right"];
+    const position = positions.findIndex((value) => question.toLowerCase().replaceAll("-", " ").includes(value));
+    const glyph = position >= 0 ? state.hieroglyphs[position] : null;
+    if (typeof glyph === "string") return <div className="mt-3 flex items-center justify-center gap-3 rounded-md border border-primary/30 bg-primary/5 p-3"><OnlyConnectHieroglyph name={glyph} className="h-16 w-16" /><strong>{glyph}</strong></div>;
+  }
+  if (source.type === ModuleType.CREATION && typeof state.firstWeather === "string") return <div className="mt-3 flex items-center justify-center gap-3 rounded-md border border-primary/30 bg-primary/5 p-3"><span className="text-4xl" role="img" aria-label={state.firstWeather}>{CREATION_WEATHERS.find((weather) => weather.value === state.firstWeather)?.icon}</span><strong>{state.firstWeather}</strong></div>;
   return null;
 }
 

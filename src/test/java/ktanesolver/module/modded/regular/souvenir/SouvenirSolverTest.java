@@ -126,6 +126,60 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesCheapCheckoutSingleAndTwoPaymentQuestions() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity onePayment = module(ModuleType.CHEAP_CHECKOUT, true, Map.of("paidAmounts", List.of("$24.00")));
+		ModuleEntity twoPayments = module(ModuleType.CHEAP_CHECKOUT, true, Map.of("paidAmounts", List.of("$10.00", "$25.00")));
+		bomb.setModules(List.of(souvenir, onePayment, twoPayments));
+
+		assertThat(solve(bomb, souvenir, onePayment.getId(), "What was the paid amount in Cheap Checkout?",
+			List.of("$20.00", "$24.00", "$25.00"), false)).isEqualTo(new SouvenirOutput("$24.00", 2));
+		assertThat(solve(bomb, souvenir, twoPayments.getId(), "What was the first paid amount in Cheap Checkout?",
+			List.of("$10.00", "$20.00", "$25.00"), false)).isEqualTo(new SouvenirOutput("$10.00", 1));
+		assertThat(solve(bomb, souvenir, twoPayments.getId(), "What was the second paid amount in Cheap Checkout?",
+			List.of("$10.00", "$20.00", "$25.00"), false)).isEqualTo(new SouvenirOutput("$25.00", 3));
+	}
+
+	@Test
+	void resolvesCoordinatesGridSizeInItsOriginalNotation() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity coordinates = module(ModuleType.COORDINATES, true, Map.of("gridSizeClue", "4×7"));
+		bomb.setModules(List.of(souvenir, coordinates));
+
+		assertThat(solve(bomb, souvenir, coordinates.getId(), "What was the grid size in Coordinates?",
+			List.of("4×6", "4×7", "5×7"), false)).isEqualTo(new SouvenirOutput("4×7", 2));
+	}
+
+	@Test
+	void resolvesChordQualitiesGivenNoteMembership() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity chordQualities = module(ModuleType.CHORD_QUALITIES, true,
+			Map.of("givenNotes", List.of("A♯", "C", "D♯", "E")));
+		bomb.setModules(List.of(souvenir, chordQualities));
+
+		assertThat(solve(bomb, souvenir, chordQualities.getId(),
+			"Which note was part of the given chord in Chord Qualities?",
+			List.of("A", "A♯", "B", "C♯", "D", "F"), false))
+			.isEqualTo(new SouvenirOutput("A♯", 2));
+	}
+
+	@Test
+	void resolvesCreationsFirstWeatherFromTheSuccessfulRun() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity creation = module(ModuleType.CREATION, true, Map.of("firstWeather", "Meteor Shower"));
+		bomb.setModules(List.of(souvenir, creation));
+
+		assertThat(solve(bomb, souvenir, creation.getId(),
+			"What were the weather conditions on the first day in Creation?",
+			List.of("Clear", "Heat Wave", "Meteor Shower", "Rain", "Windy"), false))
+			.isEqualTo(new SouvenirOutput("Meteor Shower", 3));
+	}
+
+	@Test
 	void resolvesEverySimonScreamsQuestionFamily() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
@@ -185,6 +239,48 @@ class SouvenirSolverTest {
 			"What was the first module asked about in the other Souvenir on this bomb?",
 			List.of("Forget Me Not", "Simon Says", "Two Bits"), false))
 			.isEqualTo(new SouvenirOutput("Forget Me Not", 1));
+	}
+
+	@Test
+	void resolvesRhythmsFinalSuccessfulColor() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity rhythms = module(ModuleType.RHYTHMS, true, Map.of("lastSuccessfulColor", "GREEN"));
+		bomb.setModules(List.of(souvenir, rhythms));
+
+		assertThat(solve(bomb, souvenir, rhythms.getId(), "What was the color in Rhythms?",
+			List.of("Blue", "Red", "Green", "Yellow"), false))
+			.isEqualTo(new SouvenirOutput("Green", 3));
+	}
+
+	@Test
+	void resolvesOnlyConnectHieroglyphSpritesByTheirCanonicalNames() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity onlyConnect = module(ModuleType.ONLY_CONNECT, true, Map.of("hieroglyphs", List.of(
+			"Lion", "Water", "Eye of Horus", "Two Reeds", "Horned Viper", "Twisted Flax"
+		)));
+		bomb.setModules(List.of(souvenir, onlyConnect));
+
+		assertThat(solve(bomb, souvenir, onlyConnect.getId(),
+			"Which Egyptian hieroglyph was in the top right in Only Connect?",
+			List.of("Two Reeds", "Lion", "Eye of Horus", "Water", "Horned Viper", "Twisted Flax"), false))
+			.isEqualTo(new SouvenirOutput("Eye of Horus", 3));
+	}
+
+	@Test
+	void resolvesBothNeutralizationQuestionFamilies() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity neutralization = module(ModuleType.NEUTRALIZATION, true, Map.of(
+			"acidColor", "RED", "acidVolume", 15
+		));
+		bomb.setModules(List.of(souvenir, neutralization));
+
+		assertThat(solve(bomb, souvenir, neutralization.getId(), "What was the acid's color in Neutralization?",
+			List.of("Yellow", "Green", "Red", "Blue"), false)).isEqualTo(new SouvenirOutput("Red", 3));
+		assertThat(solve(bomb, souvenir, neutralization.getId(), "What was the acid's volume in Neutralization?",
+			List.of("5", "10", "15", "20"), true)).isEqualTo(new SouvenirOutput("15", 3));
 	}
 
 	@SuppressWarnings("unchecked")
