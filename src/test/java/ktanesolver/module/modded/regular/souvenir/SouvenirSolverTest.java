@@ -114,6 +114,18 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesTextFieldDisplayedLetter() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity textField = module(ModuleType.TEXT_FIELD, true, Map.of("displayedLetter", "E"));
+		bomb.setModules(List.of(souvenir, textField));
+
+		assertThat(solve(bomb, souvenir, textField.getId(), "What was the displayed letter in Text Field?",
+			List.of("A", "B", "C", "D", "E", "F"), false))
+			.isEqualTo(new SouvenirOutput("E", 5));
+	}
+
+	@Test
 	void resolvesEverySimonScreamsQuestionFamily() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

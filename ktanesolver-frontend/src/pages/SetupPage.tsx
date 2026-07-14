@@ -3,13 +3,16 @@ import {Link, useNavigate, useParams} from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import {useRoundStore} from "../store/useRoundStore";
+import {useCatalogStore} from "../store/useCatalogStore";
 import {
     type BombEntity,
     PortType,
     RoundStatus,
 } from "../types";
 import BombCard from "../features/setup/BombCard";
+import MissionImportDialog from "../features/setup/MissionImportDialog";
 import SetupModuleManifest from "../features/setup/SetupModuleManifest";
+import {resolveMissionBomb, type MissionDefinition} from "../services/missionService";
 import ModuleSelector from "../components/ModuleSelector";
 import PageContainer from "../components/layout/PageContainer";
 import PageHeader from "../components/layout/PageHeader";
@@ -133,8 +136,11 @@ export default function SetupPage() {
     const startRound = useRoundStore((state) => state.startRound);
     const loading = useRoundStore((state) => state.loading);
     const error = useRoundStore((state) => state.error);
+    const catalog = useCatalogStore((state) => state.catalog);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isMissionPickerOpen, setIsMissionPickerOpen] = useState(false);
+    const [missionImport, setMissionImport] = useState<{mission: MissionDefinition; bombIndex: number}>();
     const [editingBomb, setEditingBomb] = useState<BombEntity | undefined>();
     const [formState, setFormState] = useState<BombFormState>(initialFormState);
     const [indicatorDraft, setIndicatorDraft] = useState<{
@@ -150,11 +156,13 @@ export default function SetupPage() {
     const isEditing = Boolean(editingBomb);
     const canStartRound = round && round.bombs.length > 0;
 
-    // Edit mode never touches modules, so it drops the Modules step
-    const stepLabels = isEditing
+    // Edit and mission-import modes never ask the user to select modules.
+    const stepLabels = isEditing || missionImport
         ? ["Basics", "Indicators", "Port Plates"]
         : ["Basics", "Indicators", "Port Plates", "Modules"];
     const stepCount = stepLabels.length;
+    const missionBomb = missionImport?.mission.bombs[missionImport.bombIndex];
+    const missionResolution = missionBomb ? resolveMissionBomb(missionBomb, catalog) : undefined;
 
     useEffect(() => {
         if (!roundId) return;
@@ -195,6 +203,7 @@ export default function SetupPage() {
 
     const openCreateForm = async () => {
         if (!round) return;
+        setMissionImport(undefined);
         setEditingBomb(undefined);
         setFormState(initialFormState());
         setFormStep(0);
@@ -202,6 +211,7 @@ export default function SetupPage() {
     };
 
     const openEditForm = (bomb: BombEntity) => {
+        setMissionImport(undefined);
         setEditingBomb(bomb);
         setFormState({
             serialNumber: bomb.serialNumber ?? "",
@@ -223,6 +233,15 @@ export default function SetupPage() {
                 return acc;
             }, {} as Record<string, number>) ?? {},
         });
+        setFormStep(0);
+        setIsFormOpen(true);
+    };
+
+    const startMissionImport = (mission: MissionDefinition) => {
+        if (!round || mission.bombs.length === 0) return;
+        setEditingBomb(undefined);
+        setMissionImport({mission, bombIndex: 0});
+        setFormState({...initialFormState(), modules: resolveMissionBomb(mission.bombs[0], catalog).modules});
         setFormStep(0);
         setIsFormOpen(true);
     };
@@ -297,7 +316,20 @@ export default function SetupPage() {
             ...edgeworkPayload,
             modules: initialModules,
         });
+
+        if (missionImport && missionImport.bombIndex + 1 < missionImport.mission.bombs.length) {
+            const bombIndex = missionImport.bombIndex + 1;
+            setMissionImport({...missionImport, bombIndex});
+            setFormState({
+                ...initialFormState(),
+                modules: resolveMissionBomb(missionImport.mission.bombs[bombIndex], catalog).modules,
+            });
+            setFormStep(0);
+            return;
+        }
+
         setIsFormOpen(false);
+        setMissionImport(undefined);
         setFormState(initialFormState());
     };
 
@@ -450,17 +482,27 @@ export default function SetupPage() {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <p className="text-base font-semibold text-foreground">Bomb Manifest</p>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={openCreateForm}
-                            disabled={loading}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Bomb
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsMissionPickerOpen(true)}
+                                disabled={loading}
+                            >
+                                Import Mission
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={openCreateForm}
+                                disabled={loading}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Bomb
+                            </Button>
+                        </div>
                     </div>
 
                     {round?.bombs.length ? (
@@ -503,6 +545,12 @@ export default function SetupPage() {
                     )}
                 </div>
 
+                <MissionImportDialog
+                    open={isMissionPickerOpen}
+                    onOpenChange={setIsMissionPickerOpen}
+                    onSelect={startMissionImport}
+                />
+
                 {/* Bottom actions */}
                 <div className="flex items-center justify-between gap-3 pt-2">
                     <Link
@@ -519,11 +567,21 @@ export default function SetupPage() {
                 </div>
 
                 {/* Bomb form dialog */}
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <Dialog
+                    open={isFormOpen}
+                    onOpenChange={(open) => {
+                        setIsFormOpen(open);
+                        if (!open) setMissionImport(undefined);
+                    }}
+                >
                     <DialogContent className="h-[100dvh] md:h-auto md:max-h-[90vh] max-w-none md:max-w-[720px] flex flex-col gap-0 p-0 rounded-none md:rounded-lg overflow-hidden">
                         <DialogHeader className="bg-muted border-b border-border px-5 py-3.5 flex flex-row items-center justify-between gap-4 space-y-0 shrink-0">
                             <DialogTitle className="text-base font-bold uppercase">
-                                {isEditing ? "Edgework Adjustments" : "New Bomb Setup"}
+                                {isEditing
+                                    ? "Edgework Adjustments"
+                                    : missionImport
+                                        ? `${missionImport.mission.name} — Bomb ${missionImport.bombIndex + 1}/${missionImport.mission.bombs.length}`
+                                        : "New Bomb Setup"}
                             </DialogTitle>
                             <DialogClose asChild>
                                 <button type="button" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -560,6 +618,18 @@ export default function SetupPage() {
                                         <p className="text-xs text-muted-foreground">
                                             Step 1 of {stepCount} — enter the serial number and battery count from this bomb's edgework.
                                         </p>
+                                        {missionBomb && missionResolution && (
+                                            <Alert variant={missionResolution.randomCount + missionResolution.unresolvedCount > 0 ? "warning" : "success"}>
+                                                <AlertTitle>
+                                                    {missionResolution.importedCount} of {missionBomb.modules} modules ready
+                                                </AlertTitle>
+                                                <AlertDescription>
+                                                    Fixed modules supported by this solver are added automatically.
+                                                    {missionResolution.randomCount > 0 && ` ${missionResolution.randomCount} random pool slots must be added after the game rolls them.`}
+                                                    {missionResolution.unresolvedCount > 0 && ` ${missionResolution.unresolvedCount} unsupported or selector slots were skipped.`}
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
                                         <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
                                             <label className="flex flex-col gap-1.5">
                                                 <span className="text-[11px] uppercase text-muted-foreground">Serial number</span>
@@ -768,7 +838,7 @@ export default function SetupPage() {
                                     </div>
                                 )}
 
-                                {formStep === 3 && !isEditing && (
+                                {formStep === 3 && !isEditing && !missionImport && (
                                     <div className="flex flex-col gap-3">
                                         <p className="text-xs text-muted-foreground">
                                             Step 4 of {stepCount} — pick every module on this bomb, with counts.
@@ -805,7 +875,11 @@ export default function SetupPage() {
                                         disabled={loading}
                                         loading={loading}
                                     >
-                                        {isEditing ? "Save changes" : "Save bomb"}
+                                        {isEditing
+                                            ? "Save changes"
+                                            : missionImport && missionImport.bombIndex + 1 < missionImport.mission.bombs.length
+                                                ? "Save & next bomb"
+                                                : "Save bomb"}
                                     </Button>
                                 ) : (
                                     <Button

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { solveKeypads, type KeypadSymbol } from "../../services/keypadsService";
+import {
+  KEYPAD_SYMBOL_DISPLAY as SYMBOL_DISPLAY,
+  KEYPAD_SYMBOLS as UNIQUE_SYMBOLS,
+  solveKeypads,
+  type KeypadSymbol,
+} from "../../services/keypadsService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { useRoundStore } from "../../store/useRoundStore";
 import {
@@ -19,22 +24,6 @@ import { cn } from "../../lib/cn";
 interface KeypadsSolverProps {
   bomb: BombEntity | null | undefined;
 }
-
-const SYMBOL_DISPLAY: Record<KeypadSymbol, string> = {
-  BALLOON: "Ϙ", AT: "Ѧ", LAMBDA: "ƛ", LIGHTNING: "ϟ", SQUID_KNIFE: "Ѭ",
-  CURSIVE: "Ҩ", BACKWARD_C: "Ͽ", EURO: "Ӭ", N_WITH_HAT: "Ҋ", HOLLOW_STAR: "☆",
-  QUESTION_MARK: "¿", COPYRIGHT: "©", PUMPKIN: "Ѽ", DOUBLE_K: "Җ", MELTED_3: "Ԇ",
-  SIX: "б", PARAGRAPH: "¶", BT: "Ѣ", SMILEY: "ټ", PITCHFORK: "Ψ",
-  C: "Ͼ", DRAGON: "Ѯ", FILLED_STAR: "★", TRACK: "҂", AE: "æ",
-  HOOK_N: "ⳤ", OMEGA: "Ω",
-};
-
-const UNIQUE_SYMBOLS: readonly KeypadSymbol[] = [
-  "BALLOON", "AT", "LAMBDA", "LIGHTNING", "SQUID_KNIFE", "HOOK_N", "BACKWARD_C",
-  "EURO", "CURSIVE", "HOLLOW_STAR", "QUESTION_MARK", "COPYRIGHT", "PUMPKIN",
-  "DOUBLE_K", "MELTED_3", "SIX", "PARAGRAPH", "BT", "SMILEY", "PITCHFORK",
-  "C", "DRAGON", "FILLED_STAR", "TRACK", "AE", "N_WITH_HAT", "OMEGA",
-] as const;
 
 export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
   const [selectedSymbols, setSelectedSymbols] = useState<KeypadSymbol[]>([]);

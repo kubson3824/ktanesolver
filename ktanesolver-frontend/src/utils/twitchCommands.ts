@@ -407,6 +407,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
     case ModuleType.FOLLOW_THE_LEADER:
       return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutPlugs) ? raw.cutPlugs.join(" ") : "unknown"}`;
 
+    case ModuleType.WIRE_PLACEMENT:
+      return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutWires) ? raw.cutWires.map((wire) => getString(asRecord(wire).coordinate)).filter(Boolean).join(" ") : "unknown"}`;
+
     case ModuleType.SEA_SHELLS:
       return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.pressOrder)?.join(" ") ?? "unknown"}`;
 
