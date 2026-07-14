@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement KTaNE Module"
+  short_description: "Build a Souvenir-compatible KTaNE solver"
+  default_prompt: "Use $implement-ktane-module to implement this KTaNE manual in the current solver project and restart both servers."
