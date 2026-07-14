@@ -438,6 +438,21 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.sequence)?.map((color) => codes[color] ?? color).join(" ") ?? "unknown"}`;
     }
 
+    case ModuleType.RUBIKS_CUBE:
+      return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.moves)?.join(" ").toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.FIZZ_BUZZ:
+      return `!${TWITCH_PLACEHOLDER} submit ${getStringArray(raw.actions)?.join(" ").toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.THE_CLOCK:
+      return `!${TWITCH_PLACEHOLDER} set ${getString(raw.targetTime)?.toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.LED_ENCRYPTION:
+      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.correctLetters)?.[0]?.toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.FAST_MATH:
+      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.answer) ?? "unknown"}`;
+
     case ModuleType.RHYTHMS: {
       if (getBoolean(raw.mash)) return `!${TWITCH_PLACEHOLDER} mash`;
       const actions = Array.isArray(raw.actions) ? raw.actions.map(asRecord) : [];

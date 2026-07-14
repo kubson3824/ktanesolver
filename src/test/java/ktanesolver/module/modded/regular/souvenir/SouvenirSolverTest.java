@@ -283,6 +283,68 @@ class SouvenirSolverTest {
 			List.of("5", "10", "15", "20"), true)).isEqualTo(new SouvenirOutput("15", 3));
 	}
 
+	@Test
+	void resolvesFizzBuzzDigitsOnlyForChangedDisplays() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity fizzBuzz = module(ModuleType.FIZZ_BUZZ, true, Map.of(
+			"displayedNumbers", List.of("1234567", "7654321", "9081726"),
+			"actions", List.of("FIZZ", "NUMBER", "BUZZ")
+		));
+		bomb.setModules(List.of(souvenir, fizzBuzz));
+
+		assertThat(solve(bomb, souvenir, fizzBuzz.getId(),
+			"What was the first digit on the top display of FizzBuzz?",
+			List.of("0", "1", "2", "3", "4", "5"), false)).isEqualTo(new SouvenirOutput("1", 2));
+		assertThat(solve(bomb, souvenir, fizzBuzz.getId(),
+			"What was the sixth digit on the bottom display of FizzBuzz?",
+			List.of("0", "1", "2", "3", "4", "5"), false)).isEqualTo(new SouvenirOutput("2", 3));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir, new SouvenirInput(
+			fizzBuzz.getId(), "What was the first digit on the middle display of FizzBuzz?",
+			List.of("0", "1", "2", "3", "4", "5"), false))).isInstanceOf(SolveFailure.class);
+	}
+
+	@Test
+	void resolvesLedEncryptionLettersForEachNonFinalStage() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity ledEncryption = module(ModuleType.LED_ENCRYPTION, true, Map.of(
+			"totalStages", 3,
+			"stageLetters", List.of(
+				List.of("B", "D", "G", "C"),
+				List.of("A", "F", "Q", "K"),
+				List.of("H", "L", "P", "T")
+			)
+		));
+		bomb.setModules(List.of(souvenir, ledEncryption));
+
+		assertThat(solve(bomb, souvenir, ledEncryption.getId(),
+			"Which of these letters was present in the first stage of LED Encryption?",
+			List.of("B", "E", "H", "M", "R", "Z"), false)).isEqualTo(new SouvenirOutput("B", 1));
+		assertThat(solve(bomb, souvenir, ledEncryption.getId(),
+			"Which of these letters was present in the second stage of LED Encryption?",
+			List.of("B", "F", "H", "M", "R", "Z"), false)).isEqualTo(new SouvenirOutput("F", 2));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir, new SouvenirInput(
+			ledEncryption.getId(), "Which of these letters was present in the third stage of LED Encryption?",
+			List.of("A", "H", "M", "Q", "V", "Z"), false))).isInstanceOf(SolveFailure.class);
+	}
+
+	@Test
+	void resolvesFastMathLastPairAfterAReset() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity fastMath = module(ModuleType.FAST_MATH, true, Map.of(
+			"pairHistory", List.of("AB", "DG", "ZX"),
+			"lastPair", "ZX"
+		));
+		bomb.setModules(List.of(souvenir, fastMath));
+
+		assertThat(solve(bomb, souvenir, fastMath.getId(),
+			"What was the last pair of letters in Fast Math?",
+			List.of("AB", "DG", "KX", "NA", "TX", "ZX"), false))
+			.isEqualTo(new SouvenirOutput("ZX", 6));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

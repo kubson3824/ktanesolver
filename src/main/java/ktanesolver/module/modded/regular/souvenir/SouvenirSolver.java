@@ -84,7 +84,10 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COORDINATES -> answerIndex(answers, source.getState().get("gridSizeClue"));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
+			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
+			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
 			case GAMEPAD -> answerIndex(answers, nested(source.getState(), "input", ordinal(q) == 1 ? "y" : "x"));
+			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
 			case MONSPLODE_FIGHT -> q.contains("creature")
@@ -116,6 +119,24 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case TWO_BITS -> twoBitsAnswerIndex(source.getState(), q, answers);
 			default -> null;
 		};
+	}
+
+	private static int ledEncryptionAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		int stage = ordinal(question);
+		Object total = state.get("totalStages");
+		if (!(total instanceof Number number) || stage < 0 || stage >= number.intValue() - 1) return -1;
+		return membershipAnswerIndex(answers, nested(state, "stageLetters", stage), null, false);
+	}
+
+	private static int fizzBuzzAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		int display = question.contains("top") ? 0 : question.contains("middle") ? 1 : question.contains("bottom") ? 2 : -1;
+		int digit = ordinal(question);
+		if (display < 0 || digit < 0 || digit >= 6) return -1;
+		Object action = nested(state, "actions", display);
+		Object number = nested(state, "displayedNumbers", display);
+		if (action == null || "number".equals(normalize(action)) || number == null) return -1;
+		String displayed = String.valueOf(number);
+		return displayed.matches("\\d{7}") ? answerIndex(answers, String.valueOf(displayed.charAt(digit))) : -1;
 	}
 
 	private static int cheapCheckoutAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
