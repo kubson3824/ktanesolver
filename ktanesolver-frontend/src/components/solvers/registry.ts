@@ -50,6 +50,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.LOGIC]: { load: () => import("./LogicSolver") },
   [ModuleType.FORGET_ME_NOT]: { load: () => import("./ForgetMeNotSolver") },
   [ModuleType.SOUVENIR]: { load: () => import("./SouvenirSolver") },
+  [ModuleType.BATTLESHIP]: { load: () => import("./BattleshipSolver") },
   [ModuleType.ASTROLOGY]: { load: () => import("./AstrologySolver") },
   [ModuleType.MYSTIC_SQUARE]: { load: () => import("./MysticSquareSolver") },
   [ModuleType.CRAZY_TALK]: { load: () => import("./CrazyTalkSolver") },
