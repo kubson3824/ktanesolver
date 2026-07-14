@@ -438,6 +438,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.sequence)?.map((color) => codes[color] ?? color).join(" ") ?? "unknown"}`;
     }
 
+    case ModuleType.BINARY_LEDS:
+      return `!${TWITCH_PLACEHOLDER} cut ${getString(raw.recommendedColor)?.toLowerCase() ?? "unknown"} ${getNumber(raw.recommendedValue) ?? "unknown"}`;
+
     case ModuleType.RUBIKS_CUBE:
       return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.moves)?.join(" ").toLowerCase() ?? "unknown"}`;
 
@@ -452,6 +455,16 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
 
     case ModuleType.FAST_MATH:
       return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.answer) ?? "unknown"}`;
+
+    case ModuleType.ZOO:
+      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.animals)?.join(", ") ?? "unknown"}`;
+
+    case ModuleType.POINT_OF_ORDER: {
+      const cards = getStringArray(raw.validCards) ?? [];
+      const ranks = [...new Set(cards.map((card) => card.slice(0, -1)))];
+      const suits = [...new Set(cards.map((card) => card.at(-1)))];
+      return `!${TWITCH_PLACEHOLDER} play ${ranks.join("/") || "unknown"} of ${suits.join("/") || "unknown"}`;
+    }
 
     case ModuleType.RHYTHMS: {
       if (getBoolean(raw.mash)) return `!${TWITCH_PLACEHOLDER} mash`;
