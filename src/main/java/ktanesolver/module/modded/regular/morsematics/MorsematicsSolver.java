@@ -45,20 +45,16 @@ public class MorsematicsSolver extends AbstractModuleSolver<MorsematicsInput, Mo
 		int secondValue = charToValue(secondChar);
 
 		// Step 1: For each indicator that has a matching letter in the received letters
-		for(int i = 0; i < letters.length(); i++) {
-			char letter = letters.charAt(i);
-            for (Map.Entry<String, Boolean> entry : bomb.getIndicators().entrySet()) {
-                String indicator = entry.getKey();
-                Boolean lit = entry.getValue();
-                if (indicator.contains(String.valueOf(letter))) {
-                    if (lit) {
-                        firstValue = wrapValue(firstValue + 1);
-                    } else {
-                        secondValue = wrapValue(secondValue + 1);
-                    }
-                }
-            }
-        }
+		for(Map.Entry<String, Boolean> entry: bomb.getIndicators().entrySet()) {
+			if(letters.chars().anyMatch(letter -> entry.getKey().indexOf(letter) >= 0)) {
+				if(entry.getValue()) {
+					firstValue = wrapValue(firstValue + 1);
+				}
+				else {
+					secondValue = wrapValue(secondValue + 1);
+				}
+			}
+		}
 
 		// Step 2: If the sum of your character pair is a square number
 		int sum = firstValue + secondValue;

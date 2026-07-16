@@ -19,6 +19,7 @@ import {
   useSolver,
   useSolverModulePersistence,
 } from "../common";
+import { CARD_REFERENCES, findCardReference } from "./modulesAgainstHumanityCards";
 
 type CardSide = "black" | "white";
 
@@ -27,6 +28,8 @@ interface PersistedState {
   initialBlackText?: string;
   initialWhiteText?: string;
   blackOnLeft?: boolean;
+  secondaryBlackText?: string;
+  secondaryWhiteText?: string;
   secondaryBlackPresent?: boolean | null;
   secondaryWhitePresent?: boolean | null;
   result?: ModulesAgainstHumanityOutput | null;
@@ -40,27 +43,6 @@ function Card({ color, position, label }: { color: CardSide; position: number; l
     <strong className="text-center font-mono text-5xl tabular-nums">{position}</strong>
     <span className="text-right text-xs font-semibold uppercase tracking-widest">{color}</span>
   </div>;
-}
-
-function PresenceSelect({ color, value, onChange, disabled }: {
-  color: CardSide;
-  value: boolean | null;
-  onChange: (value: boolean | null) => void;
-  disabled: boolean;
-}) {
-  return <label className="space-y-1.5 text-sm font-medium">
-    Does the secondary {color} card refer to a module on the bomb?
-    <select
-      value={value === null ? "" : String(value)}
-      onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")}
-      disabled={disabled}
-      className="block h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-    >
-      <option value="">Select…</option>
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
-  </label>;
 }
 
 function twitchCommands(result: ModulesAgainstHumanityOutput): string[] {
@@ -77,8 +59,8 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
   const [initialBlackText, setInitialBlackText] = useState("");
   const [initialWhiteText, setInitialWhiteText] = useState("");
   const [blackOnLeft, setBlackOnLeft] = useState(true);
-  const [secondaryBlackPresent, setSecondaryBlackPresent] = useState<boolean | null>(null);
-  const [secondaryWhitePresent, setSecondaryWhitePresent] = useState<boolean | null>(null);
+  const [secondaryBlackText, setSecondaryBlackText] = useState("");
+  const [secondaryWhiteText, setSecondaryWhiteText] = useState("");
   const [result, setResult] = useState<ModulesAgainstHumanityOutput | null>(null);
   const [commands, setCommands] = useState<string[]>([]);
   const {
@@ -86,18 +68,24 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
     setIsLoading, setIsSolved, setError, clearError, reset: resetSolverState, markModuleSolved,
   } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
+  const secondaryBlackReference = useMemo(() => findCardReference(secondaryBlackText), [secondaryBlackText]);
+  const secondaryWhiteReference = useMemo(() => findCardReference(secondaryWhiteText), [secondaryWhiteText]);
+  const isOnBomb = useCallback(
+    (moduleType?: string) => Boolean(moduleType && bomb?.modules.some((module) => module.type === moduleType)),
+    [bomb?.modules],
+  );
   const state = useMemo(() => ({
     initialBlackText, initialWhiteText, blackOnLeft,
-    secondaryBlackPresent, secondaryWhitePresent, result, twitchCommands: commands,
-  }), [initialBlackText, initialWhiteText, blackOnLeft, secondaryBlackPresent, secondaryWhitePresent, result, commands]);
+    secondaryBlackText, secondaryWhiteText, result, twitchCommands: commands,
+  }), [initialBlackText, initialWhiteText, blackOnLeft, secondaryBlackText, secondaryWhiteText, result, commands]);
 
   const restoreState = useCallback((saved: PersistedState) => {
     const input = saved.input ?? saved;
     if (typeof input.initialBlackText === "string") setInitialBlackText(input.initialBlackText);
     if (typeof input.initialWhiteText === "string") setInitialWhiteText(input.initialWhiteText);
     if (typeof input.blackOnLeft === "boolean") setBlackOnLeft(input.blackOnLeft);
-    if (typeof input.secondaryBlackPresent === "boolean") setSecondaryBlackPresent(input.secondaryBlackPresent);
-    if (typeof input.secondaryWhitePresent === "boolean") setSecondaryWhitePresent(input.secondaryWhitePresent);
+    if (typeof saved.secondaryBlackText === "string") setSecondaryBlackText(saved.secondaryBlackText);
+    if (typeof saved.secondaryWhiteText === "string") setSecondaryWhiteText(saved.secondaryWhiteText);
     if (saved.result) setResult(saved.result);
     if (Array.isArray(saved.twitchCommands)) setCommands(saved.twitchCommands);
   }, []);
@@ -123,11 +111,14 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
 
   const solve = async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) return setError("Missing required information");
+    if (atSecondaryStep && (!secondaryBlackReference || !secondaryWhiteReference)) {
+      return setError("Enter enough text to identify both secondary cards.");
+    }
     clearError(); setIsLoading(true);
     const input: ModulesAgainstHumanityInput = {
       initialBlackText, initialWhiteText, blackOnLeft,
-      secondaryBlackPresent: atSecondaryStep ? secondaryBlackPresent : null,
-      secondaryWhitePresent: atSecondaryStep ? secondaryWhitePresent : null,
+      secondaryBlackPresent: atSecondaryStep ? isOnBomb(secondaryBlackReference?.moduleType) : null,
+      secondaryWhitePresent: atSecondaryStep ? isOnBomb(secondaryWhiteReference?.moduleType) : null,
     };
     try {
       const response = await solveModulesAgainstHumanity(round.id, bomb.id, currentModule.id, input);
@@ -136,7 +127,10 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
       setCommands(nextCommands);
       setIsSolved(response.solved);
       if (response.solved) markModuleSolved(bomb.id, currentModule.id);
-      updateModuleAfterSolve(bomb.id, currentModule.id, { ...input, result: response.output, twitchCommands: nextCommands }, response.output, response.solved);
+      updateModuleAfterSolve(bomb.id, currentModule.id, {
+        ...input, secondaryBlackText, secondaryWhiteText,
+        result: response.output, twitchCommands: nextCommands,
+      }, response.output, response.solved);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Failed to solve Modules Against Humanity");
     } finally { setIsLoading(false); }
@@ -144,7 +138,7 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
 
   const reset = () => {
     setInitialBlackText(""); setInitialWhiteText(""); setBlackOnLeft(true);
-    setSecondaryBlackPresent(null); setSecondaryWhitePresent(null); setResult(null); setCommands([]);
+    setSecondaryBlackText(""); setSecondaryWhiteText(""); setResult(null); setCommands([]);
     resetSolverState();
   };
 
@@ -184,10 +178,28 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
           <Card color="white" position={result.secondaryWhitePosition} label="Secondary" />
         </div>
       </SolverSection>
-      <SolverSection title="Modules on the bomb">
+      <SolverSection title="Secondary card text" description="Type enough of each card to identify its referenced module automatically.">
+        <datalist id="mah-card-texts">
+          {CARD_REFERENCES.map((card) => <option key={card.text} value={card.text} />)}
+        </datalist>
         <div className="grid gap-3 md:grid-cols-2">
-          <PresenceSelect color="black" value={secondaryBlackPresent} onChange={setSecondaryBlackPresent} disabled={disabled} />
-          <PresenceSelect color="white" value={secondaryWhitePresent} onChange={setSecondaryWhitePresent} disabled={disabled} />
+          {([
+            ["black", secondaryBlackText, setSecondaryBlackText, secondaryBlackReference],
+            ["white", secondaryWhiteText, setSecondaryWhiteText, secondaryWhiteReference],
+          ] as const).map(([color, text, setText, reference]) => <label key={color} className="space-y-1.5 text-sm font-medium">
+            {color === "black" ? "Black" : "White"} card text
+            <input
+              type="text"
+              list="mah-card-texts"
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              disabled={disabled}
+              className="block h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            />
+            {reference && <span className="block text-xs text-muted-foreground">
+              Refers to <strong className="text-foreground">{reference.moduleName}</strong> — {isOnBomb(reference.moduleType) ? "on bomb" : "not on bomb"}
+            </span>}
+          </label>)}
         </div>
       </SolverSection>
     </>}
@@ -202,7 +214,7 @@ export default function ModulesAgainstHumanitySolver({ bomb }: { bomb: BombEntit
       onSolve={solve}
       onReset={reset}
       isSolveDisabled={atSecondaryStep
-        ? secondaryBlackPresent === null || secondaryWhitePresent === null
+        ? !secondaryBlackReference || !secondaryWhiteReference
         : !initialBlackText.trim() || !initialWhiteText.trim()}
       isLoading={isLoading}
       isSolved={isSolved}

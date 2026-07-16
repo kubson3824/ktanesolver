@@ -23,12 +23,14 @@ import ktanesolver.module.modded.regular.perspectivepegs.PerspectivePegsInput.Pe
 	id = "perspective-pegs",
 	name = "Perspective Pegs",
 	category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-	description = "Permute the clockwise peg colors to determine the key sequence for manual matching.",
+	description = "Permute the clockwise peg colors, then identify the viewing angle and pegs to press.",
 	tags = { "pegs", "colors", "sequence", "perspective", "modded" },
 	hasInput = true,
 	hasOutput = true
 )
 public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsInput, PerspectivePegsOutput> {
+	// Left-to-right peg order relative to the peg nearest the viewer.
+	private static final int[] VIEW_PEG_OFFSETS = { 1, 2, 0, 3, 4 };
 
 	private static final List<Rule> RULES_1_TO_2_BATTERIES = List.of(
 		rule("RYY", "BPY"),
@@ -89,6 +91,7 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 		}
 
 		List<Color> pegColors = new ArrayList<>();
+		List<List<Color>> pegSideColors = new ArrayList<>();
 		int startIndex = -1;
 		for (int i = 0; i < pegs.size(); i++) {
 			Peg peg = pegs.get(i);
@@ -105,6 +108,7 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 				startIndex = i;
 			}
 			pegColors.add(outerColor);
+			pegSideColors.add(sideColors);
 		}
 		if (startIndex < 0) {
 			return failure("No peg has at least three sides in the key color.");
@@ -113,11 +117,17 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 		List<Color> initialSequence = readClockwiseFrom(pegColors, startIndex);
 		List<Color> currentSequence = applyRules(initialSequence, getRules(bomb));
 		List<Color> keySequence = currentSequence.subList(0, 3);
+		Match match = findMatch(pegSideColors, keySequence);
+		if (match == null) {
+			return failure("The key sequence must appear exactly once across the five views.");
+		}
 
 		PerspectivePegsOutput output = new PerspectivePegsOutput(
 			keyColor.displayName,
 			toDisplayNames(currentSequence),
-			toDisplayNames(keySequence)
+			toDisplayNames(keySequence),
+			PegPosition.values()[match.viewIndex].displayName,
+			match.pegIndexes.stream().map(index -> PegPosition.values()[index].displayName).toList()
 		);
 		storeState(module, "input", input);
 		storeState(module, "initialSequence", toDisplayNames(initialSequence));
@@ -199,6 +209,31 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 		return current;
 	}
 
+	private static Match findMatch(List<List<Color>> pegs, List<Color> keySequence) {
+		List<Match> matches = new ArrayList<>();
+		List<Color> reversedKey = reversed(keySequence);
+		for (int view = 0; view < 5; view++) {
+			List<Integer> pegOrder = new ArrayList<>();
+			for (int offset : VIEW_PEG_OFFSETS) {
+				pegOrder.add((view + offset) % 5);
+			}
+			List<Color> candidate = new ArrayList<>();
+			for (int peg : pegOrder) {
+				candidate.add(pegs.get(peg).get(view));
+			}
+
+			for (int start = 0; start <= 2; start++) {
+				List<Color> window = candidate.subList(start, start + 3);
+				if (window.equals(keySequence)) {
+					matches.add(new Match(view, pegOrder.subList(start, start + 3)));
+				} else if (window.equals(reversedKey)) {
+					matches.add(new Match(view, reversed(pegOrder.subList(start, start + 3))));
+				}
+			}
+		}
+		return matches.size() == 1 ? matches.get(0) : null;
+	}
+
 	private static int firstIndexOf(List<Color> sequence, List<Color> target) {
 		for (int i = 0; i <= sequence.size() - target.size(); i++) {
 			if (sequence.subList(i, i + target.size()).equals(target)) {
@@ -223,8 +258,8 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 		}
 	}
 
-	private static List<Color> reversed(List<Color> sequence) {
-		List<Color> result = new ArrayList<>(sequence);
+	private static <T> List<T> reversed(List<T> sequence) {
+		List<T> result = new ArrayList<>(sequence);
 		Collections.reverse(result);
 		return result;
 	}
@@ -287,25 +322,24 @@ public class PerspectivePegsSolver extends AbstractModuleSolver<PerspectivePegsI
 	}
 
 	private enum PegPosition {
-		TOP("Top", 0.0, -1.0, PegSide.TOP.ordinal()),
-		UPPER_RIGHT("Upper right", 1.0, 0.0, PegSide.UPPER_RIGHT.ordinal()),
-		LOWER_RIGHT("Lower right", 0.6, 1.0, PegSide.LOWER_RIGHT.ordinal()),
-		LOWER_LEFT("Lower left", -0.6, 1.0, PegSide.LOWER_LEFT.ordinal()),
-		UPPER_LEFT("Upper left", -1.0, 0.0, PegSide.UPPER_LEFT.ordinal());
+		TOP("Top", PegSide.TOP.ordinal()),
+		UPPER_RIGHT("Upper right", PegSide.UPPER_RIGHT.ordinal()),
+		LOWER_RIGHT("Lower right", PegSide.LOWER_RIGHT.ordinal()),
+		LOWER_LEFT("Lower left", PegSide.LOWER_LEFT.ordinal()),
+		UPPER_LEFT("Upper left", PegSide.UPPER_LEFT.ordinal());
 
 		private final String displayName;
-		private final double x;
-		private final double y;
 		private final int sideIndex;
 
-		PegPosition(String displayName, double x, double y, int sideIndex) {
+		PegPosition(String displayName, int sideIndex) {
 			this.displayName = displayName;
-			this.x = x;
-			this.y = y;
 			this.sideIndex = sideIndex;
 		}
 	}
 
 	private record Rule(List<Color> prime, List<Color> alternate) {
+	}
+
+	private record Match(int viewIndex, List<Integer> pegIndexes) {
 	}
 }

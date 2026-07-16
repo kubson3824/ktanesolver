@@ -73,7 +73,7 @@ public class NumberPadSolver extends AbstractModuleSolver<NumberPadInput, Number
         if (stats.hasFewerThanTwoPorts()) {
             return stats.hasAtLeastThreeWhite()
                 ? code(column, "7290", "7902", "7920", "2097")
-                : code(column, "2999", "9299", "2999", "9299");
+                : code(column, "2999", "9299", "2999", "9929");
         }
         if (stats.hasAtLeastThreeWhite()) {
             return stats.hasGreenOnTopRow()
@@ -81,7 +81,7 @@ public class NumberPadSolver extends AbstractModuleSolver<NumberPadInput, Number
                 : code(column, "9207", "9072", "9027", "2709");
         }
         return stats.hasGreenOnTopRow()
-            ? code(column, "7019", "1709", "7109", "9071")
+            ? code(column, "0901", "0019", "0091", "9100")
             : code(column, "2090", "9200", "2900", "0029");
     }
 

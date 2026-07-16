@@ -1,7 +1,9 @@
 import { api, withErrorWrapping } from '../lib/api';
 
 export interface MorseInput {
-  word: string;
+  word?: string;
+  language?: string;
+  morse?: string;
 }
 
 export interface MorseCandidate {

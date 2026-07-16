@@ -1,6 +1,8 @@
 package ktanesolver.module.modded.regular.crazytalk;
 
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -130,7 +132,11 @@ public class CrazyTalkSolver extends AbstractModuleSolver<CrazyTalkInput, CrazyT
 
 	private static String normalize(String s) {
 		if (s == null) return "";
-		return SPACES.matcher(s.trim()).replaceAll(" ").trim();
+		return SPACES.matcher(s.trim()).replaceAll(" ").toUpperCase(Locale.ROOT);
+	}
+
+	public List<String> displays() {
+		return List.copyOf(DISPLAY_TO_ACTION.keySet());
 	}
 
 	@Override

@@ -19,7 +19,7 @@ import ktanesolver.module.shared.keypad.KeypadColumns;
 import ktanesolver.module.shared.keypad.KeypadSymbol;
 
 @Service
-@ModuleInfo (type = ModuleType.KEYPADS, id = "keypads", name = "Keypads", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Press buttons in the correct sequence", tags = {
+@ModuleInfo (type = ModuleType.KEYPADS, id = "keypads", name = "Keypad", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Press buttons in the correct sequence", tags = {
 	"memory", "pattern"})
 public class KeypadsSolver extends AbstractModuleSolver<KeypadsInput, KeypadsOutput> {
 	private static final int REQUIRED_SYMBOLS = 4;

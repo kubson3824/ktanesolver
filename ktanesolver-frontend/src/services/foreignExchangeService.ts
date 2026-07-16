@@ -17,6 +17,7 @@ export interface ForeignExchangeRequest {
 
 export interface ForeignExchangeResponse {
   output: ForeignExchangeOutput;
+  solved: boolean;
 }
 
 export async function solveForeignExchange(

@@ -6,15 +6,17 @@ export interface WhosOnFirstSolveRequest {
   input: {
     displayWord: string;
     buttons: Record<ButtonPosition, string>;
+    language?: string;
   };
 }
 
 export interface WhosOnFirstSolveResponse {
-  output: {
+  output?: {
     position: ButtonPosition;
     buttonText: string;
   };
-  solved: boolean;
+  solved?: boolean;
+  reason?: string;
 }
 
 export const solveWhosOnFirst = async (

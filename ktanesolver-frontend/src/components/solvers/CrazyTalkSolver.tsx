@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowDown, ArrowUp } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import { useRoundStore } from "../../store/useRoundStore";
 import {
   solveCrazyTalk,
+  getCrazyTalkDisplays,
   type CrazyTalkOutput,
   type CrazyTalkInput,
 } from "../../services/crazyTalkService";
@@ -27,6 +28,7 @@ interface CrazyTalkSolverProps {
 
 export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
   const [displayText, setDisplayText] = useState<string>("");
+  const [displayOptions, setDisplayOptions] = useState<string[]>([]);
   const [result, setResult] = useState<CrazyTalkOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
@@ -45,6 +47,18 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
   } = useSolver();
 
   const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
+
+  useEffect(() => {
+    void getCrazyTalkDisplays().then(setDisplayOptions).catch(() => undefined);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const query = displayText.trim().replace(/\s+/g, " ").toUpperCase();
+    if (!query) return [];
+    return displayOptions
+      .filter((option) => option.includes(query) && option !== query)
+      .slice(0, 6);
+  }, [displayOptions, displayText]);
 
   const moduleState = useMemo(
     () => ({ displayText, result, twitchCommand }),
@@ -166,7 +180,7 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
     <SolverLayout>
       <SolverSection
         title="Display text"
-        description="Copy the exact text shown on the module screen. Use the arrow buttons to insert ← and → symbols."
+        description="Start typing any part of the display and pick a suggestion. Letter case does not matter."
         actions={
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Insert:</span>
@@ -202,6 +216,20 @@ export default function CrazyTalkSolver({ bomb }: CrazyTalkSolverProps) {
           className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-70"
           aria-label="Module display text"
         />
+        {suggestions.length > 0 && !disabled && (
+          <div className="mt-2 flex flex-col gap-1.5" aria-label="Display suggestions">
+            {suggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => setDisplayText(suggestion)}
+                className="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-left font-mono text-xs text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
       </SolverSection>
 
       <SolverControls

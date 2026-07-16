@@ -3,7 +3,8 @@ import {api, withErrorWrapping} from "../lib/api";
 export interface ButtonSolveRequest {
     input: {
         color: "red" | "blue" | "white" | "yellow";
-        label: "abort" | "detonate" | "hold" | "press";
+        label: string;
+        language?: string;
         stripColor?: "blue" | "white" | "yellow" | null;
     }
 }
@@ -23,7 +24,8 @@ export const solveButton = async (
     input: {
         input: {
             color: "RED" | "BLUE" | "WHITE" | "YELLOW" | "OTHER";
-            label: "ABORT" | "DETONATE" | "HOLD" | "PRESS";
+            label: string;
+            language?: string;
             stripColor: "BLUE" | "WHITE" | "YELLOW" | "OTHER" | null | undefined
         }
     }

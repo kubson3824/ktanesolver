@@ -17,7 +17,7 @@ const SUITS = [
   { code: "D", symbol: "♦", name: "diamonds" },
 ];
 const emptyCards = () => Array<string>(5).fill("");
-const selectClass = "h-10 rounded-md border border-input bg-background px-2 text-sm";
+const selectClass = "h-10 min-w-0 w-full rounded-md border border-input bg-background px-2 text-sm";
 
 type PersistedState = {
   ranks?: string[];
@@ -95,10 +95,16 @@ export default function PointOfOrderSolver({ bomb }: { bomb: BombEntity | null |
 
   return <SolverLayout>
     <SolverSection title="Played pile" description="Enter the cards from the oldest card to the top (most recently played) card.">
-      <div className="grid gap-3 sm:grid-cols-5">
-        {ranks.map((rank, index) => <fieldset key={index} className="rounded-md border p-2">
-          <legend className="px-1 text-xs font-medium">{index + 1}{index === 0 ? " · oldest" : index === 4 ? " · top" : ""}</legend>
-          <div className="grid grid-cols-2 gap-1">
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground" aria-label="Play order from oldest to top">
+        <span>Oldest</span><span className="h-px flex-1 bg-border" aria-hidden /><span aria-hidden>→</span><span>Top</span>
+      </div>
+      <ol className="grid gap-3 sm:grid-cols-5">
+        {ranks.map((rank, index) => <li key={index} className="rounded-lg border border-border bg-muted/20 p-2">
+          <div className="mb-2 flex min-h-5 items-center justify-between gap-2">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">{index + 1}</span>
+            {(index === 0 || index === 4) && <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{index === 0 ? "Oldest" : "Top"}</span>}
+          </div>
+          <div className="grid gap-2">
             <select value={rank} onChange={(event) => setRanks((current) => current.map((value, i) => i === index ? event.target.value : value))} disabled={isLoading || isSolved} aria-label={`Card ${index + 1} rank`} className={selectClass}>
               <option value="">Rank</option>{RANKS.map((value) => <option key={value}>{value}</option>)}
             </select>
@@ -106,8 +112,8 @@ export default function PointOfOrderSolver({ bomb }: { bomb: BombEntity | null |
               <option value="">Suit</option>{SUITS.map((suit) => <option key={suit.code} value={suit.code}>{suit.symbol}</option>)}
             </select>
           </div>
-        </fieldset>)}
-      </div>
+        </li>)}
+      </ol>
     </SolverSection>
 
     <SolverControls onSolve={solve} onReset={reset} isSolveDisabled={!validInput} isLoading={isLoading} isSolved={isSolved} solveText="Find playable cards" />

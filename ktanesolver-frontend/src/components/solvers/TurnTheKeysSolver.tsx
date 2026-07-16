@@ -18,17 +18,20 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/cn";
+import { useRoundStore } from "../../store/useRoundStore";
 
 interface TurnTheKeysSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
 type Output = TurnTheKeysSolveResponse["output"];
+type Requirement = Output["rightKeyRequirements"][number];
 
 export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
   const [priorityInput, setPriorityInput] = useState<string>("");
   const [result, setResult] = useState<Output | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
+  const selectModuleById = useRoundStore((state) => state.selectModuleById);
 
   const {
     isLoading,
@@ -61,6 +64,8 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
       canTurnLeftKey?: boolean;
       rightKeyTurned?: boolean;
       leftKeyTurned?: boolean;
+      rightKeyRequirements?: Requirement[];
+      leftKeyRequirements?: Requirement[];
     }) => {
       if (state.priorityInput !== undefined) setPriorityInput(state.priorityInput);
       else if (state.priority !== undefined) setPriorityInput(String(state.priority));
@@ -79,6 +84,8 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
           canTurnLeftKey: state.canTurnLeftKey ?? false,
           rightKeyTurned: state.rightKeyTurned ?? false,
           leftKeyTurned: state.leftKeyTurned ?? false,
+          rightKeyRequirements: state.rightKeyRequirements ?? [],
+          leftKeyRequirements: state.leftKeyRequirements ?? [],
         });
       }
     },
@@ -115,6 +122,8 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
           canTurnLeftKey?: boolean;
           rightKeyTurned?: boolean;
           leftKeyTurned?: boolean;
+          rightKeyRequirements?: Requirement[];
+          leftKeyRequirements?: Requirement[];
         };
         if (o.output && typeof o.output === "object") return o.output as Output;
         if (
@@ -130,6 +139,8 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
             canTurnLeftKey: o.canTurnLeftKey ?? false,
             rightKeyTurned: o.rightKeyTurned ?? false,
             leftKeyTurned: o.leftKeyTurned ?? false,
+            rightKeyRequirements: o.rightKeyRequirements ?? [],
+            leftKeyRequirements: o.leftKeyRequirements ?? [],
           };
         }
       }
@@ -157,13 +168,15 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
             result: response.output,
           }),
         );
+        setIsSolved(response.solved);
+        if (response.solved) markModuleSolved(bomb.id, currentModule.id);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to solve Turn The Keys");
       } finally {
         setIsLoading(false);
       }
     },
-    [round?.id, bomb?.id, currentModule?.id, clearError, setError, setIsLoading],
+    [round?.id, bomb?.id, currentModule?.id, clearError, markModuleSolved, setError, setIsLoading, setIsSolved],
   );
 
   const handleSolve = async () => {
@@ -173,10 +186,6 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
       return;
     }
     await runSolve({ priority });
-    if (round?.id && bomb?.id && currentModule?.id) {
-      setIsSolved(true);
-      markModuleSolved(bomb.id, currentModule.id);
-    }
   };
 
   const handleTurnedRightKey = useCallback(async () => {
@@ -255,6 +264,8 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
               turned={Boolean(result.rightKeyTurned)}
               canTurn={result.canTurnRightKey}
               instruction={result.rightKeyInstruction}
+              requirements={result.rightKeyRequirements ?? []}
+              onOpenModule={(moduleId) => bomb?.id && selectModuleById(bomb.id, moduleId)}
               onTurned={handleTurnedRightKey}
               disabled={isLoading}
             />
@@ -263,6 +274,8 @@ export default function TurnTheKeysSolver({ bomb }: TurnTheKeysSolverProps) {
               turned={Boolean(result.leftKeyTurned)}
               canTurn={result.canTurnLeftKey}
               instruction={result.leftKeyInstruction}
+              requirements={result.leftKeyRequirements ?? []}
+              onOpenModule={(moduleId) => bomb?.id && selectModuleById(bomb.id, moduleId)}
               onTurned={handleTurnedLeftKey}
               disabled={isLoading}
             />
@@ -294,6 +307,8 @@ function KeyCard({
   turned,
   canTurn,
   instruction,
+  requirements,
+  onOpenModule,
   onTurned,
   disabled,
 }: {
@@ -301,6 +316,8 @@ function KeyCard({
   turned: boolean;
   canTurn: boolean;
   instruction: string;
+  requirements: Requirement[];
+  onOpenModule: (moduleId: string) => void;
   onTurned: () => void;
   disabled: boolean;
 }) {
@@ -346,6 +363,29 @@ function KeyCard({
       </div>
       {instruction && (
         <p className="mt-1.5 text-sm text-muted-foreground">{instruction}</p>
+      )}
+      {requirements.length > 0 && (
+        <div className="mt-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Do these first
+          </p>
+          <ol className="mt-1 space-y-1">
+            {requirements.map((requirement, index) => (
+              <li key={`${requirement.moduleId}-${requirement.instruction}`}>
+                <button
+                  type="button"
+                  className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => onOpenModule(requirement.moduleId)}
+                >
+                  <span className="font-mono text-xs text-muted-foreground">{index + 1}.</span>
+                  <span className="underline decoration-muted-foreground/50 underline-offset-2">
+                    {requirement.instruction}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
       <div className="mt-2">
         <Button

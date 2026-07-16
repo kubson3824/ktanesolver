@@ -7,6 +7,8 @@ import ktanesolver.logic.ModuleOutput;
 public record PerspectivePegsOutput(
 	String keyColor,
 	List<String> currentSequence,
-	List<String> keySequence
+	List<String> keySequence,
+	String viewPosition,
+	List<String> pressPositions
 ) implements ModuleOutput {
 }

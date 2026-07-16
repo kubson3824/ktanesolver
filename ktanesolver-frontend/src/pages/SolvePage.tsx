@@ -74,6 +74,7 @@ export default function SolvePage() {
   const selectBomb = useRoundStore((state) => state.selectBomb);
   const selectModuleById = useRoundStore((state) => state.selectModuleById);
   const clearModule = useRoundStore((state) => state.clearModule);
+  const resetModule = useRoundStore((state) => state.resetModule);
   const manualUrl = useRoundStore((state) => state.manualUrl);
   const error = useRoundStore((state) => state.error);
   const openingModuleId = useRoundStore((state) => state.openingModuleId);
@@ -215,6 +216,16 @@ export default function SolvePage() {
 
   const handleBack = useCallback(() => void clearModule(), [clearModule]);
 
+  const handleUndoSolve = async () => {
+    if (!currentBomb || !currentModule || !window.confirm("Clear this attempt and retry the module?")) return;
+    try {
+      await resetModule(currentBomb.id, currentModule.id);
+      clearModule();
+    } catch {
+      // The store exposes the request error below.
+    }
+  };
+
   // Keyboard shortcuts: Escape to go back to module grid
   useKeyboardShortcuts(
     useMemo(
@@ -285,15 +296,15 @@ export default function SolvePage() {
 
         <div className="border-b border-border" />
 
+        {error && (
+          <Alert variant="destructive" role="alert">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Main content */}
         {!currentModule ? (
           <div className="grid gap-4">
-            {error && (
-              <Alert variant="destructive" role="alert">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
             {/* Forget Me Not reminder */}
             {shouldShowFmnReminder && (() => {
               const fmn = round?.bombs.flatMap((b) =>
@@ -410,14 +421,21 @@ export default function SolvePage() {
             <div className="min-w-0 flex-1">
               <div className="rounded-xl border border-border bg-card shadow-sm h-full flex flex-col">
                 {/* Card header */}
-                <div className="bg-muted/40 border-b border-border px-4 py-3">
-                  <h2 className="font-display text-lg font-bold uppercase text-base-content leading-tight">
-                    {currentModuleDisplayName}
-                  </h2>
-                  {currentModuleId && (
-                    <p className="font-mono text-xs text-muted-foreground mt-0.5">
-                      {currentModuleId}
-                    </p>
+                <div className="flex items-center justify-between gap-3 bg-muted/40 border-b border-border px-4 py-3">
+                  <div>
+                    <h2 className="font-display text-lg font-bold uppercase text-base-content leading-tight">
+                      {currentModuleDisplayName}
+                    </h2>
+                    {currentModuleId && (
+                      <p className="font-mono text-xs text-muted-foreground mt-0.5">
+                        {currentModuleId}
+                      </p>
+                    )}
+                  </div>
+                  {currentModule.solved && (
+                    <Button variant="outline" size="sm" onClick={() => void handleUndoSolve()}>
+                      Undo solve
+                    </Button>
                   )}
                 </div>
 

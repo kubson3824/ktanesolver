@@ -16,7 +16,7 @@ import java.util.List;
 import ktanesolver.dto.ModuleCatalogDto;
 
 @Service
-@ModuleInfo (type = ModuleType.WIRE_SEQUENCES, id = "wire_sequences", name = "Wire Sequences", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Cut wires in the correct order based on previous wires", tags = {
+@ModuleInfo (type = ModuleType.WIRE_SEQUENCES, id = "wire_sequences", name = "Wire Sequence", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Cut wires in the correct order based on previous wires", tags = {
 	"1-to-3", "a", "b", "c", "up-arrow", "down-arrow", "red", "blue", "black"})
 public class WireSequencesSolver extends AbstractModuleSolver<WireSequenceInput, WireSequenceOutput> {
 

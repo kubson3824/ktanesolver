@@ -118,10 +118,11 @@ export function useSolverModulePersistence<TState, TSolution = unknown>(
 
     if (currentModule.solution !== undefined) {
       const rawSolution = currentModule.solution as unknown;
-      const parsed = extractSolutionRef.current
-        ? extractSolutionRef.current(rawSolution)
-        : rawSolution && typeof rawSolution === "object" && !Array.isArray(rawSolution) && Object.keys(rawSolution).length === 0
-          ? null
+      const isEmptyObject = rawSolution && typeof rawSolution === "object" && !Array.isArray(rawSolution) && Object.keys(rawSolution).length === 0;
+      const parsed = isEmptyObject
+        ? null
+        : extractSolutionRef.current
+          ? extractSolutionRef.current(rawSolution)
           : (rawSolution as TSolution);
 
       debugModuleSync("solverRestore:solution", {
@@ -132,7 +133,7 @@ export function useSolverModulePersistence<TState, TSolution = unknown>(
       if (parsed != null) {
         const solved = inferSolvedRef.current
           ? inferSolvedRef.current(parsed, currentModule)
-          : Boolean((currentModule as { solved?: boolean } | undefined)?.solved) || Boolean(parsed);
+          : Boolean(currentModule.solved);
 
         if (onlyRestoreSolutionWhenSolved && !solved) {
           // Do not restore solution UI or mark solved when module is not actually solved

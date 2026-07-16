@@ -16,7 +16,11 @@ export const api = axios.create({
 
 export const withErrorWrapping = async <T>(fn: () => Promise<T>) => {
   try {
-    return await fn();
+    const result = await fn();
+    if (result && typeof result === "object" && "reason" in result && typeof result.reason === "string") {
+      throw new Error(result.reason);
+    }
+    return result;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const detail =

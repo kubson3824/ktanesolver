@@ -17,12 +17,12 @@ import {
 import { cn } from "../../lib/cn";
 
 const PATTERNS = [
-  ["1", "⅓", "⅓", "⅓", "1", "⅓", "⅓", "⅓"],
-  ["2", "1", "½", "½"],
-  ["½", "1", "½", "1", "1"],
-  ["1½", "½", "1", "⅓", "⅓", "⅓"],
-  ["½", "½", "1", "2"],
-  ["1", "2", "⅓", "⅓", "⅓"],
+  ["1", "1/3", "1/3", "1/3", "1", "1/3", "1/3", "1/3"],
+  ["2", "1", "1/2", "1/2"],
+  ["1/2", "1", "1/2", "1", "1"],
+  ["1½", "1/2", "1", "1/3", "1/3", "1/3"],
+  ["1/2", "1/2", "1", "2"],
+  ["1", "2", "1/3", "1/3", "1/3"],
   ["1", "1", "1", "1"],
 ] as const;
 const COLORS = [
@@ -116,7 +116,7 @@ export default function RhythmsSolver({ bomb }: RhythmsSolverProps) {
             <label key={index} className={cn("flex cursor-pointer items-center gap-3 rounded-md border p-3", rhythm === index && "border-primary bg-primary/5")}>
               <input type="radio" name="rhythm" checked={rhythm === index} onChange={() => { setRhythm(index); clearError(); }} disabled={isLoading || isSolved} />
               <span className="font-medium">{index + 1}</span>
-              <span className="flex flex-wrap gap-1 font-mono text-sm" aria-label={`Pattern ${index + 1}: ${beats.join(", ")} beats`}>
+              <span className="flex flex-wrap gap-1 text-sm font-semibold" aria-label={`Pattern ${index + 1}: ${beats.join(", ")} beats`}>
                 {beats.map((beat, beatIndex) => <span key={beatIndex} className="rounded bg-muted px-1.5 py-0.5">{beat}</span>)}
               </span>
             </label>

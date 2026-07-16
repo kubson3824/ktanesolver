@@ -1,21 +1,13 @@
 package ktanesolver.module.modded.regular.sillyslots;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Persisted state for Silly Slots: previous stages and history flags.
- */
 public record SillySlotsState(
-	List<Slot> previousStageSlots,
-	List<Slot> twoStagesAgoSlots,
-	boolean hadSoggySausageInAnyPreviousStage,
-	boolean hadSassySausageInAnyPreviousStage,
-	boolean lastStageHadSillySteven,
-	boolean previousStageHadSausage,
 	int leverPullCount,
 	List<List<String>> displayHistory
 ) {
 	public SillySlotsState() {
-		this(null, null, false, false, false, false, 0, new java.util.ArrayList<>());
+		this(0, new ArrayList<>());
 	}
 }

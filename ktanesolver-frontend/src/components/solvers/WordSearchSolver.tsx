@@ -69,7 +69,7 @@ export default function WordSearchSolver({ bomb }: { bomb: BombEntity | null | u
     <SolverSection title="Corner letters" description="Enter top-left, top-right, bottom-left, then bottom-right.">
       <div className="mx-auto grid max-w-48 grid-cols-2 gap-2">
         {CORNER_LABELS.map((label, index) => <div key={label} className="rounded border border-border bg-muted/30 p-3 text-center">
-          <span className="block text-xs text-muted-foreground">{label}</span>
+          <span className="block whitespace-nowrap text-xs text-muted-foreground">{label}</span>
           <span className="mt-1 block font-mono text-2xl font-bold" aria-label={`${label}: ${corners[index] ?? "empty"}`}>
             {corners[index] ?? "—"}
           </span>

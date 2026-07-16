@@ -11,6 +11,7 @@ import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.vanilla.regular.translated.TranslatedVanillaData;
 
 @Service
 @ModuleInfo (type = ModuleType.BUTTON, id = "button", name = "The Button", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Press and hold the button based on strip color and text", tags = {
@@ -19,12 +20,21 @@ public class ButtonSolver extends AbstractModuleSolver<ButtonInput, ButtonOutput
 
 	@Override
 	public SolveResult<ButtonOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ButtonInput input) {
+		if(input == null || input.color() == null || input.label() == null) return failure("Select a button color and enter its label");
 		String color = input.color();
-		String label = input.label();
+		String language;
+		try {
+			language = TranslatedVanillaData.language(input.language());
+		} catch(IllegalArgumentException exception) {
+			return failure(exception.getMessage());
+		}
+		String label = TranslatedVanillaData.canonicalButtonLabel(language, input.label());
+		if(label == null) return failure("Unknown " + language + " button label: " + input.label());
 
 		// Set module state with inputs
 		storeState(module, "color", color);
-		storeState(module, "label", label);
+		storeState(module, "label", input.label());
+		storeState(module, "language", language);
 
 		if(input.stripColor() != null) {
 			storeState(module, "stripColor", input.stripColor());

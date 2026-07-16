@@ -18,6 +18,11 @@ export interface CrazyTalkSolveResponse {
   solved?: boolean;
 }
 
+export const getCrazyTalkDisplays = async (): Promise<string[]> => {
+  const response = await api.get<string[]>("/api/modules/crazy-talk/displays");
+  return response.data;
+};
+
 export const solveCrazyTalk = async (
   roundId: string,
   bombId: string,

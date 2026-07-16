@@ -37,7 +37,9 @@ export default function DoubleOhSolver({ bomb }: { bomb: BombEntity | null | und
     reset: resetSolverState, currentModule, round, markModuleSolved,
   } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
-  const complete = isNumber(displayedNumber) && BUTTONS.every(({ value }) => isNumber(observations[value]));
+  const enteredObservations = BUTTONS.filter(({ value }) => isNumber(observations[value])).length;
+  const complete = isNumber(displayedNumber) && enteredObservations === 4
+    && BUTTONS.every(({ value }) => !observations[value] || isNumber(observations[value]));
   const moduleState = useMemo(
     () => ({ displayedNumber, observations, result, twitchCommand }),
     [displayedNumber, observations, result, twitchCommand],
@@ -77,15 +79,16 @@ export default function DoubleOhSolver({ bomb }: { bomb: BombEntity | null | und
 
   const solve = useCallback(async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) return setError("Missing required information");
-    if (!complete) return setError("Enter all six numbers as two digits");
+    if (!complete) return setError("Enter the original display and exactly four button results as two digits");
     clearError();
     setIsLoading(true);
     try {
       const input = {
         displayedNumber: Number(displayedNumber),
         observations: Object.fromEntries(
-          BUTTONS.map(({ value }) => [value, Number(observations[value])]),
-        ) as Record<DoubleOhButton, number>,
+          BUTTONS.filter(({ value }) => isNumber(observations[value]))
+            .map(({ value }) => [value, Number(observations[value])]),
+        ) as Partial<Record<DoubleOhButton, number>>,
       };
       const response = await solveDoubleOh(round.id, bomb.id, currentModule.id, input);
       const command = generateTwitchCommand({ moduleType: ModuleType.DOUBLE_OH, result: response.output });
@@ -129,7 +132,7 @@ export default function DoubleOhSolver({ bomb }: { bomb: BombEntity | null | und
       />
     </SolverSection>
 
-    <SolverSection title="Cycle each button" description="From the original number, press a button once and enter the result, then press it twice more to return before testing the next button.">
+    <SolverSection title="Cycle four buttons" description="From the original number, test any four buttons and leave the remaining button blank; it will be treated as submit. Press each tested button twice more to return before testing the next one.">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         {BUTTONS.map(({ value, glyph, label }) => <label key={value} className="space-y-1 text-center text-sm font-medium">
           <span className="block text-3xl" aria-hidden>{glyph}</span>

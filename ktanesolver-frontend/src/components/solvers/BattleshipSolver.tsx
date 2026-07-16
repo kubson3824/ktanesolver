@@ -114,17 +114,17 @@ export default function BattleshipSolver({ bomb }: { bomb: BombEntity | null | u
     <SolverSection title="Edge counts" description="Enter the five column counts above the grid and the five row counts beside it.">
       <div className="grid grid-cols-5 gap-2">
         {columnCounts.map((count, index) => <label key={`column-${index}`} className="text-center text-xs font-medium">{COLUMNS[index]}
-          <Input type="number" min={0} max={5} value={count} disabled={isLoading || isSolved} aria-label={`Column ${COLUMNS[index]} ship count`} onChange={(event) => changeCount(setColumnCounts, index, event.target.valueAsNumber)} className="mt-1 text-center" />
+          <Input type="number" min={0} max={5} value={count} disabled={isLoading || isSolved} aria-label={`Column ${COLUMNS[index]} ship count`} onChange={(event) => changeCount(setColumnCounts, index, event.target.valueAsNumber)} className="mt-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
         </label>)}
         {rowCounts.map((count, index) => <label key={`row-${index}`} className="text-center text-xs font-medium">Row {index + 1}
-          <Input type="number" min={0} max={5} value={count} disabled={isLoading || isSolved} aria-label={`Row ${index + 1} ship count`} onChange={(event) => changeCount(setRowCounts, index, event.target.valueAsNumber)} className="mt-1 text-center" />
+          <Input type="number" min={0} max={5} value={count} disabled={isLoading || isSolved} aria-label={`Row ${index + 1} ship count`} onChange={(event) => changeCount(setRowCounts, index, event.target.valueAsNumber)} className="mt-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
         </label>)}
       </div>
     </SolverSection>
     <SolverSection title="Fleet" description="Enter how many ships of each displayed length are present.">
       <div className="grid grid-cols-4 gap-2">
         {shipCounts.map((count, index) => <label key={index} className="text-center text-xs font-medium">Length {index + 1}
-          <Input type="number" min={0} max={5} value={count} disabled={isLoading || isSolved} aria-label={`Length ${index + 1} ship count`} onChange={(event) => changeCount(setShipCounts, index, event.target.valueAsNumber)} className="mt-1 text-center" />
+          <Input type="number" min={0} max={5} value={count} disabled={isLoading || isSolved} aria-label={`Length ${index + 1} ship count`} onChange={(event) => changeCount(setShipCounts, index, event.target.valueAsNumber)} className="mt-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
         </label>)}
       </div>
     </SolverSection>

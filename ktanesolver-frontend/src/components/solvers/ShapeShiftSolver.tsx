@@ -11,13 +11,14 @@ const LABELS: Record<ShapeEdge, string> = { SQUARE: "Square", ROUND: "Round", PO
 function edgePath(edge: ShapeEdge, side: "left" | "right") {
   const x = side === "left" ? 25 : 95;
   const outside = side === "left" ? 5 : 115;
-  const inside = side === "left" ? 45 : 75;
   const startY = side === "left" ? 65 : 15;
   const endY = side === "left" ? 15 : 65;
   if (edge === "SQUARE") return `L ${x} ${endY}`;
   if (edge === "ROUND") return `Q ${outside} ${startY} ${outside} 40 Q ${outside} ${endY} ${x} ${endY}`;
   if (edge === "POINT") return `L ${outside} 40 L ${x} ${endY}`;
-  return `Q ${inside} ${startY} ${inside} 40 Q ${inside} ${endY} ${x} ${endY}`;
+  return side === "left"
+    ? "Q 25 50 15 50 L 15 30 Q 25 30 25 15"
+    : "Q 95 30 105 30 L 105 50 Q 95 50 95 65";
 }
 
 export function Shape({ left, right, className = "h-20 w-32" }: { left: ShapeEdge; right: ShapeEdge; className?: string }) {

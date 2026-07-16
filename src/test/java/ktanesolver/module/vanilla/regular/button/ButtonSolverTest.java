@@ -34,4 +34,18 @@ class ButtonSolverTest {
 		assertThat(release.output().releaseDigit()).isEqualTo(5);
 		assertThat(module.isSolved()).isTrue();
 	}
+
+	@Test
+	void translatesButtonLabelsBeforeApplyingRules() {
+		ModuleEntity module = new ModuleEntity();
+		module.setType(ModuleType.BUTTON);
+		module.setState(new HashMap<>());
+		module.setSolution(new HashMap<>());
+
+		SolveSuccess<ButtonOutput> result = (SolveSuccess<ButtonOutput>) solver.solve(
+			new RoundEntity(), new BombEntity(), module, new ButtonInput("BLUE", "Abbrechen", null, "DE"));
+
+		assertThat(result.output().hold()).isTrue();
+		assertThat(module.getState()).containsEntry("language", "DE");
+	}
 }

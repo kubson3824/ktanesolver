@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { BombStatus, ModuleType, RoundStatus, type BombEntity, type ModuleEntity } from "../types";
+import { BombStatus, ModuleType, RoundStatus, type BombEntity, type ModuleEntity, type RoundEntity } from "../types";
 import { api } from "../lib/api";
 import { useRoundStore } from "./useRoundStore";
 
 vi.mock("../lib/api", () => ({
   api: {
     delete: vi.fn(),
+    get: vi.fn(),
+    post: vi.fn(),
   },
   debugModuleSync: vi.fn(),
   withErrorWrapping: async <T>(fn: () => Promise<T>) => fn(),
@@ -77,5 +79,53 @@ describe("useRoundStore", () => {
     expect(useRoundStore.getState().currentBomb?.modules).toEqual([secondModule]);
     expect(useRoundStore.getState().currentModule).toBeUndefined();
     expect(useRoundStore.getState().manualUrl).toBeUndefined();
+  });
+
+  it("resets a solved module and clears its persisted attempt", async () => {
+    const module = {
+      ...createModule("module-1", ModuleType.BUTTON),
+      solved: true,
+      state: { label: "wrong" },
+      solution: { instruction: "wrong" },
+    };
+    const bomb = createBomb([module]);
+    useRoundStore.setState({
+      round: { id: "round-1", status: RoundStatus.ACTIVE, bombs: [bomb], roundState: {} },
+      currentBomb: bomb,
+      currentModule: { ...module, bomb, moduleType: module.type },
+    });
+    vi.mocked(api.post).mockResolvedValue({ data: undefined });
+
+    await useRoundStore.getState().resetModule(bomb.id, module.id);
+
+    expect(api.post).toHaveBeenCalledWith(`/bombs/${bomb.id}/modules/${module.id}/reset`);
+    expect(useRoundStore.getState().currentModule).toMatchObject({ solved: false, state: {}, solution: {} });
+    expect(useRoundStore.getState().round?.bombs[0].modules[0]).toMatchObject({ solved: false, state: {}, solution: {} });
+  });
+
+  it("does not let a stale reset refresh overwrite a newer solve", async () => {
+    const module = createModule("module-1", ModuleType.FOREIGN_EXCHANGE_RATES);
+    const bomb = createBomb([module]);
+    const staleRound: RoundEntity = {
+      id: "round-1",
+      status: RoundStatus.ACTIVE,
+      bombs: [bomb],
+      roundState: {},
+    };
+    useRoundStore.setState({
+      round: staleRound,
+      currentBomb: bomb,
+      currentModule: { ...module, bomb, moduleType: module.type },
+    });
+    let finishRefresh!: (value: unknown) => void;
+    vi.mocked(api.get).mockImplementation(() => new Promise((resolve) => { finishRefresh = resolve; }) as never);
+
+    const refresh = useRoundStore.getState().refreshRound(staleRound.id);
+    useRoundStore.getState().markModuleSolved(bomb.id, module.id);
+    finishRefresh({ data: staleRound });
+    await refresh;
+
+    expect(useRoundStore.getState().round?.bombs[0].modules[0].solved).toBe(true);
+    expect(useRoundStore.getState().currentModule?.solved).toBe(true);
   });
 });

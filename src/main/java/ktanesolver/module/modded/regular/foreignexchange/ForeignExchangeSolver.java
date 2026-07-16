@@ -1,12 +1,13 @@
 
 package ktanesolver.module.modded.regular.foreignexchange;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -28,6 +29,19 @@ public class ForeignExchangeSolver extends AbstractModuleSolver<ForeignExchangeI
 	private static final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private static final Map<String, String> CURRENCIES_BY_NUMBER = Map.ofEntries(
+		Map.entry("036", "AUD"), Map.entry("975", "BGN"), Map.entry("986", "BRL"),
+		Map.entry("124", "CAD"), Map.entry("756", "CHF"), Map.entry("156", "CNY"),
+		Map.entry("208", "DKK"), Map.entry("978", "EUR"), Map.entry("826", "GBP"),
+		Map.entry("344", "HKD"), Map.entry("191", "HRK"), Map.entry("348", "HUF"),
+		Map.entry("360", "IDR"), Map.entry("376", "ILS"), Map.entry("356", "INR"),
+		Map.entry("392", "JPY"), Map.entry("410", "KRW"), Map.entry("484", "MXN"),
+		Map.entry("458", "MYR"), Map.entry("578", "NOK"), Map.entry("554", "NZD"),
+		Map.entry("608", "PHP"), Map.entry("985", "PLN"), Map.entry("946", "RON"),
+		Map.entry("643", "RUB"), Map.entry("752", "SEK"), Map.entry("702", "SGD"),
+		Map.entry("764", "THB"), Map.entry("949", "TRY"), Map.entry("840", "USD"),
+		Map.entry("710", "ZAR")
+	);
 
 	@Override
 	public SolveResult<ForeignExchangeOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ForeignExchangeInput input) {
@@ -51,31 +65,33 @@ public class ForeignExchangeSolver extends AbstractModuleSolver<ForeignExchangeI
 
 		try {
 			int amount = Integer.parseInt(amountStr);
+			baseCurrency = baseCurrency.trim().toUpperCase(Locale.ROOT);
+			targetCurrency = targetCurrency.trim().toUpperCase(Locale.ROOT);
 
-			if(hasGreenLights) {
-				// Green lights: query exchange rate API
-				return solveWithGreenLights(baseCurrency, targetCurrency, amount, batteryCount);
-			}
-			else {
-				// Red lights: use numeric code of target currency
-				return solveWithRedLights(targetCurrency);
-			}
-		}
-		catch(NumberFormatException e) {
-			ForeignExchangeOutput output = new ForeignExchangeOutput(0);
-			return success(output, false);
-		}
-	}
-
-	private SolveResult<ForeignExchangeOutput> solveWithGreenLights(String baseCurrency, String targetCurrency, int amount, int batteryCount) {
-		try {
-			// If more than one battery, swap base and target
+			// The displayed top and middle rows swap base/target roles when the bomb has multiple batteries.
 			if(batteryCount > 1) {
 				String temp = baseCurrency;
 				baseCurrency = targetCurrency;
 				targetCurrency = temp;
 			}
 
+			if(hasGreenLights) {
+				// Green lights: query exchange rate API
+				return solveWithGreenLights(toAlphabeticCode(baseCurrency), toAlphabeticCode(targetCurrency), amount);
+			}
+			else {
+				// Red lights: use numeric code of target currency
+				return solveWithRedLights(targetCurrency);
+			}
+		}
+		catch(IllegalArgumentException e) {
+			ForeignExchangeOutput output = new ForeignExchangeOutput(0);
+			return success(output, false);
+		}
+	}
+
+	private SolveResult<ForeignExchangeOutput> solveWithGreenLights(String baseCurrency, String targetCurrency, int amount) {
+		try {
 			// Query the exchange rate API
 			String url = String.format("https://fer.eltrick.uk/latest?base=%s&symbols=%s", baseCurrency, targetCurrency);
 
@@ -108,7 +124,7 @@ public class ForeignExchangeSolver extends AbstractModuleSolver<ForeignExchangeI
 			return success(output);
 
 		}
-		catch(IOException | InterruptedException e) {
+		catch(java.io.IOException | InterruptedException e) {
 			ForeignExchangeOutput output = new ForeignExchangeOutput(0);
 			return success(output, false);
 		}
@@ -120,8 +136,7 @@ public class ForeignExchangeSolver extends AbstractModuleSolver<ForeignExchangeI
 
 	private SolveResult<ForeignExchangeOutput> solveWithRedLights(String targetCurrency) {
 		try {
-			// Get ISO 4217 numeric code for target currency from API
-			int numericCode = getCurrencyNumericCodeFromAPI(targetCurrency);
+			int numericCode = getCurrencyNumericCode(targetCurrency);
 
 			// Get 2nd digit from right
 			int keyPosition = getSecondDigitFromRight(numericCode);
@@ -156,35 +171,26 @@ public class ForeignExchangeSolver extends AbstractModuleSolver<ForeignExchangeI
 		return 0;
 	}
 
-	private int getCurrencyNumericCodeFromAPI(String currencyCode) throws IOException, InterruptedException {
-		// Fetch the CSV file with currency codes
-		String csvUrl = "https://datahub.io/core/currency-codes/_r/-/data/codes-all.csv";
-
-		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(csvUrl)).timeout(Duration.ofSeconds(10)).build();
-
-		HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-		if(response.statusCode() != 200) {
-			throw new IOException("Failed to fetch currency codes: HTTP " + response.statusCode());
+	private String toAlphabeticCode(String currencyCode) {
+		if(currencyCode.matches("[A-Z]{3}")) {
+			return currencyCode;
 		}
-
-		// Parse CSV to find the numeric code
-		String[] lines = response.body().split("\n");
-		for(int i = 1; i < lines.length; i++) { // Skip header
-			String[] parts = lines[i].split(",");
-			if(parts.length >= 4) {
-				String alphabeticCode = parts[2].trim();
-				if(alphabeticCode.equals(currencyCode.toUpperCase())) {
-					String numericCodeStr = parts[3].trim();
-					if( !numericCodeStr.isEmpty()) {
-						return Integer.parseInt(numericCodeStr);
-					}
-				}
-			}
+		String alphabeticCode = CURRENCIES_BY_NUMBER.get(currencyCode);
+		if(alphabeticCode == null) {
+			throw new IllegalArgumentException("Unknown currency code: " + currencyCode);
 		}
+		return alphabeticCode;
+	}
 
-		// If not found, return default code
-		return 999;
+	private int getCurrencyNumericCode(String currencyCode) {
+		if(CURRENCIES_BY_NUMBER.containsKey(currencyCode)) {
+			return Integer.parseInt(currencyCode);
+		}
+		return CURRENCIES_BY_NUMBER.entrySet().stream()
+			.filter(entry -> entry.getValue().equals(currencyCode))
+			.findFirst()
+			.map(entry -> Integer.parseInt(entry.getKey()))
+			.orElseThrow(() -> new IllegalArgumentException("Unknown currency code: " + currencyCode));
 	}
 
 }

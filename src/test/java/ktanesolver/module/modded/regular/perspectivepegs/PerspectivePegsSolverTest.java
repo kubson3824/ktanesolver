@@ -46,6 +46,8 @@ class PerspectivePegsSolverTest {
 		assertThat(output.keyColor()).isEqualTo("Green");
 		assertThat(output.currentSequence()).containsExactly("Blue", "Red", "Green", "Yellow", "Blue");
 		assertThat(output.keySequence()).containsExactly("Blue", "Red", "Green");
+		assertThat(output.viewPosition()).isEqualTo("Upper right");
+		assertThat(output.pressPositions()).containsExactly("Lower left", "Upper right", "Upper left");
 	}
 
 	@Test

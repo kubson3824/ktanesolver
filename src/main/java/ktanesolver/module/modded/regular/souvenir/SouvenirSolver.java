@@ -43,11 +43,12 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	) {
 		if (input == null || input.sourceModuleId() == null) return failure("Select the solved module named by the question");
 		if (input.question() == null || input.question().isBlank()) return failure("Enter the question shown on Souvenir");
-		if (input.answers() == null || input.answers().size() < 2 || input.answers().size() > 6) {
+		boolean directAnswer = input.answers() == null || input.answers().isEmpty();
+		if (!directAnswer && (input.answers().size() < 2 || input.answers().size() > 6)) {
 			return failure("Enter the 2 to 6 answers shown on Souvenir");
 		}
-		if (input.answers().stream().anyMatch(answer -> answer == null || answer.isBlank())) return failure("Answer labels cannot be blank");
-		if (input.answers().stream().map(SouvenirSolver::answerLabel).distinct().count() != input.answers().size()) {
+		if (!directAnswer && input.answers().stream().anyMatch(answer -> answer == null || answer.isBlank())) return failure("Answer labels cannot be blank");
+		if (!directAnswer && input.answers().stream().map(SouvenirSolver::answerLabel).distinct().count() != input.answers().size()) {
 			return failure("Answer labels must be unique");
 		}
 
@@ -56,6 +57,21 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			.findFirst().orElse(null);
 		if (source == null || source == module) return failure("The selected source module is not on this bomb");
 		if (!source.isSolved()) return failure("Souvenir only asks about modules solved earlier");
+		if (directAnswer) {
+			Object recorded = resolveRecordedAnswer(source, input.question().trim());
+			if (recorded == null) return failure("No recorded answer is available for this question");
+			String answer = displayAnswer(recorded);
+			if (answer.isBlank()) return failure("No recorded answer is available for this question");
+			List<Map<String, Object>> history = history(module);
+			history.add(Map.of(
+				"sourceModuleId", source.getId().toString(),
+				"sourceModuleType", source.getType().name(),
+				"question", input.question().trim(),
+				"answer", answer
+			));
+			storeState(module, "history", history);
+			return success(new SouvenirOutput(answer, null), input.finalQuestion());
+		}
 
 		Integer special = resolveSpecial(source, input.question(), input.answers());
 		int answerIndex = special == null ? resolveFromRecordedFacts(source, input.question(), input.answers()) : special;
@@ -83,10 +99,16 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case CREATION -> answerIndex(answers, source.getState().get("firstWeather"));
 			case COORDINATES -> answerIndex(answers, source.getState().get("gridSizeClue"));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
+			case ICE_CREAM -> iceCreamAnswerIndex(source.getState(), q, answers);
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
 			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
-			case GAMEPAD -> answerIndex(answers, nested(source.getState(), "input", ordinal(q) == 1 ? "y" : "x"));
+			case GAMEPAD -> {
+				int digit = ordinal(q);
+				Object display = nested(source.getState(), "input", digit < 2 ? "x" : "y");
+				yield digit >= 0 && digit < 4 && display instanceof Number number
+					? answerIndex(answers, digit % 2 == 0 ? number.intValue() / 10 : number.intValue() % 10) : -1;
+			}
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
@@ -114,11 +136,157 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
 			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
-			case THREE_D_MAZE -> answerIndex(answers, source.getState().get(q.contains("markings") ? "markings" : "cardinalDirection"));
+			case THREE_D_MAZE -> answerIndex(answers, q.contains("markings")
+				? normalize(source.getState().get("markings")).replace(" ", "")
+				: source.getState().get("cardinalDirection"));
 			case TIC_TAC_TOE -> answerIndex(answers, nested(source.getState(), "initialBoard", ticTacToePosition(q)));
 			case TWO_BITS -> twoBitsAnswerIndex(source.getState(), q, answers);
+			case X_RAY -> membershipAnswerIndex(answers, source.getState().get("scannedSymbols"), null, false);
+			case YAHTZEE -> yahtzeeAnswerIndex(source.getState(), answers);
 			default -> null;
 		};
+	}
+
+	private static Object resolveRecordedAnswer(ModuleEntity source, String question) {
+		Map<String, Object> state = source.getState();
+		return switch (source.getType()) {
+			case BUTTON -> state.get("stripColor");
+			case MEMORY -> switch (question) {
+				case "displays" -> state.get("displayHistory");
+				case "positions" -> valuesAt(state.get("solutionHistory"), "position");
+				case "labels" -> valuesAt(state.get("solutionHistory"), "label");
+				default -> null;
+			};
+			case SIMON_SAYS -> nested(state, "input", "flashes");
+			case WIRE_SEQUENCES -> Map.of("red", state.get("red"), "blue", state.get("blue"), "black", state.get("black"));
+			case WHOS_ON_FIRST, THIRD_BASE -> state.get("displayHistory");
+			case BITMAPS -> "blackPixels".equals(question) ? blackCounts(state.get("whiteCounts")) : state.get("whiteCounts");
+			case CHEAP_CHECKOUT -> state.get("paidAmounts");
+			case CHORD_QUALITIES -> state.get("givenNotes");
+			case CREATION -> state.get("firstWeather");
+			case COORDINATES -> state.get("gridSizeClue");
+			case COLOR_FLASH -> nested(state, "input", "sequence", -1, "color");
+			case ICE_CREAM -> "customers".equals(question)
+				? valuesAt(state.get("stages"), "customer") : valuesAt(state.get("stages"), "offeredFlavors");
+			case FORGET_ME_NOT -> state.get("displayNumbers");
+			case FAST_MATH -> state.get("lastPair");
+			case FIZZ_BUZZ -> state.get("displayedNumbers");
+			case GAMEPAD -> gamepadDisplay(state);
+			case LED_ENCRYPTION -> ledEncryptionLetters(state);
+			case LISTENING -> state.get("soundDescription");
+			case MAZES -> nested(state, "input", "start");
+			case MONSPLODE_FIGHT -> nested(state, "input", "creature".equals(question) ? "opponent" : "moves");
+			case MORSEMATICS -> state.get("letters");
+			case MURDER -> switch (question) {
+				case "suspects" -> nested(state, "input", "suspects");
+				case "weapons" -> nested(state, "input", "weapons");
+				case "bodyLocation" -> nested(state, "input", "bodyLocation");
+				default -> null;
+			};
+			case MYSTIC_SQUARE -> nested(state, "input", "grid", 4);
+			case NEUTRALIZATION -> state.get("acidVolume".equals(question) ? "acidVolume" : "acidColor");
+			case ONLY_CONNECT -> state.get("hieroglyphs");
+			case PERSPECTIVE_PEGS -> state.get("initialSequence");
+			case PROBING -> state.get("missingFrequenciesByWire");
+			case RHYTHMS -> state.get("lastSuccessfulColor");
+			case SEA_SHELLS -> state.get("inputHistory");
+			case SHAPE_SHIFT -> shapeShiftAnswer(state);
+			case SILLY_SLOTS -> state.get("displayHistory");
+			case SIMON_SCREAMS -> state.get("rules".equals(question) ? "ruleHistory" : "flashHistory");
+			case SIMON_STATES -> state.get("flashHistory");
+			case SKEWED_SLOTS -> state.get("originalNumber");
+			case SWITCHES -> switchCode(state.get("currentSwitches"));
+			case SOUVENIR -> firstHistoryType(state.get("history"));
+			case THE_BULB -> state.get("initiallyOn");
+			case THREE_D_MAZE -> "markings".equals(question)
+				? normalize(state.get("markings")).replace(" ", "").toUpperCase(Locale.ROOT)
+				: state.get("cardinalDirection");
+			case TIC_TAC_TOE -> state.get("initialBoard");
+			case TWO_BITS -> twoBitsResponses(state.get("stages"));
+			case X_RAY -> state.get("scannedSymbols");
+			case YAHTZEE -> state.get("initialRollCategory");
+			case TEXT_FIELD -> state.get("displayedLetter");
+			default -> "recordedFacts".equals(question)
+				? (state.isEmpty() ? source.getSolution() : state) : null;
+		};
+	}
+
+	private static List<Object> valuesAt(Object raw, String key) {
+		if (!(raw instanceof Collection<?> values)) return List.of();
+		return values.stream().map(value -> value instanceof Map<?, ?> map ? (Object) map.get(key) : null).filter(java.util.Objects::nonNull).toList();
+	}
+
+	private static Object blackCounts(Object raw) {
+		if (!(raw instanceof Collection<?> counts)) return null;
+		return counts.stream().map(value -> value instanceof Number number ? 16 - number.intValue() : value).toList();
+	}
+
+	private static Object gamepadDisplay(Map<String, Object> state) {
+		Object x = nested(state, "input", "x");
+		Object y = nested(state, "input", "y");
+		return x instanceof Number xNumber && y instanceof Number yNumber
+			? String.format(Locale.ROOT, "%02d%02d", xNumber.intValue(), yNumber.intValue()) : null;
+	}
+
+	private static Object ledEncryptionLetters(Map<String, Object> state) {
+		Object raw = state.get("stageLetters");
+		Object total = state.get("totalStages");
+		if (!(raw instanceof List<?> stages) || !(total instanceof Number number)) return raw;
+		return stages.subList(0, Math.min(stages.size(), Math.max(0, number.intValue() - 1)));
+	}
+
+	private static Object twoBitsResponses(Object raw) {
+		List<Object> numbers = valuesAt(raw, "number");
+		return numbers.stream().skip(1)
+			.map(value -> value instanceof Number number ? String.format(Locale.ROOT, "%02d", number.intValue()) : value)
+			.toList();
+	}
+
+	private static Object shapeShiftAnswer(Map<String, Object> state) {
+		Object left = nested(state, "input", "left");
+		Object right = nested(state, "input", "right");
+		return left == null || right == null ? null : left + " " + right;
+	}
+
+	private static Object switchCode(Object raw) {
+		if (!(raw instanceof List<?> switches) || switches.size() != 5) return null;
+		return switches.stream().map(up -> Boolean.TRUE.equals(up) ? "Q" : "R").reduce("", String::concat);
+	}
+
+	private static Object firstHistoryType(Object raw) {
+		if (!(raw instanceof List<?> history) || history.isEmpty() || !(history.getFirst() instanceof Map<?, ?> first)) return null;
+		Object type = first.get("sourceModuleType");
+		return type == null ? null : String.valueOf(type).replace('_', ' ');
+	}
+
+	private static String displayAnswer(Object value) {
+		if (value instanceof Boolean bool) return bool ? "Yes" : "No";
+		if (value instanceof Map<?, ?> map) return map.entrySet().stream()
+			.filter(entry -> entry.getValue() != null)
+			.map(entry -> entry.getKey() + ": " + displayAnswer(entry.getValue()))
+			.collect(java.util.stream.Collectors.joining(" · "));
+		if (value instanceof Collection<?> collection) {
+			boolean nested = collection.stream().anyMatch(item -> item instanceof Map<?, ?> || item instanceof Collection<?>);
+			int[] index = {0};
+			return collection.stream().map(item -> (nested ? ++index[0] + ": " : "") + displayAnswer(item))
+				.collect(java.util.stream.Collectors.joining(nested ? " · " : ", "));
+		}
+		return String.valueOf(value);
+	}
+
+	private static int yahtzeeAnswerIndex(Map<String, Object> state, List<String> answers) {
+		Object category = state.get("initialRollCategory");
+		return Set.of("large straight", "small straight", "four of a kind", "full house", "three of a kind", "two pairs", "pair")
+			.contains(normalize(category)) ? answerIndex(answers, category) : -1;
+	}
+
+	private static int iceCreamAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		int stage = ordinal(question);
+		if (stage < 0) return -1;
+		if (question.startsWith("who ")) return answerIndex(answers, nested(state, "stages", stage, "customer"));
+		Object offered = nested(state, "stages", stage, "offeredFlavors");
+		if (question.contains("not on offer")) return membershipAnswerIndex(answers, offered, null, true);
+		return membershipAnswerIndex(answers, offered, nested(state, "stages", stage, "soldFlavor"), false);
 	}
 
 	private static int ledEncryptionAnswerIndex(Map<String, Object> state, String question, List<String> answers) {

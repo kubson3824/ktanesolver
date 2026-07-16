@@ -33,7 +33,7 @@ export default function SetupModuleManifest({
       {modules.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">No modules added yet.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
           {modules.map((module) => {
             countsByType[module.type] = (countsByType[module.type] ?? 0) + 1;
             const moduleNumber = countsByType[module.type];

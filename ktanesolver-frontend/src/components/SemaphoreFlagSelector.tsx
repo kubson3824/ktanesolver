@@ -144,6 +144,20 @@ function renderSemaphoreFigure(leftAngle: number, rightAngle: number) {
   );
 }
 
+export function SemaphoreCharacterFigure({ character }: { character: string }) {
+  const position = POSITIONS.find(({ letter, number }) => letter === character || number === character);
+  if (!position) return null;
+  return (
+    <div
+      className="h-full w-full"
+      role="img"
+      aria-label={`Semaphore flag position for ${character}: ${position.leftFlagAngle}°, ${position.rightFlagAngle}°`}
+    >
+      {renderSemaphoreFigure(position.leftFlagAngle, position.rightFlagAngle)}
+    </div>
+  );
+}
+
 export default function SemaphoreFlagSelector({
   onPositionSelect,
   disabled = false,

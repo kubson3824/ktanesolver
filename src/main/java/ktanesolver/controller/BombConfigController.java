@@ -26,4 +26,9 @@ public class BombConfigController {
 	public BombEntity addStrike(@PathVariable UUID bombId) {
 		return bombService.addStrike(bombId);
 	}
+
+	@DeleteMapping ("/{bombId}")
+	public void deleteBomb(@PathVariable UUID bombId) {
+		bombService.deleteBomb(bombId);
+	}
 }

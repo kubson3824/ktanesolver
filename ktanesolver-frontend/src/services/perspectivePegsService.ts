@@ -12,6 +12,8 @@ export interface PerspectivePegsOutput {
   keyColor: string;
   currentSequence: string[];
   keySequence: string[];
+  viewPosition: string;
+  pressPositions: string[];
 }
 
 export interface PerspectivePegsSolveRequest {

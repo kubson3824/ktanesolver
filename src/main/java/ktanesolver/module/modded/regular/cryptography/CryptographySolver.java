@@ -102,6 +102,7 @@ public class CryptographySolver extends AbstractModuleSolver<CryptographyInput, 
 
 		List<String> excerptWords = EXCERPT_WORDS;
 		int n = cipherWords.size();
+		CryptographyOutput match = null;
 		for (int start = 0; start <= excerptWords.size() - n; start++) {
 			// check word lengths match
 			boolean lengthsMatch = true;
@@ -161,9 +162,14 @@ public class CryptographySolver extends AbstractModuleSolver<CryptographyInput, 
 			}
 			if (keyOrder.size() != 5) continue;
 
-			return success(new CryptographyOutput(plaintext, keyOrder));
+			CryptographyOutput candidate = new CryptographyOutput(plaintext, keyOrder);
+			if (match != null && !match.equals(candidate)) {
+				return failure("Phrase is still ambiguous. Enter another word.");
+			}
+			match = candidate;
 		}
 
+		if (match != null) return success(match);
 		return failure("No matching phrase found in the excerpt for this ciphertext. Check that the ciphertext is from the module and word lengths match.");
 	}
 }

@@ -16,9 +16,12 @@ import {
   SolverResult,
 } from "../common";
 import { cn } from "../../lib/cn";
+import { Input } from "../ui/input";
+import { TranslatedLanguageSelect, type TranslatedLanguageCode } from "../common/TranslatedLanguageSelect";
+import CharacterKeyboard, { TRANSLATED_KEYBOARD_CHARACTERS } from "../common/CharacterKeyboard";
 
 type ButtonColor = "RED" | "BLUE" | "WHITE" | "YELLOW" | "OTHER";
-type ButtonLabel = "ABORT" | "DETONATE" | "HOLD" | "PRESS";
+type ButtonLabel = string;
 type StripColor = "BLUE" | "WHITE" | "YELLOW" | "OTHER";
 
 interface ButtonSolverProps {
@@ -59,6 +62,7 @@ const LABEL_OPTIONS = [
 export default function ButtonSolver({ bomb }: ButtonSolverProps) {
   const [buttonColor, setButtonColor] = useState<ButtonColor | null>(null);
   const [buttonLabel, setButtonLabel] = useState<ButtonLabel | null>(null);
+  const [language, setLanguage] = useState<TranslatedLanguageCode>("EN");
   const [stripColor, setStripColor] = useState<StripColor | null>(null);
   const [result, setResult] = useState<string>("");
   const [releaseDigit, setReleaseDigit] = useState<number | null>(null);
@@ -84,6 +88,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     () => ({
       buttonColor,
       buttonLabel,
+      language,
       stripColor,
       showStripColor,
       result,
@@ -91,13 +96,14 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
       shouldHold,
       twitchCommand,
     }),
-    [buttonColor, buttonLabel, stripColor, showStripColor, result, releaseDigit, shouldHold, twitchCommand],
+    [buttonColor, buttonLabel, language, stripColor, showStripColor, result, releaseDigit, shouldHold, twitchCommand],
   );
 
   const onRestoreState = useCallback(
     (state: {
       buttonColor?: ButtonColor | null;
       buttonLabel?: ButtonLabel | null;
+      language?: TranslatedLanguageCode;
       stripColor?: StripColor | null;
       showStripColor?: boolean;
       result?: string;
@@ -115,6 +121,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
 
       if (restoredButtonColor !== undefined) setButtonColor(restoredButtonColor ?? null);
       if (restoredButtonLabel !== undefined) setButtonLabel(restoredButtonLabel ?? null);
+      if (state.language !== undefined) setLanguage(state.language);
       if (restoredStripColor !== undefined) setStripColor(restoredStripColor ?? null);
       if (state.showStripColor !== undefined) setShowStripColor(state.showStripColor);
       if (state.result !== undefined) setResult(state.result);
@@ -148,6 +155,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
     {
       buttonColor: ButtonColor | null;
       buttonLabel: ButtonLabel | null;
+      language: TranslatedLanguageCode;
       stripColor: StripColor | null;
       showStripColor: boolean;
       result: string;
@@ -194,6 +202,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
   const fullReset = () => {
     setButtonColor(null);
     setButtonLabel(null);
+    setLanguage("EN");
     setStripColor(null);
     resetResult();
   };
@@ -229,6 +238,7 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
         input: {
           color: buttonColor,
           label: buttonLabel,
+          language,
           stripColor: includeStrip ? stripColor ?? undefined : undefined,
         },
       });
@@ -266,6 +276,11 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
         description="Pick the button's physical color and the word printed on it."
       >
         <div className="flex flex-col items-center gap-5">
+          <TranslatedLanguageSelect
+            value={language}
+            onChange={(value) => { setLanguage(value); setButtonLabel(null); resetResult(); }}
+            disabled={isSolved || isLoading}
+          />
           {/* Button visual */}
           <div
             className={cn(
@@ -322,15 +337,36 @@ export default function ButtonSolver({ bomb }: ButtonSolverProps) {
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Label
             </span>
-            <SegmentedControl
-              value={buttonLabel ?? ""}
-              onChange={(v) => selectLabel(v as ButtonLabel)}
-              options={LABEL_OPTIONS}
-              size="sm"
-              ariaLabel="Button label"
-              disabled={isSolved}
-              className="w-full justify-center"
-            />
+            {language === "EN" ? (
+              <SegmentedControl
+                value={buttonLabel ?? ""}
+                onChange={selectLabel}
+                options={LABEL_OPTIONS}
+                size="sm"
+                ariaLabel="Button label"
+                disabled={isSolved}
+                className="w-full justify-center"
+              />
+            ) : (
+              <>
+                <Input
+                  value={buttonLabel ?? ""}
+                  onChange={(event) => selectLabel(event.target.value)}
+                  placeholder="Enter the translated label"
+                  disabled={isSolved}
+                  aria-label="Translated button label"
+                  className="text-center font-semibold"
+                />
+                <CharacterKeyboard
+                  characters={TRANSLATED_KEYBOARD_CHARACTERS[language]}
+                  onCharacter={(character) => selectLabel(`${buttonLabel ?? ""}${character}`)}
+                  onSpace={() => selectLabel(`${buttonLabel ?? ""} `)}
+                  onBackspace={() => selectLabel(Array.from(buttonLabel ?? "").slice(0, -1).join(""))}
+                  targetLabel="button label"
+                  disabled={isSolved || isLoading}
+                />
+              </>
+            )}
           </div>
         </div>
       </SolverSection>

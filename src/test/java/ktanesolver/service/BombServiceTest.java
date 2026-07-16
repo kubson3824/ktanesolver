@@ -2,6 +2,7 @@ package ktanesolver.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,7 +45,7 @@ class BombServiceTest {
     @BeforeEach
     void setUp() {
         bombService = new BombService(bombRepo, roundRepo, eventPublisher);
-        when(bombRepo.save(any(BombEntity.class))).thenAnswer(invocation -> {
+        lenient().when(bombRepo.save(any(BombEntity.class))).thenAnswer(invocation -> {
             BombEntity bomb = invocation.getArgument(0);
             if (bomb.getId() == null) {
                 bomb.setId(UUID.randomUUID());
@@ -103,6 +104,20 @@ class BombServiceTest {
             assertThat(module.isSolved()).isFalse();
             assertThat(module.getBomb()).isSameAs(result);
         });
+        verify(eventPublisher).publishEvent(any());
+    }
+
+    @Test
+    void deleteBombDeletesItAndPublishesRoundUpdate() {
+        UUID roundId = UUID.randomUUID();
+        BombEntity bomb = new BombEntity();
+        bomb.setId(UUID.randomUUID());
+        bomb.setRound(createRound(roundId));
+        when(bombRepo.findById(bomb.getId())).thenReturn(Optional.of(bomb));
+
+        bombService.deleteBomb(bomb.getId());
+
+        verify(bombRepo).delete(bomb);
         verify(eventPublisher).publishEvent(any());
     }
 

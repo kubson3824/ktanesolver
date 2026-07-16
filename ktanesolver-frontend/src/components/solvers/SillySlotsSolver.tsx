@@ -6,8 +6,8 @@ import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   solveSillySlots,
   type Keyword,
-  type Adjective,
-  type Noun,
+  type SlotColor,
+  type SlotShape,
   type Slot,
 } from "../../services/sillySlotsService";
 import {
@@ -29,41 +29,34 @@ interface SillySlotsSolverProps {
 
 const KEYWORDS: { value: Keyword; label: string }[] = [
   { value: "SASSY", label: "Sassy" },
-  { value: "BLUE", label: "Blue" },
-  { value: "RED", label: "Red" },
-  { value: "GREEN", label: "Green" },
-  { value: "CHERRY", label: "Cherry" },
-  { value: "GRAPE", label: "Grape" },
-  { value: "BOMB", label: "Bomb" },
-  { value: "COIN", label: "Coin" },
-];
-
-const ADJECTIVES: { value: Adjective; label: string }[] = [
-  { value: "SASSY", label: "Sassy" },
   { value: "SILLY", label: "Silly" },
   { value: "SOGGY", label: "Soggy" },
-];
-
-const NOUNS: { value: Noun; label: string }[] = [
   { value: "SALLY", label: "Sally" },
   { value: "SIMON", label: "Simon" },
   { value: "SAUSAGE", label: "Sausage" },
   { value: "STEVEN", label: "Steven" },
 ];
 
-/** Visual color for a colour-typed keyword when used as a slot's colour. */
-const COLOUR_SWATCH: Record<Keyword, string> = {
+const COLORS: { value: SlotColor; label: string }[] = [
+  { value: "RED", label: "Red" },
+  { value: "GREEN", label: "Green" },
+  { value: "BLUE", label: "Blue" },
+];
+
+const SHAPES: { value: SlotShape; label: string }[] = [
+  { value: "BOMB", label: "Bomb" },
+  { value: "GRAPE", label: "Grape" },
+  { value: "CHERRY", label: "Cherry" },
+  { value: "COIN", label: "Coin" },
+];
+
+const COLOR_SWATCH: Record<SlotColor, string> = {
   BLUE: "bg-blue-500",
   RED: "bg-red-500",
   GREEN: "bg-green-500",
-  CHERRY: "bg-rose-500",
-  GRAPE: "bg-purple-500",
-  BOMB: "bg-neutral-800 dark:bg-neutral-200",
-  COIN: "bg-amber-400",
-  SASSY: "bg-muted",
 };
 
-const DEFAULT_SLOT: Slot = { adjective: "SASSY", noun: "SALLY", colour: "BLUE" };
+const DEFAULT_SLOT: Slot = { color: "RED", shape: "BOMB" };
 
 function defaultSlots(): [Slot, Slot, Slot] {
   return [{ ...DEFAULT_SLOT }, { ...DEFAULT_SLOT }, { ...DEFAULT_SLOT }];
@@ -113,19 +106,16 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
       if (Array.isArray(state.slots) && state.slots.length >= 3) {
         setSlots([
           {
-            adjective: state.slots[0].adjective ?? "SASSY",
-            noun: state.slots[0].noun ?? "SALLY",
-            colour: state.slots[0].colour ?? "BLUE",
+            color: state.slots[0].color ?? "RED",
+            shape: state.slots[0].shape ?? "BOMB",
           },
           {
-            adjective: state.slots[1].adjective ?? "SASSY",
-            noun: state.slots[1].noun ?? "SALLY",
-            colour: state.slots[1].colour ?? "BLUE",
+            color: state.slots[1].color ?? "RED",
+            shape: state.slots[1].shape ?? "BOMB",
           },
           {
-            adjective: state.slots[2].adjective ?? "SASSY",
-            noun: state.slots[2].noun ?? "SALLY",
-            colour: state.slots[2].colour ?? "BLUE",
+            color: state.slots[2].color ?? "RED",
+            shape: state.slots[2].shape ?? "BOMB",
           },
         ]);
       }
@@ -173,7 +163,7 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
   });
 
   const setSlot = useCallback(
-    (index: 0 | 1 | 2, field: keyof Slot, value: Adjective | Noun | Keyword) => {
+    (index: 0 | 1 | 2, field: keyof Slot, value: SlotColor | SlotShape) => {
       setSlots((prev) => {
         const next: [Slot, Slot, Slot] = [...prev];
         next[index] = { ...next[index], [field]: value };
@@ -191,9 +181,7 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
     setIsLoading(true);
     clearError();
     try {
-      const response = await solveSillySlots(round.id, bomb.id, currentModule.id, {
-        input: { keyword, slots },
-      });
+      const response = await solveSillySlots(round.id, bomb.id, currentModule.id, { keyword, slots });
       if (response.reason) {
         setError(response.reason);
         return;
@@ -209,7 +197,7 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
         updateModuleAfterSolve(
           bomb.id,
           currentModule.id,
-          moduleState,
+          { keyword, slots, result: response.output, twitchCommand: command },
           response.output,
           solved,
         );
@@ -258,7 +246,7 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
 
       <SolverSection
         title="Current slot display"
-        description="Read each slot left to right: adjective, noun, and background colour."
+        description="Read each reel left to right: color and symbol."
       >
         <div className="space-y-2">
           {([0, 1, 2] as const).map((i) => {
@@ -273,12 +261,12 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
                 </span>
                 <select
                   className={SELECT_CLASS}
-                  value={slot.adjective}
-                  onChange={(e) => setSlot(i, "adjective", e.target.value as Adjective)}
+                  value={slot.color}
+                  onChange={(e) => setSlot(i, "color", e.target.value as SlotColor)}
                   disabled={disabled}
-                  aria-label={`Slot ${i + 1} adjective`}
+                  aria-label={`Slot ${i + 1} color`}
                 >
-                  {ADJECTIVES.map((opt) => (
+                  {COLORS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -286,39 +274,18 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
                 </select>
                 <select
                   className={SELECT_CLASS}
-                  value={slot.noun}
-                  onChange={(e) => setSlot(i, "noun", e.target.value as Noun)}
+                  value={slot.shape}
+                  onChange={(e) => setSlot(i, "shape", e.target.value as SlotShape)}
                   disabled={disabled}
-                  aria-label={`Slot ${i + 1} noun`}
+                  aria-label={`Slot ${i + 1} symbol`}
                 >
-                  {NOUNS.map((opt) => (
+                  {SHAPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
                   ))}
                 </select>
-                <div className="inline-flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "h-4 w-4 rounded-full border border-border",
-                      COLOUR_SWATCH[slot.colour],
-                    )}
-                  />
-                  <select
-                    className={SELECT_CLASS}
-                    value={slot.colour}
-                    onChange={(e) => setSlot(i, "colour", e.target.value as Keyword)}
-                    disabled={disabled}
-                    aria-label={`Slot ${i + 1} colour`}
-                  >
-                    {KEYWORDS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <span aria-hidden className={cn("h-4 w-4 rounded-full border border-border", COLOR_SWATCH[slot.color])} />
               </div>
             );
           })}
@@ -350,7 +317,7 @@ export default function SillySlotsSolver({ bomb }: SillySlotsSolverProps) {
       {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
       <SolverInstructions>
-        Enter the display keyword and the current slot reels each spin. The solver
+        Enter the display keyword and the three visible reels each spin. The solver
         applies the rules in order and tells you whether to press KEEP or pull the
         lever. Four lever pulls defuse the module.
       </SolverInstructions>

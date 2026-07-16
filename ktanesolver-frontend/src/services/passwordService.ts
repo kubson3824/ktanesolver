@@ -2,6 +2,7 @@ import { api, withErrorWrapping } from '../lib/api';
 
 export interface PasswordInput {
   letters: Record<number, string[]>;
+  language?: string;
 }
 
 export interface PasswordOutput {

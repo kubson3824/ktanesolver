@@ -6,5 +6,8 @@ import ktanesolver.logic.ModuleInput;
 import java.util.Map;
 import java.util.Set;
 
-public record PasswordInput(Map<Integer, Set<Character>> letters) implements ModuleInput {
+public record PasswordInput(Map<Integer, Set<String>> letters, String language) implements ModuleInput {
+	public PasswordInput(Map<Integer, Set<String>> letters) {
+		this(letters, "EN");
+	}
 }

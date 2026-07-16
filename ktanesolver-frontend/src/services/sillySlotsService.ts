@@ -1,29 +1,25 @@
-import { api, withErrorWrapping } from "../lib/api";
+import { solveModule } from "../lib/api";
 
 export type Keyword =
   | "SASSY"
-  | "BLUE"
-  | "RED"
-  | "GREEN"
-  | "CHERRY"
-  | "GRAPE"
-  | "BOMB"
-  | "COIN";
+  | "SILLY"
+  | "SOGGY"
+  | "SALLY"
+  | "SIMON"
+  | "SAUSAGE"
+  | "STEVEN";
 
-export type Adjective = "SASSY" | "SILLY" | "SOGGY";
-export type Noun = "SALLY" | "SIMON" | "SAUSAGE" | "STEVEN";
+export type SlotColor = "RED" | "GREEN" | "BLUE";
+export type SlotShape = "BOMB" | "GRAPE" | "CHERRY" | "COIN";
 
 export interface Slot {
-  adjective: Adjective;
-  noun: Noun;
-  colour: Keyword;
+  color: SlotColor;
+  shape: SlotShape;
 }
 
-export interface SillySlotsSolveRequest {
-  input: {
-    keyword: Keyword;
-    slots: [Slot, Slot, Slot];
-  };
+export interface SillySlotsInput {
+  keyword: Keyword;
+  slots: [Slot, Slot, Slot];
 }
 
 export interface SillySlotsSolveResponse {
@@ -39,13 +35,6 @@ export const solveSillySlots = async (
   roundId: string,
   bombId: string,
   moduleId: string,
-  request: SillySlotsSolveRequest
-): Promise<SillySlotsSolveResponse> => {
-  return withErrorWrapping(async () => {
-    const response = await api.post<SillySlotsSolveResponse>(
-      `/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`,
-      request
-    );
-    return response.data;
-  });
-};
+  input: SillySlotsInput,
+): Promise<SillySlotsSolveResponse> =>
+  solveModule<SillySlotsInput, SillySlotsSolveResponse>(roundId, bombId, moduleId, input);

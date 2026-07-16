@@ -18,9 +18,8 @@ import {
   SolverControls,
   ErrorAlert,
   TwitchCommandDisplay,
-  SolverResult,
 } from "../common";
-import SemaphoreFlagSelector from "../SemaphoreFlagSelector";
+import SemaphoreFlagSelector, { SemaphoreCharacterFigure } from "../SemaphoreFlagSelector";
 import { Button } from "../ui/button";
 
 interface SemaphoreSolverProps {
@@ -149,7 +148,7 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
 
     try {
       const input: SemaphoreInput = { sequence };
-      const response = await solveSemaphore(round.id, bomb.id, currentModule.id, { input });
+      const response = await solveSemaphore(round.id, bomb.id, currentModule.id, input);
       setResult(response.output);
 
       if (response.output.resolved) {
@@ -256,15 +255,15 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
       <ErrorAlert error={error} />
 
       {result && (
-        <SolverResult
-          variant={result.resolved ? "success" : "warning"}
-          title={result.resolved ? "Missing character" : "Best guess"}
-          description={
-            result.resolved
-              ? `Type this into the module: ${result.missingCharacter}`
-              : `Likely missing character: ${result.missingCharacter}. Confirm the sequence.`
-          }
-        />
+        <SolverSection
+          title={result.resolved ? "Submit this flag" : "Best guess"}
+          description="Select this flag position on the module."
+          className={result.resolved ? "border-emerald-500/40" : "border-amber-500/40"}
+        >
+          <div className="mx-auto h-40 w-40">
+            <SemaphoreCharacterFigure character={result.missingCharacter} />
+          </div>
+        </SolverSection>
       )}
 
       {twitchCommand && result && result.resolved && (

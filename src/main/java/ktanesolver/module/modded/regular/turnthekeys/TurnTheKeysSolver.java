@@ -1,10 +1,12 @@
 package ktanesolver.module.modded.regular.turnthekeys;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,7 +58,7 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 		}
 
 		TurnTheKeysOutput output = computeOutput(bomb, module);
-		return success(output);
+		return success(output, output.rightKeyTurned() && output.leftKeyTurned());
 	}
 
 	/**
@@ -86,7 +88,7 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 			int p = getPriority(m);
 			boolean rightTurned = getBooleanState(m, "rightKeyTurned");
 			boolean leftTurned = getBooleanState(m, "leftKeyTurned");
-			otherKeys.add(new TurnTheKeysState(m.getId().equals(module.getId()), p, rightTurned, leftTurned));
+			otherKeys.add(new TurnTheKeysState(m.getId(), m.getId().equals(module.getId()), p, rightTurned, leftTurned));
 		}
 
 		// Count by type: how many of each type on bomb, how many solved
@@ -101,7 +103,60 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 
 		boolean rightKeyTurned = getBooleanState(module, "rightKeyTurned");
 		boolean leftKeyTurned = getBooleanState(module, "leftKeyTurned");
-		return new TurnTheKeysOutput(leftInstr, rightInstr, currentPriority, canTurnRight, canTurnLeft, rightKeyTurned, leftKeyTurned);
+		return new TurnTheKeysOutput(leftInstr, rightInstr, currentPriority, canTurnRight, canTurnLeft,
+			rightKeyTurned, leftKeyTurned, buildRightKeyRequirements(bomb, currentPriority, otherKeys),
+			buildLeftKeyRequirements(bomb, currentPriority, otherKeys));
+	}
+
+	private List<TurnTheKeysOutput.Requirement> buildRightKeyRequirements(BombEntity bomb, int currentPriority,
+		List<TurnTheKeysState> allKeys) {
+		List<TurnTheKeysOutput.Requirement> requirements = new ArrayList<>();
+		addUnknownPriorities(requirements, allKeys);
+		allKeys.stream()
+			.filter(k -> !k.isCurrent && k.priority > currentPriority && !k.rightKeyTurned)
+			.sorted(Comparator.comparingInt(TurnTheKeysState::priority).reversed())
+			.map(k -> requirement(k.moduleId, "Turn the right key on Turn The Keys priority " + k.priority))
+			.forEach(requirements::add);
+		addUnsolvedModules(requirements, bomb, RIGHT_AFTER_SOLVED);
+		return requirements;
+	}
+
+	private List<TurnTheKeysOutput.Requirement> buildLeftKeyRequirements(BombEntity bomb, int currentPriority,
+		List<TurnTheKeysState> allKeys) {
+		List<TurnTheKeysOutput.Requirement> requirements = new ArrayList<>();
+		addUnknownPriorities(requirements, allKeys);
+		allKeys.stream()
+			.filter(k -> k.priority >= 0 && !k.rightKeyTurned)
+			.sorted(Comparator.comparingInt(TurnTheKeysState::priority).reversed())
+			.map(k -> requirement(k.moduleId, "Turn the right key on Turn The Keys priority " + k.priority))
+			.forEach(requirements::add);
+		allKeys.stream()
+			.filter(k -> !k.isCurrent && k.priority >= 0 && k.priority < currentPriority && !k.leftKeyTurned)
+			.sorted(Comparator.comparingInt(TurnTheKeysState::priority))
+			.map(k -> requirement(k.moduleId, "Turn the left key on Turn The Keys priority " + k.priority))
+			.forEach(requirements::add);
+		addUnsolvedModules(requirements, bomb, LEFT_AFTER_SOLVED);
+		return requirements;
+	}
+
+	private static void addUnknownPriorities(List<TurnTheKeysOutput.Requirement> requirements,
+		List<TurnTheKeysState> allKeys) {
+		allKeys.stream()
+			.filter(k -> k.priority < 0)
+			.map(k -> requirement(k.moduleId, "Enter the priority for this Turn The Keys"))
+			.forEach(requirements::add);
+	}
+
+	private static void addUnsolvedModules(List<TurnTheKeysOutput.Requirement> requirements, BombEntity bomb,
+		Set<ModuleType> requiredTypes) {
+		bomb.getModules().stream()
+			.filter(m -> requiredTypes.contains(m.getType()) && !m.isSolved())
+			.map(m -> requirement(m.getId(), "Solve " + formatType(m.getType())))
+			.forEach(requirements::add);
+	}
+
+	private static TurnTheKeysOutput.Requirement requirement(UUID moduleId, String instruction) {
+		return new TurnTheKeysOutput.Requirement(moduleId, instruction);
 	}
 
 	private static int getPriority(ModuleEntity m) {
@@ -129,6 +184,7 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 
 	private boolean canTurnRightKey(int currentPriority, List<TurnTheKeysState> allKeys,
 		Map<ModuleType, Long> onBomb, Map<ModuleType, Long> solved) {
+		if (allKeys.stream().anyMatch(k -> k.priority < 0)) return false;
 		// Before: no left key turned on any Turn The Keys
 		if (allKeys.stream().anyMatch(k -> k.leftKeyTurned)) return false;
 		// Before: no lower-priority right key turned
@@ -150,6 +206,7 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 
 	private boolean canTurnLeftKey(int currentPriority, List<TurnTheKeysState> allKeys,
 		Map<ModuleType, Long> onBomb, Map<ModuleType, Long> solved) {
+		if (allKeys.stream().anyMatch(k -> k.priority < 0)) return false;
 		// After: all right keys on Turn The Keys turned (including this one)
 		if (allKeys.stream().anyMatch(k -> !k.rightKeyTurned)) return false;
 		// After: all lower-priority left keys turned
@@ -173,6 +230,9 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 		Map<ModuleType, Long> onBomb, Map<ModuleType, Long> solved, boolean canTurn) {
 		if (canTurn) return "You can turn the right key now.";
 		List<String> after = new ArrayList<>();
+		if (allKeys.stream().anyMatch(k -> k.priority < 0)) {
+			after.add("enter the priorities on all Turn The Keys modules");
+		}
 		// Higher-priority right keys
 		List<TurnTheKeysState> higherRight = allKeys.stream()
 			.filter(k -> k.priority > currentPriority && !k.rightKeyTurned).toList();
@@ -208,6 +268,9 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 		Map<ModuleType, Long> onBomb, Map<ModuleType, Long> solved, boolean canTurn) {
 		if (canTurn) return "You can turn the left key now.";
 		List<String> after = new ArrayList<>();
+		if (allKeys.stream().anyMatch(k -> k.priority < 0)) {
+			after.add("enter the priorities on all Turn The Keys modules");
+		}
 		if (allKeys.stream().anyMatch(k -> !k.rightKeyTurned)) {
 			after.add("turn the right key on all Turn The Keys modules first");
 		}
@@ -245,5 +308,5 @@ public class TurnTheKeysSolver extends AbstractModuleSolver<TurnTheKeysInput, Tu
 		return t.name().replace("_", " ").toLowerCase();
 	}
 
-	private record TurnTheKeysState(boolean isCurrent, int priority, boolean rightKeyTurned, boolean leftKeyTurned) {}
+	private record TurnTheKeysState(UUID moduleId, boolean isCurrent, int priority, boolean rightKeyTurned, boolean leftKeyTurned) {}
 }

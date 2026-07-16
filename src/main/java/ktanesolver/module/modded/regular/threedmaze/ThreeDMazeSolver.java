@@ -25,7 +25,7 @@ import ktanesolver.logic.SolveResult;
 	id = "3d-maze",
 	name = "3D Maze",
 	category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-	description = "Navigate a 3D maze; use edgework for row/column, marker letters to identify the maze, and user-provided goal direction (N/S/E/W).",
+	description = "Navigate the default-rule 3D maze from observed letters, walls, and goal direction.",
 	tags = { "maze", "3d", "modded", "navigation" },
 	hasInput = true,
 	hasOutput = true
@@ -39,24 +39,25 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 	@Override
 	protected SolveResult<ThreeDMazeOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ThreeDMazeInput input) {
 		if (input.starLetters() == null || input.starLetters().size() != 3) {
-			return failure("Exactly 3 marker letters (A/B/C/D/H) are required.");
+			return failure("Exactly 3 maze letters (A/B/C/D/H) are required.");
 		}
 
 		String sortedTriple = ThreeDMazeDefinitions.toSortedTriple(input.starLetters());
 		if (sortedTriple == null) {
-			return failure("Each marker letter must be one of A, B, C, D, H.");
+			return failure("Each maze letter must be one of A, B, C, D, H.");
 		}
 
 		if (!ThreeDMazeDefinitions.isKnownMazeTriple(sortedTriple)) {
-			return failure("Unknown or ambiguous marker letters.");
+			return failure("Choose three distinct maze letters.");
 		}
 		storeState(module, "markings", sortedTriple);
-		String recordedDirection = normalizeDirection(input.goalDirection());
-		if (recordedDirection != null) storeState(module, "cardinalDirection", directionName(recordedDirection));
+		ThreeDMazeMaze maze = ThreeDMazeDefinitions.getMaze(sortedTriple);
+		String goalDirection = normalizeDirection(input.goalDirection());
+		if (goalDirection != null) storeState(module, "cardinalDirection", directionName(goalDirection));
 
-		int goalRow = computeRow(bomb);
-		int goalCol = computeColumn(bomb);
-		if (goalRow < 0 || goalRow > 7 || goalCol < 0 || goalCol > 7) {
+		int originRow = computeRow(bomb);
+		int originCol = computeColumn(bomb);
+		if (originRow < 0 || originCol < 0) {
 			return failure("Serial number must contain at least one digit to compute row and column.");
 		}
 
@@ -64,18 +65,21 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 		int startCol;
 		String startFacing;
 
-		if (input.useDistanceIdentification()) {
+		if (input.hasExactPosition()) {
+			startRow = input.currentRow();
+			startCol = input.currentCol();
+			startFacing = normalizeDirection(input.currentFacing());
+			if (startRow < 0 || startRow >= SIZE || startCol < 0 || startCol >= SIZE || startFacing == null) {
+				return failure("Current row, column, and facing must describe a valid maze state.");
+			}
+		} else if (input.useDistanceIdentification()) {
 			int[] steps = input.stepsToWall();
-			if (steps == null || steps.length != 4) {
-				return failure("When using distance identification, four distances (front, left, right, behind) are required.");
+			for (int distance : steps) {
+				if (distance < 0 || distance >= SIZE) return failure("Wall distances must be between 0 and 7.");
 			}
 			String givenFacing = normalizeDirection(input.currentFacing());
 			if (givenFacing != null) {
-				// Backward compatibility: user provided facing, use it directly
 				int[] cardinal = relativeToCardinalDistances(givenFacing, steps);
-				if (cardinal == null) {
-					return failure("When using distance identification, facing (N/S/E/W) is required.");
-				}
 				List<int[]> matches = ThreeDMazeDefinitions.resolvePositionFromDistances(
 					sortedTriple,
 					input.letterAtPosition(),
@@ -91,88 +95,68 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 				startCol = matches.get(0)[1];
 				startFacing = givenFacing;
 			} else {
-				// Infer position and facing: try each facing, see which yields a unique cell
-				startRow = -1;
-				startCol = -1;
-				startFacing = null;
+				List<Position> candidates = new ArrayList<>();
 				for (String candidateFacing : new String[] { "N", "S", "E", "W" }) {
 					int[] cardinal = relativeToCardinalDistances(candidateFacing, steps);
-					if (cardinal == null) continue;
-					List<int[]> matches = ThreeDMazeDefinitions.resolvePositionFromDistances(
+					for (int[] match : ThreeDMazeDefinitions.resolvePositionFromDistances(
 						sortedTriple,
 						input.letterAtPosition(),
 						cardinal[0], cardinal[1], cardinal[2], cardinal[3]
-					);
-					if (matches.size() == 1) {
-						int mr = matches.get(0)[0], mc = matches.get(0)[1];
-						if (startFacing == null) {
-							startRow = mr;
-							startCol = mc;
-							startFacing = candidateFacing;
-						} else if (startRow != mr || startCol != mc) {
-							return failure("Ambiguous position; multiple cells match. Re-check the four distances (front, left, right, behind).");
-						}
+					)) {
+						candidates.add(new Position(match[0], match[1], candidateFacing));
 					}
 				}
-				if (startFacing == null) {
-					return failure("Cannot identify position; check the letter and the four distances (front, left, right, behind).");
-				}
+				if (candidates.isEmpty()) return failure("Cannot identify position; check the symbol and wall distances.");
+				if (candidates.size() > 1) return failure("Ambiguous position; add the current floor symbol or re-check the ordered distances.");
+				Position position = candidates.get(0);
+				startRow = position.row();
+				startCol = position.col();
+				startFacing = position.facing();
 			}
 		} else {
-			// No position: only goal cell + direction (user provides goal direction)
-			String goalDirection = normalizeDirection(input.goalDirection());
 			if (goalDirection == null) {
-				return failure("Goal direction (N/S/E/W) is required, or provide current position to get guidance to the nearest direction marker.");
+				return failure("Provide the current observation to get guidance to a direction marker.");
 			}
-			return success(new ThreeDMazeOutput(goalRow, goalCol, goalDirection));
+			GoalWall wall = findGoalWall(maze, originRow, originCol, goalDirection);
+			return wall == null ? failure("Goal wall not found in this maze.") : success(new ThreeDMazeOutput(wall.row(), wall.col(), goalDirection));
 		}
 
-		ThreeDMazeMaze maze = ThreeDMazeDefinitions.getMaze(sortedTriple);
-		if (maze == null) {
-			return failure("Maze not found for marker letters.");
-		}
-
-		String goalDirection = normalizeDirection(input.goalDirection());
-
-		if (goalDirection == null || goalDirection.isEmpty()) {
-			// Phase 1: guide to nearest direction marker (star)
+		if (goalDirection == null) {
 			int[][] stars = ThreeDMazeDefinitions.getStarPositions(sortedTriple);
-			if (stars == null || stars.length == 0) {
-				return failure("No star positions for this maze.");
-			}
 			List<ThreeDMazeMove> bestPath = null;
-			int bestLen = Integer.MAX_VALUE;
 			for (int[] star : stars) {
 				List<ThreeDMazeMove> path = findPathToCell(maze, startRow, startCol, startFacing, star[0], star[1]);
-				if (path != null && path.size() < bestLen) {
-					bestLen = path.size();
-					bestPath = path;
-				}
+				if (path != null && (bestPath == null || path.size() < bestPath.size())) bestPath = path;
 			}
-			if (bestPath == null) {
-				return failure("No path from current position to any direction marker.");
-			}
+			if (bestPath == null) return failure("No path from current position to any direction marker.");
 			return success(new ThreeDMazeOutput(
-				goalRow, goalCol, null,
+				originRow, originCol, null,
 				bestPath, startRow, startCol, startFacing,
 				"go_to_star",
 				"Report the direction (N/S/E/W) when you reach the star, then solve again with that direction.",
 				maze
-			));
+			), false);
 		}
 
-		// Phase 2: path to goal wall
-		List<ThreeDMazeMove> moves = findPath(maze, startRow, startCol, startFacing, goalRow, goalCol, goalDirection);
-		if (moves == null) {
-			return failure("No path from current position to goal.");
-		}
+		GoalWall wall = findGoalWall(maze, originRow, originCol, goalDirection);
+		if (wall == null) return failure("Goal wall not found in this maze.");
+		int[] farSide = step(wall.row(), wall.col(), goalDirection);
+		List<ThreeDMazeMove> nearPath = findPath(maze, startRow, startCol, startFacing, wall.row(), wall.col(), goalDirection);
+		List<ThreeDMazeMove> farPath = findPath(maze, startRow, startCol, startFacing, farSide[0], farSide[1], opposite(goalDirection));
+		List<ThreeDMazeMove> moves = nearPath == null || (farPath != null && farPath.size() < nearPath.size()) ? farPath : nearPath;
+		if (moves == null) return failure("No path from current position to the goal wall.");
+		moves = new ArrayList<>(moves);
+		moves.add(ThreeDMazeMove.FORWARD);
 		return success(new ThreeDMazeOutput(
-			goalRow, goalCol, goalDirection, moves, startRow, startCol, startFacing,
+			wall.row(), wall.col(), goalDirection, moves, startRow, startCol, startFacing,
 			"go_to_goal",
-			"Follow the moves to the goal cell (you will end facing the exit); then go forward through the wall.",
+			"Follow every move; the final Forward passes through the goal wall.",
 			maze
 		));
 	}
+
+	private record Position(int row, int col, String facing) {}
+	private record GoalWall(int row, int col) {}
 
 	/** A* from (startRow, startCol, startFacing) to (goalRow, goalCol) with any facing. Used for path to star. */
 	private List<ThreeDMazeMove> findPathToCell(ThreeDMazeMaze maze, int startRow, int startCol, String startFacing, int goalRow, int goalCol) {
@@ -224,8 +208,8 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 			}
 
 			// FORWARD
-			int[] nextF = step(s.r(), s.c(), s.dir(), true);
-			if (nextF != null && canGo(maze, s.r(), s.c(), s.dir(), true)) {
+			int[] nextF = step(s.r(), s.c(), s.dir());
+			if (nextF != null && canGo(maze, s.r(), s.c(), s.dir())) {
 				State fState = new State(nextF[0], nextF[1], s.dir());
 				int newCost = cost + 1;
 				if (newCost < bestCost.getOrDefault(fState, Integer.MAX_VALUE)) {
@@ -283,8 +267,18 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 		};
 	}
 
+	private static GoalWall findGoalWall(ThreeDMazeMaze maze, int row, int col, String direction) {
+		for (int i = 0; i < SIZE; i++) {
+			if (!canGo(maze, row, col, direction)) return new GoalWall(row, col);
+			int[] next = step(row, col, direction);
+			row = next[0];
+			col = next[1];
+		}
+		return null;
+	}
+
 	/** Returns [nextRow, nextCol] with cyclic wrap, or null if invalid. */
-	private static int[] step(int r, int c, String dir, boolean forward) {
+	private static int[] step(int r, int c, String dir) {
 		int dr = 0, dc = 0;
 		switch (dir) {
 			case "N" -> dr = -1;
@@ -293,30 +287,19 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 			case "E" -> dc = 1;
 			default -> { return null; }
 		}
-		if (!forward) { dr = -dr; dc = -dc; }
 		return new int[] { (r + dr + SIZE) % SIZE, (c + dc + SIZE) % SIZE };
 	}
 
-	private static boolean canGo(ThreeDMazeMaze maze, int r, int c, String dir, boolean forward) {
+	private static boolean canGo(ThreeDMazeMaze maze, int r, int c, String dir) {
 		boolean[][] h = maze.horizontalWalls();
 		boolean[][] v = maze.verticalWalls();
-		if (forward) {
-			return switch (dir) {
-				case "N" -> !h[(r - 1 + SIZE) % SIZE][c];
-				case "S" -> !h[r][c];
-				case "W" -> !v[r][(c - 1 + SIZE) % SIZE];
-				case "E" -> !v[r][c];
-				default -> false;
-			};
-		} else {
-			return switch (dir) {
-				case "N" -> !h[r][c];
-				case "S" -> !h[(r - 1 + SIZE) % SIZE][c];
-				case "W" -> !v[r][c];
-				case "E" -> !v[r][(c - 1 + SIZE) % SIZE];
-				default -> false;
-			};
-		}
+		return switch (dir) {
+			case "N" -> !h[(r - 1 + SIZE) % SIZE][c];
+			case "S" -> !h[r][c];
+			case "W" -> !v[r][(c - 1 + SIZE) % SIZE];
+			case "E" -> !v[r][c];
+			default -> false;
+		};
 	}
 
 	private static String normalizeDirection(String direction) {
@@ -329,13 +312,17 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 		return switch (direction) { case "N" -> "North"; case "S" -> "South"; case "E" -> "East"; default -> "West"; };
 	}
 
+	private static String opposite(String direction) {
+		return switch (direction) { case "N" -> "S"; case "S" -> "N"; case "E" -> "W"; default -> "E"; };
+	}
+
 	/**
-	 * Converts relative distances [facing, left, right, behind] to cardinal [distN, distS, distE, distW]
+	 * Converts relative distances [front, right, behind, left] to cardinal [north, south, east, west]
 	 * using the given facing direction. Returns null if facing is not N/S/E/W or steps length is not 4.
 	 */
 	private static int[] relativeToCardinalDistances(String facing, int[] steps) {
 		if (facing == null || steps == null || steps.length != 4) return null;
-		int f = steps[0], l = steps[1], r = steps[2], b = steps[3];
+		int f = steps[0], r = steps[1], b = steps[2], l = steps[3];
 		return switch (facing) {
 			case "N" -> new int[] { f, b, r, l }; // N, S, E, W
 			case "S" -> new int[] { b, f, l, r };
@@ -353,10 +340,7 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 				row++;
 			}
 		}
-		if (row > 7) {
-			row -= 8;
-		}
-		return row;
+		return Math.floorMod(row, SIZE);
 	}
 
 	private int computeColumn(BombEntity bomb) {
@@ -367,10 +351,7 @@ public class ThreeDMazeSolver extends AbstractModuleSolver<ThreeDMazeInput, Thre
 				col++;
 			}
 		}
-		if (col > 7) {
-			col -= 8;
-		}
-		return col;
+		return Math.floorMod(col, SIZE);
 	}
 
 	/** Returns the first numeric digit (0-9), or -1 if none. */

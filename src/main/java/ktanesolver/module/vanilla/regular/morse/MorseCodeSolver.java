@@ -14,6 +14,8 @@ import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.module.vanilla.regular.translated.TranslatedVanillaData;
+import ktanesolver.module.vanilla.regular.translated.TranslatedVanillaData.MorseWordData;
 
 @Service
 @ModuleInfo (type = ModuleType.MORSE_CODE, id = "morse_code", name = "Morse Code", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Decode the morse code and transmit the correct word", tags = {
@@ -25,18 +27,57 @@ public class MorseCodeSolver extends AbstractModuleSolver<MorseInput, MorseOutpu
 
 	@Override
 	public SolveResult<MorseOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, MorseInput input) {
-
-		String observed = input.word().toUpperCase().replaceAll(" ", "");
-		List<MorseCandidate> candidates = Arrays.stream(MorseWord.values()).map(word -> scoreWord(observed, word)).sorted(Comparator.comparingDouble(MorseCandidate::confidence).reversed()).toList();
+		if(input == null) return failure("Enter the observed Morse code");
+		List<MorseCandidate> candidates;
+		List<MorseWordData> translatedWords = List.of();
+		int observedMorseCharacters = 0;
+		if(input.morse() != null && !input.morse().isBlank()) {
+			String language;
+			try {
+				language = TranslatedVanillaData.language(input.language());
+			} catch(IllegalArgumentException exception) {
+				return failure(exception.getMessage());
+			}
+			List<String> observed = Arrays.stream(input.morse().strip().split("\\s+"))
+				.filter(symbol -> !symbol.isBlank()).toList();
+			if(observed.stream().anyMatch(symbol -> !symbol.matches("[.-]+")))
+				return failure("Morse input may contain only dots, dashes, and spaces between characters");
+			translatedWords = TranslatedVanillaData.morseWords(language);
+			observedMorseCharacters = observed.size();
+			candidates = translatedWords.stream().map(word -> scoreMorse(observed, word))
+				.sorted(Comparator.comparingDouble(MorseCandidate::confidence).reversed()).toList();
+		} else {
+			if(input.word() == null || input.word().isBlank()) return failure("Enter the observed Morse code");
+			String observed = input.word().toUpperCase().replaceAll(" ", "");
+			candidates = Arrays.stream(MorseWord.values()).map(word -> scoreWord(observed, word))
+				.sorted(Comparator.comparingDouble(MorseCandidate::confidence).reversed()).toList();
+		}
 
 		MorseCandidate best = candidates.get(0);
 
-		boolean resolved = best.confidence() >= RESOLVE_THRESHOLD && (candidates.size() == 1 || best.confidence() - candidates.get(1).confidence() >= CLEAR_GAP);
+		int finalObservedMorseCharacters = observedMorseCharacters;
+		boolean completeExactMatch = best.confidence() == 1.0
+			&& (candidates.size() == 1 || candidates.get(1).confidence() < 1.0)
+			&& translatedWords.stream().filter(word -> word.word().equals(best.word()))
+				.anyMatch(word -> finalObservedMorseCharacters >= word.symbols().size());
+		boolean resolved = completeExactMatch || best.confidence() >= RESOLVE_THRESHOLD
+			&& (candidates.size() == 1 || best.confidence() - candidates.get(1).confidence() >= CLEAR_GAP);
 
 		MorseOutput morseOutput = new MorseOutput(candidates, resolved);
 
 		storeState(module, "input", input);
 		return success(morseOutput, resolved);
+	}
+
+	private MorseCandidate scoreMorse(List<String> observed, MorseWordData word) {
+		int best = 0;
+		for(int start = 0; start < word.symbols().size(); start++) {
+			int matched = 0;
+			for(int i = 0; i < observed.size(); i++)
+				if(observed.get(i).equals(word.symbols().get((start + i) % word.symbols().size()))) matched++;
+			best = Math.max(best, matched);
+		}
+		return new MorseCandidate(word.word(), word.frequency(), round(safeDiv(best, observed.size())));
 	}
 
 	// ------------------------------------------------------

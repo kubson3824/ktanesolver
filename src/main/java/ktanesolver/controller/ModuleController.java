@@ -41,4 +41,10 @@ public class ModuleController {
     public void removeModule(@PathVariable UUID bombId, @PathVariable UUID moduleId) {
         moduleService.removeModule(bombId, moduleId);
     }
+
+    @PostMapping("/{moduleId}/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetModule(@PathVariable UUID bombId, @PathVariable UUID moduleId) {
+        moduleService.resetModule(bombId, moduleId);
+    }
 }

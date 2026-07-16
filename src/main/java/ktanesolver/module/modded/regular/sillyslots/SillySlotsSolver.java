@@ -2,6 +2,7 @@ package ktanesolver.module.modded.regular.sillyslots;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.springframework.stereotype.Service;
 
@@ -26,205 +27,96 @@ import ktanesolver.logic.SolveResult;
 	hasOutput = true
 )
 public class SillySlotsSolver extends AbstractModuleSolver<SillySlotsInput, SillySlotsOutput> {
-
-	/** Resolved slot: (adjective meaning, noun meaning, colour) after substitution. */
-	private record ResolvedSlot(Keyword adjMeaning, Keyword nounMeaning, Keyword colour) {
-		static ResolvedSlot of(Slot slot, Keyword keyword) {
-			return new ResolvedSlot(
-				SillySlotsMatrix.substituteAdjective(slot.adjective(), keyword),
-				SillySlotsMatrix.substituteNoun(slot.noun(), keyword),
-				slot.colour()
-			);
+	private record Substitutions(
+		Slot.Color sassy, Slot.Color silly, Slot.Color soggy,
+		Slot.Shape sally, Slot.Shape simon, Slot.Shape sausage, Slot.Shape steven
+	) {
+		private static Substitutions forKeyword(Keyword keyword) {
+			return switch (keyword) {
+				case SASSY -> new Substitutions(Slot.Color.BLUE, Slot.Color.RED, Slot.Color.GREEN, Slot.Shape.CHERRY, Slot.Shape.GRAPE, Slot.Shape.BOMB, Slot.Shape.COIN);
+				case SILLY -> new Substitutions(Slot.Color.BLUE, Slot.Color.GREEN, Slot.Color.RED, Slot.Shape.COIN, Slot.Shape.BOMB, Slot.Shape.GRAPE, Slot.Shape.CHERRY);
+				case SOGGY -> new Substitutions(Slot.Color.GREEN, Slot.Color.BLUE, Slot.Color.RED, Slot.Shape.COIN, Slot.Shape.CHERRY, Slot.Shape.BOMB, Slot.Shape.GRAPE);
+				case SALLY -> new Substitutions(Slot.Color.RED, Slot.Color.BLUE, Slot.Color.GREEN, Slot.Shape.GRAPE, Slot.Shape.CHERRY, Slot.Shape.BOMB, Slot.Shape.COIN);
+				case SIMON -> new Substitutions(Slot.Color.RED, Slot.Color.GREEN, Slot.Color.BLUE, Slot.Shape.BOMB, Slot.Shape.GRAPE, Slot.Shape.CHERRY, Slot.Shape.COIN);
+				case SAUSAGE -> new Substitutions(Slot.Color.RED, Slot.Color.BLUE, Slot.Color.GREEN, Slot.Shape.GRAPE, Slot.Shape.BOMB, Slot.Shape.COIN, Slot.Shape.CHERRY);
+				case STEVEN -> new Substitutions(Slot.Color.GREEN, Slot.Color.RED, Slot.Color.BLUE, Slot.Shape.CHERRY, Slot.Shape.BOMB, Slot.Shape.COIN, Slot.Shape.GRAPE);
+			};
 		}
 	}
 
 	@Override
 	protected SolveResult<SillySlotsOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, SillySlotsInput input) {
-		if (input.slots() == null || input.slots().size() != 3) {
-			return failure("Exactly 3 slots are required");
-		}
-		Keyword keyword = input.keyword();
-		if (keyword == null) {
-			return failure("Keyword is required");
+		if (input == null || input.keyword() == null) return failure("Keyword is required");
+		if (input.slots() == null || input.slots().size() != 3) return failure("Exactly 3 slots are required");
+		if (input.slots().stream().anyMatch(slot -> slot == null || slot.color() == null || slot.shape() == null)) {
+			return failure("Each slot requires a color and symbol");
 		}
 
 		SillySlotsState state = module.getStateAs(SillySlotsState.class, SillySlotsState::new);
-		if (state.leverPullCount() >= 4) {
-			return success(new SillySlotsOutput(true), true);
+		List<List<String>> history = state.displayHistory() == null ? List.of() : state.displayHistory();
+		List<Slot> slots = List.copyOf(input.slots());
+		Integer illegalRule = illegalRule(slots, history, Substitutions.forKeyword(input.keyword()));
+		if (illegalRule == null) return success(new SillySlotsOutput(true));
+
+		List<List<String>> nextHistory = new ArrayList<>(history);
+		nextHistory.add(slots.stream().map(SillySlotsSolver::label).toList());
+		int pulls = state.leverPullCount() + 1;
+		storeTypedState(module, new SillySlotsState(pulls, nextHistory));
+		return success(new SillySlotsOutput(false, illegalRule), pulls >= 4);
+	}
+
+	private static Integer illegalRule(List<Slot> slots, List<List<String>> history, Substitutions s) {
+		if (count(slots, slot -> matches(slot, s.silly(), s.sausage())) == 1) return 1;
+
+		List<Integer> sassySally = java.util.stream.IntStream.range(0, 3)
+			.filter(i -> matches(slots.get(i), s.sassy(), s.sally())).boxed().toList();
+		if (sassySally.size() == 1 && (history.size() < 2
+			|| !hasColor(history.get(history.size() - 2).get(sassySally.getFirst()), s.soggy()))) return 2;
+
+		if (count(slots, slot -> matches(slot, s.soggy(), s.steven())) >= 2) return 3;
+		if (count(slots, slot -> slot.shape() == s.simon()) == 3 && count(slots, slot -> slot.color() == s.sassy()) == 0) return 4;
+
+		for (int i = 0; i < 2; i++) {
+			Slot left = slots.get(i), right = slots.get(i + 1);
+			if (left.shape() == s.sausage() && right.shape() == s.sally() && right.color() != s.soggy()
+				|| right.shape() == s.sausage() && left.shape() == s.sally() && left.color() != s.soggy()) return 5;
 		}
 
-		List<ResolvedSlot> current = input.slots().stream()
-			.map(s -> ResolvedSlot.of(s, keyword))
-			.toList();
-		List<List<String>> displayHistory = state.displayHistory() == null ? new ArrayList<>() : new ArrayList<>(state.displayHistory());
-		displayHistory.add(current.stream().map(slot -> (slot.colour() + " " + slot.nounMeaning()).toLowerCase()).toList());
-
-		Keyword sillySubst = SillySlotsMatrix.substitute("SILLY", keyword);
-		Keyword sassySubst = keyword; // Sassy placeholder = keyword
-		Keyword soggySubst = SillySlotsMatrix.substitute("SOGGY", keyword);
-		Keyword sallySubst = SillySlotsMatrix.substitute("SALLY", keyword);
-		Keyword simonSubst = SillySlotsMatrix.substitute("SIMON", keyword);
-		Keyword sausageSubst = SillySlotsMatrix.substitute("SAUSAGE", keyword);
-		Keyword stevenSubst = SillySlotsMatrix.substitute("STEVEN", keyword);
-
-		// For rule 2 we need "slot in same position 2 stages ago was Soggy" — use raw adjective, not substituted.
-		List<Slot> twoAgoRaw = (state.twoStagesAgoSlots() != null && state.twoStagesAgoSlots().size() == 3)
-			? state.twoStagesAgoSlots() : null;
-
-		Integer illegalRule = null;
-		if (illegalRule == null) illegalRule = rule1(current, sillySubst, sausageSubst);
-		if (illegalRule == null) illegalRule = rule2(current, sassySubst, sallySubst, twoAgoRaw);
-		if (illegalRule == null) illegalRule = rule3(current, soggySubst, stevenSubst);
-		if (illegalRule == null) illegalRule = rule4(current, simonSubst, sassySubst);
-		if (illegalRule == null) illegalRule = rule5(current, sausageSubst, sallySubst, soggySubst);
-		if (illegalRule == null) illegalRule = rule6(current, sillySubst, stevenSubst);
-		if (illegalRule == null) illegalRule = rule7(current, soggySubst, sausageSubst, state);
-		if (illegalRule == null) illegalRule = rule8(current, state);
-		if (illegalRule == null) illegalRule = rule9(current, sallySubst, sillySubst, stevenSubst, state);
-		if (illegalRule == null) illegalRule = rule10(current, sillySubst, simonSubst, state);
-
-		boolean legal = (illegalRule == null);
-
-		if (!legal) {
-			// Advance state: current -> previous, previous -> twoStagesAgo; update flags
-			boolean hadSoggySausage = state.hadSoggySausageInAnyPreviousStage();
-			boolean hadSassySausage = state.hadSassySausageInAnyPreviousStage();
-			for (Slot s : input.slots()) {
-				if (s.adjective() == Adjective.SOGGY && s.noun() == Noun.SAUSAGE) hadSoggySausage = true;
-				if (s.adjective() == Adjective.SASSY && s.noun() == Noun.SAUSAGE) hadSassySausage = true;
-			}
-			boolean lastSillySteven = current.stream().anyMatch(r ->
-				r.adjMeaning() == sillySubst && r.nounMeaning() == stevenSubst);
-			boolean prevSausage = current.stream().anyMatch(r -> r.nounMeaning() == sausageSubst);
-			int nextPulls = state.leverPullCount() + 1;
-
-			SillySlotsState newState = new SillySlotsState(
-				new ArrayList<>(input.slots()),
-				state.previousStageSlots() != null ? new ArrayList<>(state.previousStageSlots()) : null,
-				hadSoggySausage,
-				hadSassySausage,
-				lastSillySteven,
-				prevSausage,
-				nextPulls,
-				displayHistory
-			);
-			storeTypedState(module, newState);
-			boolean solved = nextPulls >= 4;
-			return success(new SillySlotsOutput(legal, illegalRule), solved);
-		}
-
-		storeTypedState(module, new SillySlotsState(
-			state.previousStageSlots(), state.twoStagesAgoSlots(), state.hadSoggySausageInAnyPreviousStage(),
-			state.hadSassySausageInAnyPreviousStage(), state.lastStageHadSillySteven(),
-			state.previousStageHadSausage(), state.leverPullCount(), displayHistory
-		));
-		return success(new SillySlotsOutput(legal, illegalRule), false);
+		List<Slot> silly = slots.stream().filter(slot -> slot.color() == s.silly()).toList();
+		if (silly.size() == 2 && silly.stream().anyMatch(slot -> slot.shape() != s.steven())) return 6;
+		if (count(slots, slot -> slot.color() == s.soggy()) == 1
+			&& (history.isEmpty() || history.getLast().stream().noneMatch(slot -> hasShape(slot, s.sausage())))) return 7;
+		if (slots.stream().distinct().count() == 1
+			&& history.stream().noneMatch(stage -> stage.contains(label(s.soggy(), s.sausage())))) return 8;
+		if (count(slots, slot -> slot.color() == slots.getFirst().color()) == 3
+			&& slots.stream().noneMatch(slot -> slot.shape() == s.sally())
+			&& (history.isEmpty() || !history.getLast().contains(label(s.silly(), s.steven())))) return 9;
+		if (slots.stream().anyMatch(slot -> matches(slot, s.silly(), s.simon()))
+			&& history.stream().noneMatch(stage -> stage.contains(label(s.sassy(), s.sausage())))) return 10;
+		return null;
 	}
 
-	/** Rule 1: Exactly one Silly Sausage. */
-	private static Integer rule1(List<ResolvedSlot> current, Keyword sillySubst, Keyword sausageSubst) {
-		long n = current.stream().filter(r -> r.adjMeaning() == sillySubst && r.nounMeaning() == sausageSubst).count();
-		return n == 1 ? 1 : null;
+	private static long count(List<Slot> slots, Predicate<Slot> predicate) {
+		return slots.stream().filter(predicate).count();
 	}
 
-	/** Rule 2: Exactly one Sassy Sally, unless the slot in the same position 2 stages ago was Soggy. */
-	private static Integer rule2(List<ResolvedSlot> current, Keyword sassySubst, Keyword sallySubst,
-			List<Slot> twoAgoRaw) {
-		int count = 0;
-		int sassySallyIndex = -1;
-		for (int i = 0; i < current.size(); i++) {
-			ResolvedSlot r = current.get(i);
-			if (r.adjMeaning() == sassySubst && r.nounMeaning() == sallySubst) {
-				count++;
-				sassySallyIndex = i;
-			}
-		}
-		if (count != 1) return null;
-		if (twoAgoRaw != null && sassySallyIndex >= 0 && sassySallyIndex < twoAgoRaw.size()
-			&& twoAgoRaw.get(sassySallyIndex).adjective() == Adjective.SOGGY) {
-			return null; // same position 2 stages ago was Soggy -> legal
-		}
-		return 2;
+	private static boolean matches(Slot slot, Slot.Color color, Slot.Shape shape) {
+		return slot.color() == color && slot.shape() == shape;
 	}
 
-	/** Rule 3: 2+ Soggy Stevens. */
-	private static Integer rule3(List<ResolvedSlot> current, Keyword soggySubst, Keyword stevenSubst) {
-		long n = current.stream().filter(r -> r.adjMeaning() == soggySubst && r.nounMeaning() == stevenSubst).count();
-		return n >= 2 ? 3 : null;
+	private static boolean hasColor(String slot, Slot.Color color) {
+		return slot.startsWith(color.name().toLowerCase() + " ");
 	}
 
-	/** Rule 4: 3 Simons, unless any of them are Sassy. */
-	private static Integer rule4(List<ResolvedSlot> current, Keyword simonSubst, Keyword sassySubst) {
-		long simons = current.stream().filter(r -> r.nounMeaning() == simonSubst).count();
-		if (simons != 3) return null;
-		boolean anySassy = current.stream().anyMatch(r -> r.nounMeaning() == simonSubst && r.adjMeaning() == sassySubst);
-		return anySassy ? null : 4;
+	private static boolean hasShape(String slot, Slot.Shape shape) {
+		return slot.endsWith(" " + shape.name().toLowerCase());
 	}
 
-	/** Rule 5: Sausage adjacent to Sally, unless every adjacent Sally is Soggy. */
-	private static Integer rule5(List<ResolvedSlot> current, Keyword sausageSubst, Keyword sallySubst, Keyword soggySubst) {
-		boolean sausageAdjacentToSally = false;
-		boolean allAdjacentSallySoggy = true;
-		for (int i = 0; i < current.size() - 1; i++) {
-			ResolvedSlot a = current.get(i);
-			ResolvedSlot b = current.get(i + 1);
-			boolean iIsSausage = a.nounMeaning() == sausageSubst;
-			boolean iIsSally = a.nounMeaning() == sallySubst;
-			boolean jIsSausage = b.nounMeaning() == sausageSubst;
-			boolean jIsSally = b.nounMeaning() == sallySubst;
-			if ((iIsSausage && jIsSally) || (iIsSally && jIsSausage)) {
-				sausageAdjacentToSally = true;
-				if (iIsSally && a.adjMeaning() != soggySubst) allAdjacentSallySoggy = false;
-				if (jIsSally && b.adjMeaning() != soggySubst) allAdjacentSallySoggy = false;
-			}
-		}
-		if (!sausageAdjacentToSally) return null;
-		return allAdjacentSallySoggy ? null : 5;
+	private static String label(Slot slot) {
+		return label(slot.color(), slot.shape());
 	}
 
-	/** Rule 6: Exactly 2 Silly slots, unless they are both Steven. */
-	private static Integer rule6(List<ResolvedSlot> current, Keyword sillySubst, Keyword stevenSubst) {
-		long sillyCount = current.stream().filter(r -> r.adjMeaning() == sillySubst).count();
-		if (sillyCount != 2) return null;
-		long sillyStevenCount = current.stream().filter(r ->
-			r.adjMeaning() == sillySubst && r.nounMeaning() == stevenSubst).count();
-		return sillyStevenCount == 2 ? null : 6;
-	}
-
-	/** Rule 7: Exactly one Soggy slot, unless previous stage had any Sausage. */
-	private static Integer rule7(List<ResolvedSlot> current, Keyword soggySubst, Keyword sausageSubst, SillySlotsState state) {
-		long soggyCount = current.stream().filter(r -> r.adjMeaning() == soggySubst).count();
-		if (soggyCount != 1) return null;
-		return state.previousStageHadSausage() ? null : 7;
-	}
-
-	/** Rule 8: All 3 same symbol and colour, unless Soggy Sausage in any previous stage. */
-	private static Integer rule8(List<ResolvedSlot> current, SillySlotsState state) {
-		if (state.hadSoggySausageInAnyPreviousStage()) return null;
-		ResolvedSlot first = current.get(0);
-		Keyword symAdj = first.adjMeaning();
-		Keyword symNoun = first.nounMeaning();
-		Keyword col = first.colour();
-		boolean allSame = current.stream().allMatch(r ->
-			r.adjMeaning() == symAdj && r.nounMeaning() == symNoun && r.colour() == col);
-		return allSame ? 8 : null;
-	}
-
-	/** Rule 9: All 3 same colour, unless any Sally or Silly Steven in last stage. */
-	private static Integer rule9(List<ResolvedSlot> current, Keyword sallySubst, Keyword sillySubst,
-			Keyword stevenSubst, SillySlotsState state) {
-		Keyword col = current.get(0).colour();
-		if (current.stream().anyMatch(r -> r.colour() != col)) return null;
-		if (current.stream().anyMatch(r -> r.nounMeaning() == sallySubst)) return null;
-		if (state.lastStageHadSillySteven()) return null;
-		return 9;
-	}
-
-	/** Rule 10: Any Silly Simons, unless Sassy Sausage in any previous stage. */
-	private static Integer rule10(List<ResolvedSlot> current, Keyword sillySubst, Keyword simonSubst, SillySlotsState state) {
-		if (state.hadSassySausageInAnyPreviousStage()) return null;
-		boolean anySillySimon = current.stream().anyMatch(r ->
-			r.adjMeaning() == sillySubst && r.nounMeaning() == simonSubst);
-		return anySillySimon ? 10 : null;
+	private static String label(Slot.Color color, Slot.Shape shape) {
+		return (color + " " + shape).toLowerCase();
 	}
 }

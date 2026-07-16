@@ -144,6 +144,23 @@ class ModuleServiceTest {
         verify(eventPublisher, never()).publishEvent(any());
     }
 
+    @Test
+    void resetModuleClearsTheIncorrectAttempt() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        module.setSolved(true);
+        module.getState().put("label", "wrong");
+        module.getSolution().put("instruction", "wrong");
+        when(moduleRepo.findByIdWithBomb(module.getId())).thenReturn(Optional.of(module));
+
+        moduleService.resetModule(module.getBomb().getId(), module.getId());
+
+        assertThat(module.isSolved()).isFalse();
+        assertThat(module.getState()).isEmpty();
+        assertThat(module.getSolution()).isEmpty();
+        verify(moduleRepo).save(module);
+        verify(eventPublisher).publishEvent(any(RoundStateChangedEvent.class));
+    }
+
     private static ModuleEntity createModule(ModuleType moduleType) {
         RoundEntity round = new RoundEntity();
         round.setId(UUID.randomUUID());

@@ -14,15 +14,17 @@ export interface ThreeDMazeMaze {
 }
 
 export interface ThreeDMazeInput {
-  /** Three marker letters (A/B/C/D/H) the defuser sees at the three star positions; order does not matter. */
+  /** Three distinct maze-identifying letters (A/B/C/D/H) observed on the floor; order does not matter. */
   starLetters: [string, string, string];
   /** Goal direction (N/S/E/W) — omit when first guiding to a direction marker (star). */
   goalDirection?: GoalDirection;
-  /** Facing direction (N/S/E/W). Optional; when omitted with stepsToWall, the backend infers facing from the four distances. */
+  /** Exact tracked state used after the first phase. */
+  currentRow?: number;
+  currentCol?: number;
   currentFacing?: GoalDirection;
   /** Optional: letter on the floor at current cell (for position identification). */
   letterAtPosition?: string;
-  /** Optional: distances to wall [front, left, right, behind] relative to the defuser. When currentFacing is omitted, backend infers both position and facing from these. */
+  /** Distances to wall [front, right, behind, left]; backend infers both position and facing. */
   stepsToWall?: [number, number, number, number];
 }
 

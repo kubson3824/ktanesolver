@@ -126,8 +126,8 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
       return;
     }
 
-    if (baseCurrency.length !== 3 || targetCurrency.length !== 3) {
-      setError("Currency codes must be exactly 3 letters");
+    if (![baseCurrency, targetCurrency].every((code) => /^([A-Z]{3}|\d{3})$/.test(code))) {
+      setError("Currency codes must be exactly 3 letters or 3 digits");
       return;
     }
 
@@ -149,6 +149,10 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
       };
 
       const response = await solveForeignExchange(round.id, bomb.id, currentModule.id, { input });
+
+      if (!response.solved) {
+        throw new Error("Could not calculate the exchange rate. Check the currency codes and try again.");
+      }
 
       setResult(response.output);
       setIsSolved(true);
@@ -188,7 +192,7 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
     <SolverLayout>
       <SolverSection
         title="Module state"
-        description="Pick the LED color showing on the module."
+        description="Enter the two currency rows as displayed; the solver handles the battery-based swap."
         actions={
           <SegmentedControl
             value={hasGreenLights ? "green" : "red"}
@@ -203,13 +207,13 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Base currency
+              Top row currency code
             </span>
             <Input
               type="text"
               value={baseCurrency}
               onChange={(e) => setBaseCurrency(e.target.value.toUpperCase())}
-              placeholder="USD"
+              placeholder="USD or 840"
               maxLength={3}
               disabled={isLoading || isSolved}
               className="font-mono uppercase"
@@ -217,13 +221,13 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
           </label>
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Target currency
+              Middle row currency code
             </span>
             <Input
               type="text"
               value={targetCurrency}
               onChange={(e) => setTargetCurrency(e.target.value.toUpperCase())}
-              placeholder="EUR"
+              placeholder="EUR or 978"
               maxLength={3}
               disabled={isLoading || isSolved}
               className="font-mono uppercase"
@@ -270,8 +274,8 @@ export default function ForeignExchangeSolver({ bomb }: ForeignExchangeSolverPro
       {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
       <SolverInstructions>
-        Green LEDs mean the exchange API is available; red means rates come from the
-        bomb edgework only.
+        Each currency may appear as a 3-letter or 3-digit ISO code. Green LEDs use the
+        live exchange rate; red LEDs use the target currency&apos;s numeric code.
       </SolverInstructions>
     </SolverLayout>
   );

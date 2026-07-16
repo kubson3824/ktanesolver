@@ -94,6 +94,48 @@ class NumberPadSolverTest {
     }
 
     @Test
+    void solveReversesLevelThreeBeforeTheNeitherFinalSwap() {
+        NumberPadOutput output = solveCode(
+            colors(
+                NumberPadColor.YELLOW,
+                NumberPadColor.BLUE,
+                NumberPadColor.WHITE,
+                NumberPadColor.YELLOW,
+                NumberPadColor.GREEN,
+                NumberPadColor.BLUE,
+                NumberPadColor.RED,
+                NumberPadColor.YELLOW,
+                NumberPadColor.RED,
+                NumberPadColor.YELLOW
+            ),
+            bomb("BCDF13", 2, 1)
+        );
+
+        assertThat(output.code()).isEqualTo("9929");
+    }
+
+    @Test
+    void solveUsesLowWhiteGreenTopRowAcrossAllEdgeworkColumns() {
+        List<NumberPadColor> buttonColors = colors(
+            NumberPadColor.YELLOW,
+            NumberPadColor.RED,
+            NumberPadColor.WHITE,
+            NumberPadColor.YELLOW,
+            NumberPadColor.RED,
+            NumberPadColor.BLUE,
+            NumberPadColor.RED,
+            NumberPadColor.GREEN,
+            NumberPadColor.YELLOW,
+            NumberPadColor.RED
+        );
+
+        assertThat(solveCode(buttonColors, bomb("BCDF12", 2, 2)).code()).isEqualTo("0901");
+        assertThat(solveCode(buttonColors, bomb("BCDF13", 1, 2)).code()).isEqualTo("0019");
+        assertThat(solveCode(buttonColors, bomb("BCDF12", 1, 2)).code()).isEqualTo("0091");
+        assertThat(solveCode(buttonColors, bomb("BCDF13", 2, 2)).code()).isEqualTo("9100");
+    }
+
+    @Test
     void solveUsesSerialVowelTopRowLookupBranch() {
         NumberPadOutput output = solveCode(
             colors(

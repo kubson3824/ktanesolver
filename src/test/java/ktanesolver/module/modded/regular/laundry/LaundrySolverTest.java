@@ -105,10 +105,38 @@ class LaundrySolverTest {
         assertThat(second.washingSymbol()).isEqualTo(LaundrySymbol.HAND_WASH);
     }
 
+    @Test
+    void solveCountsForgetMeNotAsARegularModule() {
+        BombEntity bomb = bomb("PA0QJ5", 0, 2,
+            indicators("SND", true, "BOB", false, "SIG", false), List.of());
+        ModuleEntity laundry = module(ModuleType.LAUNDRY, false);
+        addModules(bomb,
+            module(ModuleType.WIRES, true),
+            laundry,
+            module(ModuleType.FORGET_ME_NOT, false),
+            module(ModuleType.BUTTON, false),
+            module(ModuleType.MEMORY, false)
+        );
+
+        LaundryOutput output = solve(bomb, laundry);
+
+        assertThat(output.item()).isEqualTo(LaundryItem.SHIRT);
+        assertThat(output.material()).isEqualTo(LaundryMaterial.LEATHER);
+        assertThat(output.color()).isEqualTo(LaundryColor.STAR_LEMON_QUARTZ);
+        assertThat(output.washingSymbol()).isEqualTo(LaundrySymbol.WASH_80F);
+        assertThat(output.dryingSymbol()).isEqualTo(LaundrySymbol.HIGH_HEAT);
+        assertThat(output.ironingSymbol()).isEqualTo(LaundrySymbol.NO_STEAM);
+        assertThat(output.specialSymbol()).isEqualTo(LaundrySymbol.LOW_HEAT);
+    }
+
     private LaundryOutput solve(BombEntity bomb) {
         ModuleEntity module = module(ModuleType.LAUNDRY, false);
         module.setBomb(bomb);
 
+        return solve(bomb, module);
+    }
+
+    private LaundryOutput solve(BombEntity bomb, ModuleEntity module) {
         SolveResult<LaundryOutput> result = solver.solve(new RoundEntity(), bomb, module, new LaundryInput());
 
         assertThat(result).isInstanceOf(SolveSuccess.class);

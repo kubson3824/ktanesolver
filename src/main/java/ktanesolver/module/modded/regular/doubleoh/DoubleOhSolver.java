@@ -45,26 +45,30 @@ public class DoubleOhSolver extends AbstractModuleSolver<DoubleOhInput, DoubleOh
 
 	@Override
 	protected SolveResult<DoubleOhOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, DoubleOhInput input) {
-		if (input == null) return failure("Enter the displayed number and five cycle observations");
+		if (input == null) return failure("Enter the displayed number and four cycle observations");
 		if (input.displayedNumber() < 10) return failure("Cycle the buttons only from the original two-digit starting number");
 		int start = positionOf(input.displayedNumber());
 		if (start < 0) return failure("Displayed number is not in the Double-Oh grid");
-		if (input.observations() == null || input.observations().size() != Button.values().length) {
-			return failure("Enter one observation for every physical button");
+		if (input.observations() == null || input.observations().size() != Button.values().length - 1) {
+			return failure("Enter observations for exactly four physical buttons");
 		}
 
 		Map<Group, Wiring> wiring = new EnumMap<>(Group.class);
 		for (Button button : Button.values()) {
+			if (!input.observations().containsKey(button)) {
+				wiring.put(Group.SUBMIT, new Wiring(button, Function.SUBMIT));
+				continue;
+			}
 			Integer observedNumber = input.observations().get(button);
 			int observed = observedNumber == null ? -1 : positionOf(observedNumber);
 			Function function = observed < 0 ? null : inferFunction(start, observed);
-			if (function == null) return failure("Observation for " + button + " is not one press from the displayed number");
+			if (function == null || function.group == Group.SUBMIT) return failure("Observation for " + button + " is not a movement from the displayed number");
 			if (wiring.put(function.group, new Wiring(button, function)) != null) {
-				return failure("Each button must reveal a different movement or submit function");
+				return failure("Each observed button must reveal a different movement function");
 			}
 		}
 		if (wiring.size() != Group.values().length) {
-			return failure("Observations must identify four movement functions and submit");
+			return failure("Observations must identify all four movement functions");
 		}
 
 		List<Button> presses = new ArrayList<>();

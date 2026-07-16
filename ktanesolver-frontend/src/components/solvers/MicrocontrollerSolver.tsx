@@ -7,6 +7,7 @@ import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   MICROCONTROLLER_PIN_COUNTS,
   MICROCONTROLLER_TYPES,
+  getMicrocontrollerPinRows,
   solveMicrocontroller,
   type MicrocontrollerOutput,
   type MicrocontrollerPinCount,
@@ -282,22 +283,46 @@ export default function MicrocontrollerSolver({ bomb }: MicrocontrollerSolverPro
           <div className="mb-3 rounded-md border border-border bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
             {result.colorRule}
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {result.pins.map((pin) => (
+          <div className="mx-auto max-w-2xl">
+            <div className="mb-2 grid grid-cols-[1fr_3.5rem_1fr] gap-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:grid-cols-[1fr_5rem_1fr]">
+              <span>Down</span>
+              <span />
+              <span>Up</span>
+            </div>
+            {getMicrocontrollerPinRows(result.pins).map(([leftPin, rightPin], index, rows) => (
               <div
-                key={pin.pin}
-                className="grid grid-cols-[3.5rem_1fr_auto] items-center gap-2 rounded-md border border-border bg-background px-3 py-2"
+                key={leftPin.pin}
+                className="grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)]"
               >
-                <span className="font-mono text-sm font-bold">Pin {pin.pin}</span>
-                <span className="font-mono text-sm text-muted-foreground">{pin.component}</span>
-                <span
+                {[leftPin, rightPin].map((pin, pinIndex) => (
+                  <div
+                    key={pin.pin}
+                    className={cn(
+                      "row-start-1 my-1 flex min-w-0 flex-col justify-center rounded-md border px-2 py-2 sm:px-3",
+                      pinIndex === 0 ? "col-start-1" : "col-start-3",
+                      COLOR_CLASSES[pin.color],
+                    )}
+                  >
+                    <span className="font-mono text-sm font-bold">Pin {pin.pin}</span>
+                    <span className="truncate font-mono text-xs">{pin.component}</span>
+                    <span className="text-xs font-semibold">{formatLabel(pin.color)}</span>
+                  </div>
+                ))}
+                <div
                   className={cn(
-                    "inline-flex min-w-20 justify-center rounded-md border px-2 py-1 text-xs font-semibold",
-                    COLOR_CLASSES[pin.color],
+                    "relative col-start-2 row-start-1 flex items-center justify-center border-x border-slate-500 bg-slate-700 text-[10px] font-bold text-slate-200",
+                    index === 0 && "rounded-t-md border-t",
+                    index === rows.length - 1 && "rounded-b-md border-b",
                   )}
                 >
-                  {formatLabel(pin.color)}
-                </span>
+                  {index === 0 && (
+                    <span
+                      aria-label="White mark beside pin 1"
+                      className="absolute left-1 top-1 size-2 rounded-full border border-slate-300 bg-white sm:size-2.5"
+                    />
+                  )}
+                  {index === Math.floor(rows.length / 2) && controllerType}
+                </div>
               </div>
             ))}
           </div>
@@ -307,7 +332,8 @@ export default function MicrocontrollerSolver({ bomb }: MicrocontrollerSolverPro
       {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
       <SolverInstructions>
-        Use the pin with the white mark as pin 1, then read pins in numeric order.
+        Pin 1 is beside the white mark. Read down that side, then continue upward on the
+        opposite side.
       </SolverInstructions>
     </SolverLayout>
   );

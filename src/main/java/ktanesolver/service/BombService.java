@@ -4,6 +4,7 @@ package ktanesolver.service;
 import java.util.Map;
 import java.util.UUID;
 
+import org.hibernate.Hibernate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class BombService {
         appendInitialModules(bomb, req.modules());
         bomb = bombRepo.save(bomb);
         eventPublisher.publishEvent(new RoundStateChangedEvent(this, roundId));
-        return bomb;
+        return initializeCollections(bomb);
     }
 
     @Transactional
@@ -62,7 +63,7 @@ public class BombService {
 
         bomb = bombRepo.save(bomb);
         eventPublisher.publishEvent(new RoundStateChangedEvent(this, bomb.getRound().getId()));
-        return bomb;
+        return initializeCollections(bomb);
     }
 
     @Transactional
@@ -72,6 +73,22 @@ public class BombService {
         bomb.setStrikes(bomb.getStrikes() + 1);
         bomb = bombRepo.save(bomb);
         eventPublisher.publishEvent(new StrikeAddedEvent(this, bomb.getId(), bomb.getRound().getId(), bomb.getStrikes()));
+        return initializeCollections(bomb);
+    }
+
+    @Transactional
+    public void deleteBomb(UUID bombId) {
+        BombEntity bomb = bombRepo.findById(bombId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bomb not found"));
+        UUID roundId = bomb.getRound().getId();
+        bombRepo.delete(bomb);
+        eventPublisher.publishEvent(new RoundStateChangedEvent(this, roundId));
+    }
+
+    private static BombEntity initializeCollections(BombEntity bomb) {
+        Hibernate.initialize(bomb.getIndicators());
+        Hibernate.initialize(bomb.getPortPlates());
+        Hibernate.initialize(bomb.getModules());
         return bomb;
     }
 

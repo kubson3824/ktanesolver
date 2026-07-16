@@ -9,6 +9,7 @@ export interface TurnTheKeysSolveRequest {
 }
 
 export interface TurnTheKeysSolveResponse {
+  solved: boolean;
   output: {
     leftKeyInstruction: string;
     rightKeyInstruction: string;
@@ -17,6 +18,8 @@ export interface TurnTheKeysSolveResponse {
     canTurnLeftKey: boolean;
     rightKeyTurned?: boolean;
     leftKeyTurned?: boolean;
+    rightKeyRequirements: Array<{ moduleId: string; instruction: string }>;
+    leftKeyRequirements: Array<{ moduleId: string; instruction: string }>;
   };
 }
 

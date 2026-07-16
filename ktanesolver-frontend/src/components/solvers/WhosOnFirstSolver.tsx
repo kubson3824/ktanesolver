@@ -22,6 +22,8 @@ import {
 } from "../common";
 import { Input } from "../ui/input";
 import { cn } from "../../lib/cn";
+import { TranslatedLanguageSelect, type TranslatedLanguageCode } from "../common/TranslatedLanguageSelect";
+import CharacterKeyboard, { TRANSLATED_KEYBOARD_CHARACTERS } from "../common/CharacterKeyboard";
 
 interface WhosOnFirstSolverProps {
   bomb: BombEntity | null | undefined;
@@ -36,6 +38,8 @@ export interface SixButtonWordSolverConfig {
   displaySuggestions?: readonly string[];
   buttonOptions?: readonly string[];
   allowBlankDisplay?: boolean;
+  translated?: boolean;
+  upsideDown?: boolean;
 }
 
 const BUTTON_POSITIONS: { position: ButtonPosition; label: string }[] = [
@@ -61,6 +65,7 @@ const WHOS_ON_FIRST_CONFIG: SixButtonWordSolverConfig = {
   instructions: "Enter the display word (or leave blank) and all six button labels. Press the revealed button, then repeat for three stages.",
   displaySuggestions: COMMON_WORDS,
   allowBlankDisplay: true,
+  translated: true,
 };
 
 const EMPTY_BUTTONS: Record<ButtonPosition, string> = {
@@ -72,6 +77,7 @@ interface WhosOnFirstApiState {
   displayHistory: string[];
   buttonHistory: Record<string, string>[];
   buttonPressHistory: Record<string, string>[];
+  language?: TranslatedLanguageCode;
 }
 
 function isWhosOnFirstApiState(state: unknown): state is WhosOnFirstApiState {
@@ -120,6 +126,8 @@ export function SixButtonWordSolver({
   config,
 }: WhosOnFirstSolverProps & { config: SixButtonWordSolverConfig }) {
   const [currentStage, setCurrentStage] = useState(1);
+  const [language, setLanguage] = useState<TranslatedLanguageCode>("EN");
+  const [keyboardTarget, setKeyboardTarget] = useState<"display" | ButtonPosition>("display");
   const [displayWord, setDisplayWord] = useState("");
   const [buttons, setButtons] = useState<Record<ButtonPosition, string>>(EMPTY_BUTTONS);
   const [solution, setSolution] = useState<{
@@ -146,14 +154,15 @@ export function SixButtonWordSolver({
   } = useSolver();
 
   const moduleState = useMemo(
-    () => ({ currentStage, displayWord, buttons, solution, twitchCommands, stageHistory }),
-    [currentStage, displayWord, buttons, solution, twitchCommands, stageHistory],
+    () => ({ currentStage, language, displayWord, buttons, solution, twitchCommands, stageHistory }),
+    [currentStage, language, displayWord, buttons, solution, twitchCommands, stageHistory],
   );
 
   const onRestoreState = useCallback((state: unknown) => {
     if (isWhosOnFirstApiState(state)) {
       const { displayHistory, buttonHistory, buttonPressHistory } = state;
       const stageCount = displayHistory.length;
+      if (state.language) setLanguage(state.language);
       setCurrentStage(Math.min(stageCount + 1, 3));
       setDisplayWord("");
       setButtons(
@@ -192,6 +201,7 @@ export function SixButtonWordSolver({
     }
     const frontend = state as {
       currentStage?: number;
+      language?: TranslatedLanguageCode;
       displayWord?: string;
       buttons?: Record<ButtonPosition, string>;
       solution?: { position: ButtonPosition; buttonText: string } | null;
@@ -205,6 +215,7 @@ export function SixButtonWordSolver({
     };
     if (frontend.currentStage !== undefined)
       setCurrentStage(Math.min(frontend.currentStage ?? 1, 3));
+    if (frontend.language !== undefined) setLanguage(frontend.language);
     if (frontend.displayWord !== undefined) setDisplayWord(frontend.displayWord);
     if (frontend.buttons) setButtons(frontend.buttons);
     if (frontend.solution !== undefined) setSolution(frontend.solution);
@@ -240,6 +251,7 @@ export function SixButtonWordSolver({
   useSolverModulePersistence<
     {
       currentStage: number;
+      language: TranslatedLanguageCode;
       displayWord: string;
       buttons: Record<ButtonPosition, string>;
       solution: { position: ButtonPosition; buttonText: string } | null;
@@ -301,7 +313,7 @@ export function SixButtonWordSolver({
 
   const handleCheckAnswer = async () => {
     const emptyButtons = Object.entries(buttons).filter(([, t]) => !t.trim());
-    if (emptyButtons.length > 0) {
+    if (!config.translated && emptyButtons.length > 0) {
       setError("Fill in all 6 button labels.");
       return;
     }
@@ -319,6 +331,7 @@ export function SixButtonWordSolver({
           buttons: Object.fromEntries(
             Object.entries(buttons).map(([pos, text]) => [pos, text.trim()]),
           ) as Record<ButtonPosition, string>,
+          language: config.translated ? language : undefined,
         },
       };
       const response = await config.solve(
@@ -328,22 +341,28 @@ export function SixButtonWordSolver({
         request,
       );
 
-      setSolution(response.output);
+      const output = response.output;
+      if (!output) {
+        setError(response.reason ?? `Failed to solve ${config.name}`);
+        return;
+      }
+
+      setSolution(output);
       setStageHistory((prev) => [
-        ...prev,
+        ...prev.filter((stage) => stage.stage !== currentStage),
         {
           stage: currentStage,
           displayWord: displayWord === " " ? "[BLANK]" : displayWord.trim(),
-          position: response.output.position,
-          buttonText: response.output.buttonText,
+          position: output.position,
+          buttonText: output.buttonText,
         },
       ]);
       setTwitchCommands([
         generateTwitchCommand({
           moduleType: config.moduleType,
           result: {
-            position: response.output.position.replace("_", " "),
-            button: response.output.buttonText,
+            position: output.position.replace("_", " "),
+            button: output.buttonText,
           },
         }),
       ]);
@@ -366,6 +385,8 @@ export function SixButtonWordSolver({
 
   const reset = () => {
     setCurrentStage(1);
+    setLanguage("EN");
+    setKeyboardTarget("display");
     setDisplayWord("");
     setButtons(EMPTY_BUTTONS);
     setSolution(null);
@@ -383,20 +404,33 @@ export function SixButtonWordSolver({
         <StageIndicator total={3} current={stageIdx} completedThrough={stageHistory.length} />
       </SolverSection>
 
+      {config.translated && (
+        <SolverSection title="Language">
+          <TranslatedLanguageSelect
+            value={language}
+            onChange={(value) => { setLanguage(value); setDisplayWord(""); setButtons(EMPTY_BUTTONS); setSolution(null); }}
+            disabled={isSolved || isLoading || stageHistory.length > 0}
+          />
+        </SolverSection>
+      )}
+
+      <div className="flex flex-col gap-4">
       <SolverSection
         title="Display label"
         description={config.displayDescription}
+        className={config.upsideDown ? "order-2" : undefined}
       >
         <Input
           type="text"
           value={displayValue}
           onChange={(e) => handleDisplayChange(e.target.value)}
+          onFocus={() => setKeyboardTarget("display")}
           placeholder={config.allowBlankDisplay ? "(blank)" : "LABEL"}
           disabled={isSolved || isLoading}
           aria-label="Display word"
           className="text-center font-mono text-lg uppercase tracking-widest"
         />
-        {!isSolved && (
+        {!isSolved && (!config.translated || language === "EN") && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {config.displaySuggestions?.map((word) => (
               <button
@@ -416,6 +450,7 @@ export function SixButtonWordSolver({
       <SolverSection
         title="Button labels"
         description="Enter the label on each of the six buttons."
+        className={config.upsideDown ? "order-1" : undefined}
       >
         {config.buttonOptions && (
           <datalist id={`${config.moduleType}-button-labels`}>
@@ -450,7 +485,8 @@ export function SixButtonWordSolver({
                   list={config.buttonOptions ? `${config.moduleType}-button-labels` : undefined}
                   value={buttons[position]}
                   onChange={(e) => handleButtonTextChange(position, e.target.value)}
-                  placeholder="WORD"
+                  onFocus={() => setKeyboardTarget(position)}
+                  placeholder={config.translated ? "WORD / blank" : "WORD"}
                   disabled={isSolved || isLoading}
                   aria-label={`${label} button text`}
                   className="h-8 text-center font-mono uppercase"
@@ -460,12 +496,34 @@ export function SixButtonWordSolver({
           })}
         </div>
       </SolverSection>
+      {config.translated && language !== "EN" && (
+        <CharacterKeyboard
+          characters={TRANSLATED_KEYBOARD_CHARACTERS[language]}
+          onCharacter={(character) => keyboardTarget === "display"
+            ? handleDisplayChange(`${displayValue}${character}`)
+            : handleButtonTextChange(keyboardTarget, `${buttons[keyboardTarget]}${character}`)}
+          onSpace={() => keyboardTarget === "display"
+            ? handleDisplayChange(`${displayValue} `)
+            : handleButtonTextChange(keyboardTarget, `${buttons[keyboardTarget]} `)}
+          onBackspace={() => keyboardTarget === "display"
+            ? handleDisplayChange(Array.from(displayValue).slice(0, -1).join(""))
+            : handleButtonTextChange(
+                keyboardTarget,
+                Array.from(buttons[keyboardTarget]).slice(0, -1).join(""),
+              )}
+          targetLabel={keyboardTarget === "display"
+            ? "display label"
+            : `${BUTTON_POSITIONS.find(({ position }) => position === keyboardTarget)?.label} button`}
+          disabled={isSolved || isLoading}
+        />
+      )}
+      </div>
 
       <SolverControls
         onSolve={handleCheckAnswer}
         onReset={reset}
         isSolveDisabled={
-          Object.values(buttons).some((b) => !b.trim()) ||
+          (!config.translated && Object.values(buttons).some((b) => !b.trim())) ||
           (!config.allowBlankDisplay && !displayWord.trim())
         }
         isLoading={isLoading}

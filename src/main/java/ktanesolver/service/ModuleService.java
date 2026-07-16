@@ -67,6 +67,22 @@ public class ModuleService {
         eventPublisher.publishEvent(new RoundStateChangedEvent(this, bomb.getRound().getId()));
     }
 
+    @Transactional
+    public void resetModule(UUID bombId, UUID moduleId) {
+        ModuleEntity module = moduleRepo.findByIdWithBomb(moduleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));
+        BombEntity bomb = module.getBomb();
+        if (!bomb.getId().equals(bombId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+        }
+
+        module.setSolved(false);
+        module.getState().clear();
+        module.getSolution().clear();
+        moduleRepo.save(module);
+        eventPublisher.publishEvent(new RoundStateChangedEvent(this, bomb.getRound().getId()));
+    }
+
     private static void ensureModuleInBombAndRound(ModuleEntity module, UUID bombId, UUID roundId) {
         if (!module.getBomb().getId().equals(bombId) || !module.getBomb().getRound().getId().equals(roundId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found in this bomb/round");

@@ -119,7 +119,7 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
   }, []);
 
   const onRestoreSolution = useCallback((solution: PerspectivePegsOutput) => {
-    if (!solution?.keySequence?.length) return;
+    if (!solution?.pressPositions?.length) return;
     setResult(solution);
   }, []);
 
@@ -132,11 +132,11 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
     onRestoreSolution,
     extractSolution: (raw) => {
       if (raw == null || typeof raw !== "object") return null;
-      const candidate = raw as { output?: unknown; keySequence?: unknown };
+      const candidate = raw as { output?: unknown; pressPositions?: unknown };
       const output = candidate.output && typeof candidate.output === "object"
         ? candidate.output as PerspectivePegsOutput
         : candidate as PerspectivePegsOutput;
-      return Array.isArray(output.keySequence) ? output : null;
+      return Array.isArray(output.pressPositions) ? output : null;
     },
     inferSolved: (_sol, mod) => Boolean((mod as { solved?: boolean } | undefined)?.solved),
     currentModule,
@@ -243,13 +243,19 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
           {pegs.map((peg, pegIndex) => {
             const layout = PEG_LAYOUT[pegIndex];
             const sideColors = normalizeSideColors(peg);
+            const pressStep = result?.pressPositions.indexOf(layout.label) ?? -1;
+            const isViewPosition = result?.viewPosition === layout.label;
             return (
               <div
                 key={layout.label}
                 className="absolute h-[clamp(4.5rem,14vw,6.5rem)] w-[clamp(4.5rem,14vw,6.5rem)] -translate-x-1/2 -translate-y-1/2"
                 style={{ left: layout.left, top: layout.top }}
               >
-                <svg viewBox="0 0 100 100" className="h-full w-full drop-shadow-sm" aria-label={`${layout.label} peg`}>
+                <svg
+                  viewBox="0 0 100 100"
+                  className="h-full w-full drop-shadow-sm"
+                  aria-label={`${layout.label} peg${isViewPosition ? ", view from here" : ""}${pressStep >= 0 ? `, press ${pressStep + 1}` : ""}`}
+                >
                   {sideColors.map((color, sideIndex) => {
                     const fill = isPegColor(color) ? COLOR_HEX[color] : "#f8fafc";
                     return (
@@ -276,11 +282,21 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
                       />
                     );
                   })}
+                  {isViewPosition && (
+                    <polygon
+                      points="23.6,13.6 76.4,13.6 92.8,63.9 50,95 7.2,63.9"
+                      fill="none"
+                      stroke="#06b6d4"
+                      strokeWidth="5"
+                      strokeLinejoin="round"
+                      pointerEvents="none"
+                    />
+                  )}
                   <circle
                     cx="50"
                     cy="50"
                     r="14"
-                    fill="hsl(var(--card))"
+                    fill={pressStep >= 0 ? "#16a34a" : "hsl(var(--card))"}
                     stroke="#0f172a"
                     strokeWidth="1.5"
                     pointerEvents="none"
@@ -290,16 +306,31 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
                     y="51"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    className="fill-foreground text-[11px] font-semibold"
+                    className={cn(
+                      "font-semibold",
+                      pressStep >= 0 ? "fill-white text-[18px]" : "fill-foreground text-[11px]",
+                    )}
                     pointerEvents="none"
                   >
-                    {layout.short}
+                    {pressStep >= 0 ? pressStep + 1 : layout.short}
                   </text>
                 </svg>
               </div>
             );
           })}
         </div>
+        {result && (
+          <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-muted-foreground" aria-label="Solution markers">
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm border-2 border-cyan-500" aria-hidden="true" />
+              View from {result.viewPosition}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-green-600 px-1 text-[10px] font-bold text-white" aria-hidden="true">1–3</span>
+              Press order
+            </span>
+          </div>
+        )}
       </SolverSection>
 
       <SolverControls
@@ -316,16 +347,17 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
       {result && (
         <SolverResult
           variant="success"
-          title="Key sequence"
-          description={`Key color: ${result.keyColor}
+          title="Press sequence"
+          description={`View from: ${result.viewPosition}
+Press: ${result.pressPositions.join(" → ")}
+Key color: ${result.keyColor}
 Current sequence: ${result.currentSequence.join(" ")}
-Key sequence: ${result.keySequence.join(" ")}
-Find this three-color sequence in one visible line and press those three pegs manually.`}
+Key sequence: ${result.keySequence.join(" ")}`}
         />
       )}
 
       <SolverInstructions>
-        The solver determines the key color and transformed sequence from the fixed peg positions. Use the returned three-color key sequence to find the matching visible line on the module and press those pegs yourself.
+        Enter all five sides of each fixed peg. The solver returns the viewing angle and the three fixed pegs to press in order.
       </SolverInstructions>
     </SolverLayout>
   );

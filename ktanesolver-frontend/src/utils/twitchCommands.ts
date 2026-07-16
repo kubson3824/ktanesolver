@@ -325,7 +325,7 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       if (r?.phase === "go_to_star") {
         return `!${TWITCH_PLACEHOLDER} follow path to star${moves}`;
       }
-      return `!${TWITCH_PLACEHOLDER} go to (${row},${col}), follow the moves so you face the exit, then go forward${moves}`;
+      return `!${TWITCH_PLACEHOLDER} follow the complete path through the goal wall at (${row},${col})${moves}`;
     }
 
     case ModuleType.SIMON_STATES:
@@ -338,6 +338,9 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
       const legal = getBoolean(raw.legal);
       return legal ? `!${TWITCH_PLACEHOLDER} press KEEP` : `!${TWITCH_PLACEHOLDER} pull lever`;
     }
+
+    case ModuleType.SKEWED_SLOTS:
+      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.code) ?? "unknown"}`;
 
     case ModuleType.LAUNDRY: {
       if (getBoolean(raw.bobShortcut)) {
@@ -455,6 +458,21 @@ export function generateTwitchCommand(data: TwitchCommandData): string {
 
     case ModuleType.FAST_MATH:
       return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.answer) ?? "unknown"}`;
+
+    case ModuleType.ICE_CREAM:
+      return `!${TWITCH_PLACEHOLDER} sell ${getString(raw.flavor)?.toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.THE_SCREW:
+      return `!${TWITCH_PLACEHOLDER} unscrew; !${TWITCH_PLACEHOLDER} screw ${getNumber(raw.hole) ?? "unknown"}; !${TWITCH_PLACEHOLDER} press ${getString(raw.buttonLabel)?.toLowerCase() ?? "unknown"}`;
+
+    case ModuleType.YAHTZEE: {
+      if (getString(raw.action) === "SOLVED") return `!${TWITCH_PLACEHOLDER} done`;
+      const colors = getStringArray(raw.keepColors)?.map((color) => color.toLowerCase()) ?? [];
+      return colors.length ? `!${TWITCH_PLACEHOLDER} keep ${colors.join(" ")}` : `!${TWITCH_PLACEHOLDER} reroll`;
+    }
+
+    case ModuleType.X_RAY:
+      return `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.button) ?? "unknown"}`;
 
     case ModuleType.ZOO:
       return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.animals)?.join(", ") ?? "unknown"}`;

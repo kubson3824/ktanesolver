@@ -1,7 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
-import { solveSimonStates, type SimonStatesColor } from "../../services/simonStatesService";
+import {
+  restoreSimonStatesStageHistory,
+  solveSimonStates,
+  type SimonStatesColor,
+} from "../../services/simonStatesService";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   useSolver,
@@ -137,7 +141,10 @@ export default function SimonStatesSolver({ bomb }: SimonStatesSolverProps) {
       const pressHistory = s.pressHistory as SimonStatesColor[];
       setCurrentStage(Math.min(pressHistory.length + 1, 4));
       if (typeof s.topLeft === "string") setTopLeft(s.topLeft as SimonStatesColor);
-      setStageHistory([]);
+      setStageHistory(restoreSimonStatesStageHistory(
+        pressHistory,
+        Array.isArray(s.flashHistory) ? s.flashHistory as SimonStatesColor[][] : [],
+      ));
       setResult(null);
       setFlashes(new Set());
       return;

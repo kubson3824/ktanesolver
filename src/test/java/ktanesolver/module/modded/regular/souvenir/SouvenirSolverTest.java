@@ -94,6 +94,50 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesThreeDMazeMarkingsAndDirection() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity maze = module(ModuleType.THREE_D_MAZE, true, Map.of(
+			"markings", "A,B,C", "cardinalDirection", "North"));
+		bomb.setModules(List.of(souvenir, maze));
+
+		assertThat(solve(bomb, souvenir, maze.getId(), "What were the markings in 3D Maze?",
+			List.of("ABD", "ABC", "ACH"), false)).isEqualTo(new SouvenirOutput("ABC", 2));
+		assertThat(solve(bomb, souvenir, maze.getId(), "What was the cardinal direction in 3D Maze?",
+			List.of("East", "South", "North", "West"), false)).isEqualTo(new SouvenirOutput("North", 3));
+	}
+
+	@Test
+	void returnsRecordedAnswerWithoutDisplayedChoices() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity maze = module(ModuleType.THREE_D_MAZE, true, Map.of("markings", "A,B,C"));
+		bomb.setModules(List.of(souvenir, maze));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(maze.getId(), "markings", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("ABC", null), false));
+	}
+
+	@Test
+	void resolvesEachGamepadDisplayDigit() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity gamepad = module(ModuleType.GAMEPAD, true, Map.of("input", Map.of("x", 7, "y", 42)));
+		bomb.setModules(List.of(souvenir, gamepad));
+		List<String> answers = List.of("2", "0", "7", "4");
+
+		assertThat(solve(bomb, souvenir, gamepad.getId(), "What was the first digit on the display on The Gamepad?", answers, false))
+			.isEqualTo(new SouvenirOutput("0", 2));
+		assertThat(solve(bomb, souvenir, gamepad.getId(), "What was the second digit on the display on The Gamepad?", answers, false))
+			.isEqualTo(new SouvenirOutput("7", 3));
+		assertThat(solve(bomb, souvenir, gamepad.getId(), "What was the third digit on the display on The Gamepad?", answers, false))
+			.isEqualTo(new SouvenirOutput("4", 4));
+		assertThat(solve(bomb, souvenir, gamepad.getId(), "What was the fourth digit on the display on The Gamepad?", answers, false))
+			.isEqualTo(new SouvenirOutput("2", 1));
+	}
+
+	@Test
 	void resolvesAudioAndSpriteAnswerFamilies() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
@@ -177,6 +221,54 @@ class SouvenirSolverTest {
 			"What were the weather conditions on the first day in Creation?",
 			List.of("Clear", "Heat Wave", "Meteor Shower", "Rain", "Windy"), false))
 			.isEqualTo(new SouvenirOutput("Meteor Shower", 3));
+	}
+
+	@Test
+	void resolvesEveryIceCreamQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity iceCream = module(ModuleType.ICE_CREAM, true, Map.of("stages", List.of(Map.of(
+			"customer", "Mike",
+			"offeredFlavors", List.of("Tutti Frutti", "Rocky Road", "Cookies & Cream", "The Classic", "Vanilla"),
+			"soldFlavor", "Cookies & Cream"
+		))));
+		bomb.setModules(List.of(souvenir, iceCream));
+
+		assertThat(solve(bomb, souvenir, iceCream.getId(), "Who was the first customer in Ice Cream?",
+			List.of("Tim", "Mike", "Tom", "Dave", "Adam", "Cheryl"), false))
+			.isEqualTo(new SouvenirOutput("Mike", 2));
+		assertThat(solve(bomb, souvenir, iceCream.getId(), "Which one of these flavours was on offer, but not sold, to the first customer in Ice Cream?",
+			List.of("Double Chocolate", "Tutti Frutti", "Cookies & Cream", "Mint Chocolate Chip"), false))
+			.isEqualTo(new SouvenirOutput("Tutti Frutti", 2));
+		assertThat(solve(bomb, souvenir, iceCream.getId(), "Which one of these flavours was not on offer to the first customer in Ice Cream?",
+			List.of("Rocky Road", "Vanilla", "Raspberry Ripple", "The Classic"), false))
+			.isEqualTo(new SouvenirOutput("Raspberry Ripple", 3));
+	}
+
+	@Test
+	void resolvesYahtzeesInitialRollCategory() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity yahtzee = module(ModuleType.YAHTZEE, true, Map.of("initialRollCategory", "full house"));
+		bomb.setModules(List.of(souvenir, yahtzee));
+
+		assertThat(solve(bomb, souvenir, yahtzee.getId(), "What was the initial roll on Yahtzee?",
+			List.of("large straight", "small straight", "four of a kind", "full house"), false))
+			.isEqualTo(new SouvenirOutput("full house", 4));
+	}
+
+	@Test
+	void resolvesXRayScannedSymbolSprites() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity xRay = module(ModuleType.X_RAY, true, Map.of(
+			"scannedSymbols", List.of("a1 flipped", "h6", "f10")
+		));
+		bomb.setModules(List.of(souvenir, xRay));
+
+		assertThat(solve(bomb, souvenir, xRay.getId(), "Which symbol was scanned in X-Ray?",
+			List.of("a1", "e2", "a1 flipped", "b10", "i9", "d1"), false))
+			.isEqualTo(new SouvenirOutput("a1 flipped", 3));
 	}
 
 	@Test
@@ -343,6 +435,24 @@ class SouvenirSolverTest {
 			"What was the last pair of letters in Fast Math?",
 			List.of("AB", "DG", "KX", "NA", "TX", "ZX"), false))
 			.isEqualTo(new SouvenirOutput("ZX", 6));
+	}
+
+	@Test
+	void resolvesSillySlotsReelAtTheRequestedStageAndPosition() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity sillySlots = module(ModuleType.SILLY_SLOTS, true, Map.of(
+			"displayHistory", List.of(
+				List.of("red bomb", "blue grape", "green coin"),
+				List.of("blue cherry", "green bomb", "red grape")
+			)
+		));
+		bomb.setModules(List.of(souvenir, sillySlots));
+
+		assertThat(solve(bomb, souvenir, sillySlots.getId(),
+			"What was the second slot in the second stage in Silly Slots?",
+			List.of("red bomb", "green bomb", "green cherry", "blue grape"), false))
+			.isEqualTo(new SouvenirOutput("green bomb", 2));
 	}
 
 	@SuppressWarnings("unchecked")

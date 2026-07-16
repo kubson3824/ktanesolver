@@ -38,7 +38,7 @@ public class ThirdBaseSolver extends AbstractModuleSolver<ThirdBaseInput, ThirdB
 		}
 
 		String display = normalize(input.displayWord());
-		int displayIndex = ThirdBaseRules.LABELS.indexOf(display);
+		int displayIndex = ThirdBaseRules.LABELS.indexOf(rotateLabel(display));
 		if (displayIndex < 0) {
 			return failure("Unknown display label: " + display);
 		}
@@ -54,19 +54,23 @@ public class ThirdBaseSolver extends AbstractModuleSolver<ThirdBaseInput, ThirdB
 			return failure("Button labels must be unique.");
 		}
 
-		String readLabel = buttons.get(ThirdBaseRules.displayPosition(displayIndex));
+		Map<ButtonPosition, String> rotatedButtons = new EnumMap<>(ButtonPosition.class);
+		buttons.forEach((position, label) -> rotatedButtons.put(rotatePosition(position), rotateLabel(label)));
+		String readLabel = rotatedButtons.get(ThirdBaseRules.displayPosition(displayIndex));
 		for (int candidateIndex : ThirdBaseRules.priorities(ThirdBaseRules.LABELS.indexOf(readLabel))) {
 			String candidate = ThirdBaseRules.LABELS.get(candidateIndex);
-			for (Map.Entry<ButtonPosition, String> button : buttons.entrySet()) {
+			for (Map.Entry<ButtonPosition, String> button : rotatedButtons.entrySet()) {
 				if (button.getValue().equals(candidate)) {
+					ButtonPosition visiblePosition = rotatePosition(button.getKey());
+					String visibleLabel = rotateLabel(button.getValue());
 					var displays = new ArrayList<>(state.displayHistory());
 					var buttonHistory = new ArrayList<>(state.buttonHistory());
 					var presses = new ArrayList<>(state.buttonPressHistory());
 					displays.add(display);
 					buttonHistory.add(Map.copyOf(buttons));
-					presses.add(Map.of(button.getKey(), button.getValue()));
+					presses.add(Map.of(visiblePosition, visibleLabel));
 					module.setState(new ThirdBaseState(displays, buttonHistory, presses));
-					return success(new ThirdBaseOutput(button.getKey(), button.getValue()), presses.size() == 3);
+					return success(new ThirdBaseOutput(visiblePosition, visibleLabel), presses.size() == 3);
 				}
 			}
 		}
@@ -75,5 +79,28 @@ public class ThirdBaseSolver extends AbstractModuleSolver<ThirdBaseInput, ThirdB
 
 	private static String normalize(String value) {
 		return value == null ? "" : value.trim().toUpperCase();
+	}
+
+	private static String rotateLabel(String label) {
+		StringBuilder rotated = new StringBuilder(label.length());
+		for (int i = label.length() - 1; i >= 0; i--) {
+			rotated.append(switch (label.charAt(i)) {
+				case '6' -> '9';
+				case '9' -> '6';
+				default -> label.charAt(i);
+			});
+		}
+		return rotated.toString();
+	}
+
+	private static ButtonPosition rotatePosition(ButtonPosition position) {
+		return switch (position) {
+			case TOP_LEFT -> ButtonPosition.BOTTOM_RIGHT;
+			case TOP_RIGHT -> ButtonPosition.BOTTOM_LEFT;
+			case MIDDLE_LEFT -> ButtonPosition.MIDDLE_RIGHT;
+			case MIDDLE_RIGHT -> ButtonPosition.MIDDLE_LEFT;
+			case BOTTOM_LEFT -> ButtonPosition.TOP_RIGHT;
+			case BOTTOM_RIGHT -> ButtonPosition.TOP_LEFT;
+		};
 	}
 }

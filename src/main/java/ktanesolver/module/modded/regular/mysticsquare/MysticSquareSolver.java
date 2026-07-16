@@ -152,7 +152,7 @@ public class MysticSquareSolver extends AbstractModuleSolver<MysticSquareInput, 
 
 	private int indexOf(List<Integer> grid, int value) {
 		for (int i = 0; i < 9; i++) {
-			if (value == grid.get(i)) return i;
+			if (Integer.valueOf(value).equals(grid.get(i))) return i;
 		}
 		throw new IllegalArgumentException("Value not in grid: " + value);
 	}

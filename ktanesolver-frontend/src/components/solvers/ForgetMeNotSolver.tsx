@@ -34,6 +34,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
   const [stages, setStages] = useState<Stage[]>([]);
   const [sequence, setSequence] = useState<number[]>([]);
   const [showSequence, setShowSequence] = useState<boolean>(false);
+  const [groupSize, setGroupSize] = useState<number>(1);
   const [allModulesCompleted, setAllModulesCompleted] = useState<boolean>(false);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
@@ -272,6 +273,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
     setStages([]);
     setSequence([]);
     setShowSequence(false);
+    setGroupSize(1);
     setAllModulesCompleted(false);
     setTwitchCommand("");
     resetSolverState();
@@ -299,7 +301,7 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
               maxLength={1}
               disabled={disabled}
               aria-label={`Stage ${stage} digit`}
-              className="h-auto w-24 border-0 bg-transparent text-center font-mono text-5xl font-bold text-emerald-600 focus-visible:ring-0 dark:text-emerald-400"
+              className="h-auto w-24 border-0 bg-transparent text-center font-mono text-5xl font-bold text-emerald-600 focus-visible:ring-0 focus-visible:ring-offset-0 dark:text-emerald-400"
             />
           </div>
         </div>
@@ -367,17 +369,47 @@ export default function ForgetMeNotSolver({ bomb }: ForgetMeNotSolverProps) {
             description="Press the numbers on the module in this exact order."
           />
           <SolverSection title="Press order" className="border-emerald-500/40">
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {sequence.map((num, index) => (
+            <div className="mb-3 flex items-center justify-center gap-2">
+              <label htmlFor="forget-me-not-group-size" className="text-sm text-muted-foreground">
+                Group size
+              </label>
+              <Input
+                id="forget-me-not-group-size"
+                type="number"
+                min={1}
+                max={sequence.length}
+                value={groupSize}
+                onChange={(event) =>
+                  setGroupSize(Math.min(sequence.length, Math.max(1, Number(event.target.value) || 1)))
+                }
+                className="h-8 w-16"
+              />
+            </div>
+            <div className={cn("flex flex-wrap justify-center", groupSize === 1 ? "gap-1.5" : "gap-3")}>
+              {Array.from({ length: Math.ceil(sequence.length / groupSize) }, (_, index) =>
+                sequence.slice(index * groupSize, index * groupSize + groupSize),
+              ).map((group, groupIndex) => (
                 <div
-                  key={index}
-                  className={cn(
-                    "inline-flex items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/15 font-mono font-bold text-emerald-700 dark:text-emerald-300",
-                    useCompactSequence ? "h-8 w-8 text-sm" : "h-10 w-10 text-lg",
-                  )}
-                  aria-label={`Press ${index + 1}: ${num}`}
+                  key={groupIndex}
+                  className="flex max-w-full flex-wrap justify-center gap-1.5"
+                  role="group"
+                  aria-label={`Group ${groupIndex + 1}`}
                 >
-                  {num}
+                  {group.map((num, index) => {
+                    const sequenceIndex = groupIndex * groupSize + index;
+                    return (
+                      <div
+                        key={sequenceIndex}
+                        className={cn(
+                          "inline-flex items-center justify-center rounded-md border border-emerald-500/40 bg-emerald-500/15 font-mono font-bold text-emerald-700 dark:text-emerald-300",
+                          useCompactSequence ? "h-8 w-8 text-sm" : "h-10 w-10 text-lg",
+                        )}
+                        aria-label={`Press ${sequenceIndex + 1}: ${num}`}
+                      >
+                        {num}
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>

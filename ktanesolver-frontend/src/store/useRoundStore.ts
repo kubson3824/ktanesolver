@@ -46,6 +46,7 @@ type RoundStoreActions = {
         payload: AddModulesRequest,
     ) => Promise<ModuleEntity[]>;
     removeModule: (bombId: string, moduleId: string) => Promise<void>;
+    resetModule: (bombId: string, moduleId: string) => Promise<void>;
     startRound: () => Promise<RoundEntity>;
     selectBomb: (bombId: string) => void;
     selectModule: (bombId: string, moduleType: string) => void;
@@ -73,8 +74,11 @@ const attachManualUrl = (moduleType: string): string | undefined => {
         console.warn(`No catalog entry found for module type: ${moduleType}`);
         return undefined;
     }
-    return `https://ktane.timwi.de/HTML/${item.name.replaceAll(" ", "%20")}.html`;
+    const manualName = moduleType === "PASSWORDS" ? "Password" : item.name;
+    return `https://ktane.timwi.de/HTML/${manualName.replaceAll(" ", "%20")}.html`;
 };
+
+let roundMutationVersion = 0;
 
 export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
     devtools(
@@ -134,6 +138,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             },
 
             refreshRound: async (roundId: string) => {
+                const mutationVersion = roundMutationVersion;
                 const prevBombId = get().currentBomb?.id;
                 const prevModuleId = get().currentModule?.id;
                 const prevModuleType = get().currentModule?.moduleType;
@@ -157,6 +162,12 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                         bombs: round.bombs.length,
                         modulesTotal: round.bombs.reduce((acc, b) => acc + b.modules.length, 0),
                     });
+
+                    if (mutationVersion !== roundMutationVersion) {
+                        debugModuleSync("refreshRound:stale", {roundId});
+                        set({loading: false});
+                        return round;
+                    }
 
                     let nextBomb = prevBombId
                         ? round.bombs.find((b) => b.id === prevBombId)
@@ -444,6 +455,45 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                 }
             },
 
+            resetModule: async (bombId, moduleId) => {
+                set({loading: true, error: undefined});
+                try {
+                    await withErrorWrapping(async () => {
+                        await api.post(`/bombs/${bombId}/modules/${moduleId}/reset`);
+                    });
+                    roundMutationVersion++;
+                    set((state) => {
+                        const reset = (module: ModuleEntity) =>
+                            module.id === moduleId
+                                ? {...module, solved: false, state: {}, solution: {}}
+                                : module;
+                        return {
+                            loading: false,
+                            round: state.round && {
+                                ...state.round,
+                                bombs: state.round.bombs.map((bomb) =>
+                                    bomb.id === bombId
+                                        ? {...bomb, modules: bomb.modules.map(reset)}
+                                        : bomb,
+                                ),
+                            },
+                            currentBomb: state.currentBomb?.id === bombId
+                                ? {...state.currentBomb, modules: state.currentBomb.modules.map(reset)}
+                                : state.currentBomb,
+                            currentModule: state.currentModule?.id === moduleId
+                                ? {...state.currentModule, solved: false, state: {}, solution: {}}
+                                : state.currentModule,
+                        };
+                    });
+                } catch (error) {
+                    set({
+                        loading: false,
+                        error: error instanceof Error ? error.message : "Unknown error",
+                    });
+                    throw error;
+                }
+            },
+
             startRound: async () => {
                 const {round} = get();
                 if (!round) {
@@ -576,6 +626,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             },
 
             markModuleSolved: (bombId, moduleId) => {
+                roundMutationVersion++;
                 set((state) => {
                     if (!state.round) return state;
                     const isCurrentModule =
@@ -612,6 +663,7 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             },
 
             updateModuleAfterSolve: (bombId, moduleId, state, solution, solved) => {
+                roundMutationVersion++;
                 set((prev) => {
                     if (!prev.round) return prev;
                     const isCurrentModule =

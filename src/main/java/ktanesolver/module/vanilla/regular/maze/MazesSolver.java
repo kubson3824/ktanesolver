@@ -15,7 +15,7 @@ import ktanesolver.dto.ModuleCatalogDto;
 import ktanesolver.module.shared.grid.Cell;
 
 @Service
-@ModuleInfo (type = ModuleType.MAZES, id = "mazes", name = "Mazes", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Navigate the maze following the rules", tags = {
+@ModuleInfo (type = ModuleType.MAZES, id = "mazes", name = "Maze", category = ModuleCatalogDto.ModuleCategory.VANILLA_REGULAR, description = "Navigate the maze following the rules", tags = {
 	"navigation", "puzzle"})
 public class MazesSolver extends AbstractModuleSolver<MazesInput, MazesOutput> {
 

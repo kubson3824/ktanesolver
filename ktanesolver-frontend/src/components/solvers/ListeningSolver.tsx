@@ -19,7 +19,7 @@ interface ListeningSolverProps {
   bomb: BombEntity | null | undefined;
 }
 
-export const SOUND_OPTIONS = [
+const SOUND_OPTIONS = [
   "Taxi Dispatch", "Dial-up Internet", "Cow", "Police Radio Scanner", "Extractor Fan",
   "Censorship Bleep", "Train Station", "Medieval Weapons", "Arcade", "Door Closing",
   "Casino", "Chainsaw", "Supermarket", "Compressed Air", "Soccer Match",
@@ -161,6 +161,20 @@ export default function ListeningSolver({ bomb }: ListeningSolverProps) {
             <option key={sound} value={sound}>{sound}</option>
           ))}
         </select>
+        {selectedSound && (
+          <audio
+            key={selectedSound}
+            controls
+            preload="metadata"
+            className="mt-3 w-full"
+            src={`/listening-sounds/${selectedSound.replace(/[^\w]/g, "")}.mp3`}
+            ref={(audio) => {
+              if (audio) audio.volume = ["Vacuum Cleaner", "Waterfall"].includes(selectedSound) ? 0.25 : 1;
+            }}
+          >
+            Your browser does not support audio playback.
+          </audio>
+        )}
       </SolverSection>
 
       <SolverControls

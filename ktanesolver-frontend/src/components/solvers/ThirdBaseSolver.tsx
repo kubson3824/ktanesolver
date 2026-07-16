@@ -17,10 +17,11 @@ const CONFIG: SixButtonWordSolverConfig = {
   moduleType: ModuleType.THIRD_BASE,
   name: "Third Base",
   solve: solveThirdBase,
-  displayDescription: "Enter the four-character label shown on the display.",
-  instructions: "Enter the display and all six button labels. Press the revealed button, then repeat for three stages.",
+  displayDescription: "Enter the four-character label exactly as it appears below the buttons.",
+  instructions: "Enter the upside-down module exactly as shown. Press the revealed button, then repeat for three stages.",
   displaySuggestions: LABELS,
   buttonOptions: LABELS,
+  upsideDown: true,
 };
 
 export default function ThirdBaseSolver({ bomb }: SolverProps) {

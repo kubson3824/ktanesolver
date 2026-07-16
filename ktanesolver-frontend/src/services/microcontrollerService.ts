@@ -26,6 +26,9 @@ export interface MicrocontrollerOutput {
   colorRule: string;
 }
 
+export const getMicrocontrollerPinRows = (pins: MicrocontrollerPinSolution[]) =>
+  pins.slice(0, pins.length / 2).map((pin, index) => [pin, pins.at(-index - 1)!] as const);
+
 export interface MicrocontrollerSolveRequest {
   input: MicrocontrollerInput;
 }

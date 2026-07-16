@@ -23,6 +23,7 @@ import { Alert } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { cn } from "../../lib/cn";
+import { TranslatedLanguageSelect, type TranslatedLanguageCode } from "../common/TranslatedLanguageSelect";
 
 interface MorseCodeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -49,6 +50,7 @@ function formatMorseForDisplay(morse: string): string {
 }
 
 export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
+  const [language, setLanguage] = useState<TranslatedLanguageCode>("EN");
   const [morseInput, setMorseInput] = useState<string>("");
   const [translatedWord, setTranslatedWord] = useState<string>("");
   const [result, setResult] = useState<MorseOutput | null>(null);
@@ -72,20 +74,25 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
   const moduleState = useMemo(
-    () => ({ morseInput, translatedWord, result, twitchCommand }),
-    [morseInput, translatedWord, result, twitchCommand],
+    () => ({ language, morseInput, translatedWord, result, twitchCommand }),
+    [language, morseInput, translatedWord, result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
     (state: {
       morseInput?: string;
+      language?: TranslatedLanguageCode;
       translatedWord?: string;
       result?: MorseOutput | null;
       twitchCommand?: string;
-      input?: { word?: string };
+      input?: { word?: string; language?: TranslatedLanguageCode; morse?: string };
     }) => {
       skipClearResultCountRef.current = 2;
-      if (state.input?.word !== undefined && state.input.word !== "") {
+      if (state.input?.language) setLanguage(state.input.language);
+      else if (state.language) setLanguage(state.language);
+      if (state.input?.morse) {
+        setMorseInput(state.input.morse);
+      } else if (state.input?.word !== undefined && state.input.word !== "") {
         const word = state.input.word.toUpperCase();
         setTranslatedWord(word);
         const morse = word
@@ -122,7 +129,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   }, []);
 
   useSolverModulePersistence<
-    { morseInput: string; translatedWord: string; result: MorseOutput | null; twitchCommand: string },
+    { language: TranslatedLanguageCode; morseInput: string; translatedWord: string; result: MorseOutput | null; twitchCommand: string },
     MorseOutput
   >({
     state: moduleState,
@@ -203,7 +210,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
   };
 
   useEffect(() => {
-    const translated = translateMorseToWord(morseInput);
+    const translated = language === "EN" ? translateMorseToWord(morseInput) : "";
     setTranslatedWord(translated);
     if (skipClearResultCountRef.current > 0) {
       skipClearResultCountRef.current -= 1;
@@ -213,15 +220,15 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       setTwitchCommand("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [morseInput]);
+  }, [morseInput, language]);
 
   const handleMorseInput = (value: string) => {
     setMorseInput(value.replace(/[^.\s-]/g, ""));
   };
 
   const solveMorseCode = async () => {
-    if (!translatedWord || translatedWord.includes("?")) {
-      setError("Invalid Morse code. Check the dots/dashes above.");
+    if (!morseInput.trim()) {
+      setError("Enter the observed Morse code.");
       return;
     }
     if (!round?.id || !bomb?.id || !currentModule?.id) {
@@ -233,7 +240,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
     clearError();
     try {
       const response = await solveMorse(round.id, bomb.id, currentModule.id, {
-        input: { word: translatedWord },
+        input: { language, morse: morseInput },
       });
       const output = response?.output;
       if (!output || !Array.isArray(output.candidates)) {
@@ -261,7 +268,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       updateModuleAfterSolve(
         bomb.id,
         currentModule.id,
-        { input: { word: translatedWord } },
+        { input: { language, morse: morseInput } },
         { candidates: output.candidates, resolved: output.resolved },
         output.resolved,
       );
@@ -275,6 +282,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
   const reset = () => {
     setMorseInput("");
+    setLanguage("EN");
     setTranslatedWord("");
     setResult(null);
     setTwitchCommand("");
@@ -285,6 +293,14 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
   return (
     <SolverLayout>
+      <SolverSection title="Language">
+        <TranslatedLanguageSelect
+          value={language}
+          onChange={(value) => { setLanguage(value); setMorseInput(""); setTranslatedWord(""); setResult(null); setTwitchCommand(""); }}
+          disabled={isLoading || Boolean(result?.resolved)}
+        />
+      </SolverSection>
+
       <SolverSection
         title="Morse input"
         description="Type the dots (.) and dashes (-) you see flashing. Put spaces between letters."
@@ -317,18 +333,14 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
               <span className="text-muted-foreground">—</span>
             )}
           </div>
-          <div className="mt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Translation
-          </div>
-          <div className="mt-1 font-mono text-3xl font-bold tracking-widest text-foreground">
-            {translatedWord ? (
-              <span className={cn(translatedWord.includes("?") && "text-amber-500")}>
-                {translatedWord}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">?</span>
-            )}
-          </div>
+          {language === "EN" && (
+            <>
+              <div className="mt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Translation</div>
+              <div className="mt-1 font-mono text-3xl font-bold tracking-widest text-foreground">
+                {translatedWord ? <span className={cn(translatedWord.includes("?") && "text-amber-500")}>{translatedWord}</span> : <span className="text-muted-foreground">?</span>}
+              </div>
+            </>
+          )}
         </div>
 
         <Input
@@ -345,7 +357,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       <SolverControls
         onSolve={solveMorseCode}
         onReset={reset}
-        isSolveDisabled={!translatedWord || translatedWord.includes("?")}
+        isSolveDisabled={!morseInput.trim()}
         isLoading={isLoading}
         isSolved={Boolean(result?.resolved)}
         solveText="Solve"
@@ -402,7 +414,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
 
       <TwitchCommandDisplay command={twitchCommand} />
 
-      <SolverSection title="Reference" description="Letter → Morse (· = dot, − = dash)">
+      {language === "EN" && <SolverSection title="Reference" description="Letter → Morse (· = dot, − = dash)">
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 md:grid-cols-4">
           {morseEntries.map(([letter, morse]) => (
             <div
@@ -416,12 +428,12 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
             </div>
           ))}
         </div>
-      </SolverSection>
+      </SolverSection>}
 
       <SolverInstructions>
         Use a space between letters; no space between symbols within a letter.
         Each word on the module corresponds to a transmitter frequency — the
-        solver returns the frequency you need to dial in.
+        solver returns the frequency you need to dial in. Select the barcode language for translated modules.
       </SolverInstructions>
     </SolverLayout>
   );

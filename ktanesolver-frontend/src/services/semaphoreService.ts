@@ -58,10 +58,11 @@ export async function solveSemaphore(
   roundId: string,
   bombId: string,
   moduleId: string,
-  data: { input: SemaphoreInput }
+  input: SemaphoreInput
 ): Promise<{ output: SemaphoreOutput }> {
   return withErrorWrapping(async () => {
-    const response = await api.post(`/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`, data);
+    const sequence = input.sequence.map(({ leftFlagAngle, rightFlagAngle }) => ({ leftFlagAngle, rightFlagAngle }));
+    const response = await api.post(`/rounds/${roundId}/bombs/${bombId}/modules/${moduleId}/solve`, { input: { sequence } });
     return response.data;
   });
 }

@@ -211,7 +211,7 @@ export default function ComplicatedWiresSolver({ bomb }: ComplicatedWiresSolverP
     try {
       const request: ComplicatedWiresSolveRequest = {
         input: {
-          wires: wires.slice(0, wireCount).map(({ ...wire }) => wire),
+          wires: wires.slice(0, wireCount).map(({ red, blue, led, star }) => ({ red, blue, led, star })),
         },
       };
 

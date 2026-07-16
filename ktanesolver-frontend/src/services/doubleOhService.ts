@@ -9,7 +9,7 @@ export type DoubleOhButton =
 
 export interface DoubleOhInput {
   displayedNumber: number;
-  observations: Record<DoubleOhButton, number>;
+  observations: Partial<Record<DoubleOhButton, number>>;
 }
 
 export interface DoubleOhOutput {

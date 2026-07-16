@@ -156,8 +156,7 @@ export default function SetupPage() {
     const isEditing = Boolean(editingBomb);
     const canStartRound = round && round.bombs.length > 0;
 
-    // Edit and mission-import modes never ask the user to select modules.
-    const stepLabels = isEditing || missionImport
+    const stepLabels = isEditing
         ? ["Basics", "Indicators", "Port Plates"]
         : ["Basics", "Indicators", "Port Plates", "Modules"];
     const stepCount = stepLabels.length;
@@ -838,10 +837,12 @@ export default function SetupPage() {
                                     </div>
                                 )}
 
-                                {formStep === 3 && !isEditing && !missionImport && (
+                                {formStep === 3 && !isEditing && (
                                     <div className="flex flex-col gap-3">
                                         <p className="text-xs text-muted-foreground">
-                                            Step 4 of {stepCount} — pick every module on this bomb, with counts.
+                                            Step 4 of {stepCount} — {missionImport
+                                                ? "review the imported modules and add any that were missing."
+                                                : "pick every module on this bomb, with counts."}
                                         </p>
                                         <ModuleSelector
                                             onSelectionChange={handleModuleSelectionChange}

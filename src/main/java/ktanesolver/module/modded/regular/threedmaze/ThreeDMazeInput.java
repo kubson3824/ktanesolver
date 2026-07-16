@@ -5,24 +5,28 @@ import java.util.List;
 import ktanesolver.logic.ModuleInput;
 
 /**
- * Input for the 3D Maze module: the three marker letters (identify the maze), optional goal direction (N/S/E/W),
- * and current position via (letterAtPosition, stepsToWall, currentFacing).
+ * Input for the 3D Maze module: the three maze-identifying letters, optional goal direction (N/S/E/W),
+ * and current position via either explicit coordinates or an observed symbol plus ordered wall distances.
  * <p>
- * stepsToWall is [front, left, right, behind] relative to the defuser. When currentFacing is omitted, the solver
- * infers both position and facing from these four values (user does not need to know compass direction). When
- * currentFacing is provided, it is used directly for backward compatibility.
+ * stepsToWall is [front, right, behind, left] relative to the defuser. The solver infers both position and facing,
+ * so the user does not need to know compass direction.
  * <p>
  * When goal direction is omitted, solver returns path to nearest direction marker (star); when provided, returns path to goal wall.
  */
 public record ThreeDMazeInput(
 	List<String> starLetters,
 	String goalDirection,
+	Integer currentRow,
+	Integer currentCol,
 	String currentFacing,
 	String letterAtPosition,
 	int[] stepsToWall
 ) implements ModuleInput {
+	public boolean hasExactPosition() {
+		return currentRow != null && currentCol != null && currentFacing != null;
+	}
 
-	/** True if position is to be resolved from letter at cell + 4 relative distances (facing, left, right, behind). */
+	/** True if position is to be resolved from symbol plus [front, right, behind, left] distances. */
 	public boolean useDistanceIdentification() {
 		return stepsToWall != null && stepsToWall.length == 4;
 	}

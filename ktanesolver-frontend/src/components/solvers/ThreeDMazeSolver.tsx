@@ -34,6 +34,28 @@ const GOAL_DIRECTIONS: ReadonlyArray<{ value: GoalDirection; label: string }> = 
   { value: "E", label: "E" },
   { value: "W", label: "W" },
 ];
+type Dir = "N" | "S" | "E" | "W";
+const SIZE = 8;
+const turnLeft = (d: Dir): Dir => d === "N" ? "W" : d === "W" ? "S" : d === "S" ? "E" : "N";
+const turnRight = (d: Dir): Dir => d === "N" ? "E" : d === "E" ? "S" : d === "S" ? "W" : "N";
+const delta = (d: Dir): [number, number] => d === "N" ? [-1, 0] : d === "S" ? [1, 0] : d === "E" ? [0, 1] : [0, -1];
+
+const endState = (output: ThreeDMazeOutput): { row: number; col: number; facing: Dir } | null => {
+  if (output.startRow == null || output.startCol == null || !output.startFacing) return null;
+  let row = output.startRow;
+  let col = output.startCol;
+  let facing = output.startFacing as Dir;
+  for (const move of output.moves ?? []) {
+    if (move === "TURN_LEFT") facing = turnLeft(facing);
+    else if (move === "TURN_RIGHT") facing = turnRight(facing);
+    else {
+      const [dr, dc] = delta(facing);
+      row = (row + dr + SIZE) % SIZE;
+      col = (col + dc + SIZE) % SIZE;
+    }
+  }
+  return { row, col, facing };
+};
 
 interface ThreeDMazeSolverProps {
   bomb: BombEntity | null | undefined;
@@ -42,8 +64,10 @@ interface ThreeDMazeSolverProps {
 const LETTER_AT_POSITION_OPTIONS = ["", "A", "B", "C", "D", "H", "N", "S", "E", "W"] as const;
 
 export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
-  const [starLetters, setStarLetters] = useState<[MarkerLetter, MarkerLetter, MarkerLetter]>(["A", "A", "A"]);
+  const [starLetters, setStarLetters] = useState<[MarkerLetter, MarkerLetter, MarkerLetter]>(["A", "B", "C"]);
   const [goalDirection, setGoalDirection] = useState<GoalDirection | "">("");
+  const [currentRow, setCurrentRow] = useState<number | null>(null);
+  const [currentCol, setCurrentCol] = useState<number | null>(null);
   const [currentFacing, setCurrentFacing] = useState<GoalDirection | "">("");
   const [letterAtPosition, setLetterAtPosition] = useState<string>("");
   const [stepsToWall, setStepsToWall] = useState<[number, number, number, number]>([0, 0, 0, 0]);
@@ -66,31 +90,38 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
   const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
   const moduleState = useMemo(
-    () => ({ starLetters, goalDirection, currentFacing, letterAtPosition, stepsToWall, result, twitchCommand }),
-    [starLetters, goalDirection, currentFacing, letterAtPosition, stepsToWall, result, twitchCommand]
+    () => ({ starLetters, goalDirection, currentRow, currentCol, currentFacing, letterAtPosition, stepsToWall, result, twitchCommand }),
+    [starLetters, goalDirection, currentRow, currentCol, currentFacing, letterAtPosition, stepsToWall, result, twitchCommand]
   );
 
   const onRestoreState = useCallback(
     (state: {
       starLetters?: [string, string, string];
       goalDirection?: string;
+      currentRow?: number | null;
+      currentCol?: number | null;
       currentFacing?: string;
       letterAtPosition?: string;
       stepsToWall?: [number, number, number, number];
       result?: ThreeDMazeOutput | null;
       twitchCommand?: string;
-      input?: { starLetters?: string[]; goalDirection?: string; currentFacing?: string; letterAtPosition?: string; stepsToWall?: number[] };
+      input?: { starLetters?: string[]; goalDirection?: string; currentRow?: number; currentCol?: number; currentFacing?: string; letterAtPosition?: string; stepsToWall?: number[] };
     }) => {
       const letters = state.starLetters ?? state.input?.starLetters;
       if (Array.isArray(letters) && letters.length >= 3) {
         const valid = (s: string): MarkerLetter =>
           MARKER_LETTERS.includes(s as MarkerLetter) ? (s as MarkerLetter) : "A";
-        setStarLetters([valid(letters[0]), valid(letters[1]), valid(letters[2])]);
+        const restored = [valid(letters[0]), valid(letters[1]), valid(letters[2])] as [MarkerLetter, MarkerLetter, MarkerLetter];
+        setStarLetters(new Set(restored).size === 3 ? restored : ["A", "B", "C"]);
       }
       const dir = state.goalDirection ?? state.input?.goalDirection;
       if (dir && (["N", "S", "E", "W"] as const).includes(dir as GoalDirection)) {
         setGoalDirection(dir as GoalDirection);
       }
+      const row = state.currentRow ?? state.input?.currentRow;
+      const col = state.currentCol ?? state.input?.currentCol;
+      if (typeof row === "number") setCurrentRow(row);
+      if (typeof col === "number") setCurrentCol(col);
       const cf = state.currentFacing ?? state.input?.currentFacing;
       if (cf && (["N", "S", "E", "W"] as const).includes(cf as GoalDirection)) setCurrentFacing(cf as GoalDirection);
       const lap = state.letterAtPosition ?? state.input?.letterAtPosition;
@@ -116,7 +147,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
   }, []);
 
   useSolverModulePersistence<
-    { starLetters: [MarkerLetter, MarkerLetter, MarkerLetter]; goalDirection: GoalDirection | ""; currentFacing: GoalDirection | ""; letterAtPosition: string; stepsToWall: [number, number, number, number]; result: ThreeDMazeSolveResponse["output"] | null; twitchCommand: string },
+    { starLetters: [MarkerLetter, MarkerLetter, MarkerLetter]; goalDirection: GoalDirection | ""; currentRow: number | null; currentCol: number | null; currentFacing: GoalDirection | ""; letterAtPosition: string; stepsToWall: [number, number, number, number]; result: ThreeDMazeSolveResponse["output"] | null; twitchCommand: string },
     ThreeDMazeOutput
   >({
     state: moduleState,
@@ -143,15 +174,19 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
     setIsLoading(true);
     clearError();
     try {
-      const useDistanceId = stepsToWall.every((n) => typeof n === "number" && n >= 0);
+      const hasTrackedPosition = currentRow != null && currentCol != null && currentFacing !== "";
       const request: ThreeDMazeSolveRequest = {
         input: {
           starLetters: [...starLetters],
           ...(goalDirection !== "" ? { goalDirection } : {}),
-          ...(useDistanceId ? {
+          ...(hasTrackedPosition ? {
+            currentRow,
+            currentCol,
+            currentFacing,
+          } : {
             letterAtPosition: letterAtPosition || undefined,
             stepsToWall: [...stepsToWall],
-          } : {}),
+          }),
         },
       };
       const response = await solveThreeDMaze(round.id, bomb.id, currentModule.id, request);
@@ -161,7 +196,14 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
         return;
       }
       setResult(output);
-      markModuleSolved(bomb.id, currentModule.id);
+      const tracked = output.phase === "go_to_star" ? endState(output) : null;
+      if (tracked) {
+        setCurrentRow(tracked.row);
+        setCurrentCol(tracked.col);
+        setCurrentFacing(tracked.facing);
+      }
+      if (response.solved) markModuleSolved(bomb.id, currentModule.id);
+      setIsSolved(Boolean(response.solved));
       const command = generateTwitchCommand({
         moduleType: ModuleType.THREE_D_MAZE,
         result: output,
@@ -170,9 +212,19 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
       updateModuleAfterSolve(
         bomb.id,
         currentModule.id,
-        { starLetters, goalDirection, currentFacing, letterAtPosition, stepsToWall, result: output, twitchCommand: command },
+        {
+          starLetters,
+          goalDirection,
+          currentRow: tracked?.row ?? currentRow,
+          currentCol: tracked?.col ?? currentCol,
+          currentFacing: tracked?.facing ?? currentFacing,
+          letterAtPosition,
+          stepsToWall,
+          result: output,
+          twitchCommand: command,
+        },
         { goalRow: output.goalRow, goalCol: output.goalCol, goalDirection: output.goalDirection ?? undefined, moves: output.moves, startRow: output.startRow, startCol: output.startCol, startFacing: output.startFacing, phase: output.phase, message: output.message },
-        true
+        Boolean(response.solved)
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Solve failed.");
@@ -182,8 +234,10 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
   };
 
   const reset = () => {
-    setStarLetters(["A", "A", "A"]);
+    setStarLetters(["A", "B", "C"]);
     setGoalDirection("");
+    setCurrentRow(null);
+    setCurrentCol(null);
     setCurrentFacing("");
     setLetterAtPosition("");
     setStepsToWall([0, 0, 0, 0]);
@@ -207,15 +261,6 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
     E: "East",
     W: "West",
   };
-
-  type Dir = "N" | "S" | "E" | "W";
-  const turnLeft = (d: Dir): Dir =>
-    d === "N" ? "W" : d === "W" ? "S" : d === "S" ? "E" : "N";
-  const turnRight = (d: Dir): Dir =>
-    d === "N" ? "E" : d === "E" ? "S" : d === "S" ? "W" : "N";
-  const delta = (d: Dir): [number, number] =>
-    d === "N" ? [-1, 0] : d === "S" ? [1, 0] : d === "E" ? [0, 1] : [0, -1];
-  const SIZE = 8;
 
   const pathCells = useMemo(() => {
     if (
@@ -285,7 +330,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
 
         const isStart =
           result?.startRow === row && result?.startCol === col;
-        const isGoal = result && result.goalRow === row && result.goalCol === col;
+        const isGoal = result?.phase === "go_to_goal" && result.goalRow === row && result.goalCol === col;
         const pathInfo = pathCells.get(`${row},${col}`);
         const isOnPath = pathInfo !== undefined;
         const isStar = isStarCell(maze, row, col);
@@ -397,28 +442,31 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
 
   const mazeGridId = "threed-maze-grid";
   const mazeGridDescId = "threed-maze-grid-desc";
+  const renderedMazeCells = result?.maze ? renderMazeGrid(result.maze) : [];
 
   return (
     <SolverLayout>
       <SolverSection
-        title="Letters at the three stars"
-        description="The three markers on the floor identify which maze you are in. Pick each letter (A, B, C, D, or H)."
+        title="Maze letters observed"
+        description="Choose the three distinct A/B/C/D/H letters found on the floor. These are not the cardinal-direction markers."
       >
         <div className="flex flex-wrap gap-3">
           {([0, 1, 2] as const).map((i) => (
             <div key={i} className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Star {i + 1}</p>
+              <p className="text-xs font-medium text-muted-foreground">Letter {i + 1}</p>
               <SegmentedControl<MarkerLetter>
                 value={starLetters[i]}
                 onChange={(v) => {
                   const next = [...starLetters] as [MarkerLetter, MarkerLetter, MarkerLetter];
+                  const duplicate = next.findIndex((letter, index) => index !== i && letter === v);
+                  if (duplicate >= 0) next[duplicate] = next[i];
                   next[i] = v;
                   setStarLetters(next);
                 }}
                 options={MARKER_LETTERS.map((l) => ({ value: l, label: l }))}
                 disabled={isSolved}
                 size="sm"
-                ariaLabel={`Star ${i + 1} letter`}
+                ariaLabel={`Maze letter ${i + 1}`}
               />
             </div>
           ))}
@@ -440,12 +488,17 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
 
       <SolverSection
         title="Current position"
-        description="Enter the letter on the floor where you stand and the distance to the wall in front, left, right, and behind. You don't need compass orientation."
+        description="Enter the optional floor symbol and the ordered distances to each wall. Compass orientation is inferred."
       >
         <div className="space-y-3">
+          {currentRow != null && currentCol != null && currentFacing && (
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              Tracking row {currentRow}, column {currentCol}, facing {directionLabel[currentFacing]}
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <label htmlFor="letter-at-position" className="text-xs font-medium text-muted-foreground">
-              Letter at cell
+              Floor symbol (optional)
             </label>
             <select
               id="letter-at-position"
@@ -470,10 +523,10 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
             <div className="flex flex-wrap gap-2">
               {(
                 [
-                  [0, "Facing"],
-                  [1, "Left"],
-                  [2, "Right"],
-                  [3, "Behind"],
+                  [0, "Front"],
+                  [1, "Right"],
+                  [2, "Behind"],
+                  [3, "Left"],
                 ] as const
               ).map(([i, label]) => (
                 <div key={i} className="flex flex-col items-center gap-1">
@@ -516,7 +569,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
           description={
             result.phase === "go_to_star"
               ? (result.message ?? "Walk to one of the stars, then solve again with the reported direction.")
-              : `Goal cell: (${result.goalRow}, ${result.goalCol})\nThen walk forward through the wall.`
+              : `Goal wall found at (${result.goalRow}, ${result.goalCol}); the final Forward is included.`
           }
         />
       )}
@@ -578,7 +631,7 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
                   {row}
                 </div>
                 {[0, 1, 2, 3, 4, 5, 6, 7].map((col) =>
-                  renderMazeGrid(result.maze!)[row * SIZE + col]
+                  renderedMazeCells[row * SIZE + col]
                 )}
               </Fragment>
             ))}
@@ -589,8 +642,8 @@ export default function ThreeDMazeSolver({ bomb }: ThreeDMazeSolverProps) {
       {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
 
       <SolverInstructions>
-        Identify the maze via the three star letters. Solve once without a goal direction to get a
-        path to the nearest star; after the defuser reads N/S/E/W, set it and solve again for the goal.
+        Default rule seed only. Identify the maze from three distinct floor letters, enter the current
+        observation, and solve. After reaching a marked direction cell, select N/S/E/W and solve again.
       </SolverInstructions>
     </SolverLayout>
   );

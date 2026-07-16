@@ -1,7 +1,8 @@
+import { useRef } from "react";
 import { Button } from "../ui/button";
 
 interface SolverControlsProps {
-  onSolve: () => void;
+  onSolve: () => void | Promise<void>;
   onReset: () => void;
   onSolveManually?: () => void;
   isSolveDisabled?: boolean;
@@ -35,8 +36,18 @@ export default function SolverControls({
   showReset = true,
   className = "",
 }: SolverControlsProps) {
+  const solveInFlight = useRef(false);
   const resolvedSolveText = solveButtonText ?? solveText;
   const resolvedSolveDisabled = isSolveDisabled || !canSolve;
+  const solve = async () => {
+    if (solveInFlight.current) return;
+    solveInFlight.current = true;
+    try {
+      await onSolve();
+    } finally {
+      solveInFlight.current = false;
+    }
+  };
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -44,7 +55,7 @@ export default function SolverControls({
         variant={isSolved ? "success" : "default"}
         size="default"
         className="w-full"
-        onClick={onSolve}
+        onClick={solve}
         disabled={resolvedSolveDisabled || isLoading || isSolved}
         loading={isLoading}
       >

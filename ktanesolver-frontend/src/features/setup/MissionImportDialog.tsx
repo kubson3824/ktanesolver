@@ -32,13 +32,16 @@ export default function MissionImportDialog({open, onOpenChange, onSelect}: Miss
         });
         loadMissions()
             .then((loaded) => {
-                if (!cancelled) setMissions(loaded);
+                if (!cancelled) {
+                    setMissions(loaded);
+                    setLoading(false);
+                }
             })
             .catch((reason: unknown) => {
-                if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not load missions");
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
+                if (!cancelled) {
+                    setError(reason instanceof Error ? reason.message : "Could not load missions");
+                    setLoading(false);
+                }
             });
         return () => { cancelled = true; };
     }, [open, missions.length, error]);

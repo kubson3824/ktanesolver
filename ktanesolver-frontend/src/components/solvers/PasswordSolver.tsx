@@ -16,6 +16,8 @@ import {
 } from "../common";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
+import { TranslatedLanguageSelect, type TranslatedLanguageCode } from "../common/TranslatedLanguageSelect";
+import CharacterKeyboard, { TRANSLATED_KEYBOARD_CHARACTERS } from "../common/CharacterKeyboard";
 
 interface PasswordSolverProps {
   bomb: BombEntity | null | undefined;
@@ -23,6 +25,8 @@ interface PasswordSolverProps {
 
 export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   const [columnLetters, setColumnLetters] = useState<Record<number, string[]>>({});
+  const [language, setLanguage] = useState<TranslatedLanguageCode>("EN");
+  const [activeColumn, setActiveColumn] = useState(1);
   const [result, setResult] = useState<PasswordOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState<string>("");
 
@@ -40,19 +44,22 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   } = useSolver();
 
   const moduleState = useMemo(
-    () => ({ columnLetters, result, twitchCommand }),
-    [columnLetters, result, twitchCommand],
+    () => ({ language, columnLetters, result, twitchCommand }),
+    [language, columnLetters, result, twitchCommand],
   );
 
   const onRestoreState = useCallback(
     (state: {
       columnLetters?: Record<number, string[]>;
+      language?: TranslatedLanguageCode;
       result?: PasswordOutput | null;
       twitchCommand?: string;
-      input?: { letters?: Record<number, string[]> };
+      input?: { letters?: Record<number, string[]>; language?: TranslatedLanguageCode };
     }) => {
       if (state.input?.letters) setColumnLetters(state.input.letters);
       else if (state.columnLetters) setColumnLetters(state.columnLetters);
+      if (state.input?.language) setLanguage(state.input.language);
+      else if (state.language) setLanguage(state.language);
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
@@ -77,7 +84,7 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   );
 
   useSolverModulePersistence<
-    { columnLetters: Record<number, string[]>; result: PasswordOutput | null; twitchCommand: string },
+    { language: TranslatedLanguageCode; columnLetters: Record<number, string[]>; result: PasswordOutput | null; twitchCommand: string },
     PasswordOutput
   >({
     state: moduleState,
@@ -100,10 +107,7 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
   });
 
   const handleColumnChange = (column: number, value: string) => {
-    const letters = value
-      .toUpperCase()
-      .split("")
-      .filter((l) => l >= "A" && l <= "Z");
+    const letters = Array.from(value.normalize("NFKC").toUpperCase()).filter((letter) => !/\s/u.test(letter));
     setColumnLetters((prev) => ({ ...prev, [column]: letters }));
   };
 
@@ -113,7 +117,7 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
     clearError();
     try {
       const response = await solvePassword(round.id, bomb.id, currentModule.id, {
-        input: { letters: columnLetters },
+        input: { letters: columnLetters, language },
       });
       setResult(response.output);
       if (response.output.resolved) {
@@ -135,6 +139,7 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
 
   const handleReset = () => {
     setColumnLetters({});
+    setLanguage("EN");
     setResult(null);
     setTwitchCommand("");
     resetSolverState();
@@ -144,6 +149,14 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
 
   return (
     <SolverLayout>
+      <SolverSection title="Language">
+        <TranslatedLanguageSelect
+          value={language}
+          onChange={(value) => { setLanguage(value); setColumnLetters({}); setResult(null); setTwitchCommand(""); }}
+          disabled={isLoading || Boolean(result?.resolved)}
+        />
+      </SolverSection>
+
       <SolverSection
         title="Password columns"
         description="Enter the letters visible in each of the 5 columns (up to 6 per column)."
@@ -161,16 +174,34 @@ export default function PasswordSolver({ bomb }: PasswordSolverProps) {
                 id={`password-column-${col}`}
                 type="text"
                 className="text-center font-mono text-lg font-semibold uppercase tracking-widest"
-                placeholder="ABC"
+                placeholder={language === "EN" ? "ABC" : "…"}
                 maxLength={6}
                 value={(columnLetters[col] || []).join("")}
                 onChange={(e) => handleColumnChange(col, e.target.value)}
+                onFocus={() => setActiveColumn(col)}
                 disabled={isLoading}
                 aria-label={`Column ${col} letters`}
               />
             </div>
           ))}
         </div>
+        {language !== "EN" && (
+          <CharacterKeyboard
+            characters={TRANSLATED_KEYBOARD_CHARACTERS[language]}
+            onCharacter={(character) => setColumnLetters((current) => {
+              const letters = current[activeColumn] ?? [];
+              return letters.length >= 6
+                ? current
+                : { ...current, [activeColumn]: [...letters, character] };
+            })}
+            onBackspace={() => setColumnLetters((current) => ({
+              ...current,
+              [activeColumn]: (current[activeColumn] ?? []).slice(0, -1),
+            }))}
+            targetLabel={`column ${activeColumn}`}
+            disabled={isLoading}
+          />
+        )}
       </SolverSection>
 
       <SolverControls
