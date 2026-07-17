@@ -2,6 +2,7 @@ package ktanesolver.module.modded.regular.souvenir;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +22,9 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.AbstractModuleSolver;
 import ktanesolver.logic.SolveResult;
+import ktanesolver.module.modded.regular.murder.MurderInput;
+import ktanesolver.module.modded.regular.thirdbase.ThirdBaseSolver;
+import ktanesolver.utils.Json;
 
 @Service
 @ModuleInfo(
@@ -35,6 +39,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static final Pattern ORDINAL = Pattern.compile("\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\\d+(?:st|nd|rd|th))\\b");
 	private static final Set<String> IGNORED_WORDS = Set.of(
 		"a", "an", "and", "in", "of", "on", "the", "these", "this", "to", "was", "were", "what", "which"
+	);
+	private static final List<String> PROBING_WIRES = List.of(
+		"red-white", "yellow-black", "green", "gray", "yellow-red", "red-blue"
 	);
 
 	@Override
@@ -159,8 +166,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			};
 			case SIMON_SAYS -> nested(state, "input", "flashes");
 			case WIRE_SEQUENCES -> Map.of("red", state.get("red"), "blue", state.get("blue"), "black", state.get("black"));
-			case WHOS_ON_FIRST, THIRD_BASE -> state.get("displayHistory");
-			case BITMAPS -> "blackPixels".equals(question) ? blackCounts(state.get("whiteCounts")) : state.get("whiteCounts");
+			case WHOS_ON_FIRST -> state.get("displayHistory");
+			case THIRD_BASE -> thirdBaseDisplay(state.get("displayHistory"), question);
+			case BITMAPS -> labeledValues(
+				"blackPixels".equals(question) ? blackCounts(state.get("whiteCounts")) : state.get("whiteCounts"),
+				List.of("top left", "top right", "bottom left", "bottom right"));
 			case CHEAP_CHECKOUT -> state.get("paidAmounts");
 			case CHORD_QUALITIES -> state.get("givenNotes");
 			case CREATION -> state.get("firstWeather");
@@ -170,24 +180,20 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				? valuesAt(state.get("stages"), "customer") : valuesAt(state.get("stages"), "offeredFlavors");
 			case FORGET_ME_NOT -> state.get("displayNumbers");
 			case FAST_MATH -> state.get("lastPair");
-			case FIZZ_BUZZ -> state.get("displayedNumbers");
+			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
 			case GAMEPAD -> gamepadDisplay(state);
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
 			case MAZES -> nested(state, "input", "start");
 			case MONSPLODE_FIGHT -> nested(state, "input", "creature".equals(question) ? "opponent" : "moves");
 			case MORSEMATICS -> state.get("letters");
-			case MURDER -> switch (question) {
-				case "suspects" -> nested(state, "input", "suspects");
-				case "weapons" -> nested(state, "input", "weapons");
-				case "bodyLocation" -> nested(state, "input", "bodyLocation");
-				default -> null;
-			};
+			case MURDER -> murderRecordedAnswer(source, question);
 			case MYSTIC_SQUARE -> nested(state, "input", "grid", 4);
 			case NEUTRALIZATION -> state.get("acidVolume".equals(question) ? "acidVolume" : "acidColor");
-			case ONLY_CONNECT -> state.get("hieroglyphs");
+			case ONLY_CONNECT -> labeledValues(state.get("hieroglyphs"),
+				List.of("top left", "top middle", "top right", "bottom left", "bottom middle", "bottom right"));
 			case PERSPECTIVE_PEGS -> state.get("initialSequence");
-			case PROBING -> state.get("missingFrequenciesByWire");
+			case PROBING -> probingRecordedAnswer(state, question);
 			case RHYTHMS -> state.get("lastSuccessfulColor");
 			case SEA_SHELLS -> state.get("inputHistory");
 			case SHAPE_SHIFT -> shapeShiftAnswer(state);
@@ -201,13 +207,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THREE_D_MAZE -> "markings".equals(question)
 				? normalize(state.get("markings")).replace(" ", "").toUpperCase(Locale.ROOT)
 				: state.get("cardinalDirection");
-			case TIC_TAC_TOE -> state.get("initialBoard");
+			case TIC_TAC_TOE -> labeledValues(state.get("initialBoard"), List.of(
+				"top left", "top middle", "top right", "middle left", "middle center", "middle right", "bottom left", "bottom middle", "bottom right"));
 			case TWO_BITS -> twoBitsResponses(state.get("stages"));
 			case X_RAY -> state.get("scannedSymbols");
 			case YAHTZEE -> state.get("initialRollCategory");
 			case TEXT_FIELD -> state.get("displayedLetter");
 			default -> "recordedFacts".equals(question)
-				? (state.isEmpty() ? source.getSolution() : state) : null;
+				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);
 		};
 	}
 
@@ -221,11 +228,25 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return counts.stream().map(value -> value instanceof Number number ? 16 - number.intValue() : value).toList();
 	}
 
+	private static Object labeledValues(Object raw, List<String> labels) {
+		if (!(raw instanceof List<?> values) || values.size() != labels.size()) return null;
+		List<String> labeled = new ArrayList<>();
+		for (int i = 0; i < values.size(); i++) labeled.add(labels.get(i) + ": " + displayAnswer(values.get(i)));
+		return labeled;
+	}
+
 	private static Object gamepadDisplay(Map<String, Object> state) {
 		Object x = nested(state, "input", "x");
 		Object y = nested(state, "input", "y");
 		return x instanceof Number xNumber && y instanceof Number yNumber
 			? String.format(Locale.ROOT, "%02d%02d", xNumber.intValue(), yNumber.intValue()) : null;
+	}
+
+	private static Object thirdBaseDisplay(Object raw, String question) {
+		if (!(raw instanceof List<?> displays)) return null;
+		List<String> corrected = displays.stream().map(value -> ThirdBaseSolver.rotateLabel(String.valueOf(value).toUpperCase(Locale.ROOT))).toList();
+		int stage = "firstDisplay".equals(question) ? 0 : "secondDisplay".equals(question) ? 1 : -1;
+		return stage < 0 ? corrected : stage < corrected.size() ? corrected.get(stage) : null;
 	}
 
 	private static Object ledEncryptionLetters(Map<String, Object> state) {
@@ -271,7 +292,39 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			return collection.stream().map(item -> (nested ? ++index[0] + ": " : "") + displayAnswer(item))
 				.collect(java.util.stream.Collectors.joining(nested ? " · " : ", "));
 		}
-		return String.valueOf(value);
+		return String.valueOf(value).replace('_', ' ');
+	}
+
+	private static Object murderRecordedAnswer(ModuleEntity source, String question) {
+		Object suspects = nested(source.getState(), "input", "suspects");
+		Object weapons = nested(source.getState(), "input", "weapons");
+		Object murderer = source.getSolution().get("suspect");
+		Object murderWeapon = source.getSolution().get("weapon");
+		return switch (question) {
+			case "potentialSuspectNotMurderer" -> excluding(suspects, murderer);
+			case "notPotentialSuspect" -> absent(suspects, MurderInput.Suspect.values());
+			case "potentialWeaponNotMurderWeapon" -> excluding(weapons, murderWeapon);
+			case "notPotentialWeapon" -> absent(weapons, MurderInput.Weapon.values());
+			case "bodyLocation" -> nested(source.getState(), "input", "bodyLocation");
+			case "suspects" -> summary("murderer", murderer, "other potential suspects", excluding(suspects, murderer));
+			case "weapons" -> summary("murder weapon", murderWeapon, "other potential weapons", excluding(weapons, murderWeapon));
+			default -> null;
+		};
+	}
+
+	private static Object excluding(Object raw, Object excluded) {
+		if (!(raw instanceof Collection<?> values) || excluded == null) return null;
+		return values.stream().filter(value -> !normalize(value).equals(normalize(excluded))).toList();
+	}
+
+	private static Object absent(Object raw, Object[] options) {
+		if (!(raw instanceof Collection<?> values)) return null;
+		Set<String> present = values.stream().map(SouvenirSolver::normalize).collect(java.util.stream.Collectors.toSet());
+		return Arrays.stream(options).filter(value -> !present.contains(normalize(value))).toList();
+	}
+
+	private static Object summary(String actualLabel, Object actual, String othersLabel, Object others) {
+		return actual == null || others == null ? null : Map.of(actualLabel, actual, othersLabel, others);
 	}
 
 	private static int yahtzeeAnswerIndex(Map<String, Object> state, List<String> answers) {
@@ -440,8 +493,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 
 	private int resolveFromRecordedFacts(ModuleEntity source, String question, List<String> answers) {
 		List<Fact> facts = new ArrayList<>();
-		collect(source.getState(), "state", -1, false, facts);
-		collect(source.getSolution(), "solution", -1, false, facts);
+		collect(Json.mapper().convertValue(source.getState(), Object.class), "state", -1, false, facts);
+		collect(Json.mapper().convertValue(source.getSolution(), Object.class), "solution", -1, false, facts);
 		String q = normalize(question);
 		boolean inverse = q.contains("not present") || q.contains("was not selectable") || q.contains("wasn't selectable");
 		int ordinal = ordinal(q);
@@ -468,6 +521,35 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return bestScore == Integer.MIN_VALUE || tied ? -1 : bestIndex;
 	}
 
+	private static Object resolveRecordedFact(ModuleEntity source, String question) {
+		List<Fact> facts = new ArrayList<>();
+		collect(Json.mapper().convertValue(source.getState(), Object.class), "state", -1, false, facts);
+		collect(Json.mapper().convertValue(source.getSolution(), Object.class), "solution", -1, false, facts);
+		Set<String> questionWords = words(question);
+		int ordinal = ordinal(normalize(question));
+		int bestScore = facts.stream().filter(fact -> fact.raw() != null)
+			.mapToInt(fact -> directScore(fact, questionWords, ordinal)).max().orElse(0);
+		if (bestScore == 0) return null;
+		List<Fact> matches = facts.stream().filter(fact -> fact.raw() != null)
+			.filter(fact -> directScore(fact, questionWords, ordinal) == bestScore).toList();
+		if (matches.stream().map(fact -> normalize(fact.raw())).distinct().count() == 1) return matches.getFirst().raw();
+		return matches.stream().map(fact -> fact.path().replaceFirst("^.*\\.", "") + ": " + displayAnswer(fact.raw())).toList();
+	}
+
+	private static int directScore(Fact fact, Set<String> questionWords, int ordinal) {
+		int score = 0;
+		if (ordinal >= 0 && fact.index() == ordinal) score += 100;
+		for (String word : words(fact.path())) if (matchingWord(questionWords, word)) score += 5;
+		if (score > 0 && ordinal < 0 && (fact.raw() instanceof Map<?, ?> || fact.raw() instanceof Collection<?>)) score++;
+		return score;
+	}
+
+	private static boolean matchingWord(Set<String> words, String candidate) {
+		if (words.contains(candidate)) return true;
+		String singular = candidate.length() > 3 && candidate.endsWith("s") ? candidate.substring(0, candidate.length() - 1) : candidate;
+		return words.contains(singular) || words.contains(singular + "s");
+	}
+
 	private static int score(Fact fact, Set<String> questionWords, int ordinal, boolean last) {
 		int score = 1;
 		if (ordinal >= 0 && fact.index() == ordinal) score += 100;
@@ -480,13 +562,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static void collect(Object value, String path, int index, boolean last, List<Fact> facts) {
 		if (value == null) return;
 		if (value instanceof Map<?, ?> map) {
-			map.forEach((key, child) -> collect(child, path + "." + key, -1, false, facts));
+			map.forEach((key, child) -> collect(child, path + "." + key, index, last, facts));
+			facts.add(new Fact(path, normalize(map), map, index, last));
 			return;
 		}
 		if (value instanceof Collection<?> collection) {
 			List<?> values = collection instanceof List<?> list ? list : new ArrayList<>(collection);
 			for (int i = 0; i < values.size(); i++) collect(values.get(i), path + "[" + i + "]", i, i == values.size() - 1, facts);
-			facts.add(new Fact(path, normalize(values), -1, false));
+			facts.add(new Fact(path, normalize(values), values, -1, false));
 			return;
 		}
 		if (value.getClass().isArray()) {
@@ -494,8 +577,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			for (int i = 0; i < length; i++) collect(Array.get(value, i), path + "[" + i + "]", i, i == length - 1, facts);
 			return;
 		}
-		facts.add(new Fact(path, normalize(value), index, last));
-		if (value instanceof Boolean bool) facts.add(new Fact(path, bool ? "yes" : "no", index, last));
+		facts.add(new Fact(path, normalize(value), value, index, last));
+		if (value instanceof Boolean bool) facts.add(new Fact(path, bool ? "yes" : "no", null, index, last));
 	}
 
 	private static Object bitmapAnswer(Map<String, Object> state, String question) {
@@ -520,12 +603,20 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	}
 
 	private static int probingWireIndex(String question) {
-		if (question.contains("red white")) return 0;
-		if (question.contains("yellow black")) return 1;
-		if (question.contains("green")) return 2;
-		if (question.contains("gray")) return 3;
-		if (question.contains("yellow red")) return 4;
-		return 5;
+		for (int i = 0; i < PROBING_WIRES.size(); i++) if (question.contains(normalize(PROBING_WIRES.get(i)))) return i;
+		return PROBING_WIRES.size();
+	}
+
+	private static Object probingRecordedAnswer(Map<String, Object> state, String question) {
+		Object raw = state.get("missingFrequenciesByWire");
+		if (!(raw instanceof List<?> frequencies) || frequencies.size() != PROBING_WIRES.size()) return null;
+		if ("frequencies".equals(question)) {
+			List<String> labeled = new ArrayList<>();
+			for (int i = 0; i < frequencies.size(); i++) labeled.add(PROBING_WIRES.get(i) + ": " + frequencies.get(i) + "Hz");
+			return labeled;
+		}
+		int index = probingWireIndex(normalize(question));
+		return index < frequencies.size() ? frequencies.get(index) + "Hz" : null;
 	}
 
 	private static int ticTacToePosition(String question) {
@@ -549,7 +640,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			}
 			return -1;
 		}
-		String expected = normalize(answer);
+		String expected = normalize(answer instanceof Boolean bool ? bool ? "yes" : "no" : answer);
 		for (int i = 0; i < answers.size(); i++) if (normalize(answers.get(i)).equals(expected)) return i;
 		return -1;
 	}
@@ -605,5 +696,5 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return value instanceof List<?> list ? new ArrayList<>((List<Map<String, Object>>) list) : new ArrayList<>();
 	}
 
-	private record Fact(String path, String value, int index, boolean last) {}
+	private record Fact(String path, String value, Object raw, int index, boolean last) {}
 }

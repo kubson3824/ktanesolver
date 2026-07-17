@@ -59,4 +59,109 @@ describe("SouvenirSolver", () => {
       finalQuestion: false,
     });
   });
+
+  it("asks which Probing wire was named and returns that frequency", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "10Hz", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.PROBING)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "yellow-black" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("10Hz")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "yellow-black",
+      finalQuestion: false,
+    });
+  });
+
+  it("asks which Third Base stage was named", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "SNZX", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.THIRD_BASE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "firstDisplay" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("SNZX")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "firstDisplay",
+      finalQuestion: false,
+    });
+  });
+
+  it("asks the exact Murder weapon question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "LEAD PIPE, REVOLVER, SPANNER", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.MURDER)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "potentialWeaponNotMurderWeapon" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("LEAD PIPE, REVOLVER, SPANNER")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "potentialWeaponNotMurderWeapon",
+      finalQuestion: false,
+    });
+  });
+
+  it("uses the exact question and displayed answers when provided", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "SPANNER", answerIndex: 3 }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.MURDER)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByLabelText("Enter Souvenir’s displayed answers (most reliable)"));
+    fireEvent.change(screen.getByLabelText("Exact Souvenir question"), {
+      target: { value: "Which of these was a potential weapon but not the murder weapon in Murder?" },
+    });
+    ["CANDLESTICK", "ROPE", "SPANNER", "DAGGER"].forEach((answer, index) => {
+      fireEvent.change(screen.getByLabelText(`Answer ${index + 1}`), { target: { value: answer } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("SPANNER")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "Which of these was a potential weapon but not the murder weapon in Murder?",
+      answers: ["CANDLESTICK", "ROPE", "SPANNER", "DAGGER"],
+      finalQuestion: false,
+    });
+  });
+
+  it("auto-selects the Mouse in the Maze torus question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "YELLOW", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.MOUSE_IN_THE_MAZE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.queryByLabelText("Exact Souvenir question")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("YELLOW")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "torusColor",
+      finalQuestion: false,
+    });
+  });
+
+  it("accepts the exact question for a module without a preset", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "GREEN", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.MICROCONTROLLER)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Exact Souvenir question"), {
+      target: { value: "What color was the second pin in Microcontroller?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("GREEN")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "What color was the second pin in Microcontroller?",
+      finalQuestion: false,
+    });
+  });
 });

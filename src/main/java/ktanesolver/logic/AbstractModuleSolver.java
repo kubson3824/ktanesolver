@@ -59,7 +59,7 @@ public abstract class AbstractModuleSolver<I extends ModuleInput, O extends Modu
 		SolveResult<O> result = doSolve(round, bomb, module, input);
 
 		if(result instanceof SolveSuccess<O> success) {
-			handleSuccess(module, success);
+			handleSuccess(module, input, success);
 		}
 
 		return result;
@@ -79,9 +79,10 @@ public abstract class AbstractModuleSolver<I extends ModuleInput, O extends Modu
 		return new SolveFailure<>(message);
 	}
 
-	private void handleSuccess(ModuleEntity module, SolveSuccess<O> success) {
+	private void handleSuccess(ModuleEntity module, I input, SolveSuccess<O> success) {
 		Map<String, Object> convertedValue = Json.mapper().convertValue(success.output(), new TypeReference<>() {
 		});
+		if (input != null) convertedValue.putIfAbsent("input", Json.mapper().convertValue(input, Object.class));
 		convertedValue.forEach(module.getSolution()::put);
 		module.setSolved(success.solved());
 	}

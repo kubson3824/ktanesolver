@@ -3,6 +3,8 @@ package ktanesolver.logic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import ktanesolver.annotation.ModuleInfo;
@@ -13,6 +15,8 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 
 class AbstractModuleSolverTest {
+    record TestInput(String color) implements ModuleInput {}
+    record TestOutput() implements ModuleOutput {}
 
     @ModuleInfo(
         type = ModuleType.WIRES,
@@ -22,10 +26,10 @@ class AbstractModuleSolverTest {
         description = "Cut the right wire",
         tags = {}
     )
-    static class AnnotatedSolver extends AbstractModuleSolver<ModuleInput, ModuleOutput> {
+    static class AnnotatedSolver extends AbstractModuleSolver<TestInput, TestOutput> {
         @Override
-        protected SolveResult<ModuleOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, ModuleInput input) {
-            return success(new ModuleOutput() {});
+        protected SolveResult<TestOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, TestInput input) {
+            return success(new TestOutput());
         }
     }
 
@@ -52,6 +56,18 @@ class AbstractModuleSolverTest {
     void getCatalogInfo_returnsCorrectName() {
         AnnotatedSolver solver = new AnnotatedSolver();
         assertThat(solver.getCatalogInfo().name()).isEqualTo("Wires");
+    }
+
+    @Test
+    void successfulSolveRecordsTheLatestInputForSouvenirFallbacksWithoutPollutingState() {
+        AnnotatedSolver solver = new AnnotatedSolver();
+        ModuleEntity module = new ModuleEntity();
+
+        solver.solve(new RoundEntity(), new BombEntity(), module, new TestInput("YELLOW"));
+        solver.solve(new RoundEntity(), new BombEntity(), module, new TestInput("BLUE"));
+
+        assertThat(module.getState()).isEmpty();
+        assertThat(module.getSolution().get("input")).isEqualTo(Map.of("color", "BLUE"));
     }
 
     @Test

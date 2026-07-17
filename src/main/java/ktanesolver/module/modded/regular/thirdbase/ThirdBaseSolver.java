@@ -81,7 +81,7 @@ public class ThirdBaseSolver extends AbstractModuleSolver<ThirdBaseInput, ThirdB
 		return value == null ? "" : value.trim().toUpperCase();
 	}
 
-	private static String rotateLabel(String label) {
+	public static String rotateLabel(String label) {
 		StringBuilder rotated = new StringBuilder(label.length());
 		for (int i = label.length() - 1; i >= 0; i--) {
 			rotated.append(switch (label.charAt(i)) {

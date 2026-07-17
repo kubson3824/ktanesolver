@@ -15,6 +15,8 @@ import ktanesolver.entity.RoundEntity;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.logic.SolveFailure;
 import ktanesolver.logic.SolveSuccess;
+import ktanesolver.module.modded.regular.alphabet.AlphabetInput;
+import ktanesolver.module.modded.regular.alphabet.AlphabetSolver;
 
 class SouvenirSolverTest {
 	private final SouvenirSolver solver = new SouvenirSolver();
@@ -117,6 +119,222 @@ class SouvenirSolverTest {
 		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
 			new SouvenirInput(maze.getId(), "markings", null, false)))
 			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("ABC", null), false));
+	}
+
+	@Test
+	void returnsTheRecordedFrequencyForTheNamedProbingWire() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity probing = module(ModuleType.PROBING, true,
+			Map.of("missingFrequenciesByWire", List.of(50, 10, 60, 60, 22, 50)));
+		bomb.setModules(List.of(souvenir, probing));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(probing.getId(), "yellow-black", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("10Hz", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(probing.getId(), "frequencies", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput(
+				"red-white: 50Hz, yellow-black: 10Hz, green: 60Hz, gray: 60Hz, yellow-red: 22Hz, red-blue: 50Hz", null), false));
+	}
+
+	@Test
+	void correctsTheUpsideDownThirdBaseDisplayForTheRequestedStage() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity thirdBase = module(ModuleType.THIRD_BASE, true,
+			Map.of("displayHistory", List.of("XZNS", "ZHOX", "8I99")));
+		bomb.setModules(List.of(souvenir, thirdBase));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(thirdBase.getId(), "firstDisplay", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("SNZX", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(thirdBase.getId(), "secondDisplay", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("XOHZ", null), false));
+	}
+
+	@Test
+	void distinguishesTheMurderWeaponFromTheOtherPotentialWeapons() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity murder = module(ModuleType.MURDER, true, Map.of("input", Map.of(
+			"suspects", List.of("MISS_SCARLETT", "PROFESSOR_PLUM", "MRS_PEACOCK", "REVEREND_GREEN"),
+			"weapons", List.of("LEAD_PIPE", "REVOLVER", "SPANNER", "DAGGER"),
+			"bodyLocation", "LIBRARY"
+		)));
+		murder.setSolution(Map.of("suspect", "MRS_PEACOCK", "weapon", "DAGGER", "location", "STUDY"));
+		bomb.setModules(List.of(souvenir, murder));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(murder.getId(), "potentialWeaponNotMurderWeapon", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("LEAD PIPE, REVOLVER, SPANNER", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(murder.getId(), "notPotentialWeapon", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("CANDLESTICK, ROPE", null), false));
+	}
+
+	@Test
+	void resolvesDisplayedChoicesForPreviouslyUnmappedModules() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity adventure = module(ModuleType.ADVENTURE_GAME, true,
+			Map.of("input", Map.of("miscItems", List.of("Balloon", "Potion", "Ticket"))));
+		ModuleEntity chess = module(ModuleType.CHESS, true,
+			Map.of("coordinates", List.of("a1", "b2", "c3", "d4", "e5", "f6")));
+		ModuleEntity coloredSquares = module(ModuleType.COLORED_SQUARES, true, Map.of("firstGroup", "MAGENTA"));
+		ModuleEntity hexamaze = module(ModuleType.HEXAMAZE, true,
+			Map.of("input", Map.of("pawnColor", "CYAN")));
+		ModuleEntity orientationCube = module(ModuleType.ORIENTATION_CUBE, true, Map.of("initialFace", "LEFT"));
+		bomb.setModules(List.of(souvenir, adventure, chess, coloredSquares, hexamaze, orientationCube));
+
+		assertThat(solve(bomb, souvenir, adventure.getId(), "Which item was present in Adventure Game?",
+			List.of("Balloon", "Bellows", "Moonstone", "Trophy"), false).answer()).isEqualTo("Balloon");
+		assertThat(solve(bomb, souvenir, chess.getId(), "What was the third coordinate in Chess?",
+			List.of("a4", "b5", "c3", "f2"), false).answer()).isEqualTo("c3");
+		assertThat(solve(bomb, souvenir, coloredSquares.getId(), "What was the first color group in Colored Squares?",
+			List.of("White", "Red", "Green", "Magenta"), false).answer()).isEqualTo("Magenta");
+		assertThat(solve(bomb, souvenir, hexamaze.getId(), "What was the color of the pawn in Hexamaze?",
+			List.of("Red", "Yellow", "Cyan", "Pink"), false).answer()).isEqualTo("Cyan");
+		assertThat(solve(bomb, souvenir, orientationCube.getId(), "What was the observer's initial position in Orientation Cube?",
+			List.of("front", "left", "back", "right"), false).answer()).isEqualTo("left");
+	}
+
+	@Test
+	void resolvesDisplayedChoicesForIndexedAndExcludedAnswers() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity whosOnFirst = module(ModuleType.WHOS_ON_FIRST, true,
+			Map.of("displayHistory", List.of("YES", "FIRST", "DISPLAY")));
+		ModuleEntity morsematics = module(ModuleType.MORSEMATICS, true, Map.of("letters", List.of("A", "C", "F")));
+		ModuleEntity murder = module(ModuleType.MURDER, true, Map.of("input", Map.of(
+			"suspects", List.of("MISS_SCARLETT", "PROFESSOR_PLUM", "MRS_PEACOCK", "REVEREND_GREEN"),
+			"weapons", List.of("LEAD_PIPE", "REVOLVER", "SPANNER", "DAGGER"), "bodyLocation", "LIBRARY")));
+		murder.setSolution(Map.of("suspect", "MRS_PEACOCK", "weapon", "DAGGER", "location", "STUDY"));
+		bomb.setModules(List.of(souvenir, whosOnFirst, morsematics, murder));
+
+		assertThat(solve(bomb, souvenir, whosOnFirst.getId(), "What was the display in the first stage on Who's on First?",
+			List.of("YES", "NO", "BLANK", "FIRST"), false).answer()).isEqualTo("YES");
+		assertThat(solve(bomb, souvenir, morsematics.getId(), "Which of these letters was not present in Morsematics?",
+			List.of("A", "C", "F", "Z"), false).answer()).isEqualTo("Z");
+		assertThat(solve(bomb, souvenir, murder.getId(), "Which of these was a potential weapon but not the murder weapon in Murder?",
+			List.of("Candlestick", "Rope", "Spanner", "Dagger"), false).answer()).isEqualTo("Spanner");
+	}
+
+	@Test
+	void resolvesDisplayedChoicesForTheRemainingPreviouslyUntestedHandlers() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity button = module(ModuleType.BUTTON, true, Map.of("stripColor", "BLUE"));
+		ModuleEntity colorFlash = module(ModuleType.COLOR_FLASH, true, Map.of("input", Map.of("sequence", List.of(
+			Map.of("word", "RED", "color", "YELLOW"), Map.of("word", "GREEN", "color", "BLUE")))));
+		ModuleEntity mysticSquare = module(ModuleType.MYSTIC_SQUARE, true,
+			Map.of("input", Map.of("grid", List.of(1, 2, 3, 4, 8, 6, 7, 5, 9))));
+		ModuleEntity perspectivePegs = module(ModuleType.PERSPECTIVE_PEGS, true,
+			Map.of("initialSequence", List.of("RED", "GREEN", "BLUE", "YELLOW", "PURPLE")));
+		ModuleEntity seaShells = module(ModuleType.SEA_SHELLS, true, Map.of("inputHistory", List.of(
+			Map.of("row", "SHE SELLS", "column", "SEA SHELLS", "key", "ON THE SEA SHORE"),
+			Map.of("row", "SEA SELLS", "column", "SHE SHELLS", "key", "ON THE SHE SURE"),
+			Map.of("row", "SHE SHELLS", "column", "SHE SELLS", "key", "ON THE SEESAW"))));
+		ModuleEntity shapeShift = module(ModuleType.SHAPE_SHIFT, true,
+			Map.of("input", Map.of("left", "SQUARE", "right", "ROUND")));
+		ModuleEntity bulb = module(ModuleType.THE_BULB, true, Map.of("initiallyOn", true));
+		ModuleEntity wireSequence = module(ModuleType.WIRE_SEQUENCES, true, Map.of("red", 4, "blue", 3, "black", 2));
+		bomb.setModules(List.of(souvenir, button, colorFlash, mysticSquare, perspectivePegs, seaShells, shapeShift, bulb, wireSequence));
+
+		assertThat(solve(bomb, souvenir, button.getId(), "What color did the light glow in The Button?",
+			List.of("Red", "Blue", "Yellow", "White"), false).answer()).isEqualTo("Blue");
+		assertThat(solve(bomb, souvenir, colorFlash.getId(), "What was the color of the last word in the sequence in Colour Flash?",
+			List.of("Red", "Yellow", "Green", "Blue"), false).answer()).isEqualTo("Blue");
+		assertThat(solve(bomb, souvenir, mysticSquare.getId(), "What digit was initially in the center in Mystic Square?",
+			List.of("2", "4", "8", "9"), false).answer()).isEqualTo("8");
+		assertThat(solve(bomb, souvenir, perspectivePegs.getId(), "What was the third color in the initial sequence in Perspective Pegs?",
+			List.of("Red", "Green", "Blue", "Yellow", "Purple", "Orange"), false).answer()).isEqualTo("Blue");
+		assertThat(solve(bomb, souvenir, seaShells.getId(), "What were the third and fourth words in the second phrase in Sea Shells?",
+			List.of("sea shells", "she shells", "sea sells", "she sells"), false).answer()).isEqualTo("she shells");
+		assertThat(solve(bomb, souvenir, shapeShift.getId(), "What was the initial shape in Shape Shift?",
+			List.of("A", "B", "C", "D"), false).answer()).isEqualTo("B");
+		assertThat(solve(bomb, souvenir, bulb.getId(), "Was the bulb initially lit in The Bulb?",
+			List.of("Yes", "No"), false).answer()).isEqualTo("Yes");
+		assertThat(solve(bomb, souvenir, wireSequence.getId(), "How many red wires were there in Wire Sequence?",
+			List.of("1", "2", "3", "4", "5", "6"), false).answer()).isEqualTo("4");
+	}
+
+	@Test
+	void resolvesAnExactQuestionForAnUnmappedModuleInsteadOfDumpingItsState() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity mouse = module(ModuleType.MOUSE_IN_THE_MAZE, true, Map.of("input", Map.of(
+			"torusColor", "YELLOW",
+			"stepsToWall", List.of(0, 2, 2, 0),
+			"startDirection", "UP",
+			"sphereColorAtPosition", "WHITE"
+		)));
+		bomb.setModules(List.of(souvenir, mouse));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir, new SouvenirInput(
+			mouse.getId(), "torusColor", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("YELLOW", null), false));
+	}
+
+	@Test
+	void resolvesAnOrdinalInsideARecordedListOfObjects() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity microcontroller = module(ModuleType.MICROCONTROLLER, true, Map.of());
+		microcontroller.setSolution(Map.of("pins", List.of(
+			Map.of("color", "RED"), Map.of("color", "GREEN"), Map.of("color", "BLUE")
+		)));
+		bomb.setModules(List.of(souvenir, microcontroller));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir, new SouvenirInput(
+			microcontroller.getId(), "What color was the second pin in Microcontroller?", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("GREEN", null), false));
+	}
+
+	@Test
+	void resolvesInputAutomaticallyRecordedByAnOtherwiseStatelessSolver() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity alphabet = module(ModuleType.ALPHABET, false, Map.of());
+		bomb.setModules(List.of(souvenir, alphabet));
+		new AlphabetSolver().solve(new RoundEntity(), bomb, alphabet,
+			new AlphabetInput(List.of("A", "R", "G", "F")));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir, new SouvenirInput(
+			alphabet.getId(), "What letters were shown in Alphabet?", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("A, R, G, F", null), false));
+	}
+
+	@Test
+	void labelsSpatialRecordedAnswers() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity bitmaps = module(ModuleType.BITMAPS, true, Map.of("whiteCounts", List.of(3, 7, 9, 12)));
+		ModuleEntity fizzBuzz = module(ModuleType.FIZZ_BUZZ, true,
+			Map.of("displayedNumbers", List.of("1234567", "7654321", "9081726")));
+		ModuleEntity onlyConnect = module(ModuleType.ONLY_CONNECT, true,
+			Map.of("hieroglyphs", List.of("Lion", "Water", "Eye", "Reeds", "Viper", "Flax")));
+		ModuleEntity ticTacToe = module(ModuleType.TIC_TAC_TOE, true,
+			Map.of("initialBoard", List.of("1", "X", "3", "O", "5", "6", "7", "8", "9")));
+		bomb.setModules(List.of(souvenir, bitmaps, fizzBuzz, onlyConnect, ticTacToe));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(bitmaps.getId(), "whitePixels", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput(
+				"top left: 3, top right: 7, bottom left: 9, bottom right: 12", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(fizzBuzz.getId(), "displayedNumbers", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput(
+				"top: 1234567, middle: 7654321, bottom: 9081726", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(onlyConnect.getId(), "hieroglyphs", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput(
+				"top left: Lion, top middle: Water, top right: Eye, bottom left: Reeds, bottom middle: Viper, bottom right: Flax", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(ticTacToe.getId(), "initialField", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput(
+				"top left: 1, top middle: X, top right: 3, middle left: O, middle center: 5, middle right: 6, bottom left: 7, bottom middle: 8, bottom right: 9", null), false));
 	}
 
 	@Test
