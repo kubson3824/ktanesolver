@@ -19,6 +19,7 @@ import {
   TwitchCommandDisplay,
 } from "../common";
 import { cn } from "../../lib/cn";
+import { Input } from "../ui/input";
 
 const PIPE_COLORS = ["Red", "Yellow", "Green", "Blue"] as const;
 
@@ -35,7 +36,8 @@ interface PlumbingSolverProps {
 
 export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
   const [result, setResult] = useState<PlumbingOutput | null>(null);
-  const [twitchCommand, setTwitchCommand] = useState<string>("");
+  const [rotationText, setRotationText] = useState("");
+  const [readyToSubmit, setReadyToSubmit] = useState(false);
 
   const {
     isLoading,
@@ -54,14 +56,15 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
   const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
 
   const moduleState = useMemo(
-    () => ({ result, twitchCommand }),
-    [result, twitchCommand]
+    () => ({ result, rotationText, readyToSubmit }),
+    [result, rotationText, readyToSubmit]
   );
 
   const onRestoreState = useCallback(
-    (state: { result?: PlumbingOutput | null; twitchCommand?: string }) => {
+    (state: { result?: PlumbingOutput | null; rotationText?: string; readyToSubmit?: boolean }) => {
       if (state.result !== undefined) setResult(state.result);
-      if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
+      if (state.rotationText !== undefined) setRotationText(state.rotationText);
+      if (state.readyToSubmit !== undefined) setReadyToSubmit(state.readyToSubmit);
     },
     []
   );
@@ -69,20 +72,11 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
   const onRestoreSolution = useCallback((solution: PlumbingOutput) => {
     if (solution?.activeInputs?.length && solution?.activeOutputs?.length) {
       setResult(solution);
-      setTwitchCommand(
-        generateTwitchCommand({
-          moduleType: ModuleType.PLUMBING,
-          result: {
-            activeInputs: solution.activeInputs,
-            activeOutputs: solution.activeOutputs,
-          },
-        })
-      );
     }
   }, []);
 
   useSolverModulePersistence<
-    { result: PlumbingOutput | null; twitchCommand: string },
+    { result: PlumbingOutput | null; rotationText: string; readyToSubmit: boolean },
     PlumbingOutput
   >({
     state: moduleState,
@@ -120,22 +114,15 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
 
       const output = response.output;
       setResult(output);
+      setRotationText("");
+      setReadyToSubmit(false);
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
-
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.PLUMBING,
-        result: {
-          activeInputs: output.activeInputs,
-          activeOutputs: output.activeOutputs,
-        },
-      });
-      setTwitchCommand(command);
 
       updateModuleAfterSolve(
         bomb.id,
         currentModule.id,
-        { result: output, twitchCommand: command },
+        { result: output, rotationText: "", readyToSubmit: false },
         {
           activeInputs: output.activeInputs,
           activeOutputs: output.activeOutputs,
@@ -151,7 +138,8 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
 
   const reset = () => {
     setResult(null);
-    setTwitchCommand("");
+    setRotationText("");
+    setReadyToSubmit(false);
     resetSolverState();
   };
 
@@ -165,6 +153,17 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
         .map((active, i) => (active ? PIPE_COLORS[i] : null))
         .filter((s): s is (typeof PIPE_COLORS)[number] => Boolean(s))
     : [];
+  const rotationCoordinates = rotationText.trim()
+    ? rotationText.trim().toUpperCase().split(/[\s,;]+/).filter(Boolean)
+    : [];
+  const rotationsValid = rotationCoordinates.every((coordinate) => /^[A-F][1-6]$/.test(coordinate));
+  const twitchCommand = generateTwitchCommand({
+    moduleType: ModuleType.PLUMBING,
+    result: {
+      rotations: rotationCoordinates,
+      submit: readyToSubmit && rotationsValid,
+    },
+  });
 
   const PipeChip = ({
     color,
@@ -232,6 +231,53 @@ export default function PlumbingSolver({ bomb }: PlumbingSolverProps) {
             title="On the module"
             description={`Inputs: ${activeInputLabels.join(", ") || "—"}\nOutputs: ${activeOutputLabels.join(", ") || "—"}`}
           />
+          <SolverSection
+            title="Twitch rotations"
+            description="Enter each pipe to click, in order. Repeat a coordinate for additional quarter-turns."
+          >
+            <Input
+              value={rotationText}
+              onChange={(event) => {
+                const value = event.target.value.toUpperCase();
+                setRotationText(value);
+                setReadyToSubmit(false);
+                if (bomb?.id && currentModule?.id) {
+                  updateModuleAfterSolve(
+                    bomb.id,
+                    currentModule.id,
+                    { result, rotationText: value, readyToSubmit: false },
+                    result,
+                    isSolved,
+                  );
+                }
+              }}
+              placeholder="A3 B4 B4 C2"
+              aria-label="Plumbing pipe rotations"
+              className="font-mono uppercase"
+            />
+            {!rotationsValid && <p className="mt-2 text-xs text-destructive">Use coordinates A1 through F6.</p>}
+            <label className="mt-3 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={readyToSubmit}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setReadyToSubmit(checked);
+                  if (bomb?.id && currentModule?.id) {
+                    updateModuleAfterSolve(
+                      bomb.id,
+                      currentModule.id,
+                      { result, rotationText, readyToSubmit: checked },
+                      result,
+                      isSolved,
+                    );
+                  }
+                }}
+                disabled={!rotationsValid}
+              />
+              Rotation list is complete and the grid is ready to submit
+            </label>
+          </SolverSection>
         </>
       )}
 

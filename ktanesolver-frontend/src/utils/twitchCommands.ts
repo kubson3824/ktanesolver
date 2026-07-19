@@ -5,543 +5,601 @@ export interface TwitchCommandData {
   result: unknown;
 }
 
-const TWITCH_PLACEHOLDER = "number";
+export type TwitchCommandSupport = "verified" | "conditional";
+
+const conditional = new Set<ModuleType>([
+  ModuleType.BUTTON,
+  ModuleType.CAPACITOR_DISCHARGE,
+  ModuleType.COLORED_SQUARES,
+  ModuleType.COORDINATES,
+  ModuleType.ENGLISH_TEST,
+  ModuleType.KNOBS,
+  ModuleType.MOUSE_IN_THE_MAZE,
+  ModuleType.PLUMBING,
+  ModuleType.ROUND_KEYPAD,
+  ModuleType.SEMAPHORE,
+  ModuleType.SQUARE_BUTTON,
+  ModuleType.SYMBOLIC_PASSWORD,
+  ModuleType.THE_BULB,
+  ModuleType.THE_SCREW,
+  ModuleType.TURN_THE_KEYS,
+  ModuleType.VENTING_GAS,
+  ModuleType.WORD_SEARCH,
+  ModuleType.YAHTZEE,
+]);
+
+/** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
+export const TWITCH_COMMAND_SUPPORT: Record<ModuleType, TwitchCommandSupport> = Object.fromEntries(
+  Object.values(ModuleType).map((type) => [
+    type,
+    conditional.has(type) ? "conditional" : "verified",
+  ]),
+) as Record<ModuleType, TwitchCommandSupport>;
+
+const command = (body: string | undefined): string => body?.trim() ? `!number ${body.trim()}` : "";
+const commands = (bodies: Array<string | undefined>): string => bodies.filter((body): body is string => Boolean(body?.trim())).map(command).join("; ");
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  return typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
 }
 
-function getString(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined;
+const stringValue = (value: unknown): string | undefined => typeof value === "string" ? value : undefined;
+const numberValue = (value: unknown): number | undefined => typeof value === "number" ? value : undefined;
+const booleanValue = (value: unknown): boolean | undefined => typeof value === "boolean" ? value : undefined;
+const arrayValue = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
+const strings = (value: unknown): string[] => arrayValue(value).filter((item): item is string => typeof item === "string");
+const words = (value: unknown): string => String(value ?? "").toLowerCase().replaceAll("_", " ");
+
+const NOTE_NAMES: Record<string, string> = {
+  A_SHARP: "Bb", C_SHARP: "Db", D_SHARP: "Eb", F_SHARP: "Gb", G_SHARP: "Ab",
+};
+
+const MORSE: Record<string, string> = {
+  A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.", G: "--.", H: "....", I: "..",
+  J: ".---", K: "-.-", L: ".-..", M: "--", N: "-.", O: "---", P: ".--.", Q: "--.-", R: ".-.",
+  S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-", Y: "-.--", Z: "--..",
+};
+
+const LAUNDRY_WASH: Record<string, number> = {
+  WASH_GENTLE_OR_DELICATE: 1, HAND_WASH: 2, DO_NOT_WASH: 3, WASH_80F: 4, WASH_105F: 5,
+  WASH_120F: 6, WASH_95F_DOTS: 9,
+};
+const LAUNDRY_DRY: Record<string, number> = {
+  TUMBLE_DRY: 0, LOW_HEAT_DRY: 1, MEDIUM_HEAT: 2, HIGH_HEAT: 3, NO_HEAT: 4, HANG_TO_DRY: 5,
+  DRIP_DRY: 6, DRY_FLAT: 7, DO_NOT_TUMBLE_DRY: 10, DRY: 11,
+};
+const LAUNDRY_IRON: Record<string, number> = {
+  IRON: 0, IRON_110C_230F: 2, IRON_150C_300F: 3, IRON_200C_390F: 4, NO_STEAM: 5,
+};
+const LAUNDRY_SPECIAL: Record<string, number> = {
+  BLEACH: 0, DO_NOT_BLEACH: 1, NON_CHLORINE_BLEACH: 2, CIRCLE_TOP_LEFT: 3, ANY_SOLVENT: 4,
+  NO_TETRACHLORETHYLENE: 5, PETROLEUM_SOLVENT_ONLY: 6, WET_CLEANING: 7, DO_NOT_DRYCLEAN: 8,
+  SHORT_CYCLE: 9, REDUCED_MOISTURE: 10, LOW_HEAT: 11, NO_STEAM_FINISHING: 12,
+};
+
+function resistorTokens(result: Record<string, unknown>): string[] {
+  const resultTokens: string[] = [];
+  for (const entry of arrayValue(result.requiredConnections).map(asRecord)) {
+    const input = stringValue(entry.inputPin)?.toLowerCase();
+    const output = stringValue(entry.outputPin)?.toLowerCase();
+    const path = stringValue(entry.path);
+    if (!input || !output || !path) return [];
+    const points: Record<string, string[]> = {
+      DIRECT: [input, output],
+      TOP: [input, "tl", "tr", output],
+      BOTTOM: [input, "bl", "br", output],
+      SERIES: [input, "tl", "tr", "bl", "br", output],
+      PARALLEL: [input, "tl", input, "bl", "tr", output, "br", output],
+    };
+    if (!points[path]) return [];
+    resultTokens.push(...points[path]);
+  }
+  return resultTokens;
 }
 
-function getNumber(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
+function bulbAction(action: string): string | undefined {
+  if (/^Press O\.?$/i.test(action)) return "O";
+  if (/^Press I\.?$/i.test(action)) return "I";
+  if (/^Unscrew/i.test(action)) return "unscrew";
+  if (/^Screw/i.test(action)) return "screw";
+  return undefined;
 }
 
-function getBoolean(value: unknown): boolean | undefined {
-  return typeof value === "boolean" ? value : undefined;
-}
-
-function getStringArray(value: unknown): string[] | undefined {
-  return Array.isArray(value) && value.every((item) => typeof item === "string")
-    ? (value as string[])
-    : undefined;
-}
-
-export function generateTwitchCommand(data: TwitchCommandData): string {
-  const { moduleType, result } = data;
+export function generateTwitchCommand({ moduleType, result }: TwitchCommandData): string {
   const raw = asRecord(result);
-  
+
   switch (moduleType) {
-    case ModuleType.WIRES:
-      return `!${TWITCH_PLACEHOLDER} cut ${(result as { wirePosition: number }).wirePosition + 1}`;
-    
+    case ModuleType.WIRES: {
+      const position = numberValue(raw.wirePosition);
+      return position === undefined ? "" : command(`cut ${position + 1}`);
+    }
     case ModuleType.BUTTON:
-      if ((result as { hold: boolean }).hold) {
-        return `!${TWITCH_PLACEHOLDER} hold`;
-      } else {
-        return `!${TWITCH_PLACEHOLDER} press`;
-      }
-    
-    case ModuleType.MEMORY:
-      return `!${TWITCH_PLACEHOLDER} press ${(result as { position: string }).position}`;
-    
-    case ModuleType.KEYPADS:
-      // Assuming result has the button to press - convert position to TL TR BL BR format
-      if ((result as { position: string }).position) {
-        const positionMap: Record<string, string> = {
-          'TOP_LEFT': 'TL',
-          'TOP_RIGHT': 'TR',
-          'BOTTOM_LEFT': 'BL',
-          'BOTTOM_RIGHT': 'BR',
-          'TL': 'TL',
-          'TR': 'TR',
-          'BL': 'BL',
-          'BR': 'BR',
-          '0': 'TL',
-          '1': 'TR',
-          '2': 'BL',
-          '3': 'BR'
-        };
-        const position = positionMap[(result as { position: string }).position.toString().toUpperCase()] || (result as { position: string }).position;
-        return `!${TWITCH_PLACEHOLDER} press ${position}`;
-      }
-      // Fallback to label if position not available
-      return `!${TWITCH_PLACEHOLDER} press ${(result as { label?: string; button?: string }).label || (result as { label?: string; button?: string }).button || 'unknown'}`;
-
-    case ModuleType.SIMON_SAYS:
-      // Handle color-based input (e.g., "RED", "BLUE", "GREEN", "YELLOW")
-      if ((result as { color: string }).color) {
-        return `!${TWITCH_PLACEHOLDER} press ${(result as { color: string }).color.toUpperCase()}`;
-      }
-      // Handle position-based input and convert to color
-      else if ((result as { position: string }).position) {
-        // Map positions to colors
-        const positionToColor: Record<string, string> = {
-          'TOP_LEFT': 'BLUE',
-          'TOP_RIGHT': 'YELLOW',
-          'BOTTOM_LEFT': 'GREEN',
-          'BOTTOM_RIGHT': 'RED'
-        };
-        const position = (result as { position: string }).position.toUpperCase();
-        const color = positionToColor[position] || position;
-        return `!${TWITCH_PLACEHOLDER} press ${color}`;
-      }
-      // Fallback to sequence if available
-      else if ((result as { sequence: string[] }).sequence) {
-        return `!${TWITCH_PLACEHOLDER} sequence ${(result as { sequence: string[] }).sequence.join(' ')}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} action unknown`;
-
-    case ModuleType.MORSE_CODE:
-      // Assuming result has the word to transmit
-      return `!${TWITCH_PLACEHOLDER} transmit ${(result as { word: string }).word}`;
-    
-    case ModuleType.FORGET_ME_NOT:
-      if (getString(raw.action) === "display") {
-        return `!${TWITCH_PLACEHOLDER} display ${getString(raw.value) ?? getNumber(raw.value) ?? "unknown"}`;
-      } else if (getString(raw.action) === "press") {
-        return `!${TWITCH_PLACEHOLDER} press ${getString(raw.label) ?? "unknown"}`;
-      }
-      if (Array.isArray(raw.sequence)) {
-        return `!${TWITCH_PLACEHOLDER} sequence ${(raw.sequence as unknown[]).join(" ")}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
-    
+      if (booleanValue(raw.hold)) return command("hold");
+      if (numberValue(raw.releaseDigit) !== undefined) return command(`release ${raw.releaseDigit}`);
+      return command("tap");
+    case ModuleType.KEYPADS: {
+      const positions = arrayValue(raw.positions).map(Number).filter(Number.isFinite);
+      if (positions.length) return command(`press ${positions.join(" ")}`);
+      const position = stringValue(raw.position);
+      const map: Record<string, number> = { TOP_LEFT: 1, TL: 1, TOP_RIGHT: 2, TR: 2, BOTTOM_LEFT: 3, BL: 3, BOTTOM_RIGHT: 4, BR: 4 };
+      return position && map[position.toUpperCase()] ? command(`press ${map[position.toUpperCase()]}`) : "";
+    }
+    case ModuleType.MEMORY: {
+      const position = numberValue(raw.position) ?? stringValue(raw.position);
+      const label = numberValue(raw.label) ?? stringValue(raw.label);
+      return position !== undefined ? command(`position ${position}`) : label !== undefined ? command(`label ${label}`) : "";
+    }
+    case ModuleType.SIMON_SAYS: {
+      const presses = strings(raw.presses).length ? strings(raw.presses) : strings(raw.sequence);
+      const color = stringValue(raw.color) ?? stringValue(raw.press);
+      return command(`press ${(presses.length ? presses : color ? [color] : []).map(words).join(" ")}`);
+    }
+    case ModuleType.MORSE_CODE: {
+      const frequency = numberValue(raw.frequency);
+      return frequency === undefined ? "" : command(`transmit ${frequency}`);
+    }
+    case ModuleType.FORGET_ME_NOT: {
+      const sequence = arrayValue(raw.sequence).map(String);
+      return sequence.length ? command(`press ${sequence.join("")}`) : "";
+    }
+    case ModuleType.SOUVENIR: {
+      const answerIndex = numberValue(raw.answerIndex);
+      return answerIndex === undefined ? "" : command(`answer ${answerIndex}`);
+    }
+    case ModuleType.ICE_CREAM:
+      return stringValue(raw.flavor) ? command(`sell ${words(raw.flavor)}`) : "";
+    case ModuleType.THE_SCREW: {
+      const hole = numberValue(raw.hole);
+      const label = stringValue(raw.buttonLabel);
+      return hole !== undefined && label ? commands(["unscrew", `screw ${hole}`, `press ${label}`]) : "";
+    }
+    case ModuleType.YAHTZEE: {
+      if (raw.action === "SOLVED") return command("done");
+      if (raw.action === "ROLL_ALL") return command("roll");
+      const keep = strings(raw.keepColors).map(words);
+      return command(keep.length ? `keep ${keep.join(" ")}` : "reroll");
+    }
+    case ModuleType.X_RAY:
+      return numberValue(raw.button) === undefined ? "" : command(`press ${raw.button}`);
+    case ModuleType.BATTLESHIP: {
+      const ships = strings(raw.shipLocations);
+      return ships.length ? command(`torpedo ${ships.join(" ")}`) : "";
+    }
+    case ModuleType.MINESWEEPER: {
+      const color = stringValue(raw.startingColor);
+      const flags = strings(raw.mineCoordinates ?? raw.mines);
+      return color ? command(`dig ${words(color)}`) : flags.length ? command(`flag ${flags.join(" ")}`) : "";
+    }
     case ModuleType.WHOS_ON_FIRST:
     case ModuleType.THIRD_BASE:
-      return `!${TWITCH_PLACEHOLDER} press ${getString(raw.button) ?? getString(raw.buttonText) ?? "unknown"}`;
-    
-    case ModuleType.VENTING_GAS:
-      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
-    
-    case ModuleType.CAPACITOR_DISCHARGE:
-      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? "unknown"}`;
-    
-    case ModuleType.COMPLICATED_WIRES:
-      return `!${TWITCH_PLACEHOLDER} cut ${getString(raw.wire) ?? getNumber(raw.wire) ?? "unknown"}`;
-    
-    case ModuleType.WIRE_SEQUENCES:
-      return `!${TWITCH_PLACEHOLDER} cut ${getNumber(raw.wirePosition) ?? getString(raw.wirePosition) ?? "unknown"}`;
-    
-    case ModuleType.PASSWORDS:
-      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.password) ?? "unknown"}`;
-    
-    case ModuleType.MAZES:
-      if (Array.isArray(raw.directions)) {
-        const directionLetters = (raw.directions as unknown[]).map((dir) => {
-          const direction = String(dir);
-          // Map full direction names to first letters
-          const directionMap: Record<string, string> = {
-            'UP': 'U',
-            'DOWN': 'D',
-            'LEFT': 'L',
-            'RIGHT': 'R',
-            'U': 'U',
-            'D': 'D',
-            'L': 'L',
-            'R': 'R'
-          };
-          return directionMap[direction.toUpperCase()] || direction;
-        });
-        return `!${TWITCH_PLACEHOLDER} ${directionLetters.join(' ')}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} ${getString(raw.action) ?? 'unknown'}`;
-    
-    case ModuleType.EMOJI_MATH:
-      return `!${TWITCH_PLACEHOLDER} answer ${getString(raw.answer) ?? getNumber(raw.answer) ?? "unknown"}`;
-    
-    case ModuleType.SWITCHES:
-      return `!${TWITCH_PLACEHOLDER} ${getString(raw.instruction) ?? "unknown"}`;
-    
-    case ModuleType.TWO_BITS:
-      return `!${TWITCH_PLACEHOLDER} display ${getString(raw.letters) ?? "unknown"}`;
-    
-    case ModuleType.WORD_SCRAMBLE:
-      return `!${TWITCH_PLACEHOLDER} word ${getString(raw.solution) ?? getString(raw.instruction) ?? 'unknown'}`;
-
+      return command(stringValue(raw.buttonText) ?? stringValue(raw.button));
+    case ModuleType.VENTING_GAS: {
+      const answer = stringValue(raw.answer)?.toLowerCase();
+      return answer === "yes" || answer === "no" ? command(answer) : "";
+    }
+    case ModuleType.CAPACITOR_DISCHARGE: {
+      const seconds = numberValue(raw.holdSeconds);
+      return seconds !== undefined && seconds > 0 ? command(`hold ${seconds}`) : "";
+    }
+    case ModuleType.COMPLICATED_WIRES: {
+      const wire = numberValue(raw.wire) ?? numberValue(raw.wirePosition) ?? stringValue(raw.wire);
+      return wire === undefined ? "" : command(`cut ${wire}`);
+    }
+    case ModuleType.WIRE_SEQUENCES: {
+      const wire = numberValue(raw.wirePosition);
+      return wire === undefined ? "" : command(`cut ${wire}`);
+    }
+    case ModuleType.PASSWORDS: {
+      const password = stringValue(raw.password) ?? strings(raw.possibleWords)[0];
+      return command(password);
+    }
+    case ModuleType.MAZES: {
+      const map: Record<string, string> = { UP: "u", DOWN: "d", LEFT: "l", RIGHT: "r" };
+      const directions = strings(raw.directions).map((direction) => map[direction] ?? direction.toLowerCase());
+      return directions.length ? command(`move ${directions.join("")}`) : "";
+    }
+    case ModuleType.KNOBS: {
+      const turns: Record<string, number> = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
+      const position = stringValue(raw.position)?.toUpperCase();
+      return position && turns[position] ? command(`rotate ${turns[position]}`) : "";
+    }
+    case ModuleType.COLOR_FLASH: {
+      const position = numberValue(raw.position);
+      const choice = booleanValue(raw.pressYes) ? "yes" : booleanValue(raw.pressNo) ? "no" : words(raw.action);
+      return position === undefined || !choice ? "" : command(`press ${choice} ${position}`);
+    }
+    case ModuleType.PIANO_KEYS:
+    case ModuleType.CRUEL_PIANO_KEYS: {
+      const notes = strings(raw.notes).map((note) => NOTE_NAMES[note] ?? note.replace("_SHARP", "#"));
+      const joined = notes.length ? notes.join(" ") : stringValue(raw.notes)?.replaceAll("-", " ");
+      return joined ? command(`press ${joined}`) : "";
+    }
+    case ModuleType.SEMAPHORE: {
+      const current = numberValue(raw.currentIndex);
+      const target = numberValue(raw.targetIndex);
+      if (current === undefined || target === undefined || current < 0 || target < 0) return "";
+      const move = current < target ? "move right" : "move left";
+      return commands([
+        ...Array.from({ length: Math.abs(target - current) }, () => move),
+        "press ok",
+      ]);
+    }
+    case ModuleType.PERSPECTIVE_PEGS: {
+      const aliases: Record<string, string> = { TOP: "t", "UPPER RIGHT": "tr", "LOWER RIGHT": "br", "LOWER LEFT": "bl", "UPPER LEFT": "tl" };
+      const positions = strings(raw.pressPositions).map((position) => aliases[position.toUpperCase()] ?? position.toLowerCase());
+      return positions.length ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.EMOJI_MATH: {
+      const answer = numberValue(raw.answer) ?? stringValue(raw.answer);
+      return answer === undefined ? "" : command(`submit ${answer}`);
+    }
+    case ModuleType.SWITCHES: {
+      const steps = arrayValue(raw.solutionSteps).map(Number).filter(Number.isFinite);
+      return steps.length ? command(`flip ${steps.join(" ")}`) : "";
+    }
+    case ModuleType.TWO_BITS: {
+      const letters = stringValue(raw.letters)?.replace(/\s+/g, "").split("").join(" ");
+      if (!letters) return "";
+      const stageCount = arrayValue(raw.stages).length;
+      return command(`press ${letters} ${stageCount >= 4 ? "submit" : "query"}`);
+    }
+    case ModuleType.WORD_SCRAMBLE: {
+      const solution = stringValue(raw.solution);
+      return solution ? command(`submit ${solution}`) : "";
+    }
+    case ModuleType.WORD_SEARCH: {
+      const start = stringValue(raw.start)?.toUpperCase();
+      const end = stringValue(raw.end)?.toUpperCase();
+      return start && end && /^[A-F][1-6]$/.test(start) && /^[A-F][1-6]$/.test(end)
+        ? command(`select ${start} ${end}`)
+        : "";
+    }
     case ModuleType.BROKEN_BUTTONS:
-      return getString(raw.action) === "SUBMIT"
-        ? `!${TWITCH_PLACEHOLDER} submit ${getString(raw.submitSide)?.toLowerCase() ?? "unknown"}`
-        : `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.column) ?? "?"} ${getNumber(raw.row) ?? "?"}`;
-
-    case ModuleType.COMPLICATED_BUTTONS:
-      return `!${TWITCH_PLACEHOLDER} press ${Array.isArray(raw.pressOrder) ? raw.pressOrder.join(" ") : "unknown"}`;
-    
-    case ModuleType.ANAGRAMS:
-      if (getStringArray(raw.possibleSolutions)?.length) {
-        return `!${TWITCH_PLACEHOLDER} anagrams ${getStringArray(raw.possibleSolutions)?.join(', ')}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} anagrams no solution`;
-    
-    case ModuleType.COMBINATION_LOCK:
-      if (Array.isArray(raw.combination)) {
-        return `!${TWITCH_PLACEHOLDER} combo ${(raw.combination as unknown[]).join(' ')}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} combo ${getNumber(raw.firstNumber) ?? '0'} ${getNumber(raw.secondNumber) ?? '0'} ${getNumber(raw.thirdNumber) ?? '0'}`;
-    
-    case ModuleType.ROUND_KEYPAD:
-      if (getStringArray(raw.symbolsToPress)?.length) {
-        return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.symbolsToPress)?.join(' ')}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} press none`;
-
-    case ModuleType.NUMBER_PAD:
-      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.code) ?? "unknown"}`;
-    
-    case ModuleType.LISTENING:
-      if (getString(raw.code)) {
-        return `!${TWITCH_PLACEHOLDER} code ${getString(raw.code)}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} code unknown`;
-
-    case ModuleType.FOREIGN_EXCHANGE_RATES:
-      return `!${TWITCH_PLACEHOLDER} key ${getString(raw.keyPosition) ?? getNumber(raw.keyPosition) ?? "unknown"}`;
-
-    case ModuleType.ORIENTATION_CUBE:
-      if (Array.isArray(raw.rotations)) {
-        const rotationMap: Record<string, string> = {
-          'ROTATE_LEFT': 'L',
-          'ROTATE_RIGHT': 'R',
-          'ROTATE_CLOCKWISE': 'CW',
-          'ROTATE_COUNTERCLOCKWISE': 'CCW'
-        };
-        const rotations = (raw.rotations as unknown[]).map((rot) => {
-          const rotation = String(rot);
-          return rotationMap[rotation] || rotation;
-        }).join(' ');
-        return `!${TWITCH_PLACEHOLDER} rotate ${rotations}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} rotate unknown`;
-
-    case ModuleType.LETTER_KEYS:
-      return `!${TWITCH_PLACEHOLDER} press ${getString(raw.letter) ?? "unknown"}`;
-
-    case ModuleType.ASTROLOGY:
-      return `!${TWITCH_PLACEHOLDER} omen ${getNumber(raw.omenScore) ?? getString(raw.omenScore) ?? "unknown"}`;
-
-    case ModuleType.CONNECTION_CHECK:
-      // For Connection Check, result has ledStates array
-      if ((result as { ledStates: boolean[] }).ledStates) {
-        const ledStates = (result as { ledStates: boolean[] }).ledStates;
-        const ledPattern = ledStates.map(led => led ? 'ON' : 'OFF').join(' ');
-        return `!${TWITCH_PLACEHOLDER} leds ${ledPattern}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} leds unknown`;
-
-    case ModuleType.LOGIC:
-      // Logic: result has answers (boolean[]) per row
-      if ((result as { answers: boolean[] }).answers) {
-        const answers = (result as { answers: boolean[] }).answers;
-        const parts = answers.map((a, i) => `Row${i + 1}:${a ? "T" : "F"}`);
-        return `!${TWITCH_PLACEHOLDER} logic ${parts.join(" ")}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} logic unknown`;
-
-    case ModuleType.MYSTIC_SQUARE:
-      if (typeof (result as { skullPosition?: number }).skullPosition === "number") {
-        const r = result as { skullPosition: number };
-        const row = Math.floor(r.skullPosition / 3) + 1;
-        const col = (r.skullPosition % 3) + 1;
-        return `!${TWITCH_PLACEHOLDER} mystic skull row${row} col${col}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} mystic unknown`;
-
-    case ModuleType.CRAZY_TALK:
-      if (typeof (result as { downAt?: number }).downAt === "number" && typeof (result as { upAt?: number }).upAt === "number") {
-        const r = result as { downAt: number; upAt: number };
-        return `!${TWITCH_PLACEHOLDER} crazytalk down ${r.downAt} up ${r.upAt}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} crazytalk unknown`;
-
-    case ModuleType.ADVENTURE_GAME:
-      if (Array.isArray((result as { itemsToUse?: string[] }).itemsToUse) && typeof (result as { weaponToUse?: string }).weaponToUse === "string") {
-        const r = result as { itemsToUse: string[]; weaponToUse: string };
-        const itemsPart = r.itemsToUse.length ? ` items ${r.itemsToUse.join(" ")}` : "";
-        return `!${TWITCH_PLACEHOLDER} adventure${itemsPart} weapon ${r.weaponToUse}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} adventure unknown`;
-
-    case ModuleType.PLUMBING:
-      if (Array.isArray((result as { activeInputs?: boolean[] }).activeInputs) && Array.isArray((result as { activeOutputs?: boolean[] }).activeOutputs)) {
-        const r = result as { activeInputs: boolean[]; activeOutputs: boolean[] };
-        const colors = ["Red", "Yellow", "Green", "Blue"];
-        const ins = r.activeInputs.map((a, i) => (a ? colors[i] : null)).filter(Boolean).join(",");
-        const outs = r.activeOutputs.map((a, i) => (a ? colors[i] : null)).filter(Boolean).join(",");
-        return `!${TWITCH_PLACEHOLDER} plumbing inputs ${ins} outputs ${outs}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} plumbing unknown`;
-
-    case ModuleType.CRUEL_PIANO_KEYS:
-      if ((result as { notes?: string[] }).notes && Array.isArray((result as { notes: string[] }).notes)) {
-        const noteStr = (result as { notes: string[] }).notes
-          .map((n) => n.replace("_SHARP", "#"))
-          .join(" ");
-        return `!${TWITCH_PLACEHOLDER} sequence ${noteStr}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} cruel piano keys unknown`;
-
-    case ModuleType.SAFETY_SAFE:
-      if ((result as { dialTurns?: number[] }).dialTurns && Array.isArray((result as { dialTurns: number[] }).dialTurns)) {
-        const turns = (result as { dialTurns: number[] }).dialTurns.join(" ");
-        return `!${TWITCH_PLACEHOLDER} dials ${turns}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} safety safe unknown`;
-
-    case ModuleType.CRYPTOGRAPHY:
-      if ((result as { keyOrder?: string[] }).keyOrder && Array.isArray((result as { keyOrder: string[] }).keyOrder)) {
-        const order = (result as { keyOrder: string[] }).keyOrder.join(" ");
-        return `!${TWITCH_PLACEHOLDER} keys ${order}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} cryptography unknown`;
-
-    case ModuleType.CAESAR_CIPHER:
-      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.solution) ?? "unknown"}`;
-
-    case ModuleType.CHESS:
-      if ((result as { coordinate?: string }).coordinate) {
-        return `!${TWITCH_PLACEHOLDER} submit ${(result as { coordinate: string }).coordinate}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} chess unknown`;
-
+      return raw.action === "SUBMIT"
+        ? command(`submit ${words(raw.submitSide)}`)
+        : numberValue(raw.column) !== undefined && numberValue(raw.row) !== undefined
+          ? command(`press ${raw.column} ${raw.row}`) : "";
+    case ModuleType.COMPLICATED_BUTTONS: {
+      const order = arrayValue(raw.pressOrder).map(String);
+      return order.length ? command(`press ${order.join(" ")}`) : "";
+    }
+    case ModuleType.ANAGRAMS: {
+      const solution = strings(raw.possibleSolutions)[0];
+      return solution ? command(`submit ${solution}`) : "";
+    }
+    case ModuleType.COMBINATION_LOCK: {
+      const combination = arrayValue(raw.combination).length ? arrayValue(raw.combination) : [raw.firstNumber, raw.secondNumber, raw.thirdNumber];
+      return combination.every((value) => typeof value === "number") ? command(`submit ${combination.join(" ")}`) : "";
+    }
+    case ModuleType.LISTENING: {
+      const code = stringValue(raw.code);
+      return code ? command(`press ${code.replace(/\s+/g, " ")}`) : "";
+    }
+    case ModuleType.FOREIGN_EXCHANGE_RATES: {
+      const key = numberValue(raw.keyPosition);
+      return key === undefined ? "" : command(`press ${key === 0 ? 1 : key}`);
+    }
+    case ModuleType.ROUND_KEYPAD: {
+      const positions = arrayValue(raw.positions).map(Number).filter(Number.isFinite);
+      return positions.length ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.NUMBER_PAD: {
+      const code = stringValue(raw.code);
+      return code ? command(`submit ${code}`) : "";
+    }
+    case ModuleType.ORIENTATION_CUBE: {
+      const aliases: Record<string, string> = { ROTATE_LEFT: "l", ROTATE_RIGHT: "r", ROTATE_CLOCKWISE: "cw", ROTATE_COUNTERCLOCKWISE: "ccw" };
+      const rotations = strings(raw.rotations).map((rotation) => aliases[rotation] ?? rotation.toLowerCase());
+      return command(`press ${[...rotations, "set"].join(" ")}`);
+    }
+    case ModuleType.MORSEMATICS: {
+      const letter = stringValue(raw.letter)?.toUpperCase();
+      return letter && MORSE[letter] ? command(`submit ${MORSE[letter]}`) : "";
+    }
+    case ModuleType.CONNECTION_CHECK: {
+      const states = Array.isArray(raw.ledStates)
+        ? arrayValue(raw.ledStates)
+        : [raw.led1, raw.led2, raw.led3, raw.led4];
+      return states.every((state) => typeof state === "boolean") ? command(`submit ${states.map((state) => state ? "green" : "red").join(" ")}`) : "";
+    }
+    case ModuleType.LETTER_KEYS: {
+      const letter = stringValue(raw.letter);
+      return letter ? command(`press ${letter}`) : "";
+    }
+    case ModuleType.LOGIC: {
+      const answers = arrayValue(raw.answers);
+      return answers.every((answer) => typeof answer === "boolean") && answers.length ? command(`submit ${answers.map(String).join(" ")}`) : "";
+    }
+    case ModuleType.ASTROLOGY: {
+      const score = numberValue(raw.omenScore);
+      if (score === undefined) return "";
+      return score === 0 ? command("press no") : command(`press ${score > 0 ? "good" : "bad"} on ${Math.abs(score)}`);
+    }
+    case ModuleType.MYSTIC_SQUARE: {
+      const sequence = arrayValue(raw.targetConstellation).filter((value): value is number => typeof value === "number");
+      return sequence.length ? command(`press ${sequence.join(" ")}`) : "";
+    }
+    case ModuleType.CRAZY_TALK: {
+      const down = numberValue(raw.downAt);
+      const up = numberValue(raw.upAt);
+      return down === undefined || up === undefined ? "" : command(`toggle ${down} ${up}`);
+    }
+    case ModuleType.ADVENTURE_GAME: {
+      const items = strings(raw.itemsToUse);
+      const weapon = stringValue(raw.weaponToUse);
+      const uses = [...items, ...(weapon ? [weapon] : [])];
+      return uses.length ? command(`use ${uses.map(words).join(", ")}`) : "";
+    }
+    case ModuleType.PLUMBING: {
+      if (!booleanValue(raw.submit)) return "";
+      const rotations = strings(raw.rotations).map((coordinate) => coordinate.toUpperCase());
+      if (!rotations.every((coordinate) => /^[A-F][1-6]$/.test(coordinate))) return "";
+      return commands([rotations.length ? `rotate ${rotations.join(" ")}` : undefined, "submit"]);
+    }
+    case ModuleType.SAFETY_SAFE: {
+      const turns = arrayValue(raw.dialTurns).map(Number).filter(Number.isFinite);
+      return turns.length ? command(`submit ${turns.join(" ")}`) : "";
+    }
+    case ModuleType.CRYPTOGRAPHY: {
+      const keys = strings(raw.keyOrder);
+      return keys.length ? command(`press ${keys.join(" ")}`) : "";
+    }
+    case ModuleType.CAESAR_CIPHER: {
+      const solution = stringValue(raw.solution);
+      return solution ? command(`press ${solution.split("").join(" ")}`) : "";
+    }
+    case ModuleType.TURN_THE_KEY: {
+      const seconds = numberValue(raw.turnWhenSeconds);
+      return seconds === undefined ? "" : command(`turn ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`);
+    }
+    case ModuleType.TURN_THE_KEYS:
+      if (booleanValue(raw.canTurnRightKey) && !booleanValue(raw.rightKeyTurned)) return command("turn right");
+      if (booleanValue(raw.canTurnLeftKey) && !booleanValue(raw.leftKeyTurned)) return command("turn left");
+      return "";
+    case ModuleType.CHESS: {
+      const coordinate = stringValue(raw.coordinate);
+      return coordinate ? command(`press ${coordinate}`) : "";
+    }
     case ModuleType.MOUSE_IN_THE_MAZE: {
-      const r = result as { targetSphereColor?: string; moves?: string[] };
-      const target = r?.targetSphereColor ?? "unknown";
-      const moves = r?.moves?.length ? ` — ${r.moves.join(" ")}` : "";
-      return `!${TWITCH_PLACEHOLDER} go to ${target}${moves}`;
+      const aliases: Record<string, string> = { FORWARD: "f", BACKWARD: "b", TURN_LEFT: "l", TURN_RIGHT: "r" };
+      const moves = strings(raw.moves).map((move) => aliases[move] ?? move.toLowerCase());
+      return moves.length ? commands([moves.join(" "), "submit"]) : "";
     }
-
     case ModuleType.HEXAMAZE: {
-      const moves = (result as { moves?: string[] })?.moves;
-      return `!${TWITCH_PLACEHOLDER} ${moves?.length ? moves.join(" ").toLowerCase() : "unknown"}`;
+      const moves = strings(raw.moves).map(words);
+      return moves.length ? command(moves.join(" ")) : "";
     }
-
-    case ModuleType.THREE_D_MAZE: {
-      const r = result as { goalRow?: number; goalCol?: number; goalDirection?: string | null; moves?: string[]; phase?: string };
-      const row = r?.goalRow ?? "?";
-      const col = r?.goalCol ?? "?";
-      const moves = r?.moves?.length ? ` — ${r.moves.join(" ")}` : "";
-      if (r?.phase === "go_to_star") {
-        return `!${TWITCH_PLACEHOLDER} follow path to star${moves}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} follow the complete path through the goal wall at (${row},${col})${moves}`;
+    case ModuleType.BITMAPS: {
+      const button = numberValue(raw.button) ?? numberValue(raw.buttonNumber) ?? numberValue(raw.answer);
+      return button === undefined ? "" : command(`press ${button}`);
     }
-
-    case ModuleType.SIMON_STATES:
-      return `!${TWITCH_PLACEHOLDER} press ${(result as { press: string }).press}`;
-
-    case ModuleType.SIMON_SCREAMS:
-      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.press)?.join(" ").toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.SILLY_SLOTS: {
-      const legal = getBoolean(raw.legal);
-      return legal ? `!${TWITCH_PLACEHOLDER} press KEEP` : `!${TWITCH_PLACEHOLDER} pull lever`;
+    case ModuleType.COLORED_SQUARES: {
+      const coordinates = strings(raw.coordinates).map((coordinate) => coordinate.toUpperCase());
+      return coordinates.length && coordinates.every((coordinate) => /^[A-D][1-4]$/.test(coordinate))
+        ? command(coordinates.join(" "))
+        : "";
     }
-
-    case ModuleType.SKEWED_SLOTS:
-      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.code) ?? "unknown"}`;
-
-    case ModuleType.LAUNDRY: {
-      if (getBoolean(raw.bobShortcut)) {
-        return `!${TWITCH_PLACEHOLDER} coin`;
-      }
-      const washing = getString(raw.washingSymbol) ?? "unknown";
-      const drying = getString(raw.dryingSymbol) ?? "unknown";
-      const ironing = getString(raw.ironingSymbol) ?? "unknown";
-      const special = getString(raw.specialSymbol) ?? "unknown";
-      return `!${TWITCH_PLACEHOLDER} laundry ${washing} ${drying} ${ironing} ${special}`;
-    }
-
-    case ModuleType.PROBING: {
-      const r = result as { redClipWire?: number; blueClipWire?: number };
-      if (typeof r.redClipWire === "number" && typeof r.blueClipWire === "number") {
-        return `!${TWITCH_PLACEHOLDER} probing red ${r.redClipWire} blue ${r.blueClipWire}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} probing unknown`;
-    }
-
-    case ModuleType.ALPHABET: {
-      const pressOrder = getStringArray(raw.pressOrder);
-      if (pressOrder?.length) {
-        return `!${TWITCH_PLACEHOLDER} alphabet ${pressOrder.join(' ')}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} alphabet unknown`;
-    }
-
     case ModuleType.ADJACENT_LETTERS: {
-      const letters = getStringArray(raw.pressLetters);
-      return `!${TWITCH_PLACEHOLDER} ${letters?.length ? `submit ${letters.join("")}` : "submit!"}`;
+      const letters = strings(raw.pressLetters);
+      return command(letters.length ? `submit ${letters.join(" ")}` : "submit!");
     }
-
+    case ModuleType.SILLY_SLOTS:
+      return command(booleanValue(raw.legal) ? "keep" : "pull");
+    case ModuleType.SKEWED_SLOTS: {
+      const code = stringValue(raw.code);
+      return code ? command(`submit ${code}`) : "";
+    }
+    case ModuleType.THREE_D_MAZE: {
+      const aliases: Record<string, string> = { FORWARD: "F", TURN_LEFT: "L", TURN_RIGHT: "R" };
+      const moves = strings(raw.moves).map((move) => aliases[move] ?? move.toUpperCase());
+      return moves.length ? command(`move ${moves.join(" ")}`) : "";
+    }
+    case ModuleType.SIMON_STATES: {
+      const color = stringValue(raw.press);
+      return color ? command(`press ${words(color)}`) : "";
+    }
+    case ModuleType.SIMON_SCREAMS: {
+      const presses = strings(raw.press);
+      return presses.length ? command(`press ${presses.map(words).join(" ")}`) : "";
+    }
+    case ModuleType.MODULES_AGAINST_HUMANITY:
+      return strings(raw.commands).length ? commands(strings(raw.commands)) : "";
+    case ModuleType.LAUNDRY: {
+      if (booleanValue(raw.bobShortcut)) return command("insert coin");
+      const symbols = [
+        LAUNDRY_WASH[String(raw.washingSymbol)], LAUNDRY_DRY[String(raw.dryingSymbol)],
+        LAUNDRY_IRON[String(raw.ironingSymbol)], LAUNDRY_SPECIAL[String(raw.specialSymbol)],
+      ];
+      return symbols.every((symbol) => symbol !== undefined) ? commands([`set all ${symbols.join(" ")}`, "insert coin"]) : "";
+    }
+    case ModuleType.PROBING: {
+      const red = numberValue(raw.redClipWire);
+      const blue = numberValue(raw.blueClipWire);
+      return red === undefined || blue === undefined ? "" : command(`connect ${red} ${blue}`);
+    }
+    case ModuleType.ALPHABET: {
+      const order = strings(raw.pressOrder);
+      return order.length ? command(`press ${order.join(" ")}`) : "";
+    }
     case ModuleType.MICROCONTROLLER: {
-      const pins = Array.isArray(raw.pins) ? raw.pins : [];
-      if (pins.length) {
-        const sequence = pins
-          .map((pin) => asRecord(pin).color)
-          .filter((color): color is string => typeof color === "string")
-          .map((color) => color.toLowerCase())
-          .join(" ");
-        return `!${TWITCH_PLACEHOLDER} microcontroller ${sequence}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} microcontroller unknown`;
+      const colors = arrayValue(raw.pins)
+        .map(asRecord)
+        .map((pin) => stringValue(pin.color)?.toLowerCase())
+        .filter((color): color is string => Boolean(color));
+      return colors.length ? commands(colors.map((color) => `set ${color}`)) : "";
     }
-
     case ModuleType.MURDER: {
-      const suspect = getString(raw.suspect)?.toLowerCase().replaceAll("_", " ") ?? "unknown";
-      const weapon = getString(raw.weapon)?.toLowerCase().replaceAll("_", " ") ?? "unknown";
-      const location = getString(raw.location)?.toLowerCase().replaceAll("_", " ") ?? "unknown";
-      return `!${TWITCH_PLACEHOLDER} accuse ${suspect}, ${weapon}, ${location}`;
+      const suspect = stringValue(raw.suspect);
+      const weapon = stringValue(raw.weapon);
+      const location = stringValue(raw.location);
+      return suspect && weapon && location ? command(`it was ${words(suspect)}, with the ${words(weapon)}, in the ${words(location)}`) : "";
     }
-
+    case ModuleType.RESISTORS: {
+      const tokens = resistorTokens(raw);
+      return tokens.length ? commands([`connect ${tokens.join(" ")}`, "submit"]) : "";
+    }
     case ModuleType.GAMEPAD: {
-      const sequence = getStringArray(raw.sequence);
-      return `!${TWITCH_PLACEHOLDER} press ${sequence?.join(" ").toLowerCase() ?? "unknown"}`;
+      const sequence = strings(raw.sequence);
+      return sequence.length ? command(`submit ${sequence.join("").toLowerCase()}`) : "";
     }
-
     case ModuleType.TIC_TAC_TOE:
-      return getString(raw.action) === "PASS"
-        ? `!${TWITCH_PLACEHOLDER} press pass`
-        : `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.number) ?? "unknown"}`;
-
-    case ModuleType.MONSPLODE_FIGHT:
-      return `!${TWITCH_PLACEHOLDER} press ${getString(raw.move)?.toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.FOLLOW_THE_LEADER:
-      return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutPlugs) ? raw.cutPlugs.join(" ") : "unknown"}`;
-
-    case ModuleType.WIRE_PLACEMENT:
-      return `!${TWITCH_PLACEHOLDER} cut ${Array.isArray(raw.cutWires) ? raw.cutWires.map((wire) => getString(asRecord(wire).coordinate)).filter(Boolean).join(" ") : "unknown"}`;
-
-    case ModuleType.DOUBLE_OH: {
+      return raw.action === "PASS" ? command("pass") : numberValue(raw.number) === undefined ? "" : command(String(raw.number));
+    case ModuleType.MONSPLODE_FIGHT: {
+      const move = stringValue(raw.move);
+      return move ? command(`use ${words(move)}`) : "";
+    }
+    case ModuleType.SHAPE_SHIFT: {
+      const left = stringValue(raw.left);
+      const right = stringValue(raw.right);
+      return left && right ? command(`submit ${words(left)} ${words(right)}`) : "";
+    }
+    case ModuleType.FOLLOW_THE_LEADER: {
+      const plugs = arrayValue(raw.cutPlugs).map(String);
+      return plugs.length ? command(`cut ${plugs.join(" ")}`) : "";
+    }
+    case ModuleType.FRIENDSHIP: {
+      const element = stringValue(raw.element);
+      return element ? command(`submit ${element}`) : "";
+    }
+    case ModuleType.THE_BULB: {
+      const start = numberValue(raw.continueFrom) ?? 0;
+      const actions = strings(raw.actions).slice(start).map(bulbAction);
+      return actions.length && actions.every(Boolean) ? command(actions.join(", ")) : "";
+    }
+    case ModuleType.BLIND_ALLEY: {
+      const regions = strings(raw.regions);
+      return regions.length ? command(regions.join(" ")) : "";
+    }
+    case ModuleType.SEA_SHELLS: {
+      const order = strings(raw.pressOrder);
+      return order.length ? command(`label ${order.join(" ")}`) : "";
+    }
+    case ModuleType.ENGLISH_TEST: {
+      const position = numberValue(raw.answerPosition);
+      return position !== undefined && Number.isInteger(position) && position >= 1 && position <= 4
+        ? command(`submit ${position}`)
+        : "";
+    }
+    case ModuleType.ROCK_PAPER_SCISSORS_LIZARD_SPOCK: {
+      const signs = strings(raw.signsToPress);
+      return signs.length ? command(`press ${signs.map(words).join(" ")}`) : "";
+    }
+    case ModuleType.SQUARE_BUTTON:
+      if (booleanValue(raw.hold)) return command("hold");
+      return stringValue(raw.instruction) === "Press and immediately release" ? command("tap") : "";
+    case ModuleType.TEXT_FIELD: {
+      const positions = arrayValue(raw.positions).map(asRecord).map((position) => `${position.column},${position.row}`);
+      return positions.length ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.SYMBOLIC_PASSWORD: {
       const aliases: Record<string, string> = {
-        SINGLE_VERTICAL: "vert1",
-        SINGLE_HORIZONTAL: "horiz1",
-        DOUBLE_HORIZONTAL: "horiz2",
-        DOUBLE_VERTICAL: "vert2",
-        SQUARE: "submit",
+        LEFT_COLUMN: "l", MIDDLE_COLUMN: "m", RIGHT_COLUMN: "r",
+        TOP_LEFT: "tl", TOP_RIGHT: "tr", BOTTOM_LEFT: "bl", BOTTOM_RIGHT: "br",
       };
-      return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.presses)?.map((press) => aliases[press] ?? press).join(" ") ?? "unknown"}`;
+      const moves = strings(raw.moves).map((move) => aliases[move] ?? move.toLowerCase());
+      return moves.length ? commands([`cycle ${moves.join(" ")}`, "submit"]) : "";
     }
-
+    case ModuleType.WIRE_PLACEMENT: {
+      const coordinates = arrayValue(raw.cutWires).map(asRecord).map((wire) => stringValue(wire.coordinate)).filter((value): value is string => Boolean(value));
+      return coordinates.length ? command(`cut ${coordinates.join(" ")}`) : "";
+    }
+    case ModuleType.DOUBLE_OH: {
+      const aliases: Record<string, string> = { SINGLE_VERTICAL: "vert1", SINGLE_HORIZONTAL: "horiz1", DOUBLE_HORIZONTAL: "horiz2", DOUBLE_VERTICAL: "vert2", SQUARE: "submit" };
+      const presses = strings(raw.presses).map((press) => aliases[press] ?? press.toLowerCase());
+      return presses.length ? command(presses.join(" ")) : "";
+    }
     case ModuleType.CHEAP_CHECKOUT:
-      return raw.needsSecondPayment
-        ? `!${TWITCH_PLACEHOLDER} submit`
-        : `!${TWITCH_PLACEHOLDER} submit ${getNumber(raw.change)?.toFixed(2) ?? "unknown"}`;
-
+      return booleanValue(raw.needsSecondPayment) ? command("submit") : numberValue(raw.change) === undefined ? "" : command(`submit ${numberValue(raw.change)?.toFixed(2)}`);
     case ModuleType.COORDINATES: {
-      const clues = getStringArray(raw.matchingClues);
-      return clues?.length === 2
-        ? clues.map((clue) => `!${TWITCH_PLACEHOLDER} submit ${clue.replace(/\s+/g, " ")}`).join("; ")
-        : `!${TWITCH_PLACEHOLDER} submit unknown`;
+      const clues = strings(raw.matchingClues);
+      return clues.length ? commands(clues.map((clue) => `submit ${clue.replace(/\s+/g, " ")}`)) : "";
     }
-
     case ModuleType.LIGHT_CYCLE: {
       const codes: Record<string, string> = { RED: "R", YELLOW: "Y", GREEN: "G", BLUE: "B", MAGENTA: "M", WHITE: "W" };
-      return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.sequence)?.map((color) => codes[color] ?? color).join(" ") ?? "unknown"}`;
+      const sequence = strings(raw.sequence).map((color) => codes[color] ?? color);
+      return sequence.length ? command(sequence.join(" ")) : "";
     }
-
-    case ModuleType.BINARY_LEDS:
-      return `!${TWITCH_PLACEHOLDER} cut ${getString(raw.recommendedColor)?.toLowerCase() ?? "unknown"} ${getNumber(raw.recommendedValue) ?? "unknown"}`;
-
-    case ModuleType.RUBIKS_CUBE:
-      return `!${TWITCH_PLACEHOLDER} ${getStringArray(raw.moves)?.join(" ").toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.FIZZ_BUZZ:
-      return `!${TWITCH_PLACEHOLDER} submit ${getStringArray(raw.actions)?.join(" ").toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.THE_CLOCK:
-      return `!${TWITCH_PLACEHOLDER} set ${getString(raw.targetTime)?.toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.LED_ENCRYPTION:
-      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.correctLetters)?.[0]?.toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.FAST_MATH:
-      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.answer) ?? "unknown"}`;
-
-    case ModuleType.ICE_CREAM:
-      return `!${TWITCH_PLACEHOLDER} sell ${getString(raw.flavor)?.toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.THE_SCREW:
-      return `!${TWITCH_PLACEHOLDER} unscrew; !${TWITCH_PLACEHOLDER} screw ${getNumber(raw.hole) ?? "unknown"}; !${TWITCH_PLACEHOLDER} press ${getString(raw.buttonLabel)?.toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.YAHTZEE: {
-      if (getString(raw.action) === "SOLVED") return `!${TWITCH_PLACEHOLDER} done`;
-      const colors = getStringArray(raw.keepColors)?.map((color) => color.toLowerCase()) ?? [];
-      return colors.length ? `!${TWITCH_PLACEHOLDER} keep ${colors.join(" ")}` : `!${TWITCH_PLACEHOLDER} reroll`;
+    case ModuleType.BINARY_LEDS: {
+      const color = stringValue(raw.recommendedColor);
+      const value = numberValue(raw.recommendedValue);
+      return color && value !== undefined ? command(`cut ${words(color)} ${value}`) : "";
     }
-
-    case ModuleType.X_RAY:
-      return `!${TWITCH_PLACEHOLDER} press ${getNumber(raw.button) ?? "unknown"}`;
-
-    case ModuleType.ZOO:
-      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.animals)?.join(", ") ?? "unknown"}`;
-
-    case ModuleType.POINT_OF_ORDER: {
-      const cards = getStringArray(raw.validCards) ?? [];
-      const ranks = [...new Set(cards.map((card) => card.slice(0, -1)))];
-      const suits = [...new Set(cards.map((card) => card.at(-1)))];
-      return `!${TWITCH_PLACEHOLDER} play ${ranks.join("/") || "unknown"} of ${suits.join("/") || "unknown"}`;
-    }
-
     case ModuleType.RHYTHMS: {
-      if (getBoolean(raw.mash)) return `!${TWITCH_PLACEHOLDER} mash`;
-      const actions = Array.isArray(raw.actions) ? raw.actions.map(asRecord) : [];
-      return actions.length
-        ? actions.map((action) => {
-            const beeps = getNumber(action.beeps) ?? 0;
-            return `!${TWITCH_PLACEHOLDER} press ${getString(action.button) ?? "unknown"}${beeps ? ` ${beeps}` : ""}`;
-          }).join("; ")
-        : `!${TWITCH_PLACEHOLDER} unknown`;
+      if (booleanValue(raw.mash)) return command("mash");
+      const actions = arrayValue(raw.actions).map(asRecord);
+      return actions.length ? commands(actions.map((action) => {
+        const button = stringValue(action.button);
+        const beeps = numberValue(action.beeps);
+        return button && beeps !== undefined ? `press ${words(button)} ${beeps}` : undefined;
+      })) : "";
     }
-
     case ModuleType.COLOR_MATH: {
-      const codes: Record<string, string> = { BLUE: "B", GREEN: "G", PURPLE: "P", YELLOW: "Y", WHITE: "W", MAGENTA: "M", RED: "R", ORANGE: "O", GRAY: "A", BLACK: "K" };
-      const colors = getStringArray(raw.colors);
-      return `!${TWITCH_PLACEHOLDER} set ${colors?.map((color) => codes[color] ?? color).join(",") ?? "unknown"}; !${TWITCH_PLACEHOLDER} submit`;
+      const codes: Record<string, string> = { BLUE: "b", GREEN: "g", PURPLE: "p", YELLOW: "y", WHITE: "w", MAGENTA: "m", RED: "r", ORANGE: "o", GRAY: "a", BLACK: "k" };
+      const colors = strings(raw.colors).map((color) => codes[color] ?? color.toLowerCase());
+      return colors.length ? commands([`set ${colors.join(",")}`, "submit"]) : "";
     }
-
     case ModuleType.ONLY_CONNECT: {
-      const position = getNumber(raw.position);
-      if (position) return `!${TWITCH_PLACEHOLDER} press ${position}`;
-      const groups = Array.isArray(raw.groups) ? raw.groups.map(asRecord) : [];
-      return groups.slice(0, 2).map((group) => `!${TWITCH_PLACEHOLDER} press ${getStringArray(group.letters)?.join(" ") ?? "unknown"}`).join("; ");
+      const position = numberValue(raw.position);
+      if (position !== undefined) return command(`press ${position}`);
+      const groups = arrayValue(raw.groups).map(asRecord).map((group) => strings(group.letters));
+      return groups.length ? commands(groups.slice(0, 2).map((letters) => `press ${letters.join(" ")}`)) : "";
     }
-
-    case ModuleType.CHORD_QUALITIES:
-      return `!${TWITCH_PLACEHOLDER} submit ${getStringArray(raw.answerNotes)?.map((note) => note.replace("♯", "#")).join(" ") ?? "unknown"}`;
-
-    case ModuleType.CREATION:
-      return `!${TWITCH_PLACEHOLDER} combine ${getString(raw.first)?.toLowerCase() ?? "unknown"} ${getString(raw.second)?.toLowerCase() ?? "unknown"}`;
-
-    case ModuleType.SEA_SHELLS:
-      return `!${TWITCH_PLACEHOLDER} press ${getStringArray(raw.pressOrder)?.join(" ") ?? "unknown"}`;
-
-    case ModuleType.ENGLISH_TEST:
-      return `!${TWITCH_PLACEHOLDER} submit ${getString(raw.correctAnswer) ?? "unknown"}`;
-
-    case ModuleType.TURN_THE_KEY: {
-      const sec = (result as { turnWhenSeconds?: number }).turnWhenSeconds;
-      const instr = (result as { instruction?: string }).instruction;
-      if (instr) return `!${TWITCH_PLACEHOLDER} ${instr}`;
-      if (typeof sec === "number") {
-        const m = Math.floor(sec / 60);
-        const s = sec % 60;
-        const ss = s < 10 ? "0" + s : String(s);
-        return `!${TWITCH_PLACEHOLDER} turn when timer shows ${m}:${ss}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} turn when timer shows time`;
+    case ModuleType.NEUTRALIZATION: {
+      const base = stringValue(raw.baseFormula);
+      const drops = numberValue(raw.drops);
+      if (!base || drops === undefined) return "";
+      return commands([`base ${base}`, `conc set ${drops}`, booleanValue(raw.filterOn) ? "filter" : undefined, "titrate"]);
     }
-
-    case ModuleType.TURN_THE_KEYS: {
-      const priority = (result as { priority?: number }).priority;
-      if (typeof priority === "number") {
-        return `!${TWITCH_PLACEHOLDER} Turn The Keys priority ${priority}`;
-      }
-      return `!${TWITCH_PLACEHOLDER} Turn The Keys`;
+    case ModuleType.WEB_DESIGN: {
+      const aliases: Record<string, string> = { ACCEPT: "acc", CONSIDER: "con", REJECT: "rej" };
+      return aliases[String(raw.answer)] ? command(aliases[String(raw.answer)]) : "";
     }
-
-    default:
-      return `!${TWITCH_PLACEHOLDER} action ${getString(raw.action) ?? 'unknown'}`;
+    case ModuleType.CHORD_QUALITIES: {
+      const notes = strings(raw.answerNotes).map((note) => note.replace("♯", "#"));
+      return notes.length ? command(`submit ${notes.join(" ")}`) : "";
+    }
+    case ModuleType.CREATION: {
+      const first = stringValue(raw.first);
+      const second = stringValue(raw.second);
+      return first && second ? command(`combine ${words(first)} ${words(second)}`) : "";
+    }
+    case ModuleType.RUBIKS_CUBE: {
+      const moves = strings(raw.moves);
+      return moves.length ? command(moves.join(" ")) : "";
+    }
+    case ModuleType.FIZZ_BUZZ: {
+      const actions = strings(raw.actions);
+      return actions.length ? command(`submit ${actions.map(words).join(" ")}`) : "";
+    }
+    case ModuleType.THE_CLOCK: {
+      const target = stringValue(raw.targetTime);
+      return target ? command(`set ${target.toLowerCase()}`) : "";
+    }
+    case ModuleType.LED_ENCRYPTION: {
+      const letter = strings(raw.correctLetters)[0] ?? stringValue(raw.letter);
+      return letter ? command(`press ${letter}`) : "";
+    }
+    case ModuleType.BITWISE_OPERATIONS: {
+      const answer = stringValue(raw.answer);
+      return answer ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.FAST_MATH: {
+      const answer = stringValue(raw.answer);
+      return answer ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.BOOLEAN_VENN_DIAGRAM: {
+      const regions = strings(raw.regions).map((region) => ["OUTSIDE", "NONE"].includes(region.toUpperCase()) ? "O" : region.toLowerCase());
+      return regions.length ? command(regions.join(" ")) : "";
+    }
+    case ModuleType.ZOO: {
+      const animals = strings(raw.animals);
+      return animals.length ? command(`press ${animals.join(", ")}`) : "";
+    }
+    case ModuleType.POINT_OF_ORDER: {
+      const cards = strings(raw.validCards);
+      const ranks = [...new Set(cards.map((card) => card.slice(0, -1)))];
+      const suits = [...new Set(cards.map((card) => card.at(-1)).filter(Boolean))];
+      return ranks.length && suits.length ? command(`play ${ranks.join("/")} of ${suits.join("/")}`) : "";
+    }
   }
 }

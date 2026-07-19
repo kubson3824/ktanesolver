@@ -9,6 +9,7 @@ vi.mock("../lib/api", () => ({
     delete: vi.fn(),
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
   },
   debugModuleSync: vi.fn(),
   withErrorWrapping: async <T>(fn: () => Promise<T>) => fn(),
@@ -18,6 +19,7 @@ const createModule = (id: string, type: ModuleType): ModuleEntity => ({
   id,
   type,
   solved: false,
+  version: 0,
   state: {},
   solution: {},
 });
@@ -45,7 +47,6 @@ describe("useRoundStore", () => {
       loading: false,
       error: undefined,
       openingModuleId: undefined,
-      moduleNumbers: {},
     });
     vi.clearAllMocks();
   });
@@ -103,29 +104,39 @@ describe("useRoundStore", () => {
     expect(useRoundStore.getState().round?.bombs[0].modules[0]).toMatchObject({ solved: false, state: {}, solution: {} });
   });
 
-  it("does not let a stale reset refresh overwrite a newer solve", async () => {
+  it("does not mark a physical module solved when calculation finishes", () => {
     const module = createModule("module-1", ModuleType.FOREIGN_EXCHANGE_RATES);
     const bomb = createBomb([module]);
-    const staleRound: RoundEntity = {
+    const round: RoundEntity = {
       id: "round-1",
       status: RoundStatus.ACTIVE,
       bombs: [bomb],
       roundState: {},
     };
     useRoundStore.setState({
-      round: staleRound,
+      round,
       currentBomb: bomb,
       currentModule: { ...module, bomb, moduleType: module.type },
     });
-    let finishRefresh!: (value: unknown) => void;
-    vi.mocked(api.get).mockImplementation(() => new Promise((resolve) => { finishRefresh = resolve; }) as never);
-
-    const refresh = useRoundStore.getState().refreshRound(staleRound.id);
     useRoundStore.getState().markModuleSolved(bomb.id, module.id);
-    finishRefresh({ data: staleRound });
-    await refresh;
 
-    expect(useRoundStore.getState().round?.bombs[0].modules[0].solved).toBe(true);
+    expect(useRoundStore.getState().round?.bombs[0].modules[0].solved).toBe(false);
+    expect(useRoundStore.getState().currentModule?.solved).toBe(false);
+  });
+
+  it("marks a module solved only through the completion endpoint", async () => {
+    const module = createModule("module-1", ModuleType.BUTTON);
+    const bomb = createBomb([module]);
+    useRoundStore.setState({
+      round: { id: "round-1", status: RoundStatus.ACTIVE, bombs: [bomb], roundState: {} },
+      currentBomb: bomb,
+      currentModule: { ...module, bomb, moduleType: module.type },
+    });
+    vi.mocked(api.post).mockResolvedValue({ data: { ...module, solved: true, version: 1 } });
+
+    await useRoundStore.getState().completeModule(bomb.id, module.id);
+
+    expect(api.post).toHaveBeenCalledWith(`/bombs/${bomb.id}/modules/${module.id}/complete`, { version: 0 });
     expect(useRoundStore.getState().currentModule?.solved).toBe(true);
   });
 });

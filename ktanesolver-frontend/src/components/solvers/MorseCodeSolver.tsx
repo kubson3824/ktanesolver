@@ -122,7 +122,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
       setTwitchCommand(
         generateTwitchCommand({
           moduleType: ModuleType.MORSE_CODE,
-          result: { word: best.word },
+          result: { frequency: best.frequency },
         }),
       );
     }
@@ -255,7 +255,7 @@ export default function MorseCodeSolver({ bomb }: MorseCodeSolverProps) {
         setTwitchCommand(
           generateTwitchCommand({
             moduleType: ModuleType.MORSE_CODE,
-            result: { word: best.word },
+            result: { frequency: best.frequency },
           }),
         );
       } else {

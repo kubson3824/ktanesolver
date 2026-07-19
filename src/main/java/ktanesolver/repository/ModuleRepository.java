@@ -12,6 +12,8 @@ import ktanesolver.entity.ModuleEntity;
 
 public interface ModuleRepository extends JpaRepository<ModuleEntity, UUID> {
 
+    boolean existsByBombIdAndTwitchCodeAndIdNot(UUID bombId, String twitchCode, UUID id);
+
     @Query("SELECT m FROM ModuleEntity m JOIN FETCH m.bomb WHERE m.id = :id")
     Optional<ModuleEntity> findByIdWithBomb(@Param("id") UUID id);
 

@@ -35,6 +35,12 @@ public class ModuleEntity {
 
 	private boolean solved;
 
+	@Version
+	private long version;
+
+	@Column(name = "twitch_code", length = 32)
+	private String twitchCode;
+
 	@Type (JsonType.class)
 	@Column (columnDefinition = "jsonb")
 	private Map<String, Object> state = new HashMap<>();

@@ -59,7 +59,7 @@ export default function SolverControls({
         disabled={resolvedSolveDisabled || isLoading || isSolved}
         loading={isLoading}
       >
-        {isSolved ? "Solved ✓" : isLoading ? loadingText : resolvedSolveText}
+        {isSolved ? "Calculated ✓" : isLoading ? loadingText : resolvedSolveText}
       </Button>
 
       {(showManualSolve || showReset) && (

@@ -7,7 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.validation.Valid;
+
 import ktanesolver.dto.AddModulesRequest;
+import ktanesolver.dto.CompleteModuleRequest;
+import ktanesolver.dto.UpdateTwitchCodeRequest;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.repository.ModuleRepository;
 import ktanesolver.service.ModuleService;
@@ -46,5 +50,17 @@ public class ModuleController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetModule(@PathVariable UUID bombId, @PathVariable UUID moduleId) {
         moduleService.resetModule(bombId, moduleId);
+    }
+
+    @PostMapping("/{moduleId}/complete")
+    public ModuleEntity completeModule(@PathVariable UUID bombId, @PathVariable UUID moduleId,
+                                       @RequestBody CompleteModuleRequest req) {
+        return moduleService.completeModule(bombId, moduleId, req);
+    }
+
+    @PutMapping("/{moduleId}/twitch-code")
+    public ModuleEntity updateTwitchCode(@PathVariable UUID bombId, @PathVariable UUID moduleId,
+                                         @Valid @RequestBody UpdateTwitchCodeRequest req) {
+        return moduleService.updateTwitchCode(bombId, moduleId, req);
     }
 }

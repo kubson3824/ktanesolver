@@ -27,7 +27,7 @@ export default function BlindAlleySolver({ bomb }: { bomb: BombEntity | null | u
   const restoreSolution = useCallback((solution: BlindAlleyOutput) => {
     if (!solution?.regions?.length) return;
     setResult(solution);
-    setTwitchCommand(`press ${solution.regions.join(" ")}`);
+    setTwitchCommand(solution.regions.join(" "));
   }, []);
   useSolverModulePersistence<typeof moduleState, BlindAlleyOutput>({
     state: moduleState,
@@ -45,7 +45,7 @@ export default function BlindAlleySolver({ bomb }: { bomb: BombEntity | null | u
     clearError(); setIsLoading(true);
     try {
       const response = await solveBlindAlley(round.id, bomb.id, currentModule.id);
-      const command = `press ${response.output.regions.join(" ")}`;
+      const command = response.output.regions.join(" ");
       setResult(response.output); setTwitchCommand(command); setIsSolved(response.solved);
       if (response.solved) markModuleSolved(bomb.id, currentModule.id);
       updateModuleAfterSolve(bomb.id, currentModule.id, { result: response.output, twitchCommand: command }, response.output, response.solved);

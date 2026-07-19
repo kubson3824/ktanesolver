@@ -16,10 +16,12 @@ import { formatModuleName } from "../lib/utils";
 import { Skeleton } from "../components/ui/skeleton";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
+import ModuleNumberInput from "../components/ModuleNumberInput";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 const REFRESH_EVENT_TYPES = [
+  "MODULE_UPDATED",
   "MODULE_SOLVED",
   "ROUND_STRIKE",
   "MODULE_STRIKE",
@@ -75,6 +77,7 @@ export default function SolvePage() {
   const selectModuleById = useRoundStore((state) => state.selectModuleById);
   const clearModule = useRoundStore((state) => state.clearModule);
   const resetModule = useRoundStore((state) => state.resetModule);
+  const completeModule = useRoundStore((state) => state.completeModule);
   const manualUrl = useRoundStore((state) => state.manualUrl);
   const error = useRoundStore((state) => state.error);
   const openingModuleId = useRoundStore((state) => state.openingModuleId);
@@ -84,6 +87,7 @@ export default function SolvePage() {
   const fetchCatalog = useCatalogStore((state) => state.fetchCatalog);
   const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
   const [showFmnReminder, setShowFmnReminder] = useState(false);
+  const [completionError, setCompletionError] = useState("");
   // Manual/solver split: draggable divider, % width of the manual panel on lg screens.
   const [manualPct, setManualPct] = useState(() => {
     const stored = Number(localStorage.getItem("solve-manual-pct"));
@@ -223,6 +227,16 @@ export default function SolvePage() {
       clearModule();
     } catch {
       // The store exposes the request error below.
+    }
+  };
+
+  const handleCompleteModule = async () => {
+    if (!currentBomb || !currentModule || !window.confirm("Confirm this module is solved on the bomb?")) return;
+    setCompletionError("");
+    try {
+      await completeModule(currentBomb.id, currentModule.id);
+    } catch (cause) {
+      setCompletionError(cause instanceof Error ? cause.message : "Could not mark module solved");
     }
   };
 
@@ -432,12 +446,22 @@ export default function SolvePage() {
                       </p>
                     )}
                   </div>
-                  {currentModule.solved && (
+                  {currentModule.solved ? (
                     <Button variant="outline" size="sm" onClick={() => void handleUndoSolve()}>
                       Undo solve
                     </Button>
+                  ) : (
+                    <Button variant="success" size="sm" onClick={() => void handleCompleteModule()}>
+                      {Object.keys(currentModule.solution ?? {}).length ? "Confirm solved" : "Mark manually solved"}
+                    </Button>
                   )}
                 </div>
+
+                <ModuleNumberInput />
+
+                {completionError && (
+                  <p className="px-4 pt-3 text-sm text-destructive" role="alert">{completionError}</p>
+                )}
 
                 {/* Card content */}
                 <div className="px-4 py-4 flex-1 flex flex-col">

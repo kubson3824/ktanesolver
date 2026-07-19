@@ -139,6 +139,8 @@ export interface ModuleEntity {
   id: string;
   type: string;
   solved: boolean;
+  version: number;
+  twitchCode?: string;
   state: JsonRecord;
   solution: JsonRecord;
 }
@@ -230,6 +232,7 @@ export interface AddModulesRequest {
 }
 
 export type RoundEventType =
+  | "MODULE_UPDATED"
   | "MODULE_SOLVED"
   | "MODULE_STRIKE"
   | "ROUND_STRIKE"

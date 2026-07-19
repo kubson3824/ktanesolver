@@ -10,6 +10,7 @@ type EnglishTestState = {
   questionNumber?: number;
   result?: EnglishTestOutput | null;
   twitchCommand?: string;
+  answerPosition?: number | "";
   input?: { sentence?: string; questionNumber?: number };
 };
 
@@ -18,9 +19,10 @@ export default function EnglishTestSolver({ bomb }: { bomb: BombEntity | null | 
   const [questionNumber, setQuestionNumber] = useState(1);
   const [result, setResult] = useState<EnglishTestOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState("");
+  const [answerPosition, setAnswerPosition] = useState<number | "">("");
   const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
-  const state = useMemo<EnglishTestState>(() => ({ sentence, questionNumber, result, twitchCommand }), [sentence, questionNumber, result, twitchCommand]);
+  const state = useMemo<EnglishTestState>(() => ({ sentence, questionNumber, result, twitchCommand, answerPosition }), [sentence, questionNumber, result, twitchCommand, answerPosition]);
 
   useSolverModulePersistence<typeof state, EnglishTestOutput>({
     state,
@@ -31,10 +33,10 @@ export default function EnglishTestSolver({ bomb }: { bomb: BombEntity | null | 
       if (restoredQuestion) setQuestionNumber(restoredQuestion);
       if (saved.result) setResult(saved.result);
       if (saved.twitchCommand) setTwitchCommand(saved.twitchCommand);
+      if (saved.answerPosition !== undefined) setAnswerPosition(saved.answerPosition);
     }, []),
     onRestoreSolution: useCallback((solution: EnglishTestOutput) => {
       setResult(solution);
-      setTwitchCommand(generateTwitchCommand({ moduleType: ModuleType.ENGLISH_TEST, result: solution }));
     }, []),
     inferSolved: (_solution, module) => Boolean((module as { solved?: boolean } | undefined)?.solved),
     currentModule,
@@ -48,19 +50,18 @@ export default function EnglishTestSolver({ bomb }: { bomb: BombEntity | null | 
     clearError(); setIsLoading(true);
     try {
       const response = await solveEnglishTest(round.id, bomb.id, currentModule.id, { sentence: entered, questionNumber });
-      const command = generateTwitchCommand({ moduleType: ModuleType.ENGLISH_TEST, result: response.output });
       const nextQuestion = response.solved ? questionNumber : Math.min(3, questionNumber + 1);
       const nextSentence = response.solved ? entered : "";
-      setResult(response.output); setTwitchCommand(command); setIsSolved(response.solved);
+      setResult(response.output); setAnswerPosition(""); setTwitchCommand(""); setIsSolved(response.solved);
       setQuestionNumber(nextQuestion); setSentence(nextSentence);
       if (response.solved) markModuleSolved(bomb.id, currentModule.id);
-      updateModuleAfterSolve(bomb.id, currentModule.id, { sentence: nextSentence, questionNumber: nextQuestion, result: response.output, twitchCommand: command }, response.output, response.solved);
+      updateModuleAfterSolve(bomb.id, currentModule.id, { sentence: nextSentence, questionNumber: nextQuestion, result: response.output, twitchCommand: "", answerPosition: "" }, response.output, response.solved);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Failed to solve English Test");
     } finally { setIsLoading(false); }
   }, [sentence, questionNumber, round?.id, bomb?.id, currentModule?.id, clearError, markModuleSolved, setError, setIsLoading, setIsSolved, updateModuleAfterSolve]);
 
-  const reset = useCallback(() => { setSentence(""); setQuestionNumber(1); setResult(null); setTwitchCommand(""); resetSolverState(); }, [resetSolverState]);
+  const reset = useCallback(() => { setSentence(""); setQuestionNumber(1); setResult(null); setAnswerPosition(""); setTwitchCommand(""); resetSolverState(); }, [resetSolverState]);
   const disabled = isLoading || isSolved;
 
   return <SolverLayout>
@@ -79,6 +80,35 @@ export default function EnglishTestSolver({ bomb }: { bomb: BombEntity | null | 
     <ErrorAlert error={error} />
     {result && <SolverSection title={`Question ${result.questionNumber} answer`} className="border-emerald-500/40">
       <p className="rounded-md bg-emerald-500/10 px-4 py-3 text-center text-xl font-bold">{result.correctAnswer}</p>
+      <label className="mt-3 block text-sm font-medium">Position of this answer on the module
+        <select
+          value={answerPosition}
+          onChange={(event) => {
+            const position = Number(event.target.value) || "";
+            const command = generateTwitchCommand({
+              moduleType: ModuleType.ENGLISH_TEST,
+              result: { answerPosition: position },
+            });
+            setAnswerPosition(position);
+            setTwitchCommand(command);
+            if (bomb?.id && currentModule?.id) {
+              updateModuleAfterSolve(
+                bomb.id,
+                currentModule.id,
+                { sentence, questionNumber, result, answerPosition: position, twitchCommand: command },
+                result,
+                isSolved,
+              );
+            }
+          }}
+          disabled={isLoading}
+          className="mt-2 block h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          aria-label="Correct answer position"
+        >
+          <option value="">Choose 1–4</option>
+          {[1, 2, 3, 4].map((position) => <option key={position} value={position}>Answer {position}</option>)}
+        </select>
+      </label>
     </SolverSection>}
     {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
     <SolverInstructions>Select the shown answer with the arrow buttons, then submit it. Solve all three questions; after a strike, change the question number back to 1.</SolverInstructions>

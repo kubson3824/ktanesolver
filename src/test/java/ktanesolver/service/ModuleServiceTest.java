@@ -28,6 +28,9 @@ import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
 import ktanesolver.event.RoundStateChangedEvent;
+import ktanesolver.event.BombModuleUpdatedEvent;
+import ktanesolver.dto.CompleteModuleRequest;
+import ktanesolver.dto.UpdateTwitchCodeRequest;
 import ktanesolver.enums.ModuleType;
 import ktanesolver.utils.Json;
 import ktanesolver.registry.ModuleSolverRegistry;
@@ -36,6 +39,7 @@ import ktanesolver.repository.ModuleRepository;
 import ktanesolver.logic.ModuleInput;
 import ktanesolver.logic.ModuleOutput;
 import ktanesolver.logic.ModuleSolver;
+import ktanesolver.logic.SolveSuccess;
 
 @ExtendWith(MockitoExtension.class)
 class ModuleServiceTest {
@@ -106,6 +110,73 @@ class ModuleServiceTest {
 
         verify(moduleRepo, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void solveModuleStoresTheCalculationWithoutClaimingThePhysicalModuleWasSolved() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        when(moduleRepo.findByIdWithBombAndRound(module.getId())).thenReturn(Optional.of(module));
+        when(registry.<TestInput, TestOutput>get(ModuleType.BUTTON)).thenReturn(solver);
+        when(solver.inputType()).thenReturn(TestInput.class);
+        when(solver.solve(any(), any(), any(), any())).thenAnswer(invocation -> {
+            ModuleEntity solvedByCalculator = invocation.getArgument(2);
+            solvedByCalculator.setSolved(true);
+            solvedByCalculator.getSolution().put("value", "PRESS");
+            return new SolveSuccess<>(new TestOutput("PRESS"), true);
+        });
+        when(moduleRepo.saveAndFlush(module)).thenReturn(module);
+
+        Object result = moduleService.solveModule(
+                module.getBomb().getRound().getId(), module.getBomb().getId(), module.getId(),
+                Map.of("selection", "BUTTON"));
+
+        assertThat(result).isEqualTo(new SolveSuccess<>(new TestOutput("PRESS"), true));
+        assertThat(module.isSolved()).isFalse();
+        assertThat(module.getSolution()).containsEntry("value", "PRESS");
+        verify(eventPublisher).publishEvent(any(BombModuleUpdatedEvent.class));
+    }
+
+    @Test
+    void completeModuleMarksPhysicalCompletionAtTheExpectedVersion() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        module.setVersion(3);
+        when(moduleRepo.findByIdWithBomb(module.getId())).thenReturn(Optional.of(module));
+        when(moduleRepo.saveAndFlush(module)).thenReturn(module);
+
+        ModuleEntity completed = moduleService.completeModule(
+                module.getBomb().getId(), module.getId(), new CompleteModuleRequest(3));
+
+        assertThat(completed.isSolved()).isTrue();
+        verify(eventPublisher).publishEvent(any(BombModuleUpdatedEvent.class));
+    }
+
+    @Test
+    void staleCompletionIsRejected() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        module.setVersion(4);
+        when(moduleRepo.findByIdWithBomb(module.getId())).thenReturn(Optional.of(module));
+
+        assertThatThrownBy(() -> moduleService.completeModule(
+                module.getBomb().getId(), module.getId(), new CompleteModuleRequest(3)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(moduleRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void duplicateTwitchSelectorIsRejectedWithinTheBomb() {
+        ModuleEntity module = createModule(ModuleType.BUTTON);
+        when(moduleRepo.findByIdWithBomb(module.getId())).thenReturn(Optional.of(module));
+        when(moduleRepo.existsByBombIdAndTwitchCodeAndIdNot(module.getBomb().getId(), "12", module.getId()))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> moduleService.updateTwitchCode(
+                module.getBomb().getId(), module.getId(), new UpdateTwitchCodeRequest(0, "12")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
     }
 
     @Test

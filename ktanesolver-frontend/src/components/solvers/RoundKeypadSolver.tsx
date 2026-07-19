@@ -99,12 +99,13 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
   const onRestoreSolution = useCallback((restored: RoundKeypadOutput) => {
     if (!restored?.symbolsToPress) return;
     setSolution(restored);
+    const positions = restored.symbolsToPress.map((symbol) => selectedSymbols.indexOf(symbol) + 1);
     const command = generateTwitchCommand({
       moduleType: ModuleType.ROUND_KEYPAD,
-      result: restored,
+      result: { positions },
     });
     setTwitchCommand(command);
-  }, []);
+  }, [selectedSymbols]);
 
   useSolverModulePersistence<
     { selectedSymbols: RoundKeypadSymbol[]; solution: RoundKeypadOutput | null; twitchCommand: string },
@@ -161,7 +162,9 @@ export default function RoundKeypadSolver({ bomb }: RoundKeypadSolverProps) {
 
       const command = generateTwitchCommand({
         moduleType: ModuleType.ROUND_KEYPAD,
-        result: response.output,
+        result: {
+          positions: response.output.symbolsToPress.map((symbol) => selectedSymbols.indexOf(symbol) + 1),
+        },
       });
       setTwitchCommand(command);
     } catch (err) {

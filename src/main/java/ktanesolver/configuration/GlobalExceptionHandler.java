@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +50,13 @@ public class GlobalExceptionHandler {
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),
                         HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         exception.getMessage()));
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleOptimisticLockingFailureException() {
+        HttpStatus status = HttpStatus.CONFLICT;
+        return ResponseEntity.status(status)
+                .body(new ApiErrorResponse(status.value(), status.getReasonPhrase(), "Module changed; refresh and try again"));
     }
 
     private ResponseEntity<ApiErrorResponse> buildBadRequest(String message) {

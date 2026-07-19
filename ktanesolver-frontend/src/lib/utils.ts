@@ -125,6 +125,11 @@ export function formatRoundEventMessage(msg: {
 }): string {
   const p = msg.payload ?? {};
   switch (msg.type) {
+    case "MODULE_UPDATED": {
+      const moduleType = (p.moduleType as string) ?? "module";
+      const moduleId = p.moduleId as string | undefined;
+      return `Updated ${formatModuleDisplayName(moduleType, moduleId)}`;
+    }
     case "MODULE_SOLVED": {
       const moduleType = (p.moduleType as string) ?? "module";
       const moduleId = p.moduleId as string | undefined;

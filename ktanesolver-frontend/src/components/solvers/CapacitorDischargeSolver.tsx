@@ -1,27 +1,39 @@
-import { Construction } from "lucide-react";
-import type { SolverProps } from "./types";
-import { SolverLayout, SolverSection } from "../common";
-import { Alert } from "../ui/alert";
+import { useState } from "react";
+import { ModuleType } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay } from "../common";
+import { Input } from "../ui/input";
 
-export default function CapacitorDischargeSolver({ bomb: _bomb }: SolverProps) {
-  void _bomb;
+export default function CapacitorDischargeSolver() {
+  const [holdSeconds, setHoldSeconds] = useState(7);
+  const twitchCommand = generateTwitchCommand({
+    moduleType: ModuleType.CAPACITOR_DISCHARGE,
+    result: { holdSeconds },
+  });
+
   return (
     <SolverLayout>
       <SolverSection
         title="Capacitor Discharge"
-        description="Needy module — discharge the capacitor before the timer runs out."
+        description="Enter how long Twitch should hold the discharge lever."
       >
-        <Alert variant="warning" className="flex items-start gap-2">
-          <Construction className="h-4 w-4 mt-0.5 shrink-0" aria-hidden />
-          <div>
-            <p className="font-semibold">Not implemented yet</p>
-            <p className="mt-1 text-xs opacity-80">
-              This module requires timing information. Solver support is coming
-              in a future release.
-            </p>
-          </div>
-        </Alert>
+        <label className="block text-sm font-medium">
+          Hold duration (seconds)
+          <Input
+            type="number"
+            min={0.1}
+            step={0.1}
+            value={holdSeconds}
+            onChange={(event) => setHoldSeconds(event.target.valueAsNumber)}
+            className="mt-2"
+          />
+        </label>
       </SolverSection>
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
+      <SolverInstructions>
+        Paste the command while the needy is active. Seven seconds is the standard Twitch Plays
+        example; shorten it if the bomb timer cannot safely spare that long.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

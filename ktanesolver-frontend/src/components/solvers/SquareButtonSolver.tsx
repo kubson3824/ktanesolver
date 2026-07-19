@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { solveSquareButton, type SquareButtonInput, type SquareButtonOutput } from "../../services/squareButtonService";
 import { useRoundStore } from "../../store/useRoundStore";
 import type { BombEntity } from "../../types";
+import { ModuleType } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   ColorSwatchPicker, ErrorAlert, SegmentedControl, SolverControls, SolverInstructions,
   SolverLayout, SolverSection, TwitchCommandDisplay, useSolver, useSolverModulePersistence,
@@ -45,7 +47,10 @@ export default function SquareButtonSolver({ bomb }: { bomb: BombEntity | null |
       if (state.result !== undefined) setResult(state.result);
       if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
     },
-    onRestoreSolution: setResult,
+    onRestoreSolution: (solution) => {
+      setResult(solution);
+      setTwitchCommand(generateTwitchCommand({ moduleType: ModuleType.SQUARE_BUTTON, result: solution }));
+    },
     currentModule, setIsSolved,
   });
 
@@ -59,7 +64,7 @@ export default function SquareButtonSolver({ bomb }: { bomb: BombEntity | null |
         color, label, ledColor: result?.hold ? ledColor ?? undefined : undefined,
         flickering: result?.hold ? flickering ?? undefined : undefined,
       });
-      const command = response.output.hold ? "hold" : response.output.instruction;
+      const command = generateTwitchCommand({ moduleType: ModuleType.SQUARE_BUTTON, result: response.output });
       setResult(response.output); setTwitchCommand(command); setIsSolved(response.solved);
       if (response.solved) markModuleSolved(bomb.id, currentModule.id);
       updateModuleAfterSolve(bomb.id, currentModule.id, { ...moduleState, result: response.output, twitchCommand: command }, response.output, response.solved);

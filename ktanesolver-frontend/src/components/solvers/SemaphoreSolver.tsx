@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
+import { useRoundStore } from "../../store/useRoundStore";
 import {
   solveSemaphore,
   getDisplayLabel,
@@ -32,10 +33,28 @@ interface FlagAngles {
   character?: string;
 }
 
+const enrichSequence = (sequence: FlagAngles[]) => {
+  let numerals = false;
+  return sequence.map((position) => {
+    if (position.character) return position;
+    const label = getDisplayLabel(position.leftFlagAngle, position.rightFlagAngle);
+    if (label === "NUMERALS") {
+      numerals = true;
+      return { ...position, character: "§" };
+    }
+    if (label === "LETTERS") {
+      numerals = false;
+      return { ...position, character: "§" };
+    }
+    const number = label.match(/\((\d)\)/)?.[1];
+    return { ...position, character: numerals && number ? number : label.charAt(0) };
+  });
+};
+
 export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
   const [sequence, setSequence] = useState<FlagAngles[]>([]);
   const [result, setResult] = useState<SemaphoreOutput | null>(null);
-  const [twitchCommand, setTwitchCommand] = useState<string>("");
+  const [currentIndex, setCurrentIndex] = useState<number | "">("");
 
   const {
     isLoading,
@@ -50,28 +69,24 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
     round,
     markModuleSolved,
   } = useSolver();
+  const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
 
   const moduleState = useMemo(
-    () => ({ sequence, result, twitchCommand }),
-    [sequence, result, twitchCommand],
+    () => ({ sequence, result, currentIndex }),
+    [sequence, result, currentIndex],
   );
 
   const onRestoreState = useCallback(
     (state: {
       sequence?: FlagAngles[];
       result?: SemaphoreOutput | null;
-      twitchCommand?: string;
+      currentIndex?: number | "";
       input?: { sequence?: FlagAngles[] };
     }) => {
-      const enrich = (seq: FlagAngles[]) =>
-        seq.map((pos) => ({
-          ...pos,
-          character: pos.character ?? getDisplayLabel(pos.leftFlagAngle, pos.rightFlagAngle),
-        }));
-      if (state.sequence) setSequence(enrich(state.sequence));
+      if (state.sequence) setSequence(enrichSequence(state.sequence));
       if (state.result !== undefined) setResult(state.result ?? null);
-      if (state.twitchCommand) setTwitchCommand(state.twitchCommand);
-      if (state.input?.sequence) setSequence(enrich(state.input.sequence));
+      if (state.currentIndex !== undefined) setCurrentIndex(state.currentIndex);
+      if (state.input?.sequence) setSequence(enrichSequence(state.input.sequence));
     },
     [],
   );
@@ -79,16 +94,11 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
   const onRestoreSolution = useCallback((restored: SemaphoreOutput) => {
     if (restored) {
       setResult(restored);
-      const command = generateTwitchCommand({
-        moduleType: ModuleType.SEMAPHORE,
-        result: { character: restored.missingCharacter },
-      });
-      setTwitchCommand(command);
     }
   }, []);
 
   useSolverModulePersistence<
-    { sequence: FlagAngles[]; result: SemaphoreOutput | null; twitchCommand: string },
+    { sequence: FlagAngles[]; result: SemaphoreOutput | null; currentIndex: number | "" },
     SemaphoreOutput
   >({
     state: moduleState,
@@ -116,20 +126,23 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
 
   const addPosition = (character: string, leftFlagAngle: number, rightFlagAngle: number) => {
     setSequence((prev) => [...prev, { leftFlagAngle, rightFlagAngle, character }]);
+    setCurrentIndex("");
   };
 
   const removeAt = (index: number) => {
     setSequence((prev) => prev.filter((_, i) => i !== index));
+    setCurrentIndex("");
   };
 
   const removeLastPosition = () => {
     setSequence((prev) => prev.slice(0, -1));
+    setCurrentIndex("");
   };
 
   const clearSequence = () => {
     setSequence([]);
     setResult(null);
-    setTwitchCommand("");
+    setCurrentIndex("");
   };
 
   const solveSemaphoreModule = async () => {
@@ -154,11 +167,7 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
       if (response.output.resolved) {
         setIsSolved(true);
         markModuleSolved(bomb.id, currentModule.id);
-        const command = generateTwitchCommand({
-          moduleType: ModuleType.SEMAPHORE,
-          result: response.output,
-        });
-        setTwitchCommand(command);
+        setCurrentIndex("");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to solve semaphore");
@@ -173,6 +182,14 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
   };
 
   const disabled = isLoading || isSolved;
+  const characters = sequence
+    .map((position) => position.character)
+    .filter((character): character is string => Boolean(character && character !== "§"));
+  const targetIndex = result ? characters.indexOf(result.missingCharacter) : -1;
+  const twitchCommand = generateTwitchCommand({
+    moduleType: ModuleType.SEMAPHORE,
+    result: { currentIndex, targetIndex },
+  });
 
   return (
     <SolverLayout>
@@ -263,6 +280,32 @@ export default function SemaphoreSolver({ bomb }: SemaphoreSolverProps) {
           <div className="mx-auto h-40 w-40">
             <SemaphoreCharacterFigure character={result.missingCharacter} />
           </div>
+          {result.resolved && targetIndex >= 0 && <label className="mt-3 block text-sm font-medium">
+            Character currently selected on the module
+            <select
+              value={currentIndex}
+              onChange={(event) => {
+                const index = event.target.value === "" ? "" : Number(event.target.value);
+                setCurrentIndex(index);
+                if (bomb?.id && currentModule?.id) {
+                  updateModuleAfterSolve(
+                    bomb.id,
+                    currentModule.id,
+                    { sequence, result, currentIndex: index },
+                    result,
+                    isSolved,
+                  );
+                }
+              }}
+              className="mt-2 block h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              aria-label="Current Semaphore character"
+            >
+              <option value="">Choose current position</option>
+              {characters.map((character, index) => (
+                <option key={`${character}-${index}`} value={index}>{index + 1}. {character}</option>
+              ))}
+            </select>
+          </label>}
         </SolverSection>
       )}
 

@@ -3,6 +3,7 @@ package ktanesolver.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -13,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import ktanesolver.dto.AddModulesRequest;
+import ktanesolver.dto.CompleteModuleRequest;
+import ktanesolver.dto.UpdateTwitchCodeRequest;
 import ktanesolver.entity.BombEntity;
 import ktanesolver.entity.ModuleEntity;
 import ktanesolver.entity.RoundEntity;
@@ -89,6 +92,49 @@ public class ModuleService {
         }
     }
 
+    private ModuleEntity findModule(UUID bombId, UUID moduleId) {
+        ModuleEntity module = moduleRepo.findByIdWithBomb(moduleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));
+        if (!module.getBomb().getId().equals(bombId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+        }
+        return module;
+    }
+
+    private static void ensureVersion(ModuleEntity module, long version) {
+        if (module.getVersion() != version) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Module changed; refresh and try again");
+        }
+    }
+
+    @Transactional
+    public ModuleEntity completeModule(UUID bombId, UUID moduleId, CompleteModuleRequest req) {
+        ModuleEntity module = findModule(bombId, moduleId);
+        if (module.isSolved()) return module;
+        ensureVersion(module, req.version());
+        module.setSolved(true);
+        module = moduleRepo.saveAndFlush(module);
+        BombEntity bomb = module.getBomb();
+        eventPublisher.publishEvent(new BombModuleUpdatedEvent(this, bomb.getRound().getId(), bombId, moduleId, module.getType(), true));
+        return module;
+    }
+
+    @Transactional
+    public ModuleEntity updateTwitchCode(UUID bombId, UUID moduleId, UpdateTwitchCodeRequest req) {
+        ModuleEntity module = findModule(bombId, moduleId);
+        ensureVersion(module, req.version());
+        String twitchCode = req.twitchCode() == null || req.twitchCode().isBlank()
+                ? null
+                : req.twitchCode().toLowerCase(Locale.ROOT);
+        if (twitchCode != null && moduleRepo.existsByBombIdAndTwitchCodeAndIdNot(bombId, twitchCode, moduleId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Twitch selector is already assigned on this bomb");
+        }
+        module.setTwitchCode(twitchCode);
+        module = moduleRepo.saveAndFlush(module);
+        eventPublisher.publishEvent(new RoundStateChangedEvent(this, module.getBomb().getRound().getId()));
+        return module;
+    }
+
     @Transactional
     public SolveResult<?> solveModule(UUID roundId, UUID bombId, UUID moduleId, Map<String, Object> rawInput) {
         ModuleEntity module = moduleRepo.findByIdWithBombAndRound(moduleId)
@@ -111,8 +157,10 @@ public class ModuleService {
                     "Invalid solve input for module type " + module.getType(),
                     exception);
         }
+        boolean physicallySolved = module.isSolved();
         SolveResult<?> result = invokeSolver(solver, round, bomb, module, input);
-        moduleRepo.save(module);
+        module.setSolved(physicallySolved);
+        moduleRepo.saveAndFlush(module);
         eventPublisher.publishEvent(new BombModuleUpdatedEvent(this, round.getId(), bombId, module.getId(), module.getType(), module.isSolved()));
         return result;
     }

@@ -63,13 +63,13 @@ export function useSolver() {
   };
   
   const state = useSolverState(initialState);
+  const { setIsSolved } = state;
   
-  // Update isSolved when currentModule.solved changes
+  // Physical completion can finish a calculation, but a calculated answer must not
+  // be reverted merely because the physical module still awaits confirmation.
   useEffect(() => {
-    if (currentModule?.solved !== state.isSolved) {
-      state.setIsSolved(currentModule?.solved ?? false);
-    }
-  }, [currentModule?.solved, state.isSolved, state.setIsSolved]);
+    if (currentModule?.solved) setIsSolved(true);
+  }, [currentModule?.solved, setIsSolved]);
 
   return {
     ...state,

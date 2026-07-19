@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { solveBooleanVennDiagram, type BooleanOperator, type BooleanVennDiagramOutput, type BooleanVennGrouping } from "../../services/booleanVennDiagramService";
 import { useRoundStore } from "../../store/useRoundStore";
-import type { BombEntity } from "../../types";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
 import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay, useSolver, useSolverModulePersistence } from "../common";
 
 const OPERATORS: { value: BooleanOperator; symbol: string }[] = [
@@ -61,7 +62,7 @@ export default function BooleanVennDiagramSolver({ bomb }: { bomb: BombEntity | 
       if (saved.twitchCommand) setTwitchCommand(saved.twitchCommand);
     }, []),
     onRestoreSolution: useCallback((solution: BooleanVennDiagramOutput) => {
-      setResult(solution); setTwitchCommand(solution.regions.join(" ").toLowerCase());
+      setResult(solution); setTwitchCommand(generateTwitchCommand({ moduleType: ModuleType.BOOLEAN_VENN_DIAGRAM, result: solution }));
     }, []),
     currentModule,
     setIsSolved,
@@ -73,7 +74,7 @@ export default function BooleanVennDiagramSolver({ bomb }: { bomb: BombEntity | 
     try {
       const input = { firstOperator, secondOperator, grouping };
       const response = await solveBooleanVennDiagram(round.id, bomb.id, currentModule.id, input);
-      const command = response.output.regions.join(" ").toLowerCase();
+      const command = generateTwitchCommand({ moduleType: ModuleType.BOOLEAN_VENN_DIAGRAM, result: response.output });
       setResult(response.output); setTwitchCommand(command); setIsSolved(response.solved);
       if (response.solved) markModuleSolved(bomb.id, currentModule.id);
       updateModuleAfterSolve(bomb.id, currentModule.id, { ...input, result: response.output, twitchCommand: command }, response.output, response.solved);

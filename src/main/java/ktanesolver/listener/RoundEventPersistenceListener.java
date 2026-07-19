@@ -36,7 +36,7 @@ public class RoundEventPersistenceListener {
 		RoundEventEntity entity = new RoundEventEntity();
 		entity.setRound(round);
 		entity.setTimestamp(Instant.now());
-		entity.setType(EventType.MODULE_SOLVED);
+		entity.setType(event.isSolved() ? EventType.MODULE_SOLVED : EventType.MODULE_UPDATED);
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("moduleId", event.getModuleId().toString());
 		payload.put("moduleType", event.getModuleType() != null ? event.getModuleType().name() : null);

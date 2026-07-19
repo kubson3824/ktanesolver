@@ -1,27 +1,45 @@
-import { Construction } from "lucide-react";
-import type { SolverProps } from "./types";
-import { SolverLayout, SolverSection } from "../common";
-import { Alert } from "../ui/alert";
+import { useState } from "react";
+import { ModuleType } from "../../types";
+import { cn } from "../../lib/cn";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay } from "../common";
 
-export default function VentingGasSolver({ bomb: _bomb }: SolverProps) {
-  void _bomb;
+export default function VentingGasSolver() {
+  const [answer, setAnswer] = useState<"yes" | "no">("yes");
+  const twitchCommand = generateTwitchCommand({
+    moduleType: ModuleType.VENTING_GAS,
+    result: { answer },
+  });
+
   return (
     <SolverLayout>
       <SolverSection
         title="Venting Gas"
-        description="Needy module — answer the prompts before pressure builds up."
+        description="Choose the response requested by the active needy prompt."
       >
-        <Alert variant="warning" className="flex items-start gap-2">
-          <Construction className="h-4 w-4 mt-0.5 shrink-0" aria-hidden />
-          <div>
-            <p className="font-semibold">Not implemented yet</p>
-            <p className="mt-1 text-xs opacity-80">
-              This module requires tracking gas levels and indicators. Solver
-              support is coming in a future release.
-            </p>
-          </div>
-        </Alert>
+        <div className="grid grid-cols-2 gap-2">
+          {(["yes", "no"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setAnswer(value)}
+              aria-pressed={answer === value}
+              className={cn(
+                "h-10 rounded-md border text-sm font-semibold uppercase",
+                answer === value
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-border bg-muted/30 text-muted-foreground",
+              )}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
       </SolverSection>
+      <TwitchCommandDisplay command={twitchCommand} />
+      <SolverInstructions>
+        Read the module prompt, select YES or NO here, then paste the generated command.
+      </SolverInstructions>
     </SolverLayout>
   );
 }

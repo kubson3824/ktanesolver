@@ -17,7 +17,6 @@ type RoundStoreState = {
     round?: RoundEntity;
     allRounds?: RoundSummary[];
     currentBomb?: BombEntity;
-    moduleNumbers: Record<string, number>;
     currentModule?: ModuleEntity & {
         bomb: BombEntity;
         moduleType: string;
@@ -53,8 +52,8 @@ type RoundStoreActions = {
     selectModuleById: (bombId: string, moduleId: string) => void;
     clearModule: () => void;
     setManualUrl: (url: string) => void;
-    getModuleNumber: (moduleId?: string) => number;
-    setModuleNumber: (moduleId: string, number: number) => void;
+    completeModule: (bombId: string, moduleId: string) => Promise<ModuleEntity>;
+    setModuleTwitchCode: (bombId: string, moduleId: string, twitchCode: string) => Promise<ModuleEntity>;
     markModuleSolved: (bombId: string, moduleId: string) => void;
     /** Update a module's state and solution in the round (and currentModule if selected) so returning to the module shows the solution. */
     updateModuleAfterSolve: (
@@ -86,7 +85,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
             round: undefined,
             allRounds: undefined,
             currentBomb: undefined,
-            moduleNumbers: {},
             currentModule: undefined,
             manualUrl: undefined,
             loading: false,
@@ -611,58 +609,66 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
 
             setManualUrl: (url) => set({manualUrl: url}),
 
-            getModuleNumber: (moduleId) => {
-                if (!moduleId) return 1;
-                return get().moduleNumbers[moduleId] ?? 1;
-            },
-
-            setModuleNumber: (moduleId, number) => {
-                set((state) => ({
-                    moduleNumbers: {
-                        ...state.moduleNumbers,
-                        [moduleId]: Math.min(99, Math.max(1, number)),
-                    },
-                }));
-            },
-
-            markModuleSolved: (bombId, moduleId) => {
+            completeModule: async (bombId, moduleId) => {
+                const module = get().currentModule;
+                if (!module || module.id !== moduleId) throw new Error("Module is not selected");
+                const updated = await withErrorWrapping(async () => {
+                    const {data} = await api.post<ModuleEntity>(`/bombs/${bombId}/modules/${moduleId}/complete`, {
+                        version: module.version,
+                    });
+                    return data;
+                });
                 roundMutationVersion++;
                 set((state) => {
-                    if (!state.round) return state;
-                    const isCurrentModule =
-                        state.currentModule?.id === moduleId && state.currentBomb?.id === bombId;
+                    const replace = (item: ModuleEntity) => item.id === moduleId ? updated : item;
+                    const currentBomb = state.currentBomb?.id === bombId
+                        ? {...state.currentBomb, modules: state.currentBomb.modules.map(replace)}
+                        : state.currentBomb;
                     return {
-                        round: {
-                            ...state.round,
-                            bombs: state.round.bombs.map((bomb) => {
-                                if (bomb.id !== bombId) return bomb;
-                                return {
-                                    ...bomb,
-                                    modules: bomb.modules.map((module) => {
-                                        if (module.id !== moduleId) return module;
-                                        return {...module, solved: true};
-                                    }),
-                                };
-                            }),
-                        },
-                        currentBomb:
-                            state.currentBomb?.id === bombId
-                                ? {
-                                      ...state.currentBomb,
-                                      modules: state.currentBomb.modules.map((module) => {
-                                          if (module.id !== moduleId) return module;
-                                          return {...module, solved: true};
-                                      }),
-                                  }
-                                : state.currentBomb,
-                        currentModule: isCurrentModule && state.currentModule
-                            ? {...state.currentModule, solved: true}
+                        round: state.round && {...state.round, bombs: state.round.bombs.map((bomb) =>
+                            bomb.id === bombId ? {...bomb, modules: bomb.modules.map(replace)} : bomb)},
+                        currentBomb,
+                        currentModule: state.currentModule?.id === moduleId && currentBomb
+                            ? {...updated, bomb: currentBomb, moduleType: updated.type}
                             : state.currentModule,
                     };
                 });
+                return updated;
             },
 
-            updateModuleAfterSolve: (bombId, moduleId, state, solution, solved) => {
+            setModuleTwitchCode: async (bombId, moduleId, twitchCode) => {
+                const module = get().currentModule;
+                if (!module || module.id !== moduleId) throw new Error("Module is not selected");
+                const updated = await withErrorWrapping(async () => {
+                    const {data} = await api.put<ModuleEntity>(`/bombs/${bombId}/modules/${moduleId}/twitch-code`, {
+                        version: module.version,
+                        twitchCode: twitchCode.trim(),
+                    });
+                    return data;
+                });
+                roundMutationVersion++;
+                set((state) => {
+                    const replace = (item: ModuleEntity) => item.id === moduleId ? updated : item;
+                    const currentBomb = state.currentBomb?.id === bombId
+                        ? {...state.currentBomb, modules: state.currentBomb.modules.map(replace)}
+                        : state.currentBomb;
+                    return {
+                        round: state.round && {...state.round, bombs: state.round.bombs.map((bomb) =>
+                            bomb.id === bombId ? {...bomb, modules: bomb.modules.map(replace)} : bomb)},
+                        currentBomb,
+                        currentModule: state.currentModule?.id === moduleId && currentBomb
+                            ? {...updated, bomb: currentBomb, moduleType: updated.type}
+                            : state.currentModule,
+                    };
+                });
+                return updated;
+            },
+
+            markModuleSolved: (bombId, moduleId) => {
+                debugModuleSync("calculationComplete", {bombId, moduleId});
+            },
+
+            updateModuleAfterSolve: (bombId, moduleId, state, solution) => {
                 roundMutationVersion++;
                 set((prev) => {
                     if (!prev.round) return prev;
@@ -675,7 +681,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                   ...m,
                                   state: {...m.state, ...state},
                                   solution: {...m.solution, ...solution},
-                                  ...(solved !== undefined && {solved}),
                               };
                     return {
                         round: {
@@ -694,7 +699,6 @@ export const useRoundStore = create<RoundStoreState & RoundStoreActions>()(
                                       ...prev.currentModule,
                                       state: {...prev.currentModule.state, ...state},
                                       solution: {...prev.currentModule.solution, ...solution},
-                                      ...(solved !== undefined && {solved}),
                                   }
                                 : prev.currentModule,
                     };

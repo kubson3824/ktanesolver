@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { solveTheBulb, type BulbColor, type TheBulbInput, type TheBulbOutput } from "../../services/theBulbService";
 import { useRoundStore } from "../../store/useRoundStore";
-import type { BombEntity } from "../../types";
-import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, useSolver, useSolverModulePersistence } from "../common";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay, useSolver, useSolverModulePersistence } from "../common";
 import { Button } from "../ui/button";
 
 const COLORS: BulbColor[] = ["BLUE", "GREEN", "PURPLE", "RED", "WHITE", "YELLOW"];
@@ -28,6 +29,7 @@ export default function TheBulbSolver({ bomb }: { bomb: BombEntity | null | unde
   const [result, setResult] = useState<TheBulbOutput | null>(null);
   const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
+  const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.THE_BULB, result }) : "";
   const moduleState = useMemo(() => ({ color, opaque, lightOn, result }), [color, opaque, lightOn, result]);
 
   useSolverModulePersistence<typeof moduleState, TheBulbOutput>({
@@ -88,6 +90,7 @@ export default function TheBulbSolver({ bomb }: { bomb: BombEntity | null | unde
       </div>}
       {isSolved && <p className="mt-3 text-center font-semibold text-emerald-700 dark:text-emerald-400">Module solved.</p>}
     </SolverSection>}
+    {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
     <SolverInstructions>Perform each instruction in order. If a wrong button causes a strike, ignore it and continue; if the bulb was moved at the wrong time, undo that move before continuing.</SolverInstructions>
   </SolverLayout>;
 }

@@ -12,13 +12,15 @@ import {
   type ResistorsPath,
 } from "../../services/resistorsService";
 import { useRoundStore } from "../../store/useRoundStore";
-import type { BombEntity } from "../../types";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   ErrorAlert,
   SolverControls,
   SolverInstructions,
   SolverLayout,
   SolverSection,
+  TwitchCommandDisplay,
   useSolver,
   useSolverModulePersistence,
 } from "../common";
@@ -204,6 +206,7 @@ export default function ResistorsSolver({ bomb }: ResistorsSolverProps) {
     markModuleSolved,
   } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
+  const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.RESISTORS, result }) : "";
 
   const moduleState = useMemo(
     () => ({ topResistor, bottomResistor, result }),
@@ -374,6 +377,7 @@ export default function ResistorsSolver({ bomb }: ResistorsSolverProps) {
         </SolverSection>
       )}
 
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
       <SolverInstructions>
         Make only the listed connections, leave every other input/output pair disconnected, then
         press CHECK. Resistor direction does not matter.

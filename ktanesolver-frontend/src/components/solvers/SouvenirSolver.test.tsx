@@ -28,7 +28,7 @@ const bomb = (type: ModuleType): BombEntity => ({
   portPlates: [],
   status: BombStatus.ACTIVE,
   strikes: 0,
-  modules: [{ id: "source-1", type, solved: true, state: {}, solution: {} }],
+  modules: [{ id: "source-1", type, solved: true, version: 0, state: {}, solution: {} }],
 });
 
 describe("SouvenirSolver", () => {

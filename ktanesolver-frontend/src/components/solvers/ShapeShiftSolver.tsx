@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { solveShapeShift, type ShapeEdge, type ShapeShiftOutput } from "../../services/shapeShiftService";
 import { useRoundStore } from "../../store/useRoundStore";
-import type { BombEntity } from "../../types";
-import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, useSolver, useSolverModulePersistence } from "../common";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay, useSolver, useSolverModulePersistence } from "../common";
 import { Button } from "../ui/button";
 
 export const EDGES: ShapeEdge[] = ["SQUARE", "ROUND", "POINT", "CONCAVE"];
@@ -32,6 +33,7 @@ export default function ShapeShiftSolver({ bomb }: { bomb: BombEntity | null | u
   const [result, setResult] = useState<ShapeShiftOutput | null>(null);
   const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
+  const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.SHAPE_SHIFT, result }) : "";
   const moduleState = useMemo(() => ({ left, right, result }), [left, right, result]);
 
   useSolverModulePersistence<typeof moduleState, ShapeShiftOutput>({
@@ -89,6 +91,7 @@ export default function ShapeShiftSolver({ bomb }: { bomb: BombEntity | null | u
       <Shape left={result.left} right={result.right} className="mx-auto h-36 w-56 text-emerald-600" />
       <p className="text-center font-semibold">{LABELS[result.left]} left · {LABELS[result.right]} right</p>
     </SolverSection>}
+    {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
     <SolverInstructions>Match the two side profiles shown on the module. The solver uses the bomb's recorded ports, indicators, batteries, and serial number.</SolverInstructions>
   </SolverLayout>;
 }

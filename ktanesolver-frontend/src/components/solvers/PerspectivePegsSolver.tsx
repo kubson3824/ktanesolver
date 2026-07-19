@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRoundStore } from "../../store/useRoundStore";
-import type { BombEntity } from "../../types";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   solvePerspectivePegs,
   type PerspectivePeg,
@@ -16,6 +17,7 @@ import {
   SolverControls,
   ErrorAlert,
   SolverResult,
+  TwitchCommandDisplay,
   type ColorSwatchOption,
 } from "../common";
 import { cn } from "../../lib/cn";
@@ -102,6 +104,7 @@ export default function PerspectivePegsSolver({ bomb }: PerspectivePegsSolverPro
   } = useSolver();
 
   const updateModuleAfterSolve = useRoundStore((s) => s.updateModuleAfterSolve);
+  const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.PERSPECTIVE_PEGS, result }) : "";
 
   const moduleState = useMemo(
     () => ({ pegs, result }),
@@ -356,6 +359,7 @@ Key sequence: ${result.keySequence.join(" ")}`}
         />
       )}
 
+      {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
       <SolverInstructions>
         Enter all five sides of each fixed peg. The solver returns the viewing angle and the three fixed pegs to press in order.
       </SolverInstructions>

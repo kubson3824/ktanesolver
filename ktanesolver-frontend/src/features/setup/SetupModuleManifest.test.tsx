@@ -8,6 +8,7 @@ const createModule = (id: string, type: ModuleType): ModuleEntity => ({
   id,
   type,
   solved: false,
+  version: 0,
   state: {},
   solution: {},
 });

@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { solveSouvenir, type SouvenirOutput } from "../../services/souvenirService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
 import {
   ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection,
-  useSolver, useSolverModulePersistence,
+  TwitchCommandDisplay, useSolver, useSolverModulePersistence,
 } from "../common";
 import { Button } from "../ui/button";
 
@@ -128,6 +129,7 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
     [bomb?.modules, currentModule?.id],
   );
   const selectedSource = sources.find((source) => source.id === sourceModuleId);
+  const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.SOUVENIR, result }) : "";
   const questionOptions = questionsFor(selectedSource);
   const moduleState = useMemo<SouvenirState>(() => ({
     sourceModuleId, question: selectedQuestion, exactQuestion, answers, finalQuestion, result, history,
@@ -287,6 +289,7 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
       </div>
       {!isSolved && <Button type="button" className="mt-4 w-full" onClick={nextQuestion}>Next question</Button>}
     </SolverSection>}
+    {twitchCommand && <TwitchCommandDisplay command={twitchCommand} />}
     <SolverInstructions>Select the exact solved module instance. Presets show recorded facts quickly; for an exact answer, enter Souvenir’s question and the displayed choices.</SolverInstructions>
   </SolverLayout>;
 }

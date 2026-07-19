@@ -126,13 +126,10 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
       if (!restored) return;
       if (restored.presses) {
         setPresses(restored.presses);
-        const commands = restored.presses.map((color) =>
-          generateTwitchCommand({
-            moduleType: ModuleType.SIMON_SAYS,
-            result: { color },
-          }),
-        );
-        setTwitchCommands(commands);
+        setTwitchCommands([generateTwitchCommand({
+          moduleType: ModuleType.SIMON_SAYS,
+          result: { presses: restored.presses },
+        })]);
       }
       if (restored.manuallySolved !== undefined) setManuallySolved(restored.manuallySolved);
     },
@@ -214,14 +211,10 @@ export default function SimonSolver({ bomb }: SimonSolverProps) {
         input: { flashes },
       });
       setPresses(response.output.presses);
-      setTwitchCommands(
-        response.output.presses.map((color) =>
-          generateTwitchCommand({
-            moduleType: ModuleType.SIMON_SAYS,
-            result: { color },
-          }),
-        ),
-      );
+      setTwitchCommands([generateTwitchCommand({
+        moduleType: ModuleType.SIMON_SAYS,
+        result: { presses: response.output.presses },
+      })]);
       // Animate the response sequence.
       response.output.presses.forEach((color, index) => {
         setTimeout(() => {

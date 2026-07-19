@@ -98,7 +98,7 @@ export default function SwitchesSolver({ bomb }: SwitchesSolverProps) {
       setCurrentStepIndex(0);
       const command = generateTwitchCommand({
         moduleType: ModuleType.SWITCHES,
-        result: { instruction: solution.instruction },
+        result: solution,
       });
       setTwitchCommand(command);
     }
