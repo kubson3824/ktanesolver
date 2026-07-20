@@ -569,6 +569,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const morse = strings(raw.morse);
       return morse.length ? command(`transmit ${morse.join(" ")}`) : "";
     }
+    case ModuleType.COLOR_GENERATOR: {
+      const values = [raw.red, raw.green, raw.blue];
+      return values.every((value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 255)
+        ? command(`submit ${values.join(" ")}`)
+        : "";
+    }
     case ModuleType.BIG_CIRCLE: {
       const colors = strings(raw.pressSequence);
       return colors.length === 3 ? command(`press ${colors.map(words).join(" ")}`) : "";

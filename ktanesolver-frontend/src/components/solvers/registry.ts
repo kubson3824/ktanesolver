@@ -113,6 +113,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.RHYTHMS]: { load: () => import("./RhythmsSolver") },
   [ModuleType.COLOR_MATH]: { load: () => import("./ColorMathSolver") },
   [ModuleType.COLOR_MORSE]: { load: () => import("./ColorMorseSolver") },
+  [ModuleType.COLOR_GENERATOR]: { load: () => import("./ColorGeneratorSolver") },
   [ModuleType.BIG_CIRCLE]: { load: () => import("./BigCircleSolver") },
   [ModuleType.MASTERMIND_SIMPLE]: { load: () => import("./MastermindSimpleSolver") },
   [ModuleType.MASTERMIND_CRUEL]: { load: () => import("./MastermindCruelSolver") },
