@@ -109,6 +109,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.CHEAP_CHECKOUT]: { load: () => import("./CheapCheckoutSolver") },
   [ModuleType.COORDINATES]: { load: () => import("./CoordinatesSolver") },
   [ModuleType.LIGHT_CYCLE]: { load: () => import("./LightCycleSolver") },
+  [ModuleType.SYMBOL_CYCLE]: { load: () => import("./SymbolCycleSolver") },
   [ModuleType.BINARY_LEDS]: { load: () => import("./BinaryLedsSolver") },
   [ModuleType.RHYTHMS]: { load: () => import("./RhythmsSolver") },
   [ModuleType.COLOR_MATH]: { load: () => import("./ColorMathSolver") },

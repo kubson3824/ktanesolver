@@ -115,6 +115,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.SIMON_STATES]: [question("flashes", "Which colors flashed in each stage?")],
   [ModuleType.SKEWED_SLOTS]: [question("originalNumber", "What were the original numbers?")],
   [ModuleType.SWITCHES]: [question("initialPosition", "What was the initial switch position?")],
+  [ModuleType.SYMBOL_CYCLE]: [
+    question("leftSymbolCount", "How many symbols cycled on the left screen?"),
+    question("rightSymbolCount", "How many symbols cycled on the right screen?"),
+  ],
   [ModuleType.COLORED_SWITCHES]: [question("initialPosition", "What was the initial position of the switches?")],
   [ModuleType.SOUVENIR]: [question("firstModule", "What was the first module asked about?")],
   [ModuleType.THE_BULB]: [question("initiallyLit", "Was the bulb initially lit?")],

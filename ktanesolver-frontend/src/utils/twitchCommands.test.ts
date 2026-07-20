@@ -104,6 +104,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   CHEAP_CHECKOUT: { result: { needsSecondPayment: false, change: 3.24 }, expected: "!number submit 3.24" },
   COORDINATES: { result: { matchingClues: ["2 4", "8 1"] }, expected: "!number submit 2 4; !number submit 8 1" },
   LIGHT_CYCLE: { result: { sequence: ["BLUE", "RED", "WHITE"] }, expected: "!number B R W" },
+  SYMBOL_CYCLE: { result: { mode: "RETROTRANSPHASIC", leftClicks: 3, rightClicks: 2 }, expected: "!number click left 3; !number click right 2; !number flip" },
   BINARY_LEDS: { result: { recommendedColor: "RED", recommendedValue: 25 }, expected: "!number cut red 25" },
   RHYTHMS: { result: { mash: false, actions: [{ button: "BLUE", beeps: 3 }] }, expected: "!number press blue 3" },
   COLOR_MATH: { result: { colors: ["RED", "GREEN", "BLUE", "PURPLE"] }, expected: "!number set r,g,b,p; !number submit" },
@@ -136,7 +137,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(104);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(105);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(21);
   });
 
@@ -154,6 +155,13 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.TWO_BITS,
       result: { letters: "gz", stages: [{}, {}, {}, {}] },
     })).toBe("!number press g z submit");
+  });
+
+  it("generates the anterodiametric Symbol Cycle command", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.SYMBOL_CYCLE,
+      result: { mode: "ANTERODIAMETRIC", clickScreen: "RIGHT", clicks: 4 },
+    })).toBe("!number click right 4; !number flip");
   });
 
   it("returns no timed Square Button command when the exact timer value is unknown", () => {

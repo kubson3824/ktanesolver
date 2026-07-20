@@ -148,6 +148,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
+			case SYMBOL_CYCLE -> answerIndex(answers, source.getState().get(q.contains("left") ? "leftCycleLength" : "rightCycleLength"));
 			case COLORED_SWITCHES -> answerIndex(answers, switchCode(source.getState().get("initialPosition")));
 			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
@@ -217,6 +218,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> state.get("flashHistory");
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
+			case SYMBOL_CYCLE -> state.get("leftSymbolCount".equals(question) ? "leftCycleLength" : "rightCycleLength");
 			case COLORED_SWITCHES -> switchCode(state.get("initialPosition"));
 			case SOUVENIR -> firstHistoryType(state.get("history"));
 			case THE_BULB -> state.get("initiallyOn");

@@ -546,6 +546,21 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const sequence = strings(raw.sequence).map((color) => codes[color] ?? color);
       return sequence.length ? command(sequence.join(" ")) : "";
     }
+    case ModuleType.SYMBOL_CYCLE: {
+      if (raw.mode === "RETROTRANSPHASIC") {
+        const left = numberValue(raw.leftClicks);
+        const right = numberValue(raw.rightClicks);
+        if (left === undefined || right === undefined || !Number.isInteger(left) || !Number.isInteger(right) || left < 0 || right < 0) return "";
+        return commands([left ? `click left ${left}` : undefined, right ? `click right ${right}` : undefined, "flip"]);
+      }
+      if (raw.mode === "ANTERODIAMETRIC") {
+        const screen = stringValue(raw.clickScreen)?.toLowerCase();
+        const clicks = numberValue(raw.clicks);
+        if ((screen !== "left" && screen !== "right") || clicks === undefined || !Number.isInteger(clicks) || clicks < 0) return "";
+        return commands([clicks ? `click ${screen} ${clicks}` : undefined, "flip"]);
+      }
+      return "";
+    }
     case ModuleType.BINARY_LEDS: {
       const color = stringValue(raw.recommendedColor);
       const value = numberValue(raw.recommendedValue);

@@ -782,6 +782,24 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("counterclockwise", null));
 	}
 
+	@Test
+	void resolvesBothSymbolCycleScreenCounts() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity symbolCycle = module(ModuleType.SYMBOL_CYCLE, true, Map.of(
+			"leftCycleLength", 3, "rightCycleLength", 4
+		));
+		bomb.setModules(List.of(souvenir, symbolCycle));
+
+		assertThat(solve(bomb, souvenir, symbolCycle.getId(), "leftSymbolCount", List.of(), false))
+			.isEqualTo(new SouvenirOutput("3", null));
+		assertThat(solve(bomb, souvenir, symbolCycle.getId(), "rightSymbolCount", List.of(), false))
+			.isEqualTo(new SouvenirOutput("4", null));
+		assertThat(solve(bomb, souvenir, symbolCycle.getId(),
+			"How many symbols were cycling on the right screen in Symbol Cycle?",
+			List.of("2", "3", "4", "5"), false)).isEqualTo(new SouvenirOutput("4", 3));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(
