@@ -698,6 +698,11 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const safeButton = numberValue(raw.safeButton);
       return safeButton !== undefined && safeButton >= 1 && safeButton <= 5 ? command(`press ${safeButton}`) : "";
     }
+    case ModuleType.CURRICULUM: {
+      const clicks = arrayValue(raw.clicks);
+      if(clicks.length !== 5 || clicks.some((click) => typeof click !== "number" || !Number.isInteger(click) || click < 0 || click > 5)) return "";
+      return commands(clicks.map((click, index) => click === 0 ? undefined : `click ${index + 1}${click === 1 ? "" : ` ${click}`}`).concat("submit"));
+    }
     case ModuleType.PAINTING: {
       const repaints = arrayValue(raw.repaints).map(asRecord);
       if(!repaints.length || repaints.some((repaint) => !/^[A-Za-z0-9]+$/.test(stringValue(repaint.label) ?? "") || !stringValue(repaint.to))) return "";

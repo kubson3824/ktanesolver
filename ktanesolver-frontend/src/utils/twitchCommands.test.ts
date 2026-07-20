@@ -132,6 +132,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   NONOGRAM: { result: { filledCells: ["B1", "A2", "C4"] }, expected: "!number fill B1 A2 C4; !number submit" },
   SET: { result: { positions: ["A1", "C2", "B3"] }, expected: "!number press a1 c2 b3" },
   HUNTING: { result: { safeButton: 4 }, expected: "!number press 4" },
+  CURRICULUM: { result: { clicks: [0, 1, 2, 3, 5] }, expected: "!number click 2; !number click 3 2; !number click 4 3; !number click 5 5; !number submit" },
   PAINTING: { result: { repaints: [{ label: "A", to: "RED" }, { label: "7", to: "GRAY" }] }, expected: "!number paint A red; !number paint 7 gray" },
 };
 
@@ -139,7 +140,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(106);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(107);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(22);
   });
 

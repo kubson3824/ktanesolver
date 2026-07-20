@@ -127,6 +127,7 @@ export enum ModuleType {
   NONOGRAM = "NONOGRAM",
   SET = "SET",
   HUNTING = "HUNTING",
+  CURRICULUM = "CURRICULUM",
 }
 
 export enum PortType {
