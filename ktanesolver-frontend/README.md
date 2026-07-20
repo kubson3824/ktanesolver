@@ -1,26 +1,22 @@
-# KTANESolver Frontend
+# KTANESolver frontend
 
-React/Vite frontend for the KTANESolver backend.
-
-## Commands
+React and TypeScript client for KTANESolver.
 
 ```bash
 npm install
 npm run dev
-npm run build
-npm run lint
-npm run test
 ```
 
-## Add A Solver UI
+## Checks
 
-Use the root guide first: [../docs/implementing-new-module-solver.md](../docs/implementing-new-module-solver.md).
+```bash
+npm run test
+npm run build
+npm run lint
+```
 
-Frontend files usually touched:
+Use the canonical project documentation:
 
-1. `src/services/yourModuleService.ts`
-2. `src/components/solvers/YourModuleSolver.tsx`
-3. `src/components/solvers/registry.ts`
-4. `src/types/index.ts` only when the UI/Twitch command code needs a `ModuleType` constant
-
-Use `solveModule` from `src/lib/api.ts` for new services so every solver keeps the same `{ input: ... }` request shape.
+- [Install and run](../docs/getting-started.md)
+- [Implement a module solver](../docs/implementing-new-module-solver.md)
+- [Frontend solver guidelines](../docs/frontend-solver-guidelines.md)

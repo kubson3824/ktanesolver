@@ -1,100 +1,78 @@
-# Implementing a New Module Solver
+# Implement a module solver
 
-This is the current end-to-end checklist for adding a module safely in this repo.
+Add a solver end to end without duplicating framework code. A typical regular module needs one backend package, one focused backend test, one frontend service, one component, and one registry entry.
 
-## Short Path
+{% hint style="info" %}
+Start from the closest existing module. The shared solver framework, API wrapper, state hooks, and UI primitives already cover the common cases.
+{% endhint %}
 
-Most new modules touch these files, in this order:
+## Before you code
 
-1. Backend enum: `src/main/java/ktanesolver/enums/ModuleType.java`
-2. Backend input/output records: same package as the solver
-3. Backend solver: `src/main/java/ktanesolver/module/.../YourModuleSolver.java`
-4. Backend solver test: `src/test/java/ktanesolver/module/.../YourModuleSolverTest.java`
-5. Frontend service: `ktanesolver-frontend/src/services/yourModuleService.ts`
-6. Frontend component: `ktanesolver-frontend/src/components/solvers/YourModuleSolver.tsx`
-7. Frontend registry: `ktanesolver-frontend/src/components/solvers/registry.ts`
-8. Optional frontend constant: `ktanesolver-frontend/src/types/index.ts`
+Read the module manual completely and identify:
 
-Do not add manual wiring to `ModuleSolverRegistry`; `@Service` plus `@ModuleInfo` is enough.
-Do not add Flyway migrations unless the module needs new tables or columns.
+- every visible input the expert must enter;
+- edgework used by the rules;
+- whether the module is regular or needy;
+- whether solving takes one request or several stages;
+- the final action and any Twitch Plays command grammar;
+- state that must survive a refresh.
 
-Before writing the React component, copy the closest existing solver shape:
-
-| Need | Copy first |
-|---|---|
-| Simple input -> answer | `AlphabetSolver`, `MathSolver`, `CombinationLockSolver` |
-| Multi-stage state | `MemorySolver`, `WireSequencesSolver`, `SimonStatesSolver` |
-| Needy module | `KnobsSolver` |
-| Color or symbol picking | `SimonSolver`, `KeypadsSolver`, `RoundKeypadSolver` |
-| Grid/path display | `MazeSolver`, `ChessSolver`, `ThreeDMazeSolver` |
-
-## What Changed Recently
-
-- The backend now returns explicit errors for unsupported module types and invalid solve input.
-- The module catalog contract now uses `hasInput` and `hasOutput`.
-- The frontend treats catalog module types as backend strings. `ModuleType` is only a convenience constant for implemented solver UIs and Twitch commands.
-- The frontend uses one shared catalog store and one shared solver registry.
-- New module types no longer require a Flyway migration just to satisfy the old `modules.type` check constraint. That constraint was removed in `V17__drop_module_type_check_constraint.sql`.
-
-## Backend Checklist
+## Backend
 
 ### 1. Add the module type
 
-Add the enum entry in `src/main/java/ktanesolver/enums/ModuleType.java`.
+Add the enum value in `src/main/java/ktanesolver/enums/ModuleType.java`:
 
 ```java
-public enum ModuleType {
-    // ...
-    YOUR_NEW_MODULE(false)
-}
+YOUR_MODULE(false)
 ```
 
-- Use `true` only if the module belongs in the needy panel.
-- The enum is still the backend source of truth for persisted module types.
+Use `true` only for a needy module. No Flyway migration is required just to add an enum value; the old database type constraint has been removed.
 
-### 2. Create the input and output types
+### 2. Create input and output records
 
-Add a `ModuleInput` record and a `ModuleOutput` record in the module package.
+Place the records in the same package as the solver:
 
 ```java
 public record YourModuleInput(
-        String field1,
-        int field2
+        String display,
+        int stage
 ) implements ModuleInput {
 }
 ```
 
 ```java
 public record YourModuleOutput(
-        String solution
+        String action
 ) implements ModuleOutput {
 }
 ```
 
-### 3. Create the solver class
+Use domain names from the manual. Do not expose UI-only concepts in the backend contract.
 
-Place the solver under the matching package:
+### 3. Implement the solver
 
-- `src/main/java/ktanesolver/module/vanilla/regular/...`
-- `src/main/java/ktanesolver/module/vanilla/needy/...`
-- `src/main/java/ktanesolver/module/modded/regular/...`
-- `src/main/java/ktanesolver/module/modded/needy/...`
+Choose the matching package:
 
-Use `@Service` and `@ModuleInfo`.
+- `module/vanilla/regular/`
+- `module/vanilla/needy/`
+- `module/modded/regular/`
+- `module/modded/needy/`
 
 ```java
 @Service
 @ModuleInfo(
-        type = ModuleType.YOUR_NEW_MODULE,
+        type = ModuleType.YOUR_MODULE,
         id = "your-module",
         name = "Your Module",
         category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
-        description = "Brief description",
-        tags = {"tag1", "tag2"},
+        description = "Calculate the next required action.",
+        tags = {"logic"},
         hasInput = true,
         hasOutput = true
 )
-public class YourModuleSolver extends AbstractModuleSolver<YourModuleInput, YourModuleOutput> {
+public class YourModuleSolver
+        extends AbstractModuleSolver<YourModuleInput, YourModuleOutput> {
 
     @Override
     protected SolveResult<YourModuleOutput> doSolve(
@@ -103,192 +81,145 @@ public class YourModuleSolver extends AbstractModuleSolver<YourModuleInput, Your
             ModuleEntity module,
             YourModuleInput input
     ) {
-        if (input.field1() == null || input.field1().isBlank()) {
-            return failure("Field 1 is required");
+        if (input.display() == null || input.display().isBlank()) {
+            return failure("Display is required");
         }
 
-        return success(new YourModuleOutput("solution"));
+        return success(new YourModuleOutput("press 2"));
     }
 }
 ```
 
-### 4. Use the solver helpers correctly
+`@Service` and `@ModuleInfo` are both required. Spring supplies the solver list to `ModuleSolverRegistry`; do not add manual wiring.
 
-- `success(output)` marks the module solved.
-- `success(output, false)` returns output without marking the module solved.
-- `failure(message)` returns a user-facing validation failure.
-- `storeState(module, key, value)` and `storeTypedState(module, value)` persist multi-step progress.
+### 4. Use framework helpers
 
-### 5. Decide the catalog metadata carefully
+| Helper | Meaning |
+|---|---|
+| `success(output)` | Return a final calculation with `solved: true` |
+| `success(output, false)` | Return an intermediate calculation |
+| `failure(message)` | Return a user-correctable rule or validation failure |
+| `storeState(module, key, value)` | Merge one value into persisted stage state |
+| `storeTypedState(module, value)` | Replace stage state with a typed object |
 
-The `@ModuleInfo` values now feed the frontend more directly:
+A final calculation does not confirm that the physical game module is solved. The user performs the action and confirms completion separately.
 
-- `category` decides where the module appears in the UI.
-- `hasInput` and `hasOutput` describe the solver contract.
-- `checkFirst` controls the Solve page reminder strip.
+### 5. Set catalog metadata
 
-If those values are wrong, the frontend layout will be wrong even if the solve logic works.
+`@ModuleInfo` drives the module selector and solve layout:
 
-## Frontend Checklist
+| Field | Effect |
+|---|---|
+| `type` | Links the solver to the persisted enum value |
+| `id` | Matches the KTaNE module/manual identifier |
+| `category` | Places the module in vanilla/modded and regular/needy groups |
+| `tags` | Improves catalog search |
+| `hasInput` / `hasOutput` | Describes the solver contract |
+| `checkFirst` | Adds an early-round reminder |
 
-### 1. Add a frontend constant when useful
+### 6. Add one focused test
 
-The setup flow reads module types from the backend catalog, so this is not required for backend-only modules. Add the module in `ktanesolver-frontend/src/types/index.ts` when the solver UI or Twitch command code needs a named constant.
+Create `YourModuleSolverTest` under the matching `src/test/java` package. Cover:
 
-```ts
-export enum ModuleType {
-  // ...
-  YOUR_NEW_MODULE = "YOUR_NEW_MODULE",
-}
-```
+- one representative valid solve;
+- the most important edgework branch;
+- one invalid boundary input;
+- stage persistence if the module is multi-step.
 
-### 2. Add the service
+Prefer table-driven cases when the manual is a lookup table. Avoid one test method per row.
 
-Create a module service under `ktanesolver-frontend/src/services/`.
+## Frontend
+
+### 1. Add a module constant when needed
+
+Add `YOUR_MODULE = "YOUR_MODULE"` to `ktanesolver-frontend/src/types/index.ts` when the custom UI or Twitch generator references it. The catalog itself comes from the backend.
+
+### 2. Add the API service
+
+Use the shared `solveModule` helper so every request keeps the `{ input: ... }` envelope:
 
 ```ts
 import { solveModule } from "../lib/api";
 
-export interface YourModuleInput {
-  field1: string;
-  field2: number;
-}
+export type YourModuleInput = {
+  display: string;
+  stage: number;
+};
 
-export interface YourModuleSolveResponse {
-  output: {
-    solution: string;
-  };
-  solved?: boolean;
-}
+export type YourModuleResponse = {
+  output: { action: string };
+  solved: boolean;
+};
 
-export const solveYourModule = async (
+export const solveYourModule = (
   roundId: string,
   bombId: string,
   moduleId: string,
   input: YourModuleInput,
-): Promise<YourModuleSolveResponse> =>
-  solveModule<YourModuleInput, YourModuleSolveResponse>(
-    roundId,
-    bombId,
-    moduleId,
-    input,
-  );
+) => solveModule<YourModuleInput, YourModuleResponse>(
+  roundId,
+  bombId,
+  moduleId,
+  input,
+);
 ```
 
-This keeps the endpoint shape in one helper: every solve request still sends `{ input: ... }`.
+### 3. Build the component
 
-### 3. Add the solver component
+Create `ktanesolver-frontend/src/components/solvers/YourModuleSolver.tsx`. Follow [Frontend solver guidelines](frontend-solver-guidelines.md) and copy a matching archetype:
 
-Create `ktanesolver-frontend/src/components/solvers/YourModuleSolver.tsx`.
+| Need | Reference |
+|---|---|
+| Simple input to answer | `AlphabetSolver`, `MathSolver`, `CombinationLockSolver` |
+| Multi-stage progress | `MemorySolver`, `WireSequencesSolver`, `SimonStatesSolver` |
+| Needy interaction | `KnobsSolver`, `VentingGasSolver` |
+| Color or symbol selection | `SimonSolver`, `KeypadsSolver`, `RoundKeypadSolver` |
+| Grid or path | `MazeSolver`, `ChessSolver`, `ThreeDMazeSolver` |
 
-Follow the existing solver pattern:
+### 4. Register the UI
 
-- accept `SolverProps` / `bomb`
-- read `round` and `currentModule` from `useRoundStore`
-- use the shared solver helpers from `src/components/common/`
-- persist stage state for multi-step modules with `useSolverModulePersistence`
-- call `updateModuleAfterSolve` or `markModuleSolved` when appropriate
-
-For a good reference:
-
-- `ButtonSolver` for a straightforward regular solver
-- `ForgetMeNotSolver` for a multi-step solver
-- `KnobsSolver` for a needy solver component that uses the shared props contract
-
-### 4. Register the solver in one place
-
-Add the component to `ktanesolver-frontend/src/components/solvers/registry.ts`.
-
-That file is now the shared source for:
-
-- lazy solver loading
-- stable component identity
-- fallback needy metadata for placeholder solvers
-
-Regular solver:
+Add one entry to `src/components/solvers/registry.ts`:
 
 ```ts
-[ModuleType.YOUR_NEW_MODULE]: { load: () => import("./YourModuleSolver") }
+[ModuleType.YOUR_MODULE]: { load: () => import("./YourModuleSolver") }
 ```
 
-Needy solver:
+For a needy fallback, include `isNeedy: true`. Catalog category remains the primary classification when it is available.
 
-```ts
-[ModuleType.YOUR_NEW_MODULE]: {
-  load: () => import("./YourModuleSolver"),
-  isNeedy: true,
-}
+### 5. Add Twitch Plays support
+
+Add the module's verified command grammar to `src/utils/twitchCommands.ts` and an exact expected command to `src/utils/twitchCommands.test.ts`. Never generate guessed prose or an incomplete command.
+
+## Verification
+
+```bash
+./gradlew test
 ```
 
-Do not add a separate switch anywhere else for new solvers.
-`registry.test.ts` covers known registrations and the fallback for backend modules without a solver UI.
+```bash
+cd ktanesolver-frontend
+npm run test
+npm run build
+npm run lint
+```
 
-### 5. Let the catalog drive placement
+Then verify the actual flow:
 
-The setup and solve flows consume the shared catalog store from `ktanesolver-frontend/src/store/useCatalogStore.ts`.
+1. The module appears under the correct catalog category.
+2. Its custom solver loads from the module grid.
+3. Valid input produces the expected action.
+4. Invalid input produces a readable error.
+5. Solve, refresh, and reset restore the correct state.
+6. A narrow viewport has no horizontal scrolling.
+7. The generated Twitch command matches the module parser.
 
-- The catalog is fetched from `/api/modules`.
-- `SolvePage` and `ModuleSelector` both use that shared store.
-- Solve-page regular vs needy grouping is driven by catalog category when available, with registry metadata only as a fallback.
-- A registry entry is required only when the selected module should open a custom solver component.
+## Common failures
 
-If the backend `@ModuleInfo.category` is correct and the frontend registry entry exists, the module should land in the right place.
-
-## Database Notes
-
-- You still need the `ModuleType` enum value in Java because `ModuleEntity.type` is persisted as `EnumType.STRING`.
-- You do not need a Flyway migration just to update the old `modules_type_check` constraint. That constraint is gone.
-- Add a migration only when your module needs actual schema changes.
-
-## Testing Checklist
-
-### Backend
-
-- Add or update a focused test under `src/test/java`.
-- Verify the solver is in `/api/modules`.
-- Verify valid solve input succeeds.
-- Verify invalid input produces a clear `400` when appropriate.
-
-### Frontend
-
-- Add or update a focused Vitest test under `ktanesolver-frontend/src`.
-- Registering a solver, or deliberately leaving it as backend-only, should be covered through the shared registry tests.
-- If the module changes placement behavior, cover that metadata-driven classification.
-- Run `npm run build` and `npm run lint` from `ktanesolver-frontend/`.
-
-### Manual verification
-
-1. Start the backend and frontend.
-2. Open setup and confirm the module appears in the selector.
-3. Add it to a bomb and verify it appears in the correct solve area.
-4. Open the solver, submit valid input, and confirm the UI updates correctly.
-5. Submit invalid input and confirm the error message is readable.
-
-## Common Failure Modes
-
-### Module appears in the backend catalog but not the UI
-
-Check:
-
-- Java `ModuleType` was added.
-- Frontend `ModuleType` was added only if the solver UI/Twitch command code uses it.
-- The solver component was added to `src/components/solvers/registry.ts` if a UI exists.
-- The frontend is using the shared catalog store successfully.
-
-### Module exists in the database but solve fails immediately
-
-Check:
-
-- The backend solver class has both `@Service` and `@ModuleInfo`.
-- The `ModuleInfo.type` matches the enum entry exactly.
-
-If no solver is registered, the backend now returns a controlled `501` instead of crashing.
-
-### Module lands in the wrong panel
-
-Check:
-
-- `@ModuleInfo.category`
-- the registry entry's `isNeedy` flag for fallback-only placeholder behavior
-
-Prefer fixing the backend category rather than relying on fallback metadata.
+| Symptom | Check |
+|---|---|
+| Catalog entry is missing | Java enum, `@Service`, and `@ModuleInfo` |
+| Catalog entry opens “Coming soon” | Frontend registry entry and module constant |
+| Backend returns `501` | Solver registration and matching `ModuleInfo.type` |
+| Module appears in the wrong panel | Backend `category`; registry `isNeedy` is only a fallback |
+| Reset still looks solved | Local reset must call the shared `resetSolverState()` |
+| Refresh loses a stage | Persisted state shape and `onRestoreState` |

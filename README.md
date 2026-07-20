@@ -1,22 +1,50 @@
 # KTANESolver
 
-Full-stack solver for Keep Talking and Nobody Explodes modules.
+KTANESolver is a browser-based companion for **Keep Talking and Nobody Explodes**. It keeps the bomb's edgework, modules, strikes, and solve state together so an expert team can move quickly without losing context.
 
-## Stack
+{% hint style="info" %}
+KTANESolver complements the official and community manuals. The defuser still performs every action on the bomb and confirms when a module is physically solved.
+{% endhint %}
 
-- Backend: Spring Boot, Java 21, JPA, PostgreSQL, Flyway
-- Frontend: React, TypeScript, Vite, Zustand
+## What it does
 
-## Run Locally
+- Guides a round from bomb setup through live defusal.
+- Uses serial numbers, batteries, indicators, and port plates in solver logic.
+- Supports vanilla and modded regular and needy modules.
+- Shows the relevant manual beside each solver.
+- Preserves multi-stage progress and completed solutions in PostgreSQL.
+- Synchronizes open clients through WebSocket events.
+- Generates audited KTaNE Twitch Plays commands.
 
-Backend:
+## Start here
+
+| I want to… | Read… |
+|---|---|
+| Run the application locally | [Getting started](docs/getting-started.md) |
+| Set up and solve a bomb | [Using KTANESolver](docs/using-ktanesolver.md) |
+| Understand the codebase | [Architecture](docs/architecture.md) |
+| Call the backend directly | [API reference](docs/api-reference.md) |
+| Add another module | [Implementing a module solver](docs/implementing-new-module-solver.md) |
+| Build a consistent solver UI | [Frontend solver guidelines](docs/frontend-solver-guidelines.md) |
+| Work with Twitch Plays | [Twitch Plays commands](docs/twitch-plays-command-audit.md) |
+
+## Technology
+
+| Layer | Stack |
+|---|---|
+| Backend | Java 21, Spring Boot, JPA, Flyway |
+| Database | PostgreSQL 16 |
+| Frontend | React, TypeScript, Vite, Zustand |
+| Live updates | STOMP over SockJS/WebSocket |
+
+## Quick start
 
 ```bash
-docker-compose up
+docker compose up -d
 ./gradlew bootRun
 ```
 
-Frontend:
+In a second terminal:
 
 ```bash
 cd ktanesolver-frontend
@@ -24,24 +52,8 @@ npm install
 npm run dev
 ```
 
-The backend listens on port `8080`. The frontend dev server talks to it through `VITE_API_BASE_URL` or `http://localhost:8080`.
+Open the URL printed by Vite. The backend listens on `http://localhost:8080`.
 
-## Common Checks
-
-```bash
-./gradlew test
-cd ktanesolver-frontend && npm run build && npm run lint
-```
-
-## Add A Module
-
-Start with [docs/implementing-new-module-solver.md](docs/implementing-new-module-solver.md).
-
-Short version:
-
-1. Add the backend `ModuleType`, input/output records, solver, and test.
-2. Add a frontend service, solver component, and registry entry if the module has a UI.
-3. Add a frontend `ModuleType` constant only when the UI/Twitch command code needs it.
-4. Run the backend and frontend checks.
-
-Backend solvers register automatically when annotated with both `@Service` and `@ModuleInfo`; do not manually wire `ModuleSolverRegistry`.
+{% hint style="success" %}
+If `http://localhost:8080/api/modules` returns JSON, the database, migrations, backend, and solver registry are ready.
+{% endhint %}
