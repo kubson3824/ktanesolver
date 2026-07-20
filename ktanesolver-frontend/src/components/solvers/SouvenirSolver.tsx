@@ -63,12 +63,17 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.FAST_MATH]: [question("lastPair", "What was the last pair of letters?")],
   [ModuleType.FIZZ_BUZZ]: [question("displayedNumbers", "What were the displayed numbers?")],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
+  [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
   [ModuleType.LISTENING]: [question("sound", "What sound played?")],
   [ModuleType.MAZES]: [question("startingPosition", "What was the starting position?")],
   [ModuleType.MONSPLODE_FIGHT]: [
     question("creature", "Which creature was displayed?"),
     question("moves", "Which moves were selectable?"),
+  ],
+  [ModuleType.MONSPLODE_TRADING_CARDS]: [
+    question("cardNames", "Which cards were in the hand before the final action?"),
+    question("printVersions", "Which print versions were in the hand before the final action?"),
   ],
   [ModuleType.MORSEMATICS]: [question("letters", "What were the received letters?")],
   [ModuleType.MORSE_A_MAZE]: [

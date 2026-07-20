@@ -400,6 +400,28 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryMonsplodeTradingCardsQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity cards = module(ModuleType.MONSPLODE_TRADING_CARDS, true, Map.of(
+			"souvenirCardNames", List.of("Aluga", "Bob", "Buhar"),
+			"souvenirPrintVersions", List.of("A2", "C4", "I8")
+		));
+		bomb.setModules(List.of(souvenir, cards));
+
+		assertThat(solve(bomb, souvenir, cards.getId(), "cardNames", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Aluga, Bob, Buhar", null));
+		assertThat(solve(bomb, souvenir, cards.getId(), "printVersions", List.of(), false))
+			.isEqualTo(new SouvenirOutput("A2, C4, I8", null));
+		assertThat(solve(bomb, souvenir, cards.getId(),
+			"Which of these cards was in your hand before the last action in Monsplode Trading Cards?",
+			List.of("Asteran", "Bob", "Docsplode", "Percy"), false)).isEqualTo(new SouvenirOutput("Bob", 2));
+		assertThat(solve(bomb, souvenir, cards.getId(),
+			"Which of these print versions was present on a card in your hand before the last action in Monsplode Trading Cards?",
+			List.of("A1", "B7", "C4", "H2", "I9", "G5"), false)).isEqualTo(new SouvenirOutput("C4", 3));
+	}
+
+	@Test
 	void resolvesTextFieldDisplayedLetter() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
@@ -528,6 +550,23 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("Blue", null));
 		assertThat(solve(bomb, souvenir, gridlock.getId(), "startingLocation", List.of(), false))
 			.isEqualTo(new SouvenirOutput("C4", null));
+	}
+
+	@Test
+	void resolvesGameOfLifeCruelColorCombinations() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity gameOfLife = module(ModuleType.GAME_OF_LIFE_CRUEL, true, Map.of(
+			"colorCombinations", List.of("Solid Red", "Black/Orange", "Blue/Purple")
+		));
+		bomb.setModules(List.of(souvenir, gameOfLife));
+
+		assertThat(solve(bomb, souvenir, gameOfLife.getId(), "colorCombinations", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Solid Red, Black/Orange, Blue/Purple", null));
+		assertThat(solve(bomb, souvenir, gameOfLife.getId(),
+			"Which of these was a color combination that occurred in Game of Life Cruel?",
+			List.of("Solid Green", "Black/Orange", "Red/Blue", "Solid Brown"), false))
+			.isEqualTo(new SouvenirOutput("Black/Orange", 2));
 	}
 
 	@Test

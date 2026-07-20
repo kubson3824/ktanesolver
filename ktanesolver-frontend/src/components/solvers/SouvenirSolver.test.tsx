@@ -173,12 +173,46 @@ describe("SouvenirSolver", () => {
     expect(screen.getAllByRole("img", { name: "X-Ray symbol" })).toHaveLength(3);
   });
 
+  it("auto-selects the Game of Life Cruel color-combination question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "Black/Orange, Solid Red", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.GAME_OF_LIFE_CRUEL)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("Black/Orange, Solid Red")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "colorCombinations",
+      finalQuestion: false,
+    });
+  });
+
   it.each([
     ["second color", "Orange"],
     ["third character", "B"],
   ])("asks the requested Color Morse LED fact", async (question, answer) => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.COLOR_MORSE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question,
+      finalQuestion: false,
+    });
+  });
+
+  it.each([
+    ["cardNames", "Aluga, Bob, Buhar"],
+    ["printVersions", "A2, C4, I8"],
+  ])("asks the requested Monsplode Trading Cards fact", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.MONSPLODE_TRADING_CARDS)} />);
 
     fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
     fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });

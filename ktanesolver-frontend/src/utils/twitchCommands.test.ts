@@ -84,6 +84,9 @@ const fixtures: Record<ModuleType, Fixture> = {
   GAMEPAD: { result: { sequence: ["A", "B", "◀", "R"] }, expected: "!number submit ab◀r" },
   TIC_TAC_TOE: { result: { action: "PRESS", number: 5 }, expected: "!number 5" },
   MONSPLODE_FIGHT: { result: { move: "SPLASH" }, expected: "!number use splash" },
+  MONSPLODE_TRADING_CARDS: { result: { action: "TRADE", selectedCard: 1, tradeCard: 3 }, expected: "!number right; !number right; !number trade" },
+  GAME_OF_LIFE_SIMPLE: { result: { whiteCells: Array.from({ length: 48 }, (_, index) => index === 0 || index === 7), submitInitial: false }, expected: "!number clear A1 B2 submit" },
+  GAME_OF_LIFE_CRUEL: { result: { whiteCells: Array.from({ length: 48 }, (_, index) => index === 2), submitInitial: false }, expected: "!number clear C1 submit" },
   SHAPE_SHIFT: { result: { left: "POINT", right: "ROUND" }, expected: "!number submit point round" },
   FOLLOW_THE_LEADER: { result: { cutPlugs: [4, 6, 2] }, expected: "!number cut 4 6 2" },
   FRIENDSHIP: { result: { element: "Fairness" }, expected: "!number submit Fairness" },
@@ -96,6 +99,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   TEXT_FIELD: { result: { positions: [{ column: 2, row: 3 }, { column: 4, row: 1 }] }, expected: "!number press 2,3 4,1" },
   SYMBOLIC_PASSWORD: { result: { moves: ["LEFT_COLUMN", "TOP_RIGHT"] }, expected: "!number cycle l tr; !number submit" },
   WIRE_PLACEMENT: { result: { cutWires: [{ coordinate: "A2" }, { coordinate: "C4" }] }, expected: "!number cut A2 C4" },
+  PERPLEXING_WIRES: { result: { cutFirst: [2], cutNormal: [5, 6], cutLast: [1] }, expected: "!number cut 2 5 6 1" },
   DOUBLE_OH: { result: { presses: ["SINGLE_VERTICAL", "SQUARE"] }, expected: "!number vert1 submit" },
   CHEAP_CHECKOUT: { result: { needsSecondPayment: false, change: 3.24 }, expected: "!number submit 3.24" },
   COORDINATES: { result: { matchingClues: ["2 4", "8 1"] }, expected: "!number submit 2 4; !number submit 8 1" },
@@ -122,14 +126,15 @@ const fixtures: Record<ModuleType, Fixture> = {
   BOOLEAN_VENN_DIAGRAM: { result: { regions: ["A", "BC", "NONE"] }, expected: "!number a bc O" },
   ZOO: { result: { animals: ["Caracal", "Orca"] }, expected: "!number press Caracal, Orca" },
   POINT_OF_ORDER: { result: { validCards: ["4S", "5D", "JS"] }, expected: "!number play 4/5/J of S/D" },
+  NONOGRAM: { result: { filledCells: ["B1", "A2", "C4"] }, expected: "!number fill B1 A2 C4; !number submit" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(99);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(18);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(102);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(20);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -153,6 +158,20 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.SQUARE_BUTTON,
       result: { hold: false, instruction: "Release when the two seconds digits add up to 7" },
     })).toBe("");
+  });
+
+  it("returns no Monsplode Trading Cards trade command without the current selection", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.MONSPLODE_TRADING_CARDS,
+      result: { action: "TRADE", tradeCard: 2 },
+    })).toBe("");
+  });
+
+  it("uses the untouched Cruel grid for the BOB exception", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.GAME_OF_LIFE_CRUEL,
+      result: { whiteCells: [], submitInitial: true },
+    })).toBe("!number submit");
   });
 
   it.each([

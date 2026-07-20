@@ -13,8 +13,10 @@ const conditional = new Set<ModuleType>([
   ModuleType.COLORED_SQUARES,
   ModuleType.COORDINATES,
   ModuleType.ENGLISH_TEST,
+  ModuleType.GAME_OF_LIFE_CRUEL,
   ModuleType.KNOBS,
   ModuleType.MOUSE_IN_THE_MAZE,
+  ModuleType.MONSPLODE_TRADING_CARDS,
   ModuleType.PLUMBING,
   ModuleType.ROUND_KEYPAD,
   ModuleType.SEMAPHORE,
@@ -457,6 +459,15 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const move = stringValue(raw.move);
       return move ? command(`use ${words(move)}`) : "";
     }
+    case ModuleType.MONSPLODE_TRADING_CARDS: {
+      if (raw.action === "KEEP") return command("keep");
+      const selected = numberValue(raw.selectedCard);
+      const target = numberValue(raw.tradeCard);
+      if (raw.action !== "TRADE" || !Number.isInteger(selected) || !Number.isInteger(target)
+        || selected! < 1 || selected! > 3 || target! < 1 || target! > 3) return "";
+      const direction = target! > selected! ? "right" : "left";
+      return commands([...Array(Math.abs(target! - selected!)).fill(direction), "trade"]);
+    }
     case ModuleType.SHAPE_SHIFT: {
       const left = stringValue(raw.left);
       const right = stringValue(raw.right);
@@ -512,6 +523,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const coordinates = arrayValue(raw.cutWires).map(asRecord).map((wire) => stringValue(wire.coordinate)).filter((value): value is string => Boolean(value));
       return coordinates.length ? command(`cut ${coordinates.join(" ")}`) : "";
     }
+    case ModuleType.PERPLEXING_WIRES: {
+      const cuts = [...arrayValue(raw.cutFirst), ...arrayValue(raw.cutNormal), ...arrayValue(raw.cutLast)].map(Number);
+      return cuts.length && cuts.every((wire) => Number.isInteger(wire) && wire >= 1 && wire <= 6)
+        ? command(`cut ${cuts.join(" ")}`)
+        : "";
+    }
     case ModuleType.DOUBLE_OH: {
       const aliases: Record<string, string> = { SINGLE_VERTICAL: "vert1", SINGLE_HORIZONTAL: "horiz1", DOUBLE_HORIZONTAL: "horiz2", DOUBLE_VERTICAL: "vert2", SQUARE: "submit" };
       const presses = strings(raw.presses).map((press) => aliases[press] ?? press.toLowerCase());
@@ -566,6 +583,16 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.GRIDLOCK: {
       const coordinate = stringValue(raw.coordinate)?.toUpperCase();
       return coordinate && /^[A-D][1-4]$/.test(coordinate) ? command(`press ${coordinate}`) : "";
+    }
+    case ModuleType.GAME_OF_LIFE_SIMPLE:
+    case ModuleType.GAME_OF_LIFE_CRUEL: {
+      if (moduleType === ModuleType.GAME_OF_LIFE_CRUEL && booleanValue(raw.submitInitial)) return command("submit");
+      const cells = arrayValue(raw.whiteCells);
+      if (cells.length !== 48 || cells.some((cell) => typeof cell !== "boolean")) return "";
+      const coordinates = cells.flatMap((white, index) => white
+        ? [`${String.fromCharCode(65 + index % 6)}${Math.floor(index / 6) + 1}`]
+        : []);
+      return command(["clear", ...coordinates, "submit"].join(" "));
     }
     case ModuleType.ONLY_CONNECT: {
       const position = numberValue(raw.position);
@@ -629,6 +656,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const ranks = [...new Set(cards.map((card) => card.slice(0, -1)))];
       const suits = [...new Set(cards.map((card) => card.at(-1)).filter(Boolean))];
       return ranks.length && suits.length ? command(`play ${ranks.join("/")} of ${suits.join("/")}`) : "";
+    }
+    case ModuleType.NONOGRAM: {
+      const cells = strings(raw.filledCells).map((cell) => cell.toUpperCase());
+      return cells.length && cells.every((cell) => /^[A-E][1-5]$/.test(cell))
+        ? commands([`fill ${cells.join(" ")}`, "submit"])
+        : "";
     }
   }
 }

@@ -95,6 +95,7 @@ const MODULE_TYPES: Record<string, string> = {
     Microcontroller: "MICROCONTROLLER",
     ModuleAgainstHumanity: "MODULES_AGAINST_HUMANITY",
     monsplodeFight: "MONSPLODE_FIGHT",
+    monsplodeCards: "MONSPLODE_TRADING_CARDS",
     Morse: "MORSE_CODE",
     MorseAMaze: "MORSE_A_MAZE",
     MorseCodeTranslated: "MORSE_CODE",

@@ -119,12 +119,15 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 					? answerIndex(answers, digit % 2 == 0 ? number.intValue() / 10 : number.intValue() % 10) : -1;
 			}
 			case GRIDLOCK -> answerIndex(answers, source.getState().get(q.contains("color") ? "startingColor" : "startingLocation"));
+			case GAME_OF_LIFE_CRUEL -> membershipAnswerIndex(answers, source.getState().get("colorCombinations"), null, false);
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
 			case MONSPLODE_FIGHT -> q.contains("creature")
 				? answerIndex(answers, nested(source.getState(), "input", "opponent"))
 				: membershipAnswerIndex(answers, nested(source.getState(), "input", "moves"), null, q.contains("not selectable"));
+			case MONSPLODE_TRADING_CARDS -> membershipAnswerIndex(answers,
+				source.getState().get(q.contains("print") ? "souvenirPrintVersions" : "souvenirCardNames"), null, false);
 			case MORSEMATICS -> membershipAnswerIndex(answers, source.getState().get("letters"), null, q.contains("not present"));
 			case MORSE_A_MAZE -> answerIndex(answers, morseAMazeAnswer(source.getState(), q));
 			case MURDER -> murderAnswerIndex(source, q, answers);
@@ -190,10 +193,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
 			case GAMEPAD -> gamepadDisplay(state);
 			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
+			case GAME_OF_LIFE_CRUEL -> state.get("colorCombinations");
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
 			case MAZES -> nested(state, "input", "start");
 			case MONSPLODE_FIGHT -> nested(state, "input", "creature".equals(question) ? "opponent" : "moves");
+			case MONSPLODE_TRADING_CARDS -> state.get("printVersions".equals(question)
+				? "souvenirPrintVersions" : "souvenirCardNames");
 			case MORSEMATICS -> state.get("letters");
 			case MORSE_A_MAZE -> morseAMazeAnswer(state, normalize(question));
 			case MURDER -> murderRecordedAnswer(source, question);
