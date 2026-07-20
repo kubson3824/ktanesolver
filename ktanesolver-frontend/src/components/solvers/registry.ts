@@ -20,6 +20,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.MEMORY]: { load: () => import("./MemorySolver") },
   [ModuleType.MORSE_CODE]: { load: () => import("./MorseCodeSolver") },
   [ModuleType.PASSWORDS]: { load: () => import("./PasswordSolver") },
+  [ModuleType.EXTENDED_PASSWORD]: { load: () => import("./ExtendedPasswordSolver") },
   [ModuleType.SIMON_SAYS]: { load: () => import("./SimonSolver") },
   [ModuleType.WHOS_ON_FIRST]: { load: () => import("./WhosOnFirstSolver") },
   [ModuleType.THIRD_BASE]: { load: () => import("./ThirdBaseSolver") },

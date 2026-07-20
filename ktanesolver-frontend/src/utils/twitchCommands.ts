@@ -193,8 +193,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const wire = numberValue(raw.wirePosition);
       return wire === undefined ? "" : command(`cut ${wire}`);
     }
-    case ModuleType.PASSWORDS: {
-      const password = stringValue(raw.password) ?? strings(raw.possibleWords)[0];
+    case ModuleType.PASSWORDS:
+    case ModuleType.EXTENDED_PASSWORD: {
+      const candidates = strings(raw.possibleWords);
+      const password = stringValue(raw.password) ?? (candidates.length === 1 ? candidates[0] : undefined);
       return command(password);
     }
     case ModuleType.MAZES: {

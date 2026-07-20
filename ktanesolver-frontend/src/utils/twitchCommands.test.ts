@@ -26,6 +26,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   COMPLICATED_WIRES: { result: { wire: 2 }, expected: "!number cut 2" },
   WIRE_SEQUENCES: { result: { wirePosition: 3 }, expected: "!number cut 3" },
   PASSWORDS: { result: { password: "about" }, expected: "!number about" },
+  EXTENDED_PASSWORD: { result: { possibleWords: ["anchor"] }, expected: "!number anchor" },
   MAZES: { result: { directions: ["UP", "LEFT", "DOWN"] }, expected: "!number move uld" },
   KNOBS: { result: { position: "RIGHT" }, expected: "!number rotate 1" },
   COLOR_FLASH: { result: { pressYes: true, position: 3 }, expected: "!number press yes 3" },
@@ -138,7 +139,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(105);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(106);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(22);
   });
 
@@ -156,6 +157,13 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.TWO_BITS,
       result: { letters: "gz", stages: [{}, {}, {}, {}] },
     })).toBe("!number press g z submit");
+  });
+
+  it("does not submit an ambiguous password candidate", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.EXTENDED_PASSWORD,
+      result: { possibleWords: ["anchor", "adjust"] },
+    })).toBe("");
   });
 
   it("generates the anterodiametric Symbol Cycle command", () => {
