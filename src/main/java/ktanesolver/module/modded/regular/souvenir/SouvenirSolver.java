@@ -126,6 +126,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				? answerIndex(answers, nested(source.getState(), "input", "opponent"))
 				: membershipAnswerIndex(answers, nested(source.getState(), "input", "moves"), null, q.contains("not selectable"));
 			case MORSEMATICS -> membershipAnswerIndex(answers, source.getState().get("letters"), null, q.contains("not present"));
+			case MORSE_A_MAZE -> answerIndex(answers, morseAMazeAnswer(source.getState(), q));
 			case MURDER -> murderAnswerIndex(source, q, answers);
 			case MYSTIC_SQUARE -> answerIndex(answers, nested(source.getState(), "input", "grid", 4));
 			case NEUTRALIZATION -> answerIndex(answers, source.getState().get(q.contains("volume") ? "acidVolume" : "acidColor"));
@@ -144,6 +145,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
+			case COLORED_SWITCHES -> answerIndex(answers, switchCode(source.getState().get("initialPosition")));
 			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
 			case THREE_D_MAZE -> answerIndex(answers, q.contains("markings")
@@ -193,6 +195,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case MAZES -> nested(state, "input", "start");
 			case MONSPLODE_FIGHT -> nested(state, "input", "creature".equals(question) ? "opponent" : "moves");
 			case MORSEMATICS -> state.get("letters");
+			case MORSE_A_MAZE -> morseAMazeAnswer(state, normalize(question));
 			case MURDER -> murderRecordedAnswer(source, question);
 			case MYSTIC_SQUARE -> nested(state, "input", "grid", 4);
 			case NEUTRALIZATION -> state.get("acidVolume".equals(question) ? "acidVolume" : "acidColor");
@@ -208,6 +211,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> state.get("flashHistory");
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
+			case COLORED_SWITCHES -> switchCode(state.get("initialPosition"));
 			case SOUVENIR -> firstHistoryType(state.get("history"));
 			case THE_BULB -> state.get("initiallyOn");
 			case THREE_D_MAZE -> "markings".equals(question)
@@ -222,6 +226,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			default -> "recordedFacts".equals(question)
 				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);
 		};
+	}
+
+	private static Object morseAMazeAnswer(Map<String, Object> state, String question) {
+		if (question.contains("starting") || "startingcoordinate".equals(question)) return state.get("startingLocation");
+		if (question.contains("ending") || "endingcoordinate".equals(question)) return state.get("endingLocation");
+		return question.contains("word") || question.contains("morse") || "morsecodeword".equals(question)
+			? state.get("morseWord") : null;
 	}
 
 	private static Object colorMorseAnswer(Map<String, Object> state, String question) {

@@ -96,6 +96,7 @@ const MODULE_TYPES: Record<string, string> = {
     ModuleAgainstHumanity: "MODULES_AGAINST_HUMANITY",
     monsplodeFight: "MONSPLODE_FIGHT",
     Morse: "MORSE_CODE",
+    MorseAMaze: "MORSE_A_MAZE",
     MorseCodeTranslated: "MORSE_CODE",
     MorseV2: "MORSEMATICS",
     MouseInTheMaze: "MOUSE_IN_THE_MAZE",

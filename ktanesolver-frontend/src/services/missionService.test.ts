@@ -8,6 +8,16 @@ const catalog = [
 ] as ModuleCatalogItem[];
 
 describe("resolveMissionBomb", () => {
+    it("imports Morse-A-Maze by its game module ID", () => {
+        expect(resolveMissionBomb({
+            modules: 1,
+            strikes: 3,
+            time: 300,
+            widgets: 5,
+            pools: [{count: 1, modules: ["MorseAMaze"]}],
+        }, catalog).modules).toEqual({MORSE_A_MAZE: 1});
+    });
+
     it("imports Fast Math by its game module ID", () => {
         expect(resolveMissionBomb({
             modules: 1,

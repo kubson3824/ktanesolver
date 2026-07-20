@@ -237,6 +237,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const steps = arrayValue(raw.solutionSteps).map(Number).filter(Number.isFinite);
       return steps.length ? command(`flip ${steps.join(" ")}`) : "";
     }
+    case ModuleType.COLORED_SWITCHES: {
+      const steps = arrayValue(raw.solutionSteps).map(Number).filter((step) => Number.isInteger(step) && step >= 1 && step <= 5);
+      return steps.length ? command(`toggle ${steps.join(" ")}`) : "";
+    }
     case ModuleType.TWO_BITS: {
       const letters = stringValue(raw.letters)?.replace(/\s+/g, "").split("").join(" ");
       if (!letters) return "";
@@ -364,6 +368,11 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const aliases: Record<string, string> = { FORWARD: "f", BACKWARD: "b", TURN_LEFT: "l", TURN_RIGHT: "r" };
       const moves = strings(raw.moves).map((move) => aliases[move] ?? move.toLowerCase());
       return moves.length ? commands([moves.join(" "), "submit"]) : "";
+    }
+    case ModuleType.MORSE_A_MAZE: {
+      const aliases: Record<string, string> = { UP: "U", DOWN: "D", LEFT: "L", RIGHT: "R" };
+      const moves = strings(raw.moves).map((move) => aliases[move] ?? move.toUpperCase());
+      return moves.length ? command(`move ${moves.join("")}`) : "";
     }
     case ModuleType.HEXAMAZE: {
       const moves = strings(raw.moves).map(words);

@@ -71,6 +71,11 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("moves", "Which moves were selectable?"),
   ],
   [ModuleType.MORSEMATICS]: [question("letters", "What were the received letters?")],
+  [ModuleType.MORSE_A_MAZE]: [
+    question("startingCoordinate", "What was the starting location?"),
+    question("endingCoordinate", "What was the ending location?"),
+    question("morseCodeWord", "What word was shown as Morse code?"),
+  ],
   [ModuleType.MOUSE_IN_THE_MAZE]: [question("torusColor", "What color was the torus?")],
   [ModuleType.MURDER]: [
     question("potentialSuspectNotMurderer", "Which was a potential suspect but not the murderer?"),
@@ -105,6 +110,7 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.SIMON_STATES]: [question("flashes", "Which colors flashed in each stage?")],
   [ModuleType.SKEWED_SLOTS]: [question("originalNumber", "What were the original numbers?")],
   [ModuleType.SWITCHES]: [question("initialPosition", "What was the initial switch position?")],
+  [ModuleType.COLORED_SWITCHES]: [question("initialPosition", "What was the initial position of the switches?")],
   [ModuleType.SOUVENIR]: [question("firstModule", "What was the first module asked about?")],
   [ModuleType.THE_BULB]: [question("initiallyLit", "Was the bulb initially lit?")],
   [ModuleType.THREE_D_MAZE]: [

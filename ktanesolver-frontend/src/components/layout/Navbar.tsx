@@ -69,7 +69,7 @@ export default function Navbar() {
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="w-full px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           {/* Logo */}
           <div className="flex items-center gap-4 min-w-0">

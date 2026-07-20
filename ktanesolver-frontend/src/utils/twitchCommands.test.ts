@@ -34,6 +34,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   PERSPECTIVE_PEGS: { result: { pressPositions: ["Lower left", "Top"] }, expected: "!number press bl t" },
   EMOJI_MATH: { result: { answer: -47 }, expected: "!number submit -47" },
   SWITCHES: { result: { solutionSteps: [1, 5, 3] }, expected: "!number flip 1 5 3" },
+  COLORED_SWITCHES: { result: { solutionSteps: [5, 2, 4] }, expected: "!number toggle 5 2 4" },
   TWO_BITS: { result: { letters: "kt", stages: [{}] }, expected: "!number press k t query" },
   WORD_SCRAMBLE: { result: { solution: "stream" }, expected: "!number submit stream" },
   WORD_SEARCH: { result: { start: "B3", end: "E6" }, expected: "!number select B3 E6" },
@@ -63,6 +64,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   TURN_THE_KEYS: { result: { canTurnRightKey: true, rightKeyTurned: false }, expected: "!number turn right" },
   CHESS: { result: { coordinate: "C2" }, expected: "!number press C2" },
   MOUSE_IN_THE_MAZE: { result: { moves: ["FORWARD", "TURN_LEFT"] }, expected: "!number f l; !number submit" },
+  MORSE_A_MAZE: { result: { moves: ["UP", "RIGHT", "DOWN"] }, expected: "!number move URD" },
   HEXAMAZE: { result: { moves: ["NORTHWEST", "EAST"] }, expected: "!number northwest east" },
   BITMAPS: { result: { button: 2 }, expected: "!number press 2" },
   COLORED_SQUARES: { result: { coordinates: ["A1", "A2", "B3"] }, expected: "!number A1 A2 B3" },
@@ -126,7 +128,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(97);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(99);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(18);
   });
 

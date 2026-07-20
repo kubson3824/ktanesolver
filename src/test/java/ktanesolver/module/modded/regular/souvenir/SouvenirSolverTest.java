@@ -60,8 +60,10 @@ class SouvenirSolverTest {
 		ModuleEntity morsematics = module(ModuleType.MORSEMATICS, true, Map.of("letters", "ABC"));
 		ModuleEntity probing = module(ModuleType.PROBING, true, Map.of("missingFrequenciesByWire", List.of(10, 22, 50, 60, 22, 10)));
 		ModuleEntity switches = module(ModuleType.SWITCHES, true, Map.of("currentSwitches", List.of(true, false, true, false, true)));
+		ModuleEntity coloredSwitches = module(ModuleType.COLORED_SWITCHES, true, Map.of(
+			"initialPosition", List.of(true, true, false, false, true)));
 		ModuleEntity simon = module(ModuleType.SIMON_STATES, true, Map.of("flashHistory", List.of(List.of("RED"), List.of("RED", "GREEN"))));
-		bomb.setModules(List.of(souvenir, morsematics, probing, switches, simon));
+		bomb.setModules(List.of(souvenir, morsematics, probing, switches, coloredSwitches, simon));
 
 		assertThat(solve(bomb, souvenir, morsematics.getId(), "Which letter was not present in Morsematics?", List.of("A", "B", "C", "D"), false))
 			.isEqualTo(new SouvenirOutput("D", 4));
@@ -69,6 +71,9 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("22Hz", 2));
 		assertThat(solve(bomb, souvenir, switches.getId(), "What was the initial position of the switches in Switches?", List.of("QQQQQ", "QRQRQ", "RRRRR"), false))
 			.isEqualTo(new SouvenirOutput("QRQRQ", 2));
+
+		assertThat(solve(bomb, souvenir, coloredSwitches.getId(), "initialPosition", List.of(), false))
+			.isEqualTo(new SouvenirOutput("QQRRQ", null));
 		assertThat(solve(bomb, souvenir, simon.getId(), "Which colors didn't flash in the second stage in Simon States?", List.of("Red", "Yellow, Blue", "Green", "none"), false))
 			.isEqualTo(new SouvenirOutput("Yellow, Blue", 2));
 	}
@@ -107,6 +112,25 @@ class SouvenirSolverTest {
 			List.of("ABD", "ABC", "ACH"), false)).isEqualTo(new SouvenirOutput("ABC", 2));
 		assertThat(solve(bomb, souvenir, maze.getId(), "What was the cardinal direction in 3D Maze?",
 			List.of("East", "South", "North", "West"), false)).isEqualTo(new SouvenirOutput("North", 3));
+	}
+
+	@Test
+	void resolvesEveryMorseAMazeQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity maze = module(ModuleType.MORSE_A_MAZE, true, Map.of(
+			"startingLocation", "B3", "endingLocation", "F6", "morseWord", "assay"));
+		bomb.setModules(List.of(souvenir, maze));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(maze.getId(), "startingCoordinate", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("B3", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(maze.getId(), "endingCoordinate", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("F6", null), false));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(maze.getId(), "morseCodeWord", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("assay", null), false));
 	}
 
 	@Test

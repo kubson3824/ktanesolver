@@ -48,6 +48,18 @@ For each module:
 
 Multi-stage solvers retain their progress. If a final answer exists but the physical module is still active, KTANESolver keeps the calculation separate from the completion confirmation.
 
+### Colored Switches
+
+Set the five switch colors and initial up/down positions, then select **Get three safe toggles**. Perform the returned toggles in order; the solver advances the displayed switches to the resulting state.
+
+When the LEDs turn on, select the lit top or bottom LED for each switch and select **Solve**. Follow the returned switch sequence in order. The initial positions are retained for Souvenir, and the generated Twitch command uses the same safe sequence.
+
+### Morse-A-Maze
+
+Decode the Morse word, select the status light's current coordinate and the transmitted target coordinate, then select **Find route**. Follow the returned arrows in order; the generated Twitch command uses the same route.
+
+For an edgework word, the solver derives the maze lookup value from the bomb where possible. Enter **Maze lookup value override** for `things` (the starting timer in whole minutes) or for `count` when two-factor widgets are present (the sum of their live second-least-significant digits). The override can also replace any other edgework lookup value. Only the default rule seed is supported.
+
 ## Record strikes
 
 Use the strike control on the active bomb as soon as the game records a strike. Solvers that depend on strike count will then use the current value.
@@ -67,4 +79,3 @@ If a client looks stale, use **Refresh** on the live defusal screen before repea
 The **Round History** page lists saved rounds and supports filtering by status and bomb details. Opening a round returns to setup or live defusal according to its state.
 
 Deleting a round also removes its bombs, modules, and event history and cannot be undone.
-
