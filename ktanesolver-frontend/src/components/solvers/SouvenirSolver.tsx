@@ -9,6 +9,8 @@ import {
 } from "../common";
 import { Button } from "../ui/button";
 import { XRAY_SYMBOLS, XRaySymbol } from "./XRaySolver";
+import { HUNTING_CLUES } from "../../services/huntingService";
+import { HuntingPictogram } from "./HuntingSolver";
 
 type QuestionOption = { id: string; label: string };
 type HistoryEntry = { question: string; answer: string };
@@ -135,6 +137,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   ],
   [ModuleType.YAHTZEE]: [question("firstRoll", "What was the first roll?")],
   [ModuleType.TEXT_FIELD]: [question("displayedLetter", "What was the displayed letter?")],
+  [ModuleType.HUNTING]: [
+    question("firstDisplayedSymbols", "Which pictograms were displayed in the first stage?"),
+    question("secondDisplayedSymbols", "Which pictograms were displayed in the second stage?"),
+    question("thirdDisplayedSymbols", "Which pictograms were displayed in the third stage?"),
+    question("fourthDisplayedSymbols", "Which pictograms were displayed in the fourth stage?"),
+  ],
 };
 const questionsFor = (source?: BombEntity["modules"][number]) =>
   source ? QUESTIONS[source.type as ModuleType] ?? [] : [];
@@ -162,6 +170,9 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   const questionOptions = questionsFor(selectedSource);
   const xRaySymbols = selectedSource?.type === ModuleType.X_RAY && result
     ? result.answer.split(", ").filter((answer) => XRAY_SYMBOLS.includes(answer))
+    : [];
+  const huntingSymbols = selectedSource?.type === ModuleType.HUNTING && result
+    ? result.answer.split(", ").map((answer) => HUNTING_CLUES.find((symbol) => symbol.replace("_", "") === answer.trim())).filter((symbol): symbol is NonNullable<typeof symbol> => symbol !== undefined)
     : [];
   const moduleState = useMemo<SouvenirState>(() => ({
     sourceModuleId, question: selectedQuestion, exactQuestion, answers, finalQuestion, result, history,
@@ -317,7 +328,9 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
 
     {result && <SolverSection title="Recorded answer" className="border-emerald-500/40">
       <div className="rounded-md border-2 border-emerald-500 bg-emerald-500/15 p-4 text-center font-semibold text-emerald-700 dark:text-emerald-300">
-        {xRaySymbols.length > 0
+        {huntingSymbols.length > 0
+          ? <><p className="mb-3">These two pictograms were displayed:</p><div className="flex justify-center gap-3">{huntingSymbols.map((symbol) => <HuntingPictogram key={symbol} symbol={symbol} />)}</div></>
+          : xRaySymbols.length > 0
           ? <><p className="mb-3">Match any of these scanned symbols:</p><div className="flex justify-center gap-3">{xRaySymbols.map((symbol) => <XRaySymbol key={symbol} code={symbol} />)}</div></>
           : result.answer}
       </div>

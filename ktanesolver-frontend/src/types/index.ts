@@ -125,6 +125,7 @@ export enum ModuleType {
   POINT_OF_ORDER = "POINT_OF_ORDER",
   NONOGRAM = "NONOGRAM",
   SET = "SET",
+  HUNTING = "HUNTING",
 }
 
 export enum PortType {

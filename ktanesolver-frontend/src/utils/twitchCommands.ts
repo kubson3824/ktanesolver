@@ -29,6 +29,7 @@ const conditional = new Set<ModuleType>([
   ModuleType.VENTING_GAS,
   ModuleType.WORD_SEARCH,
   ModuleType.YAHTZEE,
+  ModuleType.HUNTING,
 ]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
@@ -690,6 +691,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return positions.length === 3 && new Set(positions).size === 3 && positions.every((position) => /^[a-c][1-3]$/.test(position))
         ? command(`press ${positions.join(" ")}`)
         : "";
+    }
+    case ModuleType.HUNTING: {
+      const safeButton = numberValue(raw.safeButton);
+      return safeButton !== undefined && safeButton >= 1 && safeButton <= 5 ? command(`press ${safeButton}`) : "";
     }
     case ModuleType.PAINTING: {
       const repaints = arrayValue(raw.repaints).map(asRecord);

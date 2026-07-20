@@ -135,6 +135,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.POINT_OF_ORDER]: { load: () => import("./PointOfOrderSolver") },
   [ModuleType.NONOGRAM]: { load: () => import("./NonogramSolver") },
   [ModuleType.SET]: { load: () => import("./SetSolver") },
+  [ModuleType.HUNTING]: { load: () => import("./HuntingSolver") },
   [ModuleType.PAINTING]: { load: () => import("./PaintingSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },

@@ -119,6 +119,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 					? answerIndex(answers, digit % 2 == 0 ? number.intValue() / 10 : number.intValue() % 10) : -1;
 			}
 			case GRIDLOCK -> answerIndex(answers, source.getState().get(q.contains("color") ? "startingColor" : "startingLocation"));
+			case HUNTING -> membershipAnswerIndex(answers, huntingClues(source.getState(), q), null, false);
 			case GAME_OF_LIFE_CRUEL -> membershipAnswerIndex(answers, source.getState().get("colorCombinations"), null, false);
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
@@ -194,6 +195,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
 			case GAMEPAD -> gamepadDisplay(state);
 			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
+			case HUNTING -> huntingDisplayClues(state, normalize(question));
 			case GAME_OF_LIFE_CRUEL -> state.get("colorCombinations");
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
@@ -246,6 +248,16 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static Object colorMorseAnswer(Map<String, Object> state, String question) {
 		int led = ordinal(question);
 		return led >= 0 && led < 3 ? nested(state, question.contains("color") ? "colors" : "characters", led) : null;
+	}
+
+	private static Object huntingClues(Map<String, Object> state, String question) {
+		int stage = ordinal(question);
+		return stage < 0 ? null : nested(state, "clueHistory", stage);
+	}
+
+	private static Object huntingDisplayClues(Map<String, Object> state, String question) {
+		Object clues = huntingClues(state, question);
+		return clues instanceof Collection<?> collection ? collection.stream().map(String::valueOf).map(value -> value.replace("_", "")).toList() : clues;
 	}
 
 	private static List<Object> valuesAt(Object raw, String key) {

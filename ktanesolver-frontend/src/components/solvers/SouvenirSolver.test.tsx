@@ -173,6 +173,26 @@ describe("SouvenirSolver", () => {
     expect(screen.getAllByRole("img", { name: "X-Ray symbol" })).toHaveLength(3);
   });
 
+  it.each([
+    ["firstDisplayedSymbols", "o, M"],
+    ["secondDisplayedSymbols", "U, W"],
+    ["thirdDisplayedSymbols", "z, f"],
+    ["fourthDisplayedSymbols", "H, A"],
+  ])("asks for Hunting's %s and renders both pictograms", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.HUNTING)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("These two pictograms were displayed:")).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: /Hunting pictogram/ })).toHaveLength(2);
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question, finalQuestion: false,
+    });
+  });
+
   it("auto-selects the Game of Life Cruel color-combination question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "Black/Orange, Solid Red", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.GAME_OF_LIFE_CRUEL)} />);

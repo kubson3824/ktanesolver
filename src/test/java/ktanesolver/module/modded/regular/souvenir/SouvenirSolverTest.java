@@ -800,6 +800,29 @@ class SouvenirSolverTest {
 			List.of("2", "3", "4", "5"), false)).isEqualTo(new SouvenirOutput("4", 3));
 	}
 
+	@Test
+	void resolvesHuntingDisplayedPictogramsForEveryStage() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity hunting = module(ModuleType.HUNTING, true, Map.of("clueHistory", List.of(
+			List.of("o_", "M"), List.of("U", "W"), List.of("z_", "f_"), List.of("H", "A")
+		)));
+		bomb.setModules(List.of(souvenir, hunting));
+
+		assertThat(solve(bomb, souvenir, hunting.getId(), "firstDisplayedSymbols", List.of(), false))
+			.isEqualTo(new SouvenirOutput("o, M", null));
+		assertThat(solve(bomb, souvenir, hunting.getId(), "secondDisplayedSymbols", List.of(), false))
+			.isEqualTo(new SouvenirOutput("U, W", null));
+		assertThat(solve(bomb, souvenir, hunting.getId(), "thirdDisplayedSymbols", List.of(), false))
+			.isEqualTo(new SouvenirOutput("z, f", null));
+		assertThat(solve(bomb, souvenir, hunting.getId(), "fourthDisplayedSymbols", List.of(), false))
+			.isEqualTo(new SouvenirOutput("H, A", null));
+		assertThat(solve(bomb, souvenir, hunting.getId(),
+			"Which of these symbols was displayed in the third stage of Hunting?",
+			List.of("M", "U", "f_", "H", "o_", "A"), false))
+			.isEqualTo(new SouvenirOutput("f_", 3));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(
