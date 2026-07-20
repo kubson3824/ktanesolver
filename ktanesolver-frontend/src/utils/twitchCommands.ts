@@ -17,6 +17,7 @@ const conditional = new Set<ModuleType>([
   ModuleType.KNOBS,
   ModuleType.MOUSE_IN_THE_MAZE,
   ModuleType.MONSPLODE_TRADING_CARDS,
+  ModuleType.PAINTING,
   ModuleType.PLUMBING,
   ModuleType.ROUND_KEYPAD,
   ModuleType.SEMAPHORE,
@@ -662,6 +663,17 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return cells.length && cells.every((cell) => /^[A-E][1-5]$/.test(cell))
         ? commands([`fill ${cells.join(" ")}`, "submit"])
         : "";
+    }
+    case ModuleType.SET: {
+      const positions = strings(raw.positions).map((position) => position.toLowerCase());
+      return positions.length === 3 && new Set(positions).size === 3 && positions.every((position) => /^[a-c][1-3]$/.test(position))
+        ? command(`press ${positions.join(" ")}`)
+        : "";
+    }
+    case ModuleType.PAINTING: {
+      const repaints = arrayValue(raw.repaints).map(asRecord);
+      if(!repaints.length || repaints.some((repaint) => !/^[A-Za-z0-9]+$/.test(stringValue(repaint.label) ?? "") || !stringValue(repaint.to))) return "";
+      return commands(repaints.map((repaint) => `paint ${repaint.label} ${words(repaint.to)}`));
     }
   }
 }

@@ -1,4 +1,5 @@
 export enum ModuleType {
+  PAINTING = "PAINTING",
   WIRES = "WIRES",
   BUTTON = "BUTTON",
   KEYPADS = "KEYPADS",
@@ -121,6 +122,7 @@ export enum ModuleType {
   ZOO = "ZOO",
   POINT_OF_ORDER = "POINT_OF_ORDER",
   NONOGRAM = "NONOGRAM",
+  SET = "SET",
 }
 
 export enum PortType {
