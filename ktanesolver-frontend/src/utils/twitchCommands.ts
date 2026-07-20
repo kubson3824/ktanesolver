@@ -538,6 +538,26 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const colors = strings(raw.colors).map((color) => codes[color] ?? color.toLowerCase());
       return colors.length ? commands([`set ${colors.join(",")}`, "submit"]) : "";
     }
+    case ModuleType.COLOR_MORSE: {
+      const morse = strings(raw.morse);
+      return morse.length ? command(`transmit ${morse.join(" ")}`) : "";
+    }
+    case ModuleType.BIG_CIRCLE: {
+      const colors = strings(raw.pressSequence);
+      return colors.length === 3 ? command(`press ${colors.map(words).join(" ")}`) : "";
+    }
+    case ModuleType.MASTERMIND_SIMPLE:
+    case ModuleType.MASTERMIND_CRUEL: {
+      const codes: Record<string, string> = { WHITE: "w", MAGENTA: "m", YELLOW: "y", GREEN: "g", RED: "r", BLUE: "b" };
+      const colors = strings(raw.nextGuess).map((color) => codes[color]);
+      return colors.length === 5 && colors.every(Boolean)
+        ? command(`${booleanValue(raw.submit) ? "submit" : "query"} ${colors.join(" ")}`)
+        : "";
+    }
+    case ModuleType.GRIDLOCK: {
+      const coordinate = stringValue(raw.coordinate)?.toUpperCase();
+      return coordinate && /^[A-D][1-4]$/.test(coordinate) ? command(`press ${coordinate}`) : "";
+    }
     case ModuleType.ONLY_CONNECT: {
       const position = numberValue(raw.position);
       if (position !== undefined) return command(`press ${position}`);

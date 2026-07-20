@@ -8,6 +8,7 @@ import {
   TwitchCommandDisplay, useSolver, useSolverModulePersistence,
 } from "../common";
 import { Button } from "../ui/button";
+import { XRAY_SYMBOLS, XRaySymbol } from "./XRaySolver";
 
 type QuestionOption = { id: string; label: string };
 type HistoryEntry = { question: string; answer: string };
@@ -24,6 +25,7 @@ type SouvenirState = {
 const question = (id: string, label: string): QuestionOption => ({ id, label });
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
+  [ModuleType.BIG_CIRCLE]: [question("spinDirection", "Which direction was the circle spinning?")],
   [ModuleType.MEMORY]: [
     question("displays", "What was displayed in each stage?"),
     question("positions", "What positions were pressed?"),
@@ -45,6 +47,14 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.CREATION]: [question("firstWeather", "What was the weather condition on the first day?")],
   [ModuleType.COORDINATES]: [question("gridSize", "What was the grid size?")],
   [ModuleType.COLOR_FLASH]: [question("finalColor", "What was the final color in the sequence?")],
+  [ModuleType.COLOR_MORSE]: [
+    question("first color", "What was the color of the first LED?"),
+    question("second color", "What was the color of the second LED?"),
+    question("third color", "What was the color of the third LED?"),
+    question("first character", "What character was flashed by the first LED?"),
+    question("second character", "What character was flashed by the second LED?"),
+    question("third character", "What character was flashed by the third LED?"),
+  ],
   [ModuleType.ICE_CREAM]: [
     question("customers", "Who were the customers?"),
     question("offeredFlavors", "Which flavors were offered to each customer?"),
@@ -104,6 +114,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.TIC_TAC_TOE]: [question("initialField", "What was the initial state of the field?")],
   [ModuleType.TWO_BITS]: [question("responses", "What were the correct query responses?")],
   [ModuleType.X_RAY]: [question("symbols", "Which symbols were scanned?")],
+  [ModuleType.GRIDLOCK]: [
+    question("startingColor", "What was the starting color?"),
+    question("startingLocation", "What was the starting location?"),
+  ],
   [ModuleType.YAHTZEE]: [question("firstRoll", "What was the first roll?")],
   [ModuleType.TEXT_FIELD]: [question("displayedLetter", "What was the displayed letter?")],
 };
@@ -131,6 +145,9 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   const selectedSource = sources.find((source) => source.id === sourceModuleId);
   const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.SOUVENIR, result }) : "";
   const questionOptions = questionsFor(selectedSource);
+  const xRaySymbols = selectedSource?.type === ModuleType.X_RAY && result
+    ? result.answer.split(", ").filter((answer) => XRAY_SYMBOLS.includes(answer))
+    : [];
   const moduleState = useMemo<SouvenirState>(() => ({
     sourceModuleId, question: selectedQuestion, exactQuestion, answers, finalQuestion, result, history,
   }), [sourceModuleId, selectedQuestion, exactQuestion, answers, finalQuestion, result, history]);
@@ -285,7 +302,9 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
 
     {result && <SolverSection title="Recorded answer" className="border-emerald-500/40">
       <div className="rounded-md border-2 border-emerald-500 bg-emerald-500/15 p-4 text-center font-semibold text-emerald-700 dark:text-emerald-300">
-        {result.answer}
+        {xRaySymbols.length > 0
+          ? <><p className="mb-3">Match any of these scanned symbols:</p><div className="flex justify-center gap-3">{xRaySymbols.map((symbol) => <XRaySymbol key={symbol} code={symbol} />)}</div></>
+          : result.answer}
       </div>
       {!isSolved && <Button type="button" className="mt-4 w-full" onClick={nextQuestion}>Next question</Button>}
     </SolverSection>}

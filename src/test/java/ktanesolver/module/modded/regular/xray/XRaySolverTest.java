@@ -20,26 +20,26 @@ class XRaySolverTest {
 	@Test
 	void appliesAllMovementAxesAndRecordsSouvenirSymbols() {
 		ModuleEntity center = module();
-		assertThat(solve(center, 0, 0, 4)).isEqualTo(new XRayOutput(2, 1, 1));
+		assertThat(solve(center, "d7", "e10", "a1")).isEqualTo(new XRayOutput(2, 1, 1));
 		assertThat(center.getState()).containsEntry("scannedSymbols", List.of("a1", "d7", "e10"));
 
 		ModuleEntity diagonal = module();
-		assertThat(solve(diagonal, 0, 0, 8)).isEqualTo(new XRayOutput(5, 2, 2));
-		assertThat(solve(module(), 1, 1, 0)).isEqualTo(new XRayOutput(2, 1, 1));
+		assertThat(solve(diagonal, "i9", "a1", "d7")).isEqualTo(new XRayOutput(5, 2, 2));
+		assertThat(solve(module(), "a10", "j1", "a1 flipped")).isEqualTo(new XRayOutput(2, 1, 1));
 	}
 
 	@Test
 	void rejectsIncompleteAndOffTableSelections() {
-		assertThat(solver.solve(new RoundEntity(), new BombEntity(), module(), new XRayInput(null, 0, 4)))
+		assertThat(solver.solve(new RoundEntity(), new BombEntity(), module(), new XRayInput(null)))
 			.isInstanceOf(SolveFailure.class);
-		assertThat(solver.solve(new RoundEntity(), new BombEntity(), module(), new XRayInput(0, 0, 0)))
+		assertThat(solver.solve(new RoundEntity(), new BombEntity(), module(), new XRayInput(List.of("a1", "a1 flipped", "d7"))))
 			.isInstanceOf(SolveFailure.class);
 	}
 
 	@SuppressWarnings("unchecked")
-	private XRayOutput solve(ModuleEntity module, int column, int row, int movement) {
+	private XRayOutput solve(ModuleEntity module, String... symbols) {
 		return ((SolveSuccess<XRayOutput>) solver.solve(
-			new RoundEntity(), new BombEntity(), module, new XRayInput(column, row, movement)
+			new RoundEntity(), new BombEntity(), module, new XRayInput(List.of(symbols))
 		)).output();
 	}
 

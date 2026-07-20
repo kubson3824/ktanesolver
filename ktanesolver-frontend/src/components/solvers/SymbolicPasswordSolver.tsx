@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  KEYPAD_SYMBOL_DISPLAY,
   KEYPAD_SYMBOLS,
+  keypadSymbolImageUrl,
   type KeypadSymbol,
 } from "../../services/keypadsService";
+import { cn } from "../../lib/cn";
 import {
   solveSymbolicPassword,
   type SymbolicPasswordOutput,
@@ -34,6 +35,7 @@ const POSITIONS = ["top-left", "top-middle", "top-right", "bottom-left", "bottom
 
 export default function SymbolicPasswordSolver({ bomb }: { bomb: BombEntity | null | undefined }) {
   const [symbols, setSymbols] = useState<(KeypadSymbol | "")[]>(Array(6).fill(""));
+  const [activePosition, setActivePosition] = useState(0);
   const [result, setResult] = useState<SymbolicPasswordOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState("");
   const {
@@ -84,6 +86,7 @@ export default function SymbolicPasswordSolver({ bomb }: { bomb: BombEntity | nu
 
   const chooseSymbol = (index: number, symbol: KeypadSymbol | "") => {
     setSymbols((current) => current.map((value, position) => position === index ? symbol : value));
+    setActivePosition(Math.min(index + 1, 5));
     setResult(null);
     setTwitchCommand("");
     clearError();
@@ -91,6 +94,7 @@ export default function SymbolicPasswordSolver({ bomb }: { bomb: BombEntity | nu
 
   const reset = useCallback(() => {
     setSymbols(Array(6).fill(""));
+    setActivePosition(0);
     setResult(null);
     setTwitchCommand("");
     resetSolverState();
@@ -98,22 +102,37 @@ export default function SymbolicPasswordSolver({ bomb }: { bomb: BombEntity | nu
 
   return <SolverLayout>
     <SolverSection title="Current symbol layout" description="Enter the display from left to right, top row first.">
-      <div className="mx-auto grid max-w-lg grid-cols-3 gap-2">
-        {symbols.map((symbol, index) => <label key={index} className="space-y-1 text-xs text-muted-foreground">
+      <div className="mx-auto grid max-w-sm grid-cols-3 gap-2">
+        {symbols.map((symbol, index) => <button
+          key={index}
+          type="button"
+          aria-label={`${POSITIONS[index]}${symbol ? `: ${symbol}` : " (empty)"}`}
+          aria-pressed={activePosition === index}
+          onClick={() => setActivePosition(index)}
+          disabled={isLoading || isSolved}
+          className={cn(
+            "flex aspect-square flex-col items-center justify-center rounded-md border bg-background text-xs text-muted-foreground",
+            activePosition === index && "border-ring ring-2 ring-ring",
+          )}
+        >
+          {symbol
+            ? <img src={keypadSymbolImageUrl(symbol)} alt="" className="h-12 w-12 object-contain" />
+            : <span className="text-2xl">—</span>}
           <span>{POSITIONS[index]}</span>
-          <select
-            aria-label={`${POSITIONS[index]} symbol`}
-            value={symbol}
-            onChange={(event) => chooseSymbol(index, event.target.value as KeypadSymbol | "")}
-            disabled={isLoading || isSolved}
-            className="h-12 w-full rounded-md border border-border bg-background px-2 text-center text-lg text-foreground"
-          >
-            <option value="">—</option>
-            {KEYPAD_SYMBOLS.map((option) => <option key={option} value={option}>
-              {KEYPAD_SYMBOL_DISPLAY[option]} {option.toLowerCase().replaceAll("_", " ")}
-            </option>)}
-          </select>
-        </label>)}
+        </button>)}
+      </div>
+      <div className="mt-4 grid grid-cols-6 gap-1.5 sm:grid-cols-9">
+        {KEYPAD_SYMBOLS.map((symbol) => <button
+          key={symbol}
+          type="button"
+          title={symbol.toLowerCase().replaceAll("_", " ")}
+          aria-label={`Choose ${symbol.toLowerCase().replaceAll("_", " ")}`}
+          onClick={() => chooseSymbol(activePosition, symbol)}
+          disabled={isLoading || isSolved}
+          className="flex h-11 items-center justify-center rounded-md border border-border bg-muted/40 hover:border-foreground/40 hover:bg-muted disabled:cursor-not-allowed"
+        >
+          <img src={keypadSymbolImageUrl(symbol)} alt="" className="h-8 w-8 object-contain" />
+        </button>)}
       </div>
     </SolverSection>
 
@@ -133,7 +152,7 @@ export default function SymbolicPasswordSolver({ bomb }: { bomb: BombEntity | nu
           key={index}
           aria-label={`${POSITIONS[index]}: ${symbol}`}
           className="flex aspect-square items-center justify-center rounded-md border-2 border-emerald-500 bg-emerald-500/10 text-4xl"
-        >{KEYPAD_SYMBOL_DISPLAY[symbol]}</div>)}
+        ><img src={keypadSymbolImageUrl(symbol)} alt="" className="h-16 w-16 object-contain" /></div>)}
       </div>
       <ol className="mt-4 list-inside list-decimal space-y-1 text-sm">
         {result.moves.length === 0

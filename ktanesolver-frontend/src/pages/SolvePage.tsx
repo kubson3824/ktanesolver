@@ -16,6 +16,16 @@ import { formatModuleName } from "../lib/utils";
 import { Skeleton } from "../components/ui/skeleton";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import ModuleNumberInput from "../components/ModuleNumberInput";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
@@ -88,6 +98,10 @@ export default function SolvePage() {
   const [isNeedyPanelOpen, setIsNeedyPanelOpen] = useState(false);
   const [showFmnReminder, setShowFmnReminder] = useState(false);
   const [completionError, setCompletionError] = useState("");
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false);
+  const [undoError, setUndoError] = useState("");
   // Manual/solver split: draggable divider, % width of the manual panel on lg screens.
   const [manualPct, setManualPct] = useState(() => {
     const stored = Number(localStorage.getItem("solve-manual-pct"));
@@ -221,22 +235,28 @@ export default function SolvePage() {
   const handleBack = useCallback(() => void clearModule(), [clearModule]);
 
   const handleUndoSolve = async () => {
-    if (!currentBomb || !currentModule || !window.confirm("Clear this attempt and retry the module?")) return;
+    if (!currentBomb || !currentModule) return;
+    setUndoError("");
     try {
       await resetModule(currentBomb.id, currentModule.id);
+      setIsUndoDialogOpen(false);
       clearModule();
-    } catch {
-      // The store exposes the request error below.
+    } catch (cause) {
+      setUndoError(cause instanceof Error ? cause.message : "Could not undo solve");
     }
   };
 
   const handleCompleteModule = async () => {
-    if (!currentBomb || !currentModule || !window.confirm("Confirm this module is solved on the bomb?")) return;
+    if (!currentBomb || !currentModule) return;
     setCompletionError("");
+    setIsCompleting(true);
     try {
       await completeModule(currentBomb.id, currentModule.id);
+      setIsCompleteDialogOpen(false);
     } catch (cause) {
       setCompletionError(cause instanceof Error ? cause.message : "Could not mark module solved");
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -247,10 +267,10 @@ export default function SolvePage() {
         {
           key: "Escape",
           handler: handleBack,
-          enabled: !!currentModule,
+          enabled: !!currentModule && !isCompleteDialogOpen && !isUndoDialogOpen,
         },
       ],
-      [handleBack, currentModule]
+      [handleBack, currentModule, isCompleteDialogOpen, isUndoDialogOpen]
     )
   );
 
@@ -447,11 +467,25 @@ export default function SolvePage() {
                     )}
                   </div>
                   {currentModule.solved ? (
-                    <Button variant="outline" size="sm" onClick={() => void handleUndoSolve()}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setUndoError("");
+                        setIsUndoDialogOpen(true);
+                      }}
+                    >
                       Undo solve
                     </Button>
                   ) : (
-                    <Button variant="success" size="sm" onClick={() => void handleCompleteModule()}>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => {
+                        setCompletionError("");
+                        setIsCompleteDialogOpen(true);
+                      }}
+                    >
                       {Object.keys(currentModule.solution ?? {}).length ? "Confirm solved" : "Mark manually solved"}
                     </Button>
                   )}
@@ -508,6 +542,54 @@ export default function SolvePage() {
         isOpen={isNeedyPanelOpen}
         onToggle={() => setIsNeedyPanelOpen(!isNeedyPanelOpen)}
       />
+
+      <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+        <DialogContent className="mx-4 w-[calc(100%_-_2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mark {currentModuleDisplayName} as solved?</DialogTitle>
+            <DialogDescription>
+              Confirm that the module has been solved on the bomb.
+            </DialogDescription>
+          </DialogHeader>
+          {completionError && (
+            <DialogBody>
+              <p className="text-sm text-destructive" role="alert">{completionError}</p>
+            </DialogBody>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isCompleting}>Cancel</Button>
+            </DialogClose>
+            <Button variant="success" loading={isCompleting} onClick={() => void handleCompleteModule()}>
+              Mark solved
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+        <DialogContent className="mx-4 w-[calc(100%_-_2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Undo solve for {currentModuleDisplayName}?</DialogTitle>
+            <DialogDescription>
+              This clears the current attempt so you can solve the module again.
+            </DialogDescription>
+          </DialogHeader>
+          {undoError && (
+            <DialogBody>
+              <p className="text-sm text-destructive" role="alert">{undoError}</p>
+            </DialogBody>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={loading}>Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" loading={loading} onClick={() => void handleUndoSolve()}>
+              Undo solve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

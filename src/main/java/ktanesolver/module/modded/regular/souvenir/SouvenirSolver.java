@@ -100,9 +100,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private Integer resolveSpecial(ModuleEntity source, String question, List<String> answers) {
 		String q = normalize(question);
 		return switch (source.getType()) {
+			case BIG_CIRCLE -> answerIndex(answers, source.getState().get("spinDirection"));
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
 			case CHEAP_CHECKOUT -> cheapCheckoutAnswerIndex(source.getState(), q, answers);
 			case CHORD_QUALITIES -> chordQualitiesAnswerIndex(source.getState(), answers);
+			case COLOR_MORSE -> answerIndex(answers, colorMorseAnswer(source.getState(), q));
 			case CREATION -> answerIndex(answers, source.getState().get("firstWeather"));
 			case COORDINATES -> answerIndex(answers, source.getState().get("gridSizeClue"));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
@@ -116,6 +118,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				yield digit >= 0 && digit < 4 && display instanceof Number number
 					? answerIndex(answers, digit % 2 == 0 ? number.intValue() / 10 : number.intValue() % 10) : -1;
 			}
+			case GRIDLOCK -> answerIndex(answers, source.getState().get(q.contains("color") ? "startingColor" : "startingLocation"));
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
@@ -158,6 +161,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		Map<String, Object> state = source.getState();
 		return switch (source.getType()) {
 			case BUTTON -> state.get("stripColor");
+			case BIG_CIRCLE -> state.get("spinDirection");
 			case MEMORY -> switch (question) {
 				case "displays" -> state.get("displayHistory");
 				case "positions" -> valuesAt(state.get("solutionHistory"), "position");
@@ -173,6 +177,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				List.of("top left", "top right", "bottom left", "bottom right"));
 			case CHEAP_CHECKOUT -> state.get("paidAmounts");
 			case CHORD_QUALITIES -> state.get("givenNotes");
+			case COLOR_MORSE -> colorMorseAnswer(state, normalize(question));
 			case CREATION -> state.get("firstWeather");
 			case COORDINATES -> state.get("gridSizeClue");
 			case COLOR_FLASH -> nested(state, "input", "sequence", -1, "color");
@@ -182,6 +187,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FAST_MATH -> state.get("lastPair");
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
 			case GAMEPAD -> gamepadDisplay(state);
+			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
 			case MAZES -> nested(state, "input", "start");
@@ -216,6 +222,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			default -> "recordedFacts".equals(question)
 				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);
 		};
+	}
+
+	private static Object colorMorseAnswer(Map<String, Object> state, String question) {
+		int led = ordinal(question);
+		return led >= 0 && led < 3 ? nested(state, question.contains("color") ? "colors" : "characters", led) : null;
 	}
 
 	private static List<Object> valuesAt(Object raw, String key) {

@@ -147,6 +147,70 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it("auto-selects the Big Circle spin-direction question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("counterclockwise")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "spinDirection",
+      finalQuestion: false,
+    });
+  });
+
+  it("shows X-Ray answers as the scanned glyphs", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "a1 flipped, h6, f10", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.X_RAY)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("Match any of these scanned symbols:")).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "X-Ray symbol" })).toHaveLength(3);
+  });
+
+  it.each([
+    ["second color", "Orange"],
+    ["third character", "B"],
+  ])("asks the requested Color Morse LED fact", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.COLOR_MORSE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question,
+      finalQuestion: false,
+    });
+  });
+
+  it.each([
+    ["startingColor", "Blue"],
+    ["startingLocation", "C4"],
+  ])("asks the requested Gridlock starting fact", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.GRIDLOCK)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question,
+      finalQuestion: false,
+    });
+  });
+
   it("accepts the exact question for a module without a preset", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "GREEN", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.MICROCONTROLLER)} />);

@@ -18,14 +18,15 @@ import {
   useSolverModulePersistence,
 } from "../common";
 import { Input } from "../ui/input";
+import { cn } from "../../lib/cn";
 
-export const OPPONENTS = [
+const OPPONENTS = [
   "Buhar", "Lanaluff", "Bob", "Mountoise", "Nibs", "Aluga", "Lugirit", "Caadarim",
   "Vellarim", "Flaurim", "Gloorim", "Melbor", "Clondar", "Docsplode", "Magmy", "Pouse",
   "Ukkens", "Asteran", "Violan", "Zenlad", "Zapra", "Myrchat", "Percy", "Cutie Pie",
 ];
 
-export const MOVES = [
+const MOVES = [
   "Appearify", "Battery Power", "Bedrock", "Boo", "Boom", "Bug Spray", "Countdown",
   "Dark Portal", "Fiery Soul", "Finale", "Freak Out", "Glyph", "Last Word", "Sendify",
   "Shock", "Shrink", "Sidestep", "Stretch", "Void", "Defuse", "Candle", "Cave In",
@@ -37,7 +38,7 @@ export const MOVES = [
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm";
 
 // ponytail: hotlinks the official manual repo; vendor the PNGs locally if offline use matters
-export const opponentIconUrl = (name: string) =>
+const opponentIconUrl = (name: string) =>
   `https://ktane.timwi.de/HTML/img/Monsplode/${name.toLowerCase().replace(/\s/g, "")}.png`;
 
 interface Props { bomb: BombEntity | null | undefined }
@@ -119,14 +120,21 @@ export default function MonsplodeFightSolver({ bomb }: Props) {
   return (
     <SolverLayout>
       <SolverSection title="Opponent" description="Select the Monsplode shown above the moves.">
-        <div className="flex items-center gap-3">
-          <select className={selectClass} value={opponent} onChange={(event) => setOpponent(event.target.value)} disabled={isLoading || isSolved} aria-label="Opponent">
-            <option value="">Select opponent</option>
-            {OPPONENTS.map((name) => <option key={name}>{name}</option>)}
-          </select>
-          {opponent && (
-            <img src={opponentIconUrl(opponent)} alt={opponent} className="h-14 w-14 shrink-0 rounded-md border border-input bg-background object-contain p-1" />
-          )}
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+          {OPPONENTS.map((name) => <button
+            key={name}
+            type="button"
+            onClick={() => setOpponent(name)}
+            disabled={isLoading || isSolved}
+            aria-pressed={opponent === name}
+            className={cn(
+              "flex flex-col items-center rounded-md border border-input bg-background p-1 text-[10px] hover:bg-muted",
+              opponent === name && "border-ring ring-2 ring-ring",
+            )}
+          >
+            <img src={opponentIconUrl(name)} alt="" className="h-14 w-14 object-contain" />
+            <span>{name}</span>
+          </button>)}
         </div>
       </SolverSection>
 

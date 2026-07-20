@@ -1,9 +1,7 @@
 import { solveModule } from "../lib/api";
 
 export interface XRayInput {
-  column: number;
-  row: number;
-  movement: number;
+  symbols: string[];
 }
 
 export interface XRayOutput {

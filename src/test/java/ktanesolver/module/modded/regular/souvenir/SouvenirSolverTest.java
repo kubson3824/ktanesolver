@@ -487,6 +487,23 @@ class SouvenirSolverTest {
 		assertThat(solve(bomb, souvenir, xRay.getId(), "Which symbol was scanned in X-Ray?",
 			List.of("a1", "e2", "a1 flipped", "b10", "i9", "d1"), false))
 			.isEqualTo(new SouvenirOutput("a1 flipped", 3));
+		assertThat(solve(bomb, souvenir, xRay.getId(), "symbols", List.of(), false))
+			.isEqualTo(new SouvenirOutput("a1 flipped, h6, f10", null));
+	}
+
+	@Test
+	void resolvesBothGridlockQuestionFamilies() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity gridlock = module(ModuleType.GRIDLOCK, true, Map.of(
+			"startingColor", "Blue", "startingLocation", "C4"
+		));
+		bomb.setModules(List.of(souvenir, gridlock));
+
+		assertThat(solve(bomb, souvenir, gridlock.getId(), "startingColor", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Blue", null));
+		assertThat(solve(bomb, souvenir, gridlock.getId(), "startingLocation", List.of(), false))
+			.isEqualTo(new SouvenirOutput("C4", null));
 	}
 
 	@Test
@@ -671,6 +688,35 @@ class SouvenirSolverTest {
 			"What was the second slot in the second stage in Silly Slots?",
 			List.of("red bomb", "green bomb", "green cherry", "blue grape"), false))
 			.isEqualTo(new SouvenirOutput("green bomb", 2));
+	}
+
+	@Test
+	void resolvesEachColorMorseQuestionFamilyAtTheRequestedLed() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity colorMorse = module(ModuleType.COLOR_MORSE, true, Map.of(
+			"colors", List.of("Red", "Orange", "Blue"),
+			"characters", List.of("3", "6", "B")
+		));
+		bomb.setModules(List.of(souvenir, colorMorse));
+
+		assertThat(solve(bomb, souvenir, colorMorse.getId(),
+			"What was the color of the second LED in Color Morse?",
+			List.of("Blue", "Green", "Orange", "Purple", "Red", "Yellow"), false))
+			.isEqualTo(new SouvenirOutput("Orange", 3));
+		assertThat(solve(bomb, souvenir, colorMorse.getId(), "third character", List.of(), false))
+			.isEqualTo(new SouvenirOutput("B", null));
+	}
+
+	@Test
+	void resolvesBigCircleSpinDirection() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity bigCircle = module(ModuleType.BIG_CIRCLE, true, Map.of("spinDirection", "counterclockwise"));
+		bomb.setModules(List.of(souvenir, bigCircle));
+
+		assertThat(solve(bomb, souvenir, bigCircle.getId(), "spinDirection", List.of(), false))
+			.isEqualTo(new SouvenirOutput("counterclockwise", null));
 	}
 
 	@SuppressWarnings("unchecked")

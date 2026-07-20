@@ -34,34 +34,32 @@ export function XRaySymbol({ code, className }: { code: string; className?: stri
   </span>;
 }
 
-function SymbolPicker({ label, symbols, selected, onSelect, disabled }: {
-  label: string; symbols: string[]; selected: number; onSelect: (index: number) => void; disabled: boolean;
+function SymbolPicker({ symbols, selected, onSelect, disabled }: {
+  symbols: string[]; selected: string[]; onSelect: (code: string) => void; disabled: boolean;
 }) {
   return <fieldset>
-    <legend className="mb-2 text-sm font-semibold">{label}</legend>
+    <legend className="mb-2 text-sm font-semibold">Scanned symbols ({selected.length}/3)</legend>
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
       {symbols.map((code, index) => <button
         key={code}
         type="button"
-        onClick={() => onSelect(index)}
-        disabled={disabled}
-        aria-label={`${label} ${index + 1}`}
-        aria-pressed={selected === index}
+        onClick={() => onSelect(code)}
+        disabled={disabled || selected.length === 3 && !selected.includes(code)}
+        aria-label={`Scanned symbol option ${index + 1}`}
+        aria-pressed={selected.includes(code)}
         className={cn(
           "flex min-h-14 items-center justify-center rounded-md border bg-muted/30 p-1 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
-          selected === index && "border-primary bg-primary/10 ring-2 ring-primary",
+          selected.includes(code) && "border-primary bg-primary/10 ring-2 ring-primary",
         )}
       ><XRaySymbol code={code} /></button>)}
     </div>
   </fieldset>;
 }
 
-type PersistedState = { column?: number; row?: number; movement?: number };
+type PersistedState = { symbols?: string[]; column?: number; row?: number; movement?: number };
 
 export default function XRaySolver({ bomb }: { bomb: BombEntity | null | undefined }) {
-  const [column, setColumn] = useState(-1);
-  const [row, setRow] = useState(-1);
-  const [movement, setMovement] = useState(-1);
+  const [symbols, setSymbols] = useState<string[]>([]);
   const [result, setResult] = useState<XRayOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState("");
   const {
@@ -69,14 +67,17 @@ export default function XRaySolver({ bomb }: { bomb: BombEntity | null | undefin
     reset: resetSolverState, currentModule, round, markModuleSolved,
   } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
-  const savedState = useMemo(() => ({ column, row, movement }), [column, row, movement]);
+  const savedState = useMemo(() => ({ symbols }), [symbols]);
 
   useSolverModulePersistence<PersistedState, XRayOutput>({
     state: savedState,
     onRestoreState: useCallback((state) => {
-      if (typeof state.column === "number") setColumn(state.column);
-      if (typeof state.row === "number") setRow(state.row);
-      if (typeof state.movement === "number") setMovement(state.movement);
+      if (Array.isArray(state.symbols)) setSymbols(state.symbols);
+      else setSymbols([
+        typeof state.column === "number" ? XRAY_COLUMNS[state.column] : "",
+        typeof state.row === "number" ? XRAY_ROWS[state.row] : "",
+        typeof state.movement === "number" ? XRAY_MOVEMENTS[state.movement] : "",
+      ].filter(Boolean));
     }, []),
     onRestoreSolution: useCallback((solution: XRayOutput) => {
       setResult(solution);
@@ -88,35 +89,37 @@ export default function XRaySolver({ bomb }: { bomb: BombEntity | null | undefin
     setIsSolved,
   });
 
-  const valid = column >= 0 && row >= 0 && movement >= 0;
+  const valid = symbols.length === 3;
   const solve = useCallback(async () => {
     if (!round?.id || !bomb?.id || !currentModule?.id) return setError("Missing required information");
     if (!valid) return setError("Select all three scanned symbols");
     clearError(); setIsLoading(true);
     try {
-      const input = { column, row, movement };
+      const input = { symbols };
       const response = await solveXRay(round.id, bomb.id, currentModule.id, input);
       const command = generateTwitchCommand({ moduleType: ModuleType.X_RAY, result: response.output });
       setResult(response.output); setTwitchCommand(command); setIsSolved(response.solved);
       if (response.solved) markModuleSolved(bomb.id, currentModule.id);
       updateModuleAfterSolve(bomb.id, currentModule.id, {
         ...input,
-        scannedSymbols: [XRAY_COLUMNS[column], XRAY_ROWS[row], XRAY_MOVEMENTS[movement]],
+        scannedSymbols: symbols,
       }, response.output, response.solved);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to solve X-Ray"); }
     finally { setIsLoading(false); }
-  }, [round?.id, bomb?.id, currentModule?.id, valid, column, row, movement, clearError, markModuleSolved, setError, setIsLoading, setIsSolved, updateModuleAfterSolve]);
+  }, [round?.id, bomb?.id, currentModule?.id, valid, symbols, clearError, markModuleSolved, setError, setIsLoading, setIsSolved, updateModuleAfterSolve]);
 
   const reset = useCallback(() => {
-    setColumn(-1); setRow(-1); setMovement(-1); setResult(null); setTwitchCommand(""); resetSolverState();
+    setSymbols([]); setResult(null); setTwitchCommand(""); resetSolverState();
   }, [resetSolverState]);
 
+  const toggleSymbol = useCallback((code: string) => setSymbols((selected) => selected.includes(code)
+    ? selected.filter((symbol) => symbol !== code)
+    : selected.length < 3 ? [...selected, code] : selected), []);
+
   return <SolverLayout>
-    {!isSolved && <SolverSection title="Scanned symbols" description="Match each symbol to the table where it appears in the manual.">
+    {!isSolved && <SolverSection title="Scanned symbols" description="Select the three symbols shown by the scanner; their order does not matter.">
       <div className="space-y-5">
-        <SymbolPicker label="Column symbol" symbols={XRAY_COLUMNS} selected={column} onSelect={setColumn} disabled={isLoading} />
-        <SymbolPicker label="Row symbol" symbols={XRAY_ROWS} selected={row} onSelect={setRow} disabled={isLoading} />
-        <SymbolPicker label="Movement symbol" symbols={XRAY_MOVEMENTS} selected={movement} onSelect={setMovement} disabled={isLoading} />
+        <SymbolPicker symbols={XRAY_SYMBOLS} selected={symbols} onSelect={toggleSymbol} disabled={isLoading} />
       </div>
     </SolverSection>}
 

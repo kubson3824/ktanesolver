@@ -101,6 +101,11 @@ const fixtures: Record<ModuleType, Fixture> = {
   BINARY_LEDS: { result: { recommendedColor: "RED", recommendedValue: 25 }, expected: "!number cut red 25" },
   RHYTHMS: { result: { mash: false, actions: [{ button: "BLUE", beeps: 3 }] }, expected: "!number press blue 3" },
   COLOR_MATH: { result: { colors: ["RED", "GREEN", "BLUE", "PURPLE"] }, expected: "!number set r,g,b,p; !number submit" },
+  COLOR_MORSE: { result: { morse: ["-....-", "....-", "--..."] }, expected: "!number transmit -....- ....- --..." },
+  BIG_CIRCLE: { result: { pressSequence: ["ORANGE", "WHITE", "MAGENTA"] }, expected: "!number press orange white magenta" },
+  MASTERMIND_SIMPLE: { result: { nextGuess: ["RED", "BLUE", "GREEN", "YELLOW", "MAGENTA"], submit: false }, expected: "!number query r b g y m" },
+  MASTERMIND_CRUEL: { result: { nextGuess: ["RED", "BLUE", "GREEN", "YELLOW", "MAGENTA"], submit: true }, expected: "!number submit r b g y m" },
+  GRIDLOCK: { result: { coordinate: "C4" }, expected: "!number press C4" },
   ONLY_CONNECT: { result: { position: 4, groups: [] }, expected: "!number press 4" },
   NEUTRALIZATION: { result: { baseFormula: "NaOH", drops: 6, filterOn: true }, expected: "!number base NaOH; !number conc set 6; !number filter; !number titrate" },
   WEB_DESIGN: { result: { answer: "CONSIDER" }, expected: "!number con" },
@@ -121,7 +126,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(92);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(97);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(18);
   });
 

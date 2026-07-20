@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BombEntity } from "../../types";
 import { ModuleType } from "../../types";
 import {
-  KEYPAD_SYMBOL_DISPLAY as SYMBOL_DISPLAY,
   KEYPAD_SYMBOLS as UNIQUE_SYMBOLS,
+  keypadSymbolImageUrl,
   solveKeypads,
   type KeypadSymbol,
 } from "../../services/keypadsService";
@@ -217,7 +217,7 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
                   isSolved && "cursor-not-allowed",
                 )}
               >
-                {SYMBOL_DISPLAY[symbol]}
+                <img src={keypadSymbolImageUrl(symbol)} alt="" className="h-8 w-8 object-contain" />
               </button>
             );
           })}
@@ -245,7 +245,7 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
                 )}
                 aria-label={`${positionLabel}${sym ? `: ${sym}` : " (empty)"}`}
               >
-                <span>{sym ? SYMBOL_DISPLAY[sym] : ""}</span>
+                {sym && <img src={keypadSymbolImageUrl(sym)} alt="" className="h-16 w-16 object-contain" />}
                 {isSolved && pressOrder !== undefined && (
                   <span className="absolute top-1.5 left-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
                     {pressOrder + 1}
@@ -282,7 +282,7 @@ export default function KeypadsSolver({ bomb }: KeypadsSolverProps) {
                 <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                   {index + 1}.
                 </span>
-                <span className="text-xl">{SYMBOL_DISPLAY[sym]}</span>
+                <img src={keypadSymbolImageUrl(sym)} alt="" className="h-8 w-8 object-contain" />
               </div>
             ))}
           </div>

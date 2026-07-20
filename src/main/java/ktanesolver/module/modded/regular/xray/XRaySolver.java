@@ -52,24 +52,28 @@ public class XRaySolver extends AbstractModuleSolver<XRayInput, XRayOutput> {
 	protected SolveResult<XRayOutput> doSolve(
 		RoundEntity round, BombEntity bomb, ModuleEntity module, XRayInput input
 	) {
-		if (input == null || !inRange(input.column(), 12) || !inRange(input.row(), 12)
-			|| !inRange(input.movement(), 9)) {
-			return failure("Select one column, row, and movement symbol");
+		if (input == null || input.symbols() == null || input.symbols().size() != 3
+			|| input.symbols().stream().distinct().count() != 3) {
+			return failure("Select exactly three different scanned symbols");
 		}
+		int column = input.symbols().stream().mapToInt(COLUMNS::indexOf).filter(i -> i >= 0).findFirst().orElse(-1);
+		int row = input.symbols().stream().mapToInt(ROWS::indexOf).filter(i -> i >= 0).findFirst().orElse(-1);
+		int movement = input.symbols().stream().mapToInt(MOVEMENTS::indexOf).filter(i -> i >= 0).findFirst().orElse(-1);
+		if (column < 0 || row < 0 || movement < 0) return failure("The symbols must include one from each manual table");
 
-		int destinationRow = input.row() + input.movement() / 3 - 1;
-		int destinationColumn = input.column() + input.movement() % 3 - 1;
+		int destinationRow = row + movement / 3 - 1;
+		int destinationColumn = column + movement % 3 - 1;
 		if (!inRange(destinationRow, 12) || !inRange(destinationColumn, 12)) {
 			return failure("That movement leaves the number table; check the three symbols");
 		}
 
 		storeState(module, "scannedSymbols", List.of(
-			COLUMNS.get(input.column()), ROWS.get(input.row()), MOVEMENTS.get(input.movement())
+			COLUMNS.get(column), ROWS.get(row), MOVEMENTS.get(movement)
 		));
 		return success(new XRayOutput(TABLE[destinationRow][destinationColumn], destinationRow + 1, destinationColumn + 1));
 	}
 
-	private static boolean inRange(Integer value, int size) {
-		return value != null && value >= 0 && value < size;
+	private static boolean inRange(int value, int size) {
+		return value >= 0 && value < size;
 	}
 }
