@@ -68,6 +68,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   MORSE_A_MAZE: { result: { moves: ["UP", "RIGHT", "DOWN"] }, expected: "!number move URD" },
   HEXAMAZE: { result: { moves: ["NORTHWEST", "EAST"] }, expected: "!number northwest east" },
   BITMAPS: { result: { button: 2 }, expected: "!number press 2" },
+  BRAILLE: { result: { pressPosition: 3 }, expected: "!number press 3" },
   COLORED_SQUARES: { result: { coordinates: ["A1", "A2", "B3"] }, expected: "!number A1 A2 B3" },
   ADJACENT_LETTERS: { result: { pressLetters: ["D", "P", "C"] }, expected: "!number submit D P C" },
   SILLY_SLOTS: { result: { legal: false }, expected: "!number pull" },
@@ -140,7 +141,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(107);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(108);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(22);
   });
 

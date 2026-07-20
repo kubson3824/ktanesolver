@@ -11,6 +11,7 @@ import { Button } from "../ui/button";
 import { XRAY_SYMBOLS, XRaySymbol } from "./XRaySolver";
 import { HUNTING_CLUES } from "../../services/huntingService";
 import { HuntingPictogram } from "./HuntingSolver";
+import { BraillePattern } from "./BrailleSolver";
 
 type QuestionOption = { id: string; label: string };
 type HistoryEntry = { question: string; answer: string };
@@ -43,6 +44,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.BITMAPS]: [
     question("whitePixels", "How many white pixels were in each quadrant?"),
     question("blackPixels", "How many black pixels were in each quadrant?"),
+  ],
+  [ModuleType.BRAILLE]: [
+    question("first pattern", "What was the first Braille pattern?"),
+    question("second pattern", "What was the second Braille pattern?"),
+    question("third pattern", "What was the third Braille pattern?"),
+    question("fourth pattern", "What was the fourth Braille pattern?"),
   ],
   [ModuleType.CHEAP_CHECKOUT]: [question("paidAmounts", "What were the paid amounts?")],
   [ModuleType.CHORD_QUALITIES]: [question("notes", "What notes were in the given chord?")],
@@ -174,6 +181,9 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   const huntingSymbols = selectedSource?.type === ModuleType.HUNTING && result
     ? result.answer.split(", ").map((answer) => HUNTING_CLUES.find((symbol) => symbol.replace("_", "") === answer.trim())).filter((symbol): symbol is NonNullable<typeof symbol> => symbol !== undefined)
     : [];
+  const braillePattern = selectedSource?.type === ModuleType.BRAILLE && result
+    ? (result.answer.codePointAt(0) ?? 0) - 0x2800
+    : 0;
   const moduleState = useMemo<SouvenirState>(() => ({
     sourceModuleId, question: selectedQuestion, exactQuestion, answers, finalQuestion, result, history,
   }), [sourceModuleId, selectedQuestion, exactQuestion, answers, finalQuestion, result, history]);
@@ -332,6 +342,8 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
           ? <><p className="mb-3">These two pictograms were displayed:</p><div className="flex justify-center gap-3">{huntingSymbols.map((symbol) => <HuntingPictogram key={symbol} symbol={symbol} />)}</div></>
           : xRaySymbols.length > 0
           ? <><p className="mb-3">Match any of these scanned symbols:</p><div className="flex justify-center gap-3">{xRaySymbols.map((symbol) => <XRaySymbol key={symbol} code={symbol} />)}</div></>
+          : braillePattern > 0 && braillePattern <= 63
+          ? <><p className="mb-3">Match this Braille pattern:</p><BraillePattern pattern={braillePattern} className="mx-auto w-fit scale-150" /><p className="mt-4">{result.answer}</p></>
           : result.answer}
       </div>
       {!isSolved && <Button type="button" className="mt-4 w-full" onClick={nextQuestion}>Next question</Button>}

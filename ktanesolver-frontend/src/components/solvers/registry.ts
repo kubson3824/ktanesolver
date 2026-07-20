@@ -73,6 +73,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.MORSE_A_MAZE]: { load: () => import("./MorseAMazeSolver") },
   [ModuleType.HEXAMAZE]: { load: () => import("./HexamazeSolver") },
   [ModuleType.BITMAPS]: { load: () => import("./BitmapsSolver") },
+  [ModuleType.BRAILLE]: { load: () => import("./BrailleSolver") },
   [ModuleType.COLORED_SQUARES]: { load: () => import("./ColoredSquaresSolver") },
   [ModuleType.ADJACENT_LETTERS]: { load: () => import("./AdjacentLettersSolver") },
   [ModuleType.SILLY_SLOTS]: { load: () => import("./SillySlotsSolver") },

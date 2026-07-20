@@ -461,6 +461,25 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryBraillePositionAsAVisualPattern() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity braille = module(ModuleType.BRAILLE, true, Map.of("braillePatterns", List.of(1, 10, 21, 63)));
+		bomb.setModules(List.of(souvenir, braille));
+
+		assertThat(solve(bomb, souvenir, braille.getId(), "first pattern", List.of(), false))
+			.isEqualTo(new SouvenirOutput("⠁ (dots 1)", null));
+		assertThat(solve(bomb, souvenir, braille.getId(), "second pattern", List.of(), false))
+			.isEqualTo(new SouvenirOutput("⠊ (dots 2, 4)", null));
+		assertThat(solve(bomb, souvenir, braille.getId(), "third pattern", List.of(), false))
+			.isEqualTo(new SouvenirOutput("⠕ (dots 1, 3, 5)", null));
+		assertThat(solve(bomb, souvenir, braille.getId(), "fourth pattern", List.of(), false))
+			.isEqualTo(new SouvenirOutput("⠿ (dots 1, 2, 3, 4, 5, 6)", null));
+		assertThat(solve(bomb, souvenir, braille.getId(), "What was the second pattern in Braille?",
+			List.of("dots 1 3", "⠊", "dots 1 2 3"), false)).isEqualTo(new SouvenirOutput("⠊", 2));
+	}
+
+	@Test
 	void resolvesChordQualitiesGivenNoteMembership() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

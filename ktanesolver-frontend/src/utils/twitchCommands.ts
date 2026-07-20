@@ -388,6 +388,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const button = numberValue(raw.button) ?? numberValue(raw.buttonNumber) ?? numberValue(raw.answer);
       return button === undefined ? "" : command(`press ${button}`);
     }
+    case ModuleType.BRAILLE: {
+      const position = numberValue(raw.pressPosition);
+      return position !== undefined && position >= 1 && position <= 4 ? command(`press ${position}`) : "";
+    }
     case ModuleType.COLORED_SQUARES: {
       const coordinates = strings(raw.coordinates).map((coordinate) => coordinate.toUpperCase());
       return coordinates.length && coordinates.every((coordinate) => /^[A-D][1-4]$/.test(coordinate))

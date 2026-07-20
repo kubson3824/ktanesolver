@@ -102,6 +102,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return switch (source.getType()) {
 			case BIG_CIRCLE -> answerIndex(answers, source.getState().get("spinDirection"));
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
+			case BRAILLE -> brailleAnswerIndex(source.getState(), q, answers);
 			case CHEAP_CHECKOUT -> cheapCheckoutAnswerIndex(source.getState(), q, answers);
 			case CHORD_QUALITIES -> chordQualitiesAnswerIndex(source.getState(), answers);
 			case COLOR_MORSE -> answerIndex(answers, colorMorseAnswer(source.getState(), q));
@@ -182,6 +183,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case BITMAPS -> labeledValues(
 				"blackPixels".equals(question) ? blackCounts(state.get("whiteCounts")) : state.get("whiteCounts"),
 				List.of("top left", "top right", "bottom left", "bottom right"));
+			case BRAILLE -> braillePatternLabel(braillePattern(state, question));
 			case CHEAP_CHECKOUT -> state.get("paidAmounts");
 			case CHORD_QUALITIES -> state.get("givenNotes");
 			case COLOR_MORSE -> colorMorseAnswer(state, normalize(question));
@@ -248,6 +250,39 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static Object colorMorseAnswer(Map<String, Object> state, String question) {
 		int led = ordinal(question);
 		return led >= 0 && led < 3 ? nested(state, question.contains("color") ? "colors" : "characters", led) : null;
+	}
+
+	private static Object braillePattern(Map<String, Object> state, String question) {
+		int position = ordinal(normalize(question));
+		return position >= 0 && position < 4 ? nested(state, "braillePatterns", position) : null;
+	}
+
+	private static String braillePatternLabel(Object value) {
+		if (!(value instanceof Number number)) return null;
+		int pattern = number.intValue();
+		StringBuilder dots = new StringBuilder();
+		for (int dot = 0; dot < 6; dot++) if ((pattern & 1 << dot) != 0) {
+			if (!dots.isEmpty()) dots.append(", ");
+			dots.append(dot + 1);
+		}
+		return Character.toString(0x2800 + pattern) + " (dots " + dots + ")";
+	}
+
+	private static int brailleAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		Object value = braillePattern(state, question);
+		if (!(value instanceof Number number)) return -1;
+		int result = -1;
+		for (int i = 0; i < answers.size(); i++) {
+			String answer = answers.get(i);
+			int pattern = answer.codePoints().filter(character -> character >= 0x2800 && character <= 0x283f)
+				.map(character -> character - 0x2800).findFirst().orElseGet(() -> answer.chars()
+					.filter(character -> character >= '1' && character <= '6')
+					.map(character -> 1 << character - '1').reduce(0, (left, right) -> left | right));
+			if (pattern != number.intValue()) continue;
+			if (result >= 0) return -1;
+			result = i;
+		}
+		return result;
 	}
 
 	private static Object huntingClues(Map<String, Object> state, String question) {

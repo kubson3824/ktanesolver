@@ -53,6 +53,7 @@ const MODULE_TYPES: Record<string, string> = {
     BigButtonTranslated: "BUTTON",
     BinaryLeds: "BINARY_LEDS",
     BitmapsModule: "BITMAPS",
+    BrailleModule: "BRAILLE",
     BlindAlleyModule: "BLIND_ALLEY",
     BrokenButtonsModule: "BROKEN_BUTTONS",
     BigButton: "BUTTON",
