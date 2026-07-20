@@ -190,6 +190,12 @@ For a needy fallback, include `isNeedy: true`. Catalog category remains the prim
 
 Add the module's verified command grammar to `src/utils/twitchCommands.ts` and an exact expected command to `src/utils/twitchCommands.test.ts`. Never generate guessed prose or an incomplete command.
 
+With the backend running, refresh the public support table:
+
+```bash
+node scripts/generate-supported-modules.mjs
+```
+
 ## Verification
 
 ```bash

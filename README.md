@@ -22,6 +22,8 @@ KTANESolver complements the official and community manuals. The defuser still pe
 |---|---|
 | Run the application locally | [Getting started](docs/getting-started.md) |
 | Set up and solve a bomb | [Using KTANESolver](docs/using-ktanesolver.md) |
+| See the interface | [Visual tour](docs/visual-tour.md) |
+| See available solvers | [Supported modules](docs/supported-modules.md) |
 | Understand the codebase | [Architecture](docs/architecture.md) |
 | Call the backend directly | [API reference](docs/api-reference.md) |
 | Add another module | [Implementing a module solver](docs/implementing-new-module-solver.md) |
