@@ -27,6 +27,7 @@ type SouvenirState = {
 
 const question = (id: string, label: string): QuestionOption => ({ id, label });
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
+  [ModuleType.MAFIA]: [question("players", "Who was a player, but not the Godfather?")],
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
   [ModuleType.BIG_CIRCLE]: [question("spinDirection", "Which direction was the circle spinning?")],
   [ModuleType.MEMORY]: [
@@ -173,6 +174,7 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
     [bomb?.modules, currentModule?.id],
   );
   const selectedSource = sources.find((source) => source.id === sourceModuleId);
+  const requiresDisplayedAnswers = selectedSource?.type === ModuleType.MAFIA;
   const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.SOUVENIR, result }) : "";
   const questionOptions = questionsFor(selectedSource);
   const xRaySymbols = selectedSource?.type === ModuleType.X_RAY && result
@@ -206,10 +208,13 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   });
 
   const selectSource = (id: string) => {
-    const options = questionsFor(sources.find((source) => source.id === id));
+    const source = sources.find((candidate) => candidate.id === id);
+    const options = questionsFor(source);
+    const mafia = source?.type === ModuleType.MAFIA;
     setSourceModuleId(id);
     setSelectedQuestion(options.length === 1 ? options[0].id : "");
-    setExactQuestion(""); setAnswers([]);
+    setExactQuestion(mafia ? "Who was a player, but not the Godfather?" : "");
+    setAnswers(mafia ? Array(6).fill("") : []);
     setResult(null);
     clearError();
   };
@@ -295,7 +300,7 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
             setAnswers(event.target.checked ? ["", "", "", ""] : []);
             setResult(null); clearError();
           }}
-          disabled={isLoading || isSolved}
+          disabled={isLoading || isSolved || requiresDisplayedAnswers}
         />
         Enter Souvenir’s displayed answers (most reliable)
       </label>}

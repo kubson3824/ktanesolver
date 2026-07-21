@@ -199,6 +199,20 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void selectsADisplayedMafiaPlayerWhoWasNotTheGodfather() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity mafia = module(ModuleType.MAFIA, true, Map.of(
+			"players", List.of("ROB", "TIM", "MARY", "BRIANE", "HUNTER", "MACY", "JOHN", "WILL"),
+			"godfather", "MARY"));
+		bomb.setModules(List.of(souvenir, mafia));
+
+		assertThat(solve(bomb, souvenir, mafia.getId(), "Who was a player, but not the Godfather?",
+			List.of("Mary", "Larry", "Kate", "John", "Diane", "Mac"), false))
+			.isEqualTo(new SouvenirOutput("John", 4));
+	}
+
+	@Test
 	void resolvesDisplayedChoicesForPreviouslyUnmappedModules() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

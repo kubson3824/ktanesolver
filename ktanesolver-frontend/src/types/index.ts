@@ -1,4 +1,5 @@
 export enum ModuleType {
+  MAFIA = "MAFIA",
   PAINTING = "PAINTING",
   WIRES = "WIRES",
   BUTTON = "BUTTON",

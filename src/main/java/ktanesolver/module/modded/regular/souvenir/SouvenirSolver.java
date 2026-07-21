@@ -132,6 +132,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				source.getState().get(q.contains("print") ? "souvenirPrintVersions" : "souvenirCardNames"), null, false);
 			case MORSEMATICS -> membershipAnswerIndex(answers, source.getState().get("letters"), null, q.contains("not present"));
 			case MORSE_A_MAZE -> answerIndex(answers, morseAMazeAnswer(source.getState(), q));
+			case MAFIA -> membershipAnswerIndex(answers, source.getState().get("players"), source.getState().get("godfather"), false);
 			case MURDER -> murderAnswerIndex(source, q, answers);
 			case MYSTIC_SQUARE -> answerIndex(answers, nested(source.getState(), "input", "grid", 4));
 			case NEUTRALIZATION -> answerIndex(answers, source.getState().get(q.contains("volume") ? "acidVolume" : "acidColor"));
@@ -207,6 +208,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				? "souvenirPrintVersions" : "souvenirCardNames");
 			case MORSEMATICS -> state.get("letters");
 			case MORSE_A_MAZE -> morseAMazeAnswer(state, normalize(question));
+			case MAFIA -> null;
 			case MURDER -> murderRecordedAnswer(source, question);
 			case MYSTIC_SQUARE -> nested(state, "input", "grid", 4);
 			case NEUTRALIZATION -> state.get("acidVolume".equals(question) ? "acidVolume" : "acidColor");

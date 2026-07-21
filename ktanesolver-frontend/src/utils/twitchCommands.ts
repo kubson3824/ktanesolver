@@ -113,6 +113,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
   const raw = asRecord(result);
 
   switch (moduleType) {
+    case ModuleType.MAFIA: {
+      const godfather = stringValue(raw.godfather);
+      return godfather ? command(`execute ${words(godfather)}`) : "";
+    }
     case ModuleType.WIRES: {
       const position = numberValue(raw.wirePosition);
       return position === undefined ? "" : command(`cut ${position + 1}`);

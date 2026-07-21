@@ -147,6 +147,26 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it("requires Mafia's displayed choices so the excluded Godfather is actionable", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "John", answerIndex: 4 }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.MAFIA)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.getByLabelText("Enter Souvenir’s displayed answers (most reliable)")).toBeDisabled();
+    ["Mary", "Larry", "Kate", "John", "Diane", "Mac"].forEach((answer, index) => {
+      fireEvent.change(screen.getByLabelText(`Answer ${index + 1}`), { target: { value: answer } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("John")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "Who was a player, but not the Godfather?",
+      answers: ["Mary", "Larry", "Kate", "John", "Diane", "Mac"],
+      finalQuestion: false,
+    });
+  });
+
   it("auto-selects the Big Circle spin-direction question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);
