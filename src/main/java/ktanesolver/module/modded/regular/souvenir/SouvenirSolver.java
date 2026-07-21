@@ -64,6 +64,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			.findFirst().orElse(null);
 		if (source == null || source == module) return failure("The selected source module is not on this bomb");
 		if (!source.isSolved()) return failure("Souvenir only asks about modules solved earlier");
+		if (source.getType() == ModuleType.FLAGS && Boolean.TRUE.equals(source.getState().get("unicornRule"))) {
+			return failure("Souvenir asks no question about Flags when the WHITE FLAG rule applies");
+		}
 		if (directAnswer) {
 			Object recorded = resolveRecordedAnswer(source, input.question().trim());
 			if (recorded == null) return failure("No recorded answer is available for this question");
@@ -113,6 +116,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
 			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
+			case FLAGS -> flagsAnswerIndex(source.getState(), q, answers);
 			case GAMEPAD -> {
 				int digit = ordinal(q);
 				Object display = nested(source.getState(), "input", digit < 2 ? "x" : "y");
@@ -196,6 +200,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FORGET_ME_NOT -> state.get("displayNumbers");
 			case FAST_MATH -> state.get("lastPair");
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
+			case FLAGS -> switch (question) {
+				case "displayedNumber" -> state.get("displayedNumber");
+				case "mainCountry" -> state.get("mainCountry");
+				default -> null;
+			};
 			case GAMEPAD -> gamepadDisplay(state);
 			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
 			case HUNTING -> huntingDisplayClues(state, normalize(question));
@@ -556,6 +565,15 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			}
 		}
 		return result;
+	}
+
+	private static int flagsAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		if (question.contains("displayed number")) return answerIndex(answers, state.get("displayedNumber"));
+		if (question.contains("main country") && !question.contains("not the main")) {
+			return answerIndex(answers, state.get("mainCountry"));
+		}
+		return question.contains("shown") && question.contains("not the main")
+			? membershipAnswerIndex(answers, state.get("countries"), state.get("mainCountry"), false) : -1;
 	}
 
 	private static int chordQualitiesAnswerIndex(Map<String, Object> state, List<String> answers) {

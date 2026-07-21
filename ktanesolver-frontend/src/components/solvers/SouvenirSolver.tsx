@@ -26,6 +26,7 @@ type SouvenirState = {
 };
 
 const question = (id: string, label: string): QuestionOption => ({ id, label });
+const FLAGS_COUNTRIES_QUESTION = "Which of these country flags was shown, but not the main country flag, in Flags?";
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.MAFIA]: [question("players", "Who was a player, but not the Godfather?")],
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
@@ -72,6 +73,11 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.FORGET_ME_NOT]: [question("displayedDigits", "What were the displayed digits in each stage?")],
   [ModuleType.FAST_MATH]: [question("lastPair", "What was the last pair of letters?")],
   [ModuleType.FIZZ_BUZZ]: [question("displayedNumbers", "What were the displayed numbers?")],
+  [ModuleType.FLAGS]: [
+    question("displayedNumber", "What was the displayed number?"),
+    question("mainCountry", "What was the main country flag?"),
+    question("countries", FLAGS_COUNTRIES_QUESTION),
+  ],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
@@ -170,11 +176,13 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   } = useSolver();
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
   const sources = useMemo(
-    () => bomb?.modules.filter((source) => source.solved && source.id !== currentModule?.id) ?? [],
+    () => bomb?.modules.filter((source) => source.solved && source.id !== currentModule?.id
+      && !(source.type === ModuleType.FLAGS && source.state.unicornRule === true)) ?? [],
     [bomb?.modules, currentModule?.id],
   );
   const selectedSource = sources.find((source) => source.id === sourceModuleId);
-  const requiresDisplayedAnswers = selectedSource?.type === ModuleType.MAFIA;
+  const requiresDisplayedAnswers = selectedSource?.type === ModuleType.MAFIA
+    || (selectedSource?.type === ModuleType.FLAGS && selectedQuestion === "countries");
   const twitchCommand = result ? generateTwitchCommand({ moduleType: ModuleType.SOUVENIR, result }) : "";
   const questionOptions = questionsFor(selectedSource);
   const xRaySymbols = selectedSource?.type === ModuleType.X_RAY && result
@@ -272,7 +280,14 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
         Question
         <select
           value={selectedQuestion}
-          onChange={(event) => { setSelectedQuestion(event.target.value); setResult(null); clearError(); }}
+          onChange={(event) => {
+            const nextQuestion = event.target.value;
+            const needsFlagsChoices = selectedSource?.type === ModuleType.FLAGS && nextQuestion === "countries";
+            setSelectedQuestion(nextQuestion);
+            setExactQuestion(needsFlagsChoices ? FLAGS_COUNTRIES_QUESTION : "");
+            setAnswers(needsFlagsChoices ? Array(6).fill("") : []);
+            setResult(null); clearError();
+          }}
           disabled={isLoading || isSolved}
           className="mt-2 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
         >

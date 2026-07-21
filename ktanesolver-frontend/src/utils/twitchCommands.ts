@@ -225,6 +225,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const joined = notes.length ? notes.join(" ") : stringValue(raw.notes)?.replaceAll("-", " ");
       return joined ? command(`press ${joined}`) : "";
     }
+    case ModuleType.FLAGS: {
+      const country = stringValue(raw.answerCountry);
+      return country ? command(`submit ${words(country)}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

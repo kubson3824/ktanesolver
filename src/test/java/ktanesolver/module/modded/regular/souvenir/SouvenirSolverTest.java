@@ -494,6 +494,32 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryFlagsQuestionFamilyWithoutReturningAnAmbiguousFlagList() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity flags = module(ModuleType.FLAGS, true, Map.of(
+			"displayedNumber", 4,
+			"mainCountry", "Canada",
+			"countries", List.of("France", "Japan", "India", "Chile", "Norway", "Sweden", "Germany")
+		));
+		bomb.setModules(List.of(souvenir, flags));
+
+		assertThat(solve(bomb, souvenir, flags.getId(), "displayedNumber", List.of(), false))
+			.isEqualTo(new SouvenirOutput("4", null));
+		assertThat(solve(bomb, souvenir, flags.getId(), "mainCountry", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Canada", null));
+		assertThat(solve(bomb, souvenir, flags.getId(),
+			"Which of these country flags was shown, but not the main country flag, in Flags?",
+			List.of("Brazil", "Japan", "China", "Poland", "Mexico", "Samoa"), false))
+			.isEqualTo(new SouvenirOutput("Japan", 2));
+
+		flags.getState().put("unicornRule", true);
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(flags.getId(), "displayedNumber", List.of(), false)))
+			.isInstanceOf(SolveFailure.class);
+	}
+
+	@Test
 	void resolvesChordQualitiesGivenNoteMembership() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

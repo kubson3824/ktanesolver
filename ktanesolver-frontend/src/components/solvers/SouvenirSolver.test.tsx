@@ -167,6 +167,52 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it.each([
+    ["displayedNumber", "4"],
+    ["mainCountry", "Canada"],
+  ])("asks for Flags' %s fact directly", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.FLAGS)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question, finalQuestion: false,
+    });
+  });
+
+  it("requires Flags' displayed choices for the non-main country question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "Japan", answerIndex: 2 }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.FLAGS)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "countries" } });
+    expect(screen.getByLabelText("Enter Souvenir’s displayed answers (most reliable)")).toBeDisabled();
+    ["Brazil", "Japan", "China", "Poland", "Mexico", "Samoa"].forEach((answer, index) => {
+      fireEvent.change(screen.getByLabelText(`Answer ${index + 1}`), { target: { value: answer } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("Japan")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "Which of these country flags was shown, but not the main country flag, in Flags?",
+      answers: ["Brazil", "Japan", "China", "Poland", "Mexico", "Samoa"],
+      finalQuestion: false,
+    });
+  });
+
+  it("hides Flags instances for which Souvenir legitimately asks no question", () => {
+    const flagsBomb = bomb(ModuleType.FLAGS);
+    flagsBomb.modules[0].state = { unicornRule: true };
+    render(<SouvenirSolver bomb={flagsBomb} />);
+
+    expect(screen.queryByRole("option", { name: /Flags/ })).not.toBeInTheDocument();
+  });
+
   it("auto-selects the Big Circle spin-direction question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);
