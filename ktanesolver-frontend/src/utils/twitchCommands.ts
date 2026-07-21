@@ -756,5 +756,9 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       if(!repaints.length || repaints.some((repaint) => !/^[A-Za-z0-9]+$/.test(stringValue(repaint.label) ?? "") || !stringValue(repaint.to))) return "";
       return commands(repaints.map((repaint) => `paint ${repaint.label} ${words(repaint.to)}`));
     }
+    case ModuleType.MAINTENANCE: {
+      const jobs = strings(raw.jobs);
+      return jobs.length ? command(jobs.join(", ")) : "";
+    }
   }
 }

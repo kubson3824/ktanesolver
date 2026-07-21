@@ -148,6 +148,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.HUNTING]: { load: () => import("./HuntingSolver") },
   [ModuleType.CURRICULUM]: { load: () => import("./CurriculumSolver") },
   [ModuleType.PAINTING]: { load: () => import("./PaintingSolver") },
+  [ModuleType.MAINTENANCE]: { load: () => import("./MaintenanceSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },
