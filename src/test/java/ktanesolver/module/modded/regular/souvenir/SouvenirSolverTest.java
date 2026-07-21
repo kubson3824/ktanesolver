@@ -541,6 +541,25 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesBothAlgebraEquationsWithoutDiscardingOperatorPunctuation() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity algebra = module(ModuleType.ALGEBRA, true, Map.of(
+			"firstEquation", "a=z/10",
+			"secondEquation", "b=2(z+7)"
+		));
+		bomb.setModules(List.of(souvenir, algebra));
+
+		assertThat(solve(bomb, souvenir, algebra.getId(), "firstEquation", List.of(), false))
+			.isEqualTo(new SouvenirOutput("a=z/10", null));
+		assertThat(solve(bomb, souvenir, algebra.getId(), "secondEquation", List.of(), false))
+			.isEqualTo(new SouvenirOutput("b=2(z+7)", null));
+		assertThat(solve(bomb, souvenir, algebra.getId(), "What was the second equation in Algebra?",
+			List.of("b=2z+7", "b=(z-y)/2", "b=2(z+7)", "b=xyz"), false))
+			.isEqualTo(new SouvenirOutput("b=2(z+7)", 3));
+	}
+
+	@Test
 	void resolvesChordQualitiesGivenNoteMembership() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

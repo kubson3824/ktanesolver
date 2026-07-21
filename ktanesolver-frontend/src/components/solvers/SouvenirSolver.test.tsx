@@ -230,6 +230,23 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it.each([
+    ["firstEquation", "a=z/10"],
+    ["secondEquation", "b=2(z+7)"],
+  ])("asks for Algebra's %s directly", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.ALGEBRA)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question, finalQuestion: false,
+    });
+  });
+
   it("auto-selects the Big Circle spin-direction question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);

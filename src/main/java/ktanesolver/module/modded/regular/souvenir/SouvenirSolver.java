@@ -103,6 +103,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private Integer resolveSpecial(ModuleEntity source, String question, List<String> answers) {
 		String q = normalize(question);
 		return switch (source.getType()) {
+			case ALGEBRA -> algebraAnswerIndex(source.getState(), q, answers);
 			case BIG_CIRCLE -> answerIndex(answers, source.getState().get("spinDirection"));
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
 			case BRAILLE -> brailleAnswerIndex(source.getState(), q, answers);
@@ -174,6 +175,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static Object resolveRecordedAnswer(ModuleEntity source, String question) {
 		Map<String, Object> state = source.getState();
 		return switch (source.getType()) {
+			case ALGEBRA -> algebraEquation(state, question);
 			case BUTTON -> state.get("stripColor");
 			case BIG_CIRCLE -> state.get("spinDirection");
 			case MEMORY -> switch (question) {
@@ -582,6 +584,27 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		if (question.contains("departure")) return nested(state, "input", "departureCity");
 		if (question.contains("destination")) return nested(state, "input", "destinationCity");
 		return null;
+	}
+
+	private static Object algebraEquation(Map<String, Object> state, String question) {
+		String normalized = normalize(question);
+		if (normalized.contains("first")) return state.get("firstEquation");
+		if (normalized.contains("second")) return state.get("secondEquation");
+		return null;
+	}
+
+	private static int algebraAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		Object equation = algebraEquation(state, question);
+		if (equation == null) return -1;
+		String expected = String.valueOf(equation).replace(';', '/').replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+		int result = -1;
+		for (int i = 0; i < answers.size(); i++) {
+			String answer = answers.get(i).replace(';', '/').replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+			if (!answer.equals(expected)) continue;
+			if (result >= 0) return -1;
+			result = i;
+		}
+		return result;
 	}
 
 	private static int chordQualitiesAnswerIndex(Map<String, Object> state, List<String> answers) {

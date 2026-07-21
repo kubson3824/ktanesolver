@@ -233,6 +233,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const submission = stringValue(raw.submission);
       return submission && /^\d{4}$/.test(submission) ? command(`submit ${submission}`) : "";
     }
+    case ModuleType.ALGEBRA: {
+      const answer = stringValue(raw.answer);
+      return answer && answer.length <= 11 && /^-?\d+(?:\.\d+)?$/.test(answer)
+        ? command(`submit ${answer}`)
+        : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

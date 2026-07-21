@@ -82,6 +82,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("departureCity", "What was the departure city?"),
     question("destinationCity", "What was the destination city?"),
   ],
+  [ModuleType.ALGEBRA]: [
+    question("firstEquation", "What was the first equation?"),
+    question("secondEquation", "What was the second equation?"),
+  ],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
