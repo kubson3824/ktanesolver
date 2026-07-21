@@ -230,6 +230,26 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it("offers all seven exact Sonic question families", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "Red Spring", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.SONIC_THE_HEDGEHOG)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.getAllByRole("option")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ textContent: "What was the first picture?" }),
+      expect.objectContaining({ textContent: "What was the third picture?" }),
+      expect.objectContaining({ textContent: "Which sound played on the Running Boots screen?" }),
+      expect.objectContaining({ textContent: "Which sound played on the Rings screen?" }),
+    ]));
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "thirdPicture" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("Red Spring")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: "thirdPicture", finalQuestion: false,
+    });
+  });
+
   it("auto-selects the Big Circle spin-direction question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);

@@ -903,6 +903,40 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("f_", 3));
 	}
 
+	@Test
+	void resolvesEverySonicPictureAndMonitorSound() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity sonic = module(ModuleType.SONIC_THE_HEDGEHOG, true, Map.of(
+			"sounds", List.of("Boss", "Breathe", "Emerald", "Spring"),
+			"pictures", List.of("Buzz Bomber", "Falling Sonic", "Red Spring")
+		));
+		bomb.setModules(List.of(souvenir, sonic));
+
+		assertThat(solve(bomb, souvenir, sonic.getId(), "firstPicture", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Buzz Bomber", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "secondPicture", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Falling Sonic", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "thirdPicture", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Red Spring", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "runningBootsSound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Boss", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "invincibilitySound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Breathe", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "extraLifeSound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Emerald", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "ringsSound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Spring", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(),
+			"What was the third picture on Sonic the Hedgehog?",
+			List.of("Blue Lamppost", "Red Lamppost", "Red Spring", "Switch"), false))
+			.isEqualTo(new SouvenirOutput("Red Spring", 3));
+		assertThat(solve(bomb, souvenir, sonic.getId(),
+			"Which sound was played by the Extra Life screen on Sonic the Hedgehog?",
+			List.of("Boss", "Breathe", "Emerald", "Spring"), false))
+			.isEqualTo(new SouvenirOutput("Emerald", 3));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

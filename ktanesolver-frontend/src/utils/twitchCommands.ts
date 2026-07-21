@@ -233,6 +233,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const submission = stringValue(raw.submission);
       return submission && /^\d{4}$/.test(submission) ? command(`submit ${submission}`) : "";
     }
+    case ModuleType.SONIC_THE_HEDGEHOG: {
+      const button = stringValue(raw.button);
+      return button && ["RBt", "In", "EL", "Rg"].includes(button) ? command(`press ${button}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

@@ -62,6 +62,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   FESTIVE_PIANO_KEYS: { result: { notes: ["D_SHARP", "F", "G_SHARP"] }, expected: "!number press Eb F Ab" },
   FLAGS: { result: { answerCountry: "NEW_ZEALAND" }, expected: "!number submit new zealand" },
   TIMEZONE: { result: { submission: "0355" }, expected: "!number submit 0355" },
+  SONIC_THE_HEDGEHOG: { result: { button: "RBt" }, expected: "!number press RBt" },
   SAFETY_SAFE: { result: { dialTurns: [1, 2, 3, 4, 5, 6] }, expected: "!number submit 1 2 3 4 5 6" },
   CRYPTOGRAPHY: { result: { keyOrder: ["N", "B", "V"] }, expected: "!number press N B V" },
   CAESAR_CIPHER: { result: { solution: "KBQ" }, expected: "!number press K B Q" },
@@ -145,7 +146,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(112);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(113);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(22);
   });
 
@@ -211,6 +212,7 @@ describe("generateTwitchCommand", () => {
     [ModuleType.PLUMBING, { rotations: ["G1"], submit: true }],
     [ModuleType.PAINTING, { repaints: [{ label: "", to: "RED" }] }],
     [ModuleType.SEMAPHORE, { currentIndex: 0, targetIndex: -1 }],
+    [ModuleType.SONIC_THE_HEDGEHOG, { button: "start" }],
     [ModuleType.TIMEZONE, { submission: "355" }],
     [ModuleType.VENTING_GAS, { answer: "maybe" }],
     [ModuleType.WORD_SEARCH, { start: "A1", end: "G7" }],

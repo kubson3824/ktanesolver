@@ -5,6 +5,7 @@ import { resolveMissionBomb } from "./missionService";
 const catalog = [
     {id: "memory", type: "MEMORY"},
     {id: "forgetmenot", type: "FORGET_ME_NOT"},
+    {id: "sonic", type: "SONIC_THE_HEDGEHOG"},
 ] as ModuleCatalogItem[];
 
 describe("resolveMissionBomb", () => {
@@ -26,6 +27,16 @@ describe("resolveMissionBomb", () => {
             widgets: 5,
             pools: [{count: 1, modules: ["fastMath"]}],
         }, catalog).modules).toEqual({FAST_MATH: 1});
+    });
+
+    it("imports Sonic the Hedgehog by its exact game module ID", () => {
+        expect(resolveMissionBomb({
+            modules: 1,
+            strikes: 3,
+            time: 300,
+            widgets: 5,
+            pools: [{count: 1, modules: ["sonic"]}],
+        }, catalog).modules).toEqual({SONIC_THE_HEDGEHOG: 1});
     });
 
     it("imports fixed supported pools and reports unresolved slots", () => {

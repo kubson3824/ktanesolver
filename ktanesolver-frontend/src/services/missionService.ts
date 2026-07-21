@@ -129,6 +129,7 @@ const MODULE_TYPES: Record<string, string> = {
     SimonScreamsModule: "SIMON_SCREAMS",
     SimonV2: "SIMON_STATES",
     SkewedSlotsModule: "SKEWED_SLOTS",
+    sonic: "SONIC_THE_HEDGEHOG",
     SouvenirModule: "SOUVENIR",
     ButtonV2: "SQUARE_BUTTON",
     switchModule: "SWITCHES",
