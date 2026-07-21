@@ -233,6 +233,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const submission = stringValue(raw.submission);
       return submission && /^\d{4}$/.test(submission) ? command(`submit ${submission}`) : "";
     }
+    case ModuleType.POETRY: {
+      const word = strings(raw.correctWords)[0]?.trim().toLowerCase();
+      return word && /^[a-z]+$/.test(word) ? command(`press ${word}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);
