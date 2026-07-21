@@ -812,5 +812,11 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? command(`submit ${temperature} ${water}`)
         : "";
     }
+    case ModuleType.SINK: {
+      const sequence = strings(raw.sequence);
+      return sequence.length === 3 && sequence.every((knob) => knob === "HOT" || knob === "COLD")
+        ? command(sequence.map(words).join(" "))
+        : "";
+    }
   }
 }

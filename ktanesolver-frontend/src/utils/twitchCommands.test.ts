@@ -5,6 +5,7 @@ import { generateTwitchCommand, TWITCH_COMMAND_SUPPORT } from "./twitchCommands"
 type Fixture = { result: unknown; expected: string };
 
 const fixtures: Record<ModuleType, Fixture> = {
+  SINK: { result: { sequence: ["HOT", "COLD", "HOT"] }, expected: "!number hot cold hot" },
   IDENTITY_PARADE: { result: { suspect: "DYLAN", hairColor: "BLONDE", build: "SHORT", attire: "TANK_TOP" }, expected: "!number convict blonde short tank dylan" },
   MAFIA: { result: { godfather: "BRIANE" }, expected: "!number execute briane" },
   JUKEBOX: { result: { pressPositions: [2, 3, 1] }, expected: "!number press 231" },
@@ -158,7 +159,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(124);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(125);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 
