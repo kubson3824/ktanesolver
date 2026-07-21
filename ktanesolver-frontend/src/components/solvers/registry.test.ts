@@ -58,6 +58,10 @@ describe("solver registry", () => {
     expect(getLazySolver(ModuleType.MICROCONTROLLER)).not.toBeNull();
   });
 
+  it("registers the Button Sequence solver in the shared registry", () => {
+    expect(getLazySolver(ModuleType.BUTTON_SEQUENCE)).not.toBeNull();
+  });
+
   it("uses catalog metadata when available to classify needy modules", () => {
     const catalogByType: Record<string, ModuleCatalogItem> = {
       [ModuleType.FORGET_ME_NOT]: createCatalogItem(

@@ -146,6 +146,22 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void answersButtonSequenceColorOccurrenceQuestionsWithAndWithoutDisplayedChoices() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity buttonSequence = module(ModuleType.BUTTON_SEQUENCE, true, Map.of(
+			"colorOccurrences", Map.of("RED", 6, "YELLOW", 2, "BLUE", 3, "WHITE", 1)));
+		bomb.setModules(List.of(souvenir, buttonSequence));
+
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(buttonSequence.getId(), "redButtonCount", null, false)))
+			.isEqualTo(new SolveSuccess<>(new SouvenirOutput("6", null), false));
+		assertThat(solve(bomb, souvenir, buttonSequence.getId(),
+			"How many blue buttons were there in Button Sequence?", List.of("1", "2", "3", "4", "5", "6"), false))
+			.isEqualTo(new SouvenirOutput("3", 3));
+	}
+
+	@Test
 	void returnsTheRecordedFrequencyForTheNamedProbingWire() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

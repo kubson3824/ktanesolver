@@ -76,6 +76,25 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it("asks which Button Sequence color was named", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "2", answerIndex: null }, solved: false });
+    const sequenceBomb = bomb(ModuleType.BUTTON_SEQUENCE);
+    sequenceBomb.modules[0].state = { colorOccurrences: { RED: 4, BLUE: 3, YELLOW: 2, WHITE: 0 } };
+    render(<SouvenirSolver bomb={sequenceBomb} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.queryByRole("option", { name: "How many white buttons were there?" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "yellowButtonCount" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("2")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "yellowButtonCount",
+      finalQuestion: false,
+    });
+  });
+
   it("asks which Third Base stage was named", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "SNZX", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.THIRD_BASE)} />);

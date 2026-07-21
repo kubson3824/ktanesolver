@@ -9,6 +9,7 @@ export type TwitchCommandSupport = "verified" | "conditional";
 
 const conditional = new Set<ModuleType>([
   ModuleType.BUTTON,
+  ModuleType.BUTTON_SEQUENCE,
   ModuleType.CAPACITOR_DISCHARGE,
   ModuleType.COLORED_SQUARES,
   ModuleType.COORDINATES,
@@ -224,6 +225,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const notes = strings(raw.notes).map((note) => NOTE_NAMES[note] ?? note.replace("_SHARP", "#"));
       const joined = notes.length ? notes.join(" ") : stringValue(raw.notes)?.replaceAll("-", " ");
       return joined ? command(`press ${joined}`) : "";
+    }
+    case ModuleType.BUTTON_SEQUENCE: {
+      const actions = strings(raw.actions);
+      if (actions.length !== 3 || actions.some((action) => !["SKIP", "PRESS", "HOLD"].includes(action)) || actions.includes("HOLD")) return "";
+      const presses = actions.flatMap((action, index) => action === "PRESS" ? [index + 1] : []);
+      return command(presses.length ? `tap ${presses.join(" ")} down` : "down");
     }
     case ModuleType.FLAGS: {
       const country = stringValue(raw.answerCountry);

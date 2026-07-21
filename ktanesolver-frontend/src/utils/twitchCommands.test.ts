@@ -60,6 +60,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   PLUMBING: { result: { rotations: ["A3", "B4"], submit: true }, expected: "!number rotate A3 B4; !number submit" },
   CRUEL_PIANO_KEYS: { result: { notes: ["A_SHARP", "C"] }, expected: "!number press Bb C" },
   FESTIVE_PIANO_KEYS: { result: { notes: ["D_SHARP", "F", "G_SHARP"] }, expected: "!number press Eb F Ab" },
+  BUTTON_SEQUENCE: { result: { actions: ["PRESS", "SKIP", "PRESS"] }, expected: "!number tap 1 3 down" },
   FLAGS: { result: { answerCountry: "NEW_ZEALAND" }, expected: "!number submit new zealand" },
   TIMEZONE: { result: { submission: "0355" }, expected: "!number submit 0355" },
   SAFETY_SAFE: { result: { dialTurns: [1, 2, 3, 4, 5, 6] }, expected: "!number submit 1 2 3 4 5 6" },
@@ -146,7 +147,7 @@ describe("generateTwitchCommand", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(112);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(22);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -183,6 +184,20 @@ describe("generateTwitchCommand", () => {
     expect(generateTwitchCommand({
       moduleType: ModuleType.SQUARE_BUTTON,
       result: { hold: false, instruction: "Release when the two seconds digits add up to 7" },
+    })).toBe("");
+  });
+
+  it("uses down directly when a Button Sequence panel needs no button presses", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.BUTTON_SEQUENCE,
+      result: { actions: ["SKIP", "SKIP", "SKIP"] },
+    })).toBe("!number down");
+  });
+
+  it("withholds Button Sequence commands that depend on the runtime hold LED", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.BUTTON_SEQUENCE,
+      result: { actions: ["PRESS", "HOLD", "SKIP"] },
     })).toBe("");
   });
 
