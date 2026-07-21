@@ -1,6 +1,6 @@
 ---
 name: implement-ktane-module
-description: Implement and document a complete, Souvenir-compatible KTaNE module solver in the KTANESolver Spring Boot and React/TypeScript project from a ktane.timwi.de manual URL, then test, restart, health-check, commit, and push the changes. Use when the user sends a KTaNE HTML/PDF manual link—alone or with a short request—and wants the backend and frontend implementation, or asks to add a module from the KTaNE manual repository.
+description: Implement and document a complete, Souvenir-compatible KTaNE module solver in the KTANESolver Spring Boot and React/TypeScript project from a ktane.timwi.de manual URL, then test, restart, and health-check the changes. Use when the user sends a KTaNE HTML/PDF manual link—alone or with a short request—and wants the backend and frontend implementation, or asks to add a module from the KTaNE manual repository.
 ---
 
 # Implement KTaNE Module
@@ -29,7 +29,7 @@ Turn the supplied manual into a working end-to-end solver without requiring the 
 9. Restart only the processes listening on backend port `8080` and frontend port `5173`. Confirm their command lines belong to this workspace before stopping them. Start backend with `gradlew.bat bootRun` and frontend with `npm run dev -- --host 127.0.0.1`, using hidden background windows.
 10. Wait up to 60 seconds for both ports. Request `http://127.0.0.1:8080/api/modules` and verify the new module is present; request `http://127.0.0.1:5173` and verify HTTP 200.
 11. With the healthy backend still running, run `node scripts/generate-supported-modules.mjs`. Verify `docs/supported-modules.md` contains the new module type, then run `git diff --check`. Do not edit the generated table by hand. Update another maintained GitBook page only when the module changes a documented user workflow, API contract, shared concept, or contributor rule; add no one-page-per-module documentation by default.
-12. Stage only the files belonging to this module implementation, commit them with a concise descriptive message, and push the current branch. If the branch has no upstream, use `git push -u origin HEAD`. Report the commit hash and pushed branch.
+12. Leave the verified changes uncommitted for the user to review.
 
 ## Guardrails
 
@@ -40,7 +40,6 @@ Turn the supplied manual into a working end-to-end solver without requiring the 
 - Do not guess unreadable flowchart transitions. Resolve them from the manual SVG or original module source and preserve the manual's exact first/priority semantics.
 - Do not infer Twitch commands from the manual's solve instructions or emit prose/placeholder commands. Verify the exact command against `KtaneTwitchPlays` or `ProcessTwitchCommand`, including whether positions are zero- or one-based and whether multi-step actions require separate commands.
 - Do not leave `docs/supported-modules.md` stale after adding a registered solver, and do not hand-maintain data already produced by its generator.
-- Do not overwrite, revert, stage, or commit unrelated worktree changes.
-- Do not amend an existing commit or force-push.
+- Do not overwrite or revert unrelated worktree changes.
 - If PostgreSQL or another required external service prevents backend startup, leave the implementation and tests complete and report the precise blocker.
-- Finish with a concise report naming verification results, live ports, commit hash, and pushed branch.
+- Finish with a concise report naming verification results and live ports.

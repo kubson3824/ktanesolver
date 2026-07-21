@@ -765,5 +765,26 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const jobs = strings(raw.jobs);
       return jobs.length ? command(jobs.join(", ")) : "";
     }
+    case ModuleType.BACKGROUNDS: {
+      const target = numberValue(raw.targetCount);
+      return target !== undefined && Number.isInteger(target) && target >= 1 && target <= 9
+        ? command(`submit ${target}`)
+        : "";
+    }
+    case ModuleType.MORTAL_KOMBAT: {
+      const attacks = arrayValue(raw.attacks).map(asRecord).map((move) => stringValue(move.controls));
+      const fatality = stringValue(asRecord(raw.fatality).controls);
+      return attacks.length === 3
+        && attacks.every((controls) => controls !== undefined && /^[⇧⇩⇦⇨ABC]{3}$/.test(controls))
+        && fatality !== undefined && /^[⇧⇩⇦⇨ABC]{6}$/.test(fatality)
+        ? command([...attacks, fatality].join(" "))
+        : "";
+    }
+    case ModuleType.MASHEMATICS: {
+      const presses = numberValue(raw.pressCount);
+      return presses !== undefined && Number.isInteger(presses) && presses >= 0 && presses <= 99
+        ? command(`submit ${presses}`)
+        : "";
+    }
   }
 }

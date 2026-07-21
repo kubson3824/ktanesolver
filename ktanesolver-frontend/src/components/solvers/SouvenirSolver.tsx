@@ -72,6 +72,11 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   ],
   [ModuleType.FORGET_ME_NOT]: [question("displayedDigits", "What were the displayed digits in each stage?")],
   [ModuleType.FAST_MATH]: [question("lastPair", "What was the last pair of letters?")],
+  [ModuleType.MASHEMATICS]: [
+    question("first number", "What was the first number in the equation?"),
+    question("second number", "What was the second number in the equation?"),
+    question("third number", "What was the third number in the equation?"),
+  ],
   [ModuleType.FIZZ_BUZZ]: [question("displayedNumbers", "What were the displayed numbers?")],
   [ModuleType.FLAGS]: [
     question("displayedNumber", "What was the displayed number?"),

@@ -874,6 +874,22 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryMashematicsEquationPosition() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity mashematics = module(ModuleType.MASHEMATICS, true, Map.of("numbers", List.of(96, 3, 99)));
+		bomb.setModules(List.of(souvenir, mashematics));
+
+		assertThat(solve(bomb, souvenir, mashematics.getId(), "first number", List.of(), false))
+			.isEqualTo(new SouvenirOutput("96", null));
+		assertThat(solve(bomb, souvenir, mashematics.getId(), "second number", List.of(), false))
+			.isEqualTo(new SouvenirOutput("3", null));
+		assertThat(solve(bomb, souvenir, mashematics.getId(),
+			"What was the third number in the equation on Mashematics?",
+			List.of("0", "3", "96", "99"), false)).isEqualTo(new SouvenirOutput("99", 4));
+	}
+
+	@Test
 	void resolvesSillySlotsReelAtTheRequestedStageAndPosition() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

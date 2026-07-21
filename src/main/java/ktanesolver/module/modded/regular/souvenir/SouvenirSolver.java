@@ -117,6 +117,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case IDENTITY_PARADE -> membershipAnswerIndex(answers, identityParadeListed(source.getState(), q), null, q.contains("not"));
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
 			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
+			case MASHEMATICS -> answerIndex(answers, mashematicsNumber(source.getState(), q));
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
 			case FLAGS -> flagsAnswerIndex(source.getState(), q, answers);
 			case TIMEZONE -> answerIndex(answers, timezoneCity(source.getState(), q));
@@ -206,6 +207,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case IDENTITY_PARADE -> identityParadeRecordedAnswer(state, question);
 			case FORGET_ME_NOT -> state.get("displayNumbers");
 			case FAST_MATH -> state.get("lastPair");
+			case MASHEMATICS -> mashematicsNumber(state, normalize(question));
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
 			case FLAGS -> switch (question) {
 				case "displayedNumber" -> state.get("displayedNumber");
@@ -582,6 +584,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			}
 		}
 		return result;
+	}
+
+	private static Object mashematicsNumber(Map<String, Object> state, String question) {
+		int position = ordinal(question);
+		return position >= 0 && position < 3 ? nested(state, "numbers", position) : null;
 	}
 
 	private static Object identityParadeListed(Map<String, Object> state, String question) {

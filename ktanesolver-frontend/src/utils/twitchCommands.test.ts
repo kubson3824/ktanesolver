@@ -145,13 +145,16 @@ const fixtures: Record<ModuleType, Fixture> = {
   CURRICULUM: { result: { clicks: [0, 1, 2, 3, 5] }, expected: "!number click 2; !number click 3 2; !number click 4 3; !number click 5 5; !number submit" },
   PAINTING: { result: { repaints: [{ label: "A", to: "RED" }, { label: "7", to: "GRAY" }] }, expected: "!number paint A red; !number paint 7 gray" },
   MAINTENANCE: { result: { jobs: ["Windscreen chip", "Brake fluid change", "Wash"] }, expected: "!number Windscreen chip, Brake fluid change, Wash" },
+  BACKGROUNDS: { result: { targetCount: 7 }, expected: "!number submit 7" },
+  MORTAL_KOMBAT: { result: { attacks: [{ controls: "⇦⇨A" }, { controls: "⇩⇩C" }, { controls: "⇦⇨B" }], fatality: { controls: "⇩⇩⇦C⇧B" } }, expected: "!number ⇦⇨A ⇩⇩C ⇦⇨B ⇩⇩⇦C⇧B" },
+  MASHEMATICS: { result: { rawAnswer: 210, pressCount: 60 }, expected: "!number submit 60" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(117);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(120);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 
