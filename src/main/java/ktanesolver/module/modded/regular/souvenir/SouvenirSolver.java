@@ -131,6 +131,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case HUNTING -> membershipAnswerIndex(answers, huntingClues(source.getState(), q), null, false);
 			case GAME_OF_LIFE_CRUEL -> membershipAnswerIndex(answers, source.getState().get("colorCombinations"), null, false);
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
+			case LED_GRID -> answerIndex(answers, source.getState().get("unlitCount"));
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
 			case MONSPLODE_FIGHT -> q.contains("creature")
@@ -219,6 +220,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
 			case HUNTING -> huntingDisplayClues(state, normalize(question));
 			case GAME_OF_LIFE_CRUEL -> state.get("colorCombinations");
+			case LED_GRID -> state.get("unlitCount");
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
 			case MAZES -> nested(state, "input", "start");

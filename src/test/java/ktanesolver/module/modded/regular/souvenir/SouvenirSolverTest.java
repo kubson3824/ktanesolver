@@ -874,6 +874,19 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesLedGridUnlitCount() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity ledGrid = module(ModuleType.LED_GRID, true, Map.of("unlitCount", 3));
+		bomb.setModules(List.of(souvenir, ledGrid));
+
+		assertThat(solve(bomb, souvenir, ledGrid.getId(), "unlitCount", List.of(), false))
+			.isEqualTo(new SouvenirOutput("3", null));
+		assertThat(solve(bomb, souvenir, ledGrid.getId(), "How many LEDs were unlit in LED Grid?",
+			List.of("0", "1", "2", "3", "4"), false)).isEqualTo(new SouvenirOutput("3", 4));
+	}
+
+	@Test
 	void resolvesEveryMashematicsEquationPosition() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

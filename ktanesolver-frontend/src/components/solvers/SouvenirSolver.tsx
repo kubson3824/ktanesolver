@@ -90,6 +90,7 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
+  [ModuleType.LED_GRID]: [question("unlitCount", "How many LEDs were unlit?")],
   [ModuleType.LISTENING]: [question("sound", "What sound played?")],
   [ModuleType.MAZES]: [question("startingPosition", "What was the starting position?")],
   [ModuleType.MONSPLODE_FIGHT]: [

@@ -140,6 +140,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.FIZZ_BUZZ]: { load: () => import("./FizzBuzzSolver") },
   [ModuleType.THE_CLOCK]: { load: () => import("./TheClockSolver") },
   [ModuleType.LED_ENCRYPTION]: { load: () => import("./LedEncryptionSolver") },
+  [ModuleType.LED_GRID]: { load: () => import("./LedGridSolver") },
   [ModuleType.BITWISE_OPERATIONS]: { load: () => import("./BitwiseOperationsSolver") },
   [ModuleType.FAST_MATH]: { load: () => import("./FastMathSolver") },
   [ModuleType.BOOLEAN_VENN_DIAGRAM]: { load: () => import("./BooleanVennDiagramSolver") },

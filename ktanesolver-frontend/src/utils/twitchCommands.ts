@@ -711,6 +711,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const letter = strings(raw.correctLetters)[0] ?? stringValue(raw.letter);
       return letter ? command(`press ${letter}`) : "";
     }
+    case ModuleType.LED_GRID: {
+      const buttons = strings(raw.pressOrder);
+      return buttons.length === 4 && new Set(buttons).size === 4 && buttons.every((button) => /^[A-D]$/.test(button))
+        ? command(`press ${buttons.join("").toLowerCase()}`)
+        : "";
+    }
     case ModuleType.BITWISE_OPERATIONS: {
       const answer = stringValue(raw.answer);
       return answer ? command(`submit ${answer}`) : "";

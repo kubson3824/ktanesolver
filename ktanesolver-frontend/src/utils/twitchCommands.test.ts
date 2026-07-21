@@ -135,6 +135,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   FIZZ_BUZZ: { result: { actions: ["FIZZ", "NUMBER", "FIZZBUZZ"] }, expected: "!number submit fizz number fizzbuzz" },
   THE_CLOCK: { result: { targetTime: "12:34 PM" }, expected: "!number set 12:34 pm" },
   LED_ENCRYPTION: { result: { correctLetters: ["B"] }, expected: "!number press B" },
+  LED_GRID: { result: { pressOrder: ["C", "D", "A", "B"] }, expected: "!number press cdab" },
   BITWISE_OPERATIONS: { result: { answer: "10101010" }, expected: "!number submit 10101010" },
   FAST_MATH: { result: { answer: "05" }, expected: "!number submit 05" },
   BOOLEAN_VENN_DIAGRAM: { result: { regions: ["A", "BC", "NONE"] }, expected: "!number a bc O" },
@@ -157,7 +158,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(123);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(124);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 
