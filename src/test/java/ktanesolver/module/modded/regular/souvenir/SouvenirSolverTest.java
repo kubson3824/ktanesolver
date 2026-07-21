@@ -602,6 +602,23 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEachSuccessfulVisualImpairmentStageColor() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity visualImpairment = module(ModuleType.VISUAL_IMPAIRMENT, true, Map.of(
+			"desiredColors", List.of("Blue", "White", "Red")
+		));
+		bomb.setModules(List.of(souvenir, visualImpairment));
+
+		assertThat(solve(bomb, souvenir, visualImpairment.getId(), "second desired color", List.of(), false))
+			.isEqualTo(new SouvenirOutput("White", null));
+		assertThat(solve(bomb, souvenir, visualImpairment.getId(),
+			"What was the desired color in the third stage on Visual Impairment?",
+			List.of("Blue", "Green", "Red", "White"), false))
+			.isEqualTo(new SouvenirOutput("Red", 3));
+	}
+
+	@Test
 	void resolvesXRayScannedSymbolSprites() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

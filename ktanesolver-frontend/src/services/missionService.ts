@@ -146,6 +146,7 @@ const MODULE_TYPES: Record<string, string> = {
     WhosOnFirst: "WHOS_ON_FIRST",
     WhosOnFirstTranslated: "WHOS_ON_FIRST",
     YahtzeeModule: "YAHTZEE",
+    visual_impairment: "VISUAL_IMPAIRMENT",
     WirePlacementModule: "WIRE_PLACEMENT",
     WireSequence: "WIRE_SEQUENCES",
     Wires: "WIRES",

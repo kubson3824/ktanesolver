@@ -713,6 +713,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? commands([`fill ${cells.join(" ")}`, "submit"])
         : "";
     }
+    case ModuleType.VISUAL_IMPAIRMENT: {
+      const positions = strings(raw.positions).map((position) => position.toLowerCase());
+      return positions.length && positions.every((position) => /^[a-e][1-5]$/.test(position))
+        ? command(`press ${positions.join(" ")}`)
+        : "";
+    }
     case ModuleType.SET: {
       const positions = strings(raw.positions).map((position) => position.toLowerCase());
       return positions.length === 3 && new Set(positions).size === 3 && positions.every((position) => /^[a-c][1-3]$/.test(position))

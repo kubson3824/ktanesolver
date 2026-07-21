@@ -20,6 +20,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   X_RAY: { result: { button: 4 }, expected: "!number press 4" },
   BATTLESHIP: { result: { shipLocations: ["A1", "B2"] }, expected: "!number torpedo A1 B2" },
   MINESWEEPER: { result: { startingColor: "RED" }, expected: "!number dig red" },
+  VISUAL_IMPAIRMENT: { result: { positions: ["A1", "C3", "E5"] }, expected: "!number press a1 c3 e5" },
   WHOS_ON_FIRST: { result: { buttonText: "YOU ARE" }, expected: "!number YOU ARE" },
   THIRD_BASE: { result: { button: "NHXS" }, expected: "!number NHXS" },
   VENTING_GAS: { result: { answer: "yes" }, expected: "!number yes" },
@@ -146,7 +147,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(112);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(113);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 

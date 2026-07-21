@@ -168,6 +168,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case TWO_BITS -> twoBitsAnswerIndex(source.getState(), q, answers);
 			case X_RAY -> membershipAnswerIndex(answers, source.getState().get("scannedSymbols"), null, false);
 			case YAHTZEE -> yahtzeeAnswerIndex(source.getState(), answers);
+			case VISUAL_IMPAIRMENT -> answerIndex(answers, nested(source.getState(), "desiredColors", ordinal(q)));
 			default -> null;
 		};
 	}
@@ -249,6 +250,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case TWO_BITS -> twoBitsResponses(state.get("stages"));
 			case X_RAY -> state.get("scannedSymbols");
 			case YAHTZEE -> state.get("initialRollCategory");
+			case VISUAL_IMPAIRMENT -> nested(state, "desiredColors", ordinal(normalize(question)));
 			case TEXT_FIELD -> state.get("displayedLetter");
 			default -> "recordedFacts".equals(question)
 				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);

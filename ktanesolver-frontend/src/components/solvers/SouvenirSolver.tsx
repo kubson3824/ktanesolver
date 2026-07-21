@@ -155,6 +155,11 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("startingLocation", "What was the starting location?"),
   ],
   [ModuleType.YAHTZEE]: [question("firstRoll", "What was the first roll?")],
+  [ModuleType.VISUAL_IMPAIRMENT]: [
+    question("first desired color", "What was the desired color in the first stage?"),
+    question("second desired color", "What was the desired color in the second stage?"),
+    question("third desired color", "What was the desired color in the third stage?"),
+  ],
   [ModuleType.TEXT_FIELD]: [question("displayedLetter", "What was the displayed letter?")],
   [ModuleType.HUNTING]: [
     question("firstDisplayedSymbols", "Which pictograms were displayed in the first stage?"),
@@ -163,8 +168,13 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("fourthDisplayedSymbols", "Which pictograms were displayed in the fourth stage?"),
   ],
 };
-const questionsFor = (source?: BombEntity["modules"][number]) =>
-  source ? QUESTIONS[source.type as ModuleType] ?? [] : [];
+const questionsFor = (source?: BombEntity["modules"][number]) => {
+  if (!source) return [];
+  const questions = QUESTIONS[source.type as ModuleType] ?? [];
+  return source.type === ModuleType.VISUAL_IMPAIRMENT && Array.isArray(source.state.desiredColors)
+    ? questions.slice(0, source.state.desiredColors.length)
+    : questions;
+};
 const humanize = (type: string) => type.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | undefined }) {

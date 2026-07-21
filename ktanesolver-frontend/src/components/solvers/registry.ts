@@ -58,6 +58,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.X_RAY]: { load: () => import("./XRaySolver") },
   [ModuleType.BATTLESHIP]: { load: () => import("./BattleshipSolver") },
   [ModuleType.MINESWEEPER]: { load: () => import("./MinesweeperSolver") },
+  [ModuleType.VISUAL_IMPAIRMENT]: { load: () => import("./VisualImpairmentSolver") },
   [ModuleType.ASTROLOGY]: { load: () => import("./AstrologySolver") },
   [ModuleType.MYSTIC_SQUARE]: { load: () => import("./MysticSquareSolver") },
   [ModuleType.CRAZY_TALK]: { load: () => import("./CrazyTalkSolver") },
