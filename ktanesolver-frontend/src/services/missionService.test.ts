@@ -28,6 +28,16 @@ describe("resolveMissionBomb", () => {
         }, catalog).modules).toEqual({FAST_MATH: 1});
     });
 
+    it("imports Poker by its exact game module ID", () => {
+        expect(resolveMissionBomb({
+            modules: 1,
+            strikes: 3,
+            time: 300,
+            widgets: 5,
+            pools: [{count: 1, modules: ["Poker"]}],
+        }, catalog).modules).toEqual({POKER: 1});
+    });
+
     it("imports fixed supported pools and reports unresolved slots", () => {
         expect(resolveMissionBomb({
             modules: 6,

@@ -140,6 +140,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.BOOLEAN_VENN_DIAGRAM]: { load: () => import("./BooleanVennDiagramSolver") },
   [ModuleType.ZOO]: { load: () => import("./ZooSolver") },
   [ModuleType.POINT_OF_ORDER]: { load: () => import("./PointOfOrderSolver") },
+  [ModuleType.POKER]: { load: () => import("./PokerSolver") },
   [ModuleType.NONOGRAM]: { load: () => import("./NonogramSolver") },
   [ModuleType.SET]: { load: () => import("./SetSolver") },
   [ModuleType.HUNTING]: { load: () => import("./HuntingSolver") },

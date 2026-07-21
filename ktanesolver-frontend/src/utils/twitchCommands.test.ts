@@ -135,6 +135,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   BOOLEAN_VENN_DIAGRAM: { result: { regions: ["A", "BC", "NONE"] }, expected: "!number a bc O" },
   ZOO: { result: { animals: ["Caracal", "Orca"] }, expected: "!number press Caracal, Orca" },
   POINT_OF_ORDER: { result: { validCards: ["4S", "5D", "JS"] }, expected: "!number play 4/5/J of S/D" },
+  POKER: { result: { stage: 1, call: "ALL_IN" }, expected: "!number press allin" },
   NONOGRAM: { result: { filledCells: ["B1", "A2", "C4"] }, expected: "!number fill B1 A2 C4; !number submit" },
   SET: { result: { positions: ["A1", "C2", "B3"] }, expected: "!number press a1 c2 b3" },
   HUNTING: { result: { safeButton: 4 }, expected: "!number press 4" },
@@ -146,7 +147,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(112);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(113);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 
@@ -225,5 +226,16 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.PLUMBING,
       result: { rotations: [], submit: true },
     })).toBe("!number submit");
+  });
+
+  it("emits only the currently revealed Poker stage", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.POKER,
+      result: { stage: 2, call: "ALL_IN", truthOrBluff: "BLUFF" },
+    })).toBe("!number press bluff");
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.POKER,
+      result: { stage: 3, call: "ALL_IN", truthOrBluff: "BLUFF", cardPosition: 4 },
+    })).toBe("!number press card4");
   });
 });

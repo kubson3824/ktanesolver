@@ -707,6 +707,24 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const suits = [...new Set(cards.map((card) => card.at(-1)).filter(Boolean))];
       return ranks.length && suits.length ? command(`play ${ranks.join("/")} of ${suits.join("/")}`) : "";
     }
+    case ModuleType.POKER: {
+      const stage = numberValue(raw.stage);
+      if (stage === 1) {
+        const calls: Record<string, string> = {
+          FOLD: "fold", CHECK: "check", MIN_RAISE: "min", MAX_RAISE: "max", ALL_IN: "allin",
+        };
+        return calls[String(raw.call)] ? command(`press ${calls[String(raw.call)]}`) : "";
+      }
+      if (stage === 2) {
+        const answer = stringValue(raw.truthOrBluff)?.toLowerCase();
+        return answer === "truth" || answer === "bluff" ? command(`press ${answer}`) : "";
+      }
+      if (stage === 3) {
+        const position = numberValue(raw.cardPosition);
+        return Number.isInteger(position) && position! >= 1 && position! <= 4 ? command(`press card${position}`) : "";
+      }
+      return "";
+    }
     case ModuleType.NONOGRAM: {
       const cells = strings(raw.filledCells).map((cell) => cell.toUpperCase());
       return cells.length && cells.every((cell) => /^[A-E][1-5]$/.test(cell))
