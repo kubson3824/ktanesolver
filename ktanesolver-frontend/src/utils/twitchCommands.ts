@@ -771,6 +771,13 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? command(`submit ${target}`)
         : "";
     }
+    case ModuleType.FAULTY_BACKGROUNDS: {
+      const side = stringValue(raw.correctButton)?.toLowerCase();
+      const target = numberValue(raw.targetCount);
+      return (side === "left" || side === "right") && target !== undefined && Number.isInteger(target) && target >= 1 && target <= 9
+        ? command(`submit ${side} ${target}`)
+        : "";
+    }
     case ModuleType.MORTAL_KOMBAT: {
       const attacks = arrayValue(raw.attacks).map(asRecord).map((move) => stringValue(move.controls));
       const fatality = stringValue(asRecord(raw.fatality).controls);

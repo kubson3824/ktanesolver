@@ -50,7 +50,11 @@ public class BackgroundsSolver extends AbstractModuleSolver<BackgroundsInput, Ba
 		String backing = normalize(input.backingColor());
 		String button = normalize(input.buttonColor());
 		if (!COLORS.contains(backing) || !COLORS.contains(button)) return failure("Invalid backing or button color");
+		storeState(module, Map.of("backingColor", backing, "buttonColor", button));
+		return success(solveColors(bomb, backing, button));
+	}
 
+	static BackgroundsOutput solveColors(BombEntity bomb, String backing, String button) {
 		boolean[] rules = {
 			backing.equals(button),
 			NEUTRAL.contains(backing) ^ NEUTRAL.contains(button),
@@ -74,11 +78,14 @@ public class BackgroundsSolver extends AbstractModuleSolver<BackgroundsInput, Ba
 		int row = ROWS[first];
 		int column = COLUMNS[second];
 		String pair = "%c%c".formatted('A' + row, 'A' + column);
-		storeState(module, Map.of("backingColor", backing, "buttonColor", button));
-		return success(new BackgroundsOutput(TABLE[row][column], pair, first + 1, second + 1));
+		return new BackgroundsOutput(TABLE[row][column], pair, first + 1, second + 1);
 	}
 
-	private static String normalize(String value) {
+	static boolean isColor(String value) {
+		return COLORS.contains(value);
+	}
+
+	static String normalize(String value) {
 		return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
 	}
 }
