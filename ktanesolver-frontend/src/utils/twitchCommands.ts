@@ -603,6 +603,14 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         return button && beeps !== undefined ? `press ${words(button)} ${beeps}` : undefined;
       })) : "";
     }
+    case ModuleType.JUKEBOX: {
+      const positions = arrayValue(raw.pressPositions);
+      return positions.length === 3
+        && new Set(positions).size === 3
+        && positions.every((position) => typeof position === "number" && Number.isInteger(position) && position >= 1 && position <= 3)
+        ? command(`press ${positions.join("")}`)
+        : "";
+    }
     case ModuleType.COLOR_MATH: {
       const codes: Record<string, string> = { BLUE: "b", GREEN: "g", PURPLE: "p", YELLOW: "y", WHITE: "w", MAGENTA: "m", RED: "r", ORANGE: "o", GRAY: "a", BLACK: "k" };
       const colors = strings(raw.colors).map((color) => codes[color] ?? color.toLowerCase());

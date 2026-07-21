@@ -14,6 +14,7 @@ type SolverRegistryEntry = {
  */
 export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.MAFIA]: { load: () => import("./MafiaSolver") },
+  [ModuleType.JUKEBOX]: { load: () => import("./JukeboxSolver") },
   [ModuleType.WIRES]: { load: () => import("./WireSolver") },
   [ModuleType.BUTTON]: { load: () => import("./ButtonSolver") },
   [ModuleType.KEYPADS]: { load: () => import("./KeypadsSolver") },

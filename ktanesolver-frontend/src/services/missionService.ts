@@ -86,6 +86,7 @@ const MODULE_TYPES: Record<string, string> = {
     TheGamepadModule: "GAMEPAD",
     HexamazeModule: "HEXAMAZE",
     iceCreamModule: "ICE_CREAM",
+    jukebox: "JUKEBOX",
     Keypad: "KEYPADS",
     NeedyKnob: "KNOBS",
     Laundry: "LAUNDRY",
