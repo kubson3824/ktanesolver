@@ -59,6 +59,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   ADVENTURE_GAME: { result: { itemsToUse: ["POTION"], weaponToUse: "CABER" }, expected: "!number use potion, caber" },
   PLUMBING: { result: { rotations: ["A3", "B4"], submit: true }, expected: "!number rotate A3 B4; !number submit" },
   CRUEL_PIANO_KEYS: { result: { notes: ["A_SHARP", "C"] }, expected: "!number press Bb C" },
+  FESTIVE_PIANO_KEYS: { result: { notes: ["D_SHARP", "F", "G_SHARP"] }, expected: "!number press Eb F Ab" },
   SAFETY_SAFE: { result: { dialTurns: [1, 2, 3, 4, 5, 6] }, expected: "!number submit 1 2 3 4 5 6" },
   CRYPTOGRAPHY: { result: { keyOrder: ["N", "B", "V"] }, expected: "!number press N B V" },
   CAESAR_CIPHER: { result: { solution: "KBQ" }, expected: "!number press K B Q" },
@@ -142,7 +143,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(109);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(110);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(22);
   });
 

@@ -219,7 +219,8 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return position === undefined || !choice ? "" : command(`press ${choice} ${position}`);
     }
     case ModuleType.PIANO_KEYS:
-    case ModuleType.CRUEL_PIANO_KEYS: {
+    case ModuleType.CRUEL_PIANO_KEYS:
+    case ModuleType.FESTIVE_PIANO_KEYS: {
       const notes = strings(raw.notes).map((note) => NOTE_NAMES[note] ?? note.replace("_SHARP", "#"));
       const joined = notes.length ? notes.join(" ") : stringValue(raw.notes)?.replaceAll("-", " ");
       return joined ? command(`press ${joined}`) : "";

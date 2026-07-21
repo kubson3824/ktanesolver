@@ -71,6 +71,7 @@ const MODULE_TYPES: Record<string, string> = {
     CrazyTalk: "CRAZY_TALK",
     CreationModule: "CREATION",
     CruelPianoKeys: "CRUEL_PIANO_KEYS",
+    FestivePianoKeys: "FESTIVE_PIANO_KEYS",
     CryptModule: "CRYPTOGRAPHY",
     DoubleOhModule: "DOUBLE_OH",
     "Emoji Math": "EMOJI_MATH",
