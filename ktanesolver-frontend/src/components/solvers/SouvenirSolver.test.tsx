@@ -60,6 +60,27 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it.each([
+    ["hairColorsWas", "Black, Brown, Red"],
+    ["hairColorsWasNot", "Blonde, Grey, White"],
+    ["buildsWas", "Hunched, Short, Tall"],
+    ["buildsWasNot", "Fat, Muscular, Slim"],
+    ["attiresWas", "Blazer, Suit, T-shirt"],
+    ["attiresWasNot", "Hoodie, Jumper, Tank top"],
+  ])("asks Identity Parade's %s question directly", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.IDENTITY_PARADE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question, finalQuestion: false,
+    });
+  });
+
   it("asks which Probing wire was named and returns that frequency", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "10Hz", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.PROBING)} />);

@@ -13,6 +13,7 @@ type SolverRegistryEntry = {
  * Backend-only modules still appear in the catalog and fall back to "Coming soon".
  */
 export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
+  [ModuleType.IDENTITY_PARADE]: { load: () => import("./IdentityParadeSolver") },
   [ModuleType.MAFIA]: { load: () => import("./MafiaSolver") },
   [ModuleType.JUKEBOX]: { load: () => import("./JukeboxSolver") },
   [ModuleType.WIRES]: { load: () => import("./WireSolver") },

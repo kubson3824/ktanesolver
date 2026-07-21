@@ -160,6 +160,14 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("second desired color", "What was the desired color in the second stage?"),
     question("third desired color", "What was the desired color in the third stage?"),
   ],
+  [ModuleType.IDENTITY_PARADE]: [
+    question("hairColorsWas", "Which hair colors were listed?"),
+    question("hairColorsWasNot", "Which hair colors were not listed?"),
+    question("buildsWas", "Which builds were listed?"),
+    question("buildsWasNot", "Which builds were not listed?"),
+    question("attiresWas", "Which attires were listed?"),
+    question("attiresWasNot", "Which attires were not listed?"),
+  ],
   [ModuleType.TEXT_FIELD]: [question("displayedLetter", "What was the displayed letter?")],
   [ModuleType.HUNTING]: [
     question("firstDisplayedSymbols", "Which pictograms were displayed in the first stage?"),

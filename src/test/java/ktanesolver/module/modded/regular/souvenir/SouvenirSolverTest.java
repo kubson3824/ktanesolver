@@ -22,6 +22,25 @@ class SouvenirSolverTest {
 	private final SouvenirSolver solver = new SouvenirSolver();
 
 	@Test
+	void returnsEveryIdentityParadeListedAndUnlistedTraitFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity parade = module(ModuleType.IDENTITY_PARADE, true, Map.of(
+			"hairColors", List.of("BLACK", "BROWN", "RED"),
+			"builds", List.of("HUNCHED", "SHORT", "TALL"),
+			"attires", List.of("BLAZER", "SUIT", "T_SHIRT")
+		));
+		bomb.setModules(List.of(souvenir, parade));
+
+		assertThat(solve(bomb, souvenir, parade.getId(), "hairColorsWas", List.of(), false).answer()).isEqualTo("Black, Brown, Red");
+		assertThat(solve(bomb, souvenir, parade.getId(), "hairColorsWasNot", List.of(), false).answer()).isEqualTo("Blonde, Grey, White");
+		assertThat(solve(bomb, souvenir, parade.getId(), "buildsWas", List.of(), false).answer()).isEqualTo("Hunched, Short, Tall");
+		assertThat(solve(bomb, souvenir, parade.getId(), "buildsWasNot", List.of(), false).answer()).isEqualTo("Fat, Muscular, Slim");
+		assertThat(solve(bomb, souvenir, parade.getId(), "attiresWas", List.of(), false).answer()).isEqualTo("Blazer, Suit, T-shirt");
+		assertThat(solve(bomb, souvenir, parade.getId(), "attiresWasNot", List.of(), false).answer()).isEqualTo("Hoodie, Jumper, Tank top");
+	}
+
+	@Test
 	void resolvesStageAndDerivedQuestionsAndKeepsQuestionHistory() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

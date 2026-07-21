@@ -114,6 +114,15 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
   const raw = asRecord(result);
 
   switch (moduleType) {
+    case ModuleType.IDENTITY_PARADE: {
+      const hair = stringValue(raw.hairColor);
+      const build = stringValue(raw.build);
+      const attire = stringValue(raw.attire);
+      const suspect = stringValue(raw.suspect);
+      if (!hair || !build || !attire || !suspect) return "";
+      const attireToken = attire === "TANK_TOP" ? "tank" : attire === "T_SHIRT" ? "t-shirt" : words(attire);
+      return command(`convict ${words(hair)} ${words(build)} ${attireToken} ${words(suspect)}`);
+    }
     case ModuleType.MAFIA: {
       const godfather = stringValue(raw.godfather);
       return godfather ? command(`execute ${words(godfather)}`) : "";

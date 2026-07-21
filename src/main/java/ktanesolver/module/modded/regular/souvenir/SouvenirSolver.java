@@ -113,6 +113,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COORDINATES -> answerIndex(answers, source.getState().get("gridSizeClue"));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
 			case ICE_CREAM -> iceCreamAnswerIndex(source.getState(), q, answers);
+			case IDENTITY_PARADE -> membershipAnswerIndex(answers, identityParadeListed(source.getState(), q), null, q.contains("not"));
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
 			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
@@ -200,6 +201,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COLOR_FLASH -> nested(state, "input", "sequence", -1, "color");
 			case ICE_CREAM -> "customers".equals(question)
 				? valuesAt(state.get("stages"), "customer") : valuesAt(state.get("stages"), "offeredFlavors");
+			case IDENTITY_PARADE -> identityParadeRecordedAnswer(state, question);
 			case FORGET_ME_NOT -> state.get("displayNumbers");
 			case FAST_MATH -> state.get("lastPair");
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
@@ -571,6 +573,22 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			}
 		}
 		return result;
+	}
+
+	private static Object identityParadeListed(Map<String, Object> state, String question) {
+		return state.get(question.contains("hair") ? "hairColors" : question.contains("build") ? "builds" : "attires");
+	}
+
+	private static Object identityParadeRecordedAnswer(Map<String, Object> state, String question) {
+		String q = normalize(question);
+		Object listed = identityParadeListed(state, q);
+		if(!(listed instanceof Collection<?> values)) return null;
+		List<String> all = q.contains("hair")
+			? List.of("Black", "Blonde", "Brown", "Grey", "Red", "White")
+			: q.contains("build") ? List.of("Fat", "Hunched", "Muscular", "Short", "Slim", "Tall")
+			: List.of("Blazer", "Hoodie", "Jumper", "Suit", "T-shirt", "Tank top");
+		Set<String> normalized = values.stream().map(SouvenirSolver::normalize).collect(java.util.stream.Collectors.toSet());
+		return all.stream().filter(value -> q.contains("not") != normalized.contains(normalize(value))).toList();
 	}
 
 	private static int flagsAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
