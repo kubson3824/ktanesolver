@@ -233,6 +233,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const submission = stringValue(raw.submission);
       return submission && /^\d{4}$/.test(submission) ? command(`submit ${submission}`) : "";
     }
+    case ModuleType.SYMBOLIC_COORDINATES: {
+      const coordinate = stringValue(raw.coordinate)?.toUpperCase();
+      return coordinate && /^[A-Z*][0-9*]$/.test(coordinate) ? command(`submit ${coordinate}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

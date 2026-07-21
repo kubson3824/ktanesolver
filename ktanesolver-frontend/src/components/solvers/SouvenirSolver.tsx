@@ -12,6 +12,8 @@ import { XRAY_SYMBOLS, XRaySymbol } from "./XRaySolver";
 import { HUNTING_CLUES } from "../../services/huntingService";
 import { HuntingPictogram } from "./HuntingSolver";
 import { BraillePattern } from "./BrailleSolver";
+import { SYMBOLIC_COORDINATE_SYMBOLS, type SymbolicCoordinateSymbol } from "../../services/symbolicCoordinatesService";
+import { SymbolicCoordinateGlyph } from "./SymbolicCoordinateGlyph";
 
 type QuestionOption = { id: string; label: string };
 type HistoryEntry = { question: string; answer: string };
@@ -81,6 +83,17 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.TIMEZONE]: [
     question("departureCity", "What was the departure city?"),
     question("destinationCity", "What was the destination city?"),
+  ],
+  [ModuleType.SYMBOLIC_COORDINATES]: [
+    question("firstLeftSymbol", "What was the left symbol in the first stage?"),
+    question("firstMiddleSymbol", "What was the middle symbol in the first stage?"),
+    question("firstRightSymbol", "What was the right symbol in the first stage?"),
+    question("secondLeftSymbol", "What was the left symbol in the second stage?"),
+    question("secondMiddleSymbol", "What was the middle symbol in the second stage?"),
+    question("secondRightSymbol", "What was the right symbol in the second stage?"),
+    question("thirdLeftSymbol", "What was the left symbol in the third stage?"),
+    question("thirdMiddleSymbol", "What was the middle symbol in the third stage?"),
+    question("thirdRightSymbol", "What was the right symbol in the third stage?"),
   ],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
@@ -198,6 +211,10 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   const braillePattern = selectedSource?.type === ModuleType.BRAILLE && result
     ? (result.answer.codePointAt(0) ?? 0) - 0x2800
     : 0;
+  const symbolicCoordinatesSymbol = selectedSource?.type === ModuleType.SYMBOLIC_COORDINATES && result
+    && SYMBOLIC_COORDINATE_SYMBOLS.includes(result.answer as SymbolicCoordinateSymbol)
+    ? result.answer as SymbolicCoordinateSymbol
+    : null;
   const moduleState = useMemo<SouvenirState>(() => ({
     sourceModuleId, question: selectedQuestion, exactQuestion, answers, finalQuestion, result, history,
   }), [sourceModuleId, selectedQuestion, exactQuestion, answers, finalQuestion, result, history]);
@@ -362,7 +379,9 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
 
     {result && <SolverSection title="Recorded answer" className="border-emerald-500/40">
       <div className="rounded-md border-2 border-emerald-500 bg-emerald-500/15 p-4 text-center font-semibold text-emerald-700 dark:text-emerald-300">
-        {huntingSymbols.length > 0
+        {symbolicCoordinatesSymbol
+          ? <><p className="mb-3">Match this symbol:</p><SymbolicCoordinateGlyph symbol={symbolicCoordinatesSymbol} className="mx-auto h-24 w-24" /></>
+          : huntingSymbols.length > 0
           ? <><p className="mb-3">These two pictograms were displayed:</p><div className="flex justify-center gap-3">{huntingSymbols.map((symbol) => <HuntingPictogram key={symbol} symbol={symbol} />)}</div></>
           : xRaySymbols.length > 0
           ? <><p className="mb-3">Match any of these scanned symbols:</p><div className="flex justify-center gap-3">{xRaySymbols.map((symbol) => <XRaySymbol key={symbol} code={symbol} />)}</div></>

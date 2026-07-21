@@ -74,6 +74,7 @@ const MODULE_TYPES: Record<string, string> = {
     FestivePianoKeys: "FESTIVE_PIANO_KEYS",
     FlagsModule: "FLAGS",
     timezone: "TIMEZONE",
+    symbolicCoordinates: "SYMBOLIC_COORDINATES",
     CryptModule: "CRYPTOGRAPHY",
     DoubleOhModule: "DOUBLE_OH",
     "Emoji Math": "EMOJI_MATH",

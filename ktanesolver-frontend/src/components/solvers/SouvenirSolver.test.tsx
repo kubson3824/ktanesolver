@@ -230,6 +230,31 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it.each([
+    ["firstLeftSymbol", "A", "Spiral"],
+    ["firstMiddleSymbol", "C", "Dot"],
+    ["firstRightSymbol", "E", "Waves"],
+    ["secondLeftSymbol", "L", "Pinwheel"],
+    ["secondMiddleSymbol", "P", "Broken rings"],
+    ["secondRightSymbol", "A", "Spiral"],
+    ["thirdLeftSymbol", "C", "Dot"],
+    ["thirdMiddleSymbol", "E", "Waves"],
+    ["thirdRightSymbol", "L", "Pinwheel"],
+  ])("asks for Symbolic Coordinates' %s and renders its answer sprite", async (question, answer, label) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.SYMBOLIC_COORDINATES)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("Match this symbol:")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: `${label} symbol` })).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question, finalQuestion: false,
+    });
+  });
+
   it("auto-selects the Big Circle spin-direction question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);

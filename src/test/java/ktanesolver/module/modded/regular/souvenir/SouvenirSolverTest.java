@@ -881,6 +881,29 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEverySymbolicCoordinatesStageAndPosition() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity symbolicCoordinates = module(ModuleType.SYMBOLIC_COORDINATES, true, Map.of("stageSymbols", List.of(
+			List.of("A", "C", "E"), List.of("L", "P", "A"), List.of("C", "E", "L")
+		)));
+		bomb.setModules(List.of(souvenir, symbolicCoordinates));
+
+		String[][] questions = {
+			{"firstLeftSymbol", "A"}, {"firstMiddleSymbol", "C"}, {"firstRightSymbol", "E"},
+			{"secondLeftSymbol", "L"}, {"secondMiddleSymbol", "P"}, {"secondRightSymbol", "A"},
+			{"thirdLeftSymbol", "C"}, {"thirdMiddleSymbol", "E"}, {"thirdRightSymbol", "L"}
+		};
+		for (String[] question : questions) assertThat(solve(
+			bomb, souvenir, symbolicCoordinates.getId(), question[0], List.of(), false
+		)).isEqualTo(new SouvenirOutput(question[1], null));
+
+		assertThat(solve(bomb, souvenir, symbolicCoordinates.getId(),
+			"What was the middle symbol in the second stage of Symbolic Coordinates?",
+			List.of("A", "C", "E", "L", "P"), false)).isEqualTo(new SouvenirOutput("P", 5));
+	}
+
+	@Test
 	void resolvesHuntingDisplayedPictogramsForEveryStage() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

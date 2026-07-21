@@ -118,6 +118,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
 			case FLAGS -> flagsAnswerIndex(source.getState(), q, answers);
 			case TIMEZONE -> answerIndex(answers, timezoneCity(source.getState(), q));
+			case SYMBOLIC_COORDINATES -> answerIndex(answers, symbolicCoordinatesSymbol(source.getState(), q));
 			case GAMEPAD -> {
 				int digit = ordinal(q);
 				Object display = nested(source.getState(), "input", digit < 2 ? "x" : "y");
@@ -207,6 +208,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				default -> null;
 			};
 			case TIMEZONE -> timezoneCity(state, normalize(question));
+			case SYMBOLIC_COORDINATES -> symbolicCoordinatesSymbol(state, question);
 			case GAMEPAD -> gamepadDisplay(state);
 			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
 			case HUNTING -> huntingDisplayClues(state, normalize(question));
@@ -582,6 +584,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		if (question.contains("departure")) return nested(state, "input", "departureCity");
 		if (question.contains("destination")) return nested(state, "input", "destinationCity");
 		return null;
+	}
+
+	private static Object symbolicCoordinatesSymbol(Map<String, Object> state, String question) {
+		String q = normalize(question);
+		int stage = ordinal(q);
+		int position = q.contains("left") ? 0 : q.contains("middle") ? 1 : q.contains("right") ? 2 : -1;
+		return stage >= 0 && stage < 3 && position >= 0 ? nested(state, "stageSymbols", stage, position) : null;
 	}
 
 	private static int chordQualitiesAnswerIndex(Map<String, Object> state, List<String> answers) {
