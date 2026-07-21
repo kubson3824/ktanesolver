@@ -414,6 +414,11 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const moves = strings(raw.moves).map(words);
       return moves.length ? command(moves.join(" ")) : "";
     }
+    case ModuleType.BLIND_MAZE: {
+      const aliases: Record<string, string> = { NORTH: "n", EAST: "e", SOUTH: "s", WEST: "w" };
+      const moves = strings(raw.moves).map((move) => aliases[move]);
+      return moves.length && moves.every(Boolean) ? command(`move ${moves.join("")}`) : "";
+    }
     case ModuleType.BITMAPS: {
       const button = numberValue(raw.button) ?? numberValue(raw.buttonNumber) ?? numberValue(raw.answer);
       return button === undefined ? "" : command(`press ${button}`);

@@ -141,6 +141,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("rightSymbolCount", "How many symbols cycled on the right screen?"),
   ],
   [ModuleType.COLORED_SWITCHES]: [question("initialPosition", "What was the initial position of the switches?")],
+  [ModuleType.BLIND_MAZE]: [
+    question("northButtonColor", "What color was the north button?"),
+    question("eastButtonColor", "What color was the east button?"),
+    question("southButtonColor", "What color was the south button?"),
+    question("westButtonColor", "What color was the west button?"),
+  ],
   [ModuleType.SOUVENIR]: [question("firstModule", "What was the first module asked about?")],
   [ModuleType.THE_BULB]: [question("initiallyLit", "Was the bulb initially lit?")],
   [ModuleType.THREE_D_MAZE]: [

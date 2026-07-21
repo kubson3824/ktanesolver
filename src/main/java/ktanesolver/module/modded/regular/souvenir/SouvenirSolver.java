@@ -104,6 +104,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		String q = normalize(question);
 		return switch (source.getType()) {
 			case BIG_CIRCLE -> answerIndex(answers, source.getState().get("spinDirection"));
+			case BLIND_MAZE -> answerIndex(answers, blindMazeColor(source.getState(), q));
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
 			case BRAILLE -> brailleAnswerIndex(source.getState(), q, answers);
 			case CHEAP_CHECKOUT -> cheapCheckoutAnswerIndex(source.getState(), q, answers);
@@ -179,6 +180,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return switch (source.getType()) {
 			case BUTTON -> state.get("stripColor");
 			case BIG_CIRCLE -> state.get("spinDirection");
+			case BLIND_MAZE -> blindMazeColor(state, normalize(question));
 			case MEMORY -> switch (question) {
 				case "displays" -> state.get("displayHistory");
 				case "positions" -> valuesAt(state.get("solutionHistory"), "position");
@@ -257,6 +259,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			default -> "recordedFacts".equals(question)
 				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);
 		};
+	}
+
+	private static Object blindMazeColor(Map<String, Object> state, String question) {
+		for (String direction : List.of("north", "east", "south", "west")) {
+			if (question.contains(direction)) return nested(state, "buttonColors", direction);
+		}
+		return null;
 	}
 
 	private static Object morseAMazeAnswer(Map<String, Object> state, String question) {

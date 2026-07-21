@@ -669,6 +669,28 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesBlindMazeButtonColorsAtEveryPosition() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity blindMaze = module(ModuleType.BLIND_MAZE, true, Map.of("buttonColors", Map.of(
+			"north", "Red", "east", "Green", "south", "Blue", "west", "Yellow"
+		)));
+		bomb.setModules(List.of(souvenir, blindMaze));
+
+		assertThat(solve(bomb, souvenir, blindMaze.getId(), "northButtonColor", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Red", null));
+		assertThat(solve(bomb, souvenir, blindMaze.getId(), "eastButtonColor", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Green", null));
+		assertThat(solve(bomb, souvenir, blindMaze.getId(), "southButtonColor", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Blue", null));
+		assertThat(solve(bomb, souvenir, blindMaze.getId(), "westButtonColor", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Yellow", null));
+		assertThat(solve(bomb, souvenir, blindMaze.getId(),
+			"What color was the south button in Blind Maze?", List.of("Red", "Green", "Blue", "Gray", "Yellow"), false))
+			.isEqualTo(new SouvenirOutput("Blue", 3));
+	}
+
+	@Test
 	void resolvesGameOfLifeCruelColorCombinations() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
