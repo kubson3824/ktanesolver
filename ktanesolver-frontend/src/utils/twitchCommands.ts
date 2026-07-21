@@ -229,6 +229,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const country = stringValue(raw.answerCountry);
       return country ? command(`submit ${words(country)}`) : "";
     }
+    case ModuleType.TIMEZONE: {
+      const submission = stringValue(raw.submission);
+      return submission && /^\d{4}$/.test(submission) ? command(`submit ${submission}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

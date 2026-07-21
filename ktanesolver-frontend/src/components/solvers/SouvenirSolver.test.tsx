@@ -213,6 +213,23 @@ describe("SouvenirSolver", () => {
     expect(screen.queryByRole("option", { name: /Flags/ })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["departureCity", "Buenos Aires"],
+    ["destinationCity", "Tarawa"],
+  ])("asks for Timezone's %s directly", async (question, answer) => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer, answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.TIMEZONE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: question } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question, finalQuestion: false,
+    });
+  });
+
   it("auto-selects the Big Circle spin-direction question", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "counterclockwise", answerIndex: null }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.BIG_CIRCLE)} />);

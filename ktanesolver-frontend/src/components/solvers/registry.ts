@@ -66,6 +66,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.CRUEL_PIANO_KEYS]: { load: () => import("./CruelPianoKeysSolver") },
   [ModuleType.FESTIVE_PIANO_KEYS]: { load: () => import("./FestivePianoKeysSolver") },
   [ModuleType.FLAGS]: { load: () => import("./FlagsSolver") },
+  [ModuleType.TIMEZONE]: { load: () => import("./TimezoneSolver") },
   [ModuleType.SAFETY_SAFE]: { load: () => import("./SafetySafeSolver") },
   [ModuleType.CRYPTOGRAPHY]: { load: () => import("./CryptographySolver") },
   [ModuleType.CAESAR_CIPHER]: { load: () => import("./CaesarCipherSolver") },

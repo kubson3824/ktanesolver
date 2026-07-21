@@ -117,6 +117,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
 			case FLAGS -> flagsAnswerIndex(source.getState(), q, answers);
+			case TIMEZONE -> answerIndex(answers, timezoneCity(source.getState(), q));
 			case GAMEPAD -> {
 				int digit = ordinal(q);
 				Object display = nested(source.getState(), "input", digit < 2 ? "x" : "y");
@@ -205,6 +206,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				case "mainCountry" -> state.get("mainCountry");
 				default -> null;
 			};
+			case TIMEZONE -> timezoneCity(state, normalize(question));
 			case GAMEPAD -> gamepadDisplay(state);
 			case GRIDLOCK -> state.get(normalize(question).contains("color") ? "startingColor" : "startingLocation");
 			case HUNTING -> huntingDisplayClues(state, normalize(question));
@@ -574,6 +576,12 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		}
 		return question.contains("shown") && question.contains("not the main")
 			? membershipAnswerIndex(answers, state.get("countries"), state.get("mainCountry"), false) : -1;
+	}
+
+	private static Object timezoneCity(Map<String, Object> state, String question) {
+		if (question.contains("departure")) return nested(state, "input", "departureCity");
+		if (question.contains("destination")) return nested(state, "input", "destinationCity");
+		return null;
 	}
 
 	private static int chordQualitiesAnswerIndex(Map<String, Object> state, List<String> answers) {

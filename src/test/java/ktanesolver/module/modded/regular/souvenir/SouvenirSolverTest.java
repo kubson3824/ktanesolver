@@ -520,6 +520,27 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesBothTimezoneCityQuestions() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity timezone = module(ModuleType.TIMEZONE, true, Map.of(
+			"input", Map.of("departureCity", "Buenos Aires", "destinationCity", "Tarawa")
+		));
+		bomb.setModules(List.of(souvenir, timezone));
+
+		assertThat(solve(bomb, souvenir, timezone.getId(), "departureCity", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Buenos Aires", null));
+		assertThat(solve(bomb, souvenir, timezone.getId(), "destinationCity", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Tarawa", null));
+		assertThat(solve(bomb, souvenir, timezone.getId(), "What was the departure city in Timezone?",
+			List.of("Alofi", "Buenos Aires", "Edinburgh", "Tokyo"), false))
+			.isEqualTo(new SouvenirOutput("Buenos Aires", 2));
+		assertThat(solve(bomb, souvenir, timezone.getId(), "What was the destination city in Timezone?",
+			List.of("Berlin", "Moscow", "Sydney", "Tarawa"), false))
+			.isEqualTo(new SouvenirOutput("Tarawa", 4));
+	}
+
+	@Test
 	void resolvesChordQualitiesGivenNoteMembership() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

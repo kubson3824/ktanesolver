@@ -78,6 +78,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("mainCountry", "What was the main country flag?"),
     question("countries", FLAGS_COUNTRIES_QUESTION),
   ],
+  [ModuleType.TIMEZONE]: [
+    question("departureCity", "What was the departure city?"),
+    question("destinationCity", "What was the destination city?"),
+  ],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
