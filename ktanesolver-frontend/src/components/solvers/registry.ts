@@ -74,6 +74,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.SAFETY_SAFE]: { load: () => import("./SafetySafeSolver") },
   [ModuleType.CRYPTOGRAPHY]: { load: () => import("./CryptographySolver") },
   [ModuleType.CAESAR_CIPHER]: { load: () => import("./CaesarCipherSolver") },
+  [ModuleType.MODERN_CIPHER]: { load: () => import("./ModernCipherSolver") },
   [ModuleType.TURN_THE_KEY]: { load: () => import("./TurnTheKeySolver") },
   [ModuleType.TURN_THE_KEYS]: { load: () => import("./TurnTheKeysSolver") },
   [ModuleType.CHESS]: { load: () => import("./ChessSolver") },

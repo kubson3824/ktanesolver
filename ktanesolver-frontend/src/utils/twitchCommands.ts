@@ -388,6 +388,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const solution = stringValue(raw.solution);
       return solution ? command(`press ${solution.split("").join(" ")}`) : "";
     }
+    case ModuleType.MODERN_CIPHER: {
+      const solution = stringValue(raw.solution);
+      return solution && /^[A-Z]{4,8}$/.test(solution) ? command(`submit ${solution.toLowerCase()}`) : "";
+    }
     case ModuleType.TURN_THE_KEY: {
       const seconds = numberValue(raw.turnWhenSeconds);
       return seconds === undefined ? "" : command(`turn ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`);

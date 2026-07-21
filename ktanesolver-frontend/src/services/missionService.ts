@@ -99,6 +99,7 @@ const MODULE_TYPES: Record<string, string> = {
     Maze: "MAZES",
     Memory: "MEMORY",
     Microcontroller: "MICROCONTROLLER",
+    modernCipher: "MODERN_CIPHER",
     ModuleAgainstHumanity: "MODULES_AGAINST_HUMANITY",
     monsplodeFight: "MONSPLODE_FIGHT",
     monsplodeCards: "MONSPLODE_TRADING_CARDS",
