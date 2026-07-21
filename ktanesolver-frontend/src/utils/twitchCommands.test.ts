@@ -149,13 +149,14 @@ const fixtures: Record<ModuleType, Fixture> = {
   FAULTY_BACKGROUNDS: { result: { correctButton: "RIGHT", targetCount: 7 }, expected: "!number submit right 7" },
   MORTAL_KOMBAT: { result: { attacks: [{ controls: "⇦⇨A" }, { controls: "⇩⇩C" }, { controls: "⇦⇨B" }], fatality: { controls: "⇩⇩⇦C⇧B" } }, expected: "!number ⇦⇨A ⇩⇩C ⇦⇨B ⇩⇩⇦C⇧B" },
   MASHEMATICS: { result: { rawAnswer: 210, pressCount: 60 }, expected: "!number submit 60" },
+  RADIATOR: { result: { temperature: 25, water: 34 }, expected: "!number submit 25 34" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(121);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(122);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
   });
 

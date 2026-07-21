@@ -154,6 +154,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.FAULTY_BACKGROUNDS]: { load: () => import("./FaultyBackgroundsSolver") },
   [ModuleType.MORTAL_KOMBAT]: { load: () => import("./MortalKombatSolver") },
   [ModuleType.MASHEMATICS]: { load: () => import("./MashematicsSolver") },
+  [ModuleType.RADIATOR]: { load: () => import("./RadiatorSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },

@@ -793,5 +793,14 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? command(`submit ${presses}`)
         : "";
     }
+    case ModuleType.RADIATOR: {
+      const temperature = numberValue(raw.temperature);
+      const water = numberValue(raw.water);
+      return temperature !== undefined && water !== undefined
+        && Number.isInteger(temperature) && Number.isInteger(water)
+        && temperature >= 0 && temperature <= 99 && water >= 0 && water <= 99
+        ? command(`submit ${temperature} ${water}`)
+        : "";
+    }
   }
 }
