@@ -863,6 +863,20 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesPolyhedralMazeStartingPositionWithoutZeroPadding() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity maze = module(ModuleType.POLYHEDRAL_MAZE, true, Map.of("startPosition", 0));
+		bomb.setModules(List.of(souvenir, maze));
+
+		assertThat(solve(bomb, souvenir, maze.getId(), "startPosition", List.of(), false))
+			.isEqualTo(new SouvenirOutput("0", null));
+		assertThat(solve(bomb, souvenir, maze.getId(),
+			"What was the starting position in Polyhedral Maze?", List.of("13", "0", "29", "35"), false))
+			.isEqualTo(new SouvenirOutput("0", 2));
+	}
+
+	@Test
 	void resolvesBothSymbolCycleScreenCounts() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

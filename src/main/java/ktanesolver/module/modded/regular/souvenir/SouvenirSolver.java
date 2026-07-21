@@ -147,6 +147,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				Object frequency = nested(source.getState(), "missingFrequenciesByWire", probingWireIndex(q));
 				yield answerIndex(answers, frequency == null ? null : frequency + "Hz");
 			}
+			case POLYHEDRAL_MAZE -> answerIndex(answers, source.getState().get("startPosition"));
 			case RHYTHMS -> answerIndex(answers, source.getState().get("lastSuccessfulColor"));
 			case SEA_SHELLS -> seaShellsAnswerIndex(source.getState(), q, answers);
 			case SHAPE_SHIFT -> shapeShiftAnswerIndex(source.getState(), answers);
@@ -227,6 +228,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				List.of("top left", "top middle", "top right", "bottom left", "bottom middle", "bottom right"));
 			case PERSPECTIVE_PEGS -> state.get("initialSequence");
 			case PROBING -> probingRecordedAnswer(state, question);
+			case POLYHEDRAL_MAZE -> state.get("startPosition");
 			case RHYTHMS -> state.get("lastSuccessfulColor");
 			case SEA_SHELLS -> state.get("inputHistory");
 			case SHAPE_SHIFT -> shapeShiftAnswer(state);

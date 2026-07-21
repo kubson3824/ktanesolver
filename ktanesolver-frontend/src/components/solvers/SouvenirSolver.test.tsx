@@ -147,6 +147,22 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it("auto-selects the Polyhedral Maze starting-position question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "0", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.POLYHEDRAL_MAZE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.queryByLabelText("Question")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("0")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "startPosition",
+      finalQuestion: false,
+    });
+  });
+
   it("requires Mafia's displayed choices so the excluded Godfather is actionable", async () => {
     vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "John", answerIndex: 4 }, solved: false });
     render(<SouvenirSolver bomb={bomb(ModuleType.MAFIA)} />);

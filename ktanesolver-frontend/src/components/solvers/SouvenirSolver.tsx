@@ -116,6 +116,7 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   ],
   [ModuleType.ONLY_CONNECT]: [question("hieroglyphs", "Where were the Egyptian hieroglyphs?")],
   [ModuleType.PERSPECTIVE_PEGS]: [question("initialSequence", "What was the initial color sequence?")],
+  [ModuleType.POLYHEDRAL_MAZE]: [question("startPosition", "What was the starting position?")],
   [ModuleType.PROBING]: [
     question("red-white", "Missing frequency in the red-white wire"),
     question("yellow-black", "Missing frequency in the yellow-black wire"),

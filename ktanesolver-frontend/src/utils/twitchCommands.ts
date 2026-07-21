@@ -19,6 +19,7 @@ const conditional = new Set<ModuleType>([
   ModuleType.MONSPLODE_TRADING_CARDS,
   ModuleType.PAINTING,
   ModuleType.PLUMBING,
+  ModuleType.POLYHEDRAL_MAZE,
   ModuleType.ROUND_KEYPAD,
   ModuleType.SEMAPHORE,
   ModuleType.SQUARE_BUTTON,
@@ -232,6 +233,13 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.TIMEZONE: {
       const submission = stringValue(raw.submission);
       return submission && /^\d{4}$/.test(submission) ? command(`submit ${submission}`) : "";
+    }
+    case ModuleType.POLYHEDRAL_MAZE: {
+      const first = numberValue(raw.firstClockHour);
+      const rest = arrayValue(raw.relativeDirections);
+      if (first === undefined || !Number.isInteger(first) || first < 1 || first > 12 || !rest.length
+        || rest.some((direction) => typeof direction !== "number" || !Number.isInteger(direction) || direction < 1 || direction > 12)) return "";
+      return command(`move ${[first, ...rest].join(" ")}`);
     }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
