@@ -187,6 +187,13 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("thirdDisplayedSymbols", "Which pictograms were displayed in the third stage?"),
     question("fourthDisplayedSymbols", "Which pictograms were displayed in the fourth stage?"),
   ],
+  [ModuleType.THE_IPHONE]: [
+    question("firstPinDigit", "What was the first PIN digit?"),
+    question("secondPinDigit", "What was the second PIN digit?"),
+    question("thirdPinDigit", "What was the third PIN digit?"),
+    question("fourthPinDigit", "What was the fourth PIN digit?"),
+  ],
+  [ModuleType.THE_SWAN]: [question("resetCount", "How many times was the system reset?")],
 };
 const questionsFor = (source?: BombEntity["modules"][number]) => {
   if (!source) return [];

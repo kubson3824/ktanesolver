@@ -165,6 +165,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COLORED_SWITCHES -> answerIndex(answers, switchCode(source.getState().get("initialPosition")));
 			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
+			case THE_IPHONE -> answerIndex(answers, iPhoneDigit(source.getState(), q));
+			case THE_SWAN -> answerIndex(answers, swanResetCount(source.getState()));
 			case THREE_D_MAZE -> answerIndex(answers, q.contains("markings")
 				? normalize(source.getState().get("markings")).replace(" ", "")
 				: source.getState().get("cardinalDirection"));
@@ -250,6 +252,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COLORED_SWITCHES -> switchCode(state.get("initialPosition"));
 			case SOUVENIR -> firstHistoryType(state.get("history"));
 			case THE_BULB -> state.get("initiallyOn");
+			case THE_IPHONE -> iPhoneDigit(state, normalize(question));
+			case THE_SWAN -> swanResetCount(state);
 			case THREE_D_MAZE -> "markings".equals(question)
 				? normalize(state.get("markings")).replace(" ", "").toUpperCase(Locale.ROOT)
 				: state.get("cardinalDirection");
@@ -591,6 +595,16 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static Object mashematicsNumber(Map<String, Object> state, String question) {
 		int position = ordinal(question);
 		return position >= 0 && position < 3 ? nested(state, "numbers", position) : null;
+	}
+
+	private static Object iPhoneDigit(Map<String, Object> state, String question) {
+		int position = ordinal(question);
+		return position >= 0 && position < 4 ? nested(state, "pinDigits", position) : null;
+	}
+
+	private static Object swanResetCount(Map<String, Object> state) {
+		Object value = state.get("resetCount");
+		return value instanceof Number number && number.intValue() >= 0 && number.intValue() < 25 ? number.intValue() : null;
 	}
 
 	private static Object identityParadeListed(Map<String, Object> state, String question) {

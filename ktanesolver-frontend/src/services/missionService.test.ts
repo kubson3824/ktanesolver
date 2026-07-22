@@ -8,6 +8,29 @@ const catalog = [
 ] as ModuleCatalogItem[];
 
 describe("resolveMissionBomb", () => {
+    it.each([
+        ["BigCircle", "BIG_CIRCLE"],
+        ["BlindMaze", "BLIND_MAZE"],
+        ["ColorMorseModule", "COLOR_MORSE"],
+        ["ColoredSwitchesModule", "COLORED_SWITCHES"],
+        ["FaultyBackgrounds", "FAULTY_BACKGROUNDS"],
+        ["GameOfLifeCruel", "GAME_OF_LIFE_CRUEL"],
+        ["GameOfLifeSimple", "GAME_OF_LIFE_SIMPLE"],
+        ["GridlockModule", "GRIDLOCK"],
+        ["MafiaModule", "MAFIA"],
+        ["SymbolCycleModule", "SYMBOL_CYCLE"],
+        ["theSwan", "THE_SWAN"],
+        ["XRayModule", "X_RAY"],
+    ])("imports %s as %s", (moduleId, moduleType) => {
+        expect(resolveMissionBomb({
+            modules: 1,
+            strikes: 3,
+            time: 300,
+            widgets: 5,
+            pools: [{count: 1, modules: [moduleId]}],
+        }, catalog).modules).toEqual({[moduleType]: 1});
+    });
+
     it("imports Morse-A-Maze by its game module ID", () => {
         expect(resolveMissionBomb({
             modules: 1,

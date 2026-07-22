@@ -1004,6 +1004,39 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("f_", 3));
 	}
 
+	@Test
+	void resolvesEveryIPhonePinDigit() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity phone = module(ModuleType.THE_IPHONE, true, Map.of("pinDigits", List.of(7, 2, 5, 9)));
+		bomb.setModules(List.of(souvenir, phone));
+
+		assertThat(solve(bomb, souvenir, phone.getId(), "firstPinDigit", List.of(), false)).isEqualTo(new SouvenirOutput("7", null));
+		assertThat(solve(bomb, souvenir, phone.getId(), "secondPinDigit", List.of(), false)).isEqualTo(new SouvenirOutput("2", null));
+		assertThat(solve(bomb, souvenir, phone.getId(), "thirdPinDigit", List.of(), false)).isEqualTo(new SouvenirOutput("5", null));
+		assertThat(solve(bomb, souvenir, phone.getId(), "fourthPinDigit", List.of(), false)).isEqualTo(new SouvenirOutput("9", null));
+		assertThat(solve(bomb, souvenir, phone.getId(), "What was the third PIN digit in The iPhone?",
+			List.of("0", "2", "5", "7", "8", "9"), false)).isEqualTo(new SouvenirOutput("5", 3));
+	}
+
+	@Test
+	void resolvesTheSwanResetCountOnlyWhenUpstreamSouvenirAsks() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity swan = module(ModuleType.THE_SWAN, true, Map.of("resetCount", 13));
+		bomb.setModules(List.of(souvenir, swan));
+
+		assertThat(solve(bomb, souvenir, swan.getId(), "resetCount", List.of(), false))
+			.isEqualTo(new SouvenirOutput("13", null));
+		assertThat(solve(bomb, souvenir, swan.getId(), "How many times was the system reset in The Swan?",
+			List.of("3", "7", "13", "18", "21", "24"), false)).isEqualTo(new SouvenirOutput("13", 3));
+
+		ModuleEntity longSwan = module(ModuleType.THE_SWAN, true, Map.of("resetCount", 25));
+		bomb.setModules(List.of(souvenir, longSwan));
+		assertThat(solver.solve(new RoundEntity(), bomb, souvenir,
+			new SouvenirInput(longSwan.getId(), "resetCount", List.of(), false))).isInstanceOf(SolveFailure.class);
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

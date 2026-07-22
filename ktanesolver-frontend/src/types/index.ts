@@ -147,6 +147,8 @@ export enum ModuleType {
   MORTAL_KOMBAT = "MORTAL_KOMBAT",
   MASHEMATICS = "MASHEMATICS",
   RADIATOR = "RADIATOR",
+  THE_IPHONE = "THE_IPHONE",
+  THE_SWAN = "THE_SWAN",
 }
 
 export enum PortType {

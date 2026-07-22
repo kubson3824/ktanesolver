@@ -31,6 +31,8 @@ const conditional = new Set<ModuleType>([
   ModuleType.WORD_SEARCH,
   ModuleType.YAHTZEE,
   ModuleType.HUNTING,
+  ModuleType.THE_IPHONE,
+  ModuleType.THE_SWAN,
 ]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
@@ -770,6 +772,19 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const repaints = arrayValue(raw.repaints).map(asRecord);
       if(!repaints.length || repaints.some((repaint) => !/^[A-Za-z0-9]+$/.test(stringValue(repaint.label) ?? "") || !stringValue(repaint.to))) return "";
       return commands(repaints.map((repaint) => `paint ${repaint.label} ${words(repaint.to)}`));
+    }
+    case ModuleType.THE_IPHONE: {
+      const pin = stringValue(raw.pin);
+      return pin && /^\d{4}$/.test(pin) ? command(`submit ${pin}`) : "";
+    }
+    case ModuleType.THE_SWAN: {
+      const code = stringValue(raw.code);
+      const positions = arrayValue(raw.buttonPositions).map(Number);
+      return code && /^(DHARMA|HATCH|SWN|DARMA|SWAN|HTCH|77)$/.test(code)
+        && positions.length === code.length
+        && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 12)
+        ? command(`execute ${positions.join(" ")}`)
+        : "";
     }
     case ModuleType.MAINTENANCE: {
       const jobs = strings(raw.jobs);

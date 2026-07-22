@@ -60,6 +60,21 @@ describe("SouvenirSolver", () => {
     });
   });
 
+  it("asks The Swan reset-count question directly", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "13", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.THE_SWAN)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("13")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1",
+      question: "resetCount",
+      finalQuestion: false,
+    });
+  });
+
   it.each([
     ["hairColorsWas", "Black, Brown, Red"],
     ["hairColorsWasNot", "Blonde, Grey, White"],

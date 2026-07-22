@@ -153,6 +153,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   MORTAL_KOMBAT: { result: { attacks: [{ controls: "⇦⇨A" }, { controls: "⇩⇩C" }, { controls: "⇦⇨B" }], fatality: { controls: "⇩⇩⇦C⇧B" } }, expected: "!number ⇦⇨A ⇩⇩C ⇦⇨B ⇩⇩⇦C⇧B" },
   MASHEMATICS: { result: { rawAnswer: 210, pressCount: 60 }, expected: "!number submit 60" },
   RADIATOR: { result: { temperature: 25, water: 34 }, expected: "!number submit 25 34" },
+  THE_IPHONE: { result: { pin: "7259" }, expected: "!number submit 7259" },
+  THE_SWAN: { result: { code: "DHARMA", buttonPositions: [1, 2, 3, 4, 5, 3] }, expected: "!number execute 1 2 3 4 5 3" },
 };
 
 describe("generateTwitchCommand", () => {
@@ -160,7 +162,7 @@ describe("generateTwitchCommand", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(125);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(23);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(25);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -209,6 +211,14 @@ describe("generateTwitchCommand", () => {
 
   it("returns no Hunting command without all five button pictograms", () => {
     expect(generateTwitchCommand({ moduleType: ModuleType.HUNTING, result: { decoys: ["h_"] } })).toBe("");
+  });
+
+  it("returns no iPhone command before all four digits are known", () => {
+    expect(generateTwitchCommand({ moduleType: ModuleType.THE_IPHONE, result: { pin: null } })).toBe("");
+  });
+
+  it("returns no Swan command without the final randomized button positions", () => {
+    expect(generateTwitchCommand({ moduleType: ModuleType.THE_SWAN, result: { code: "DHARMA" } })).toBe("");
   });
 
   it("uses the untouched Cruel grid for the BOB exception", () => {
