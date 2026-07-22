@@ -155,14 +155,16 @@ const fixtures: Record<ModuleType, Fixture> = {
   RADIATOR: { result: { temperature: 25, water: 34 }, expected: "!number submit 25 34" },
   THE_IPHONE: { result: { pin: "7259" }, expected: "!number submit 7259" },
   THE_SWAN: { result: { code: "DHARMA", buttonPositions: [1, 2, 3, 4, 5, 3] }, expected: "!number execute 1 2 3 4 5 3" },
+  WASTE_MANAGEMENT: { result: { stageIndex: 0, barEmpty: false, allocations: [{ recycle: 75, waste: 12 }] }, expected: "!number XIIW; !number LXXVR; !number submit" },
+  HUMAN_RESOURCES: { result: { fire: "REBECCA", hire: "SILAS" }, expected: "!number fire rebecca; !number hire silas" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(125);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(25);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(126);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(26);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -219,6 +221,13 @@ describe("generateTwitchCommand", () => {
 
   it("returns no Swan command without the final randomized button positions", () => {
     expect(generateTwitchCommand({ moduleType: ModuleType.THE_SWAN, result: { code: "DHARMA" } })).toBe("");
+  });
+
+  it("returns no Waste Management command without the current empty-bar state", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.WASTE_MANAGEMENT,
+      result: { stageIndex: 0, allocations: [{ recycle: 75, waste: 12 }] },
+    })).toBe("");
   });
 
   it("uses the untouched Cruel grid for the BOB exception", () => {

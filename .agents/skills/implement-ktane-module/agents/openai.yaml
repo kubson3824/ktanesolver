@@ -1,4 +1,4 @@
 interface:
   display_name: "Implement KTaNE Module"
-  short_description: "Build and document a KTaNE solver"
-  default_prompt: "Use $implement-ktane-module to implement and document this KTaNE manual, verify it, restart both servers, then commit and push the changes."
+  short_description: "Build and verify a complete KTaNE solver"
+  default_prompt: "Use $implement-ktane-module to implement and verify this KTaNE manual end to end, leaving the changes uncommitted for review."

@@ -149,6 +149,8 @@ export enum ModuleType {
   RADIATOR = "RADIATOR",
   THE_IPHONE = "THE_IPHONE",
   THE_SWAN = "THE_SWAN",
+  WASTE_MANAGEMENT = "WASTE_MANAGEMENT",
+  HUMAN_RESOURCES = "HUMAN_RESOURCES",
 }
 
 export enum PortType {

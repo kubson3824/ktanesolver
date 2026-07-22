@@ -20,6 +20,7 @@ describe("resolveMissionBomb", () => {
         ["MafiaModule", "MAFIA"],
         ["SymbolCycleModule", "SYMBOL_CYCLE"],
         ["theSwan", "THE_SWAN"],
+        ["wastemanagement", "WASTE_MANAGEMENT"],
         ["XRayModule", "X_RAY"],
     ])("imports %s as %s", (moduleId, moduleType) => {
         expect(resolveMissionBomb({

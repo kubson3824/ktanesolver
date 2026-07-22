@@ -254,6 +254,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THE_BULB -> state.get("initiallyOn");
 			case THE_IPHONE -> iPhoneDigit(state, normalize(question));
 			case THE_SWAN -> swanResetCount(state);
+			case HUMAN_RESOURCES -> humanResourcesAnswer(state, question);
 			case THREE_D_MAZE -> "markings".equals(question)
 				? normalize(state.get("markings")).replace(" ", "").toUpperCase(Locale.ROOT)
 				: state.get("cardinalDirection");
@@ -621,6 +622,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			: List.of("Blazer", "Hoodie", "Jumper", "Suit", "T-shirt", "Tank top");
 		Set<String> normalized = values.stream().map(SouvenirSolver::normalize).collect(java.util.stream.Collectors.toSet());
 		return all.stream().filter(value -> q.contains("not") != normalized.contains(normalize(value))).toList();
+	}
+
+	private static Object humanResourcesAnswer(Map<String, Object> state, String question) {
+		if(!(state.get(question) instanceof Collection<?> values)) return null;
+		return values.stream().map(value -> {
+			String text = String.valueOf(value).replace('_', ' ').toLowerCase(Locale.ROOT);
+			return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
+		}).toList();
 	}
 
 	private static int flagsAnswerIndex(Map<String, Object> state, String question, List<String> answers) {

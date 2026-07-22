@@ -160,6 +160,7 @@ const MODULE_TYPES: Record<string, string> = {
     WhosOnFirstTranslated: "WHOS_ON_FIRST",
     YahtzeeModule: "YAHTZEE",
     visual_impairment: "VISUAL_IMPAIRMENT",
+    wastemanagement: "WASTE_MANAGEMENT",
     WirePlacementModule: "WIRE_PLACEMENT",
     WireSequence: "WIRE_SEQUENCES",
     Wires: "WIRES",

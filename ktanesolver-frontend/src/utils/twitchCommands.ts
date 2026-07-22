@@ -33,6 +33,7 @@ const conditional = new Set<ModuleType>([
   ModuleType.HUNTING,
   ModuleType.THE_IPHONE,
   ModuleType.THE_SWAN,
+  ModuleType.WASTE_MANAGEMENT,
 ]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
@@ -785,6 +786,30 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 12)
         ? command(`execute ${positions.join(" ")}`)
         : "";
+    }
+    case ModuleType.WASTE_MANAGEMENT: {
+      const barEmpty = booleanValue(raw.barEmpty);
+      if (barEmpty === undefined) return "";
+      if (barEmpty) return command("submit");
+      const stageIndex = numberValue(raw.stageIndex);
+      const allocation = stageIndex === undefined ? {} : asRecord(arrayValue(raw.allocations)[stageIndex]);
+      const recycle = numberValue(allocation.recycle);
+      const waste = numberValue(allocation.waste);
+      if (stageIndex === undefined || !Number.isInteger(stageIndex) || stageIndex < 0
+        || recycle === undefined || waste === undefined
+        || !Number.isInteger(recycle) || !Number.isInteger(waste) || recycle < 0 || waste < 0) return "";
+      const roman = (value: number) => {
+        const l = Math.floor(value / 50); value %= 50;
+        const x = Math.floor(value / 10); value %= 10;
+        const v = Math.floor(value / 5); value %= 5;
+        return "L".repeat(l) + "X".repeat(x) + "V".repeat(v) + "I".repeat(value);
+      };
+      return commands([waste ? `${roman(waste)}W` : undefined, recycle ? `${roman(recycle)}R` : undefined, "submit"]);
+    }
+    case ModuleType.HUMAN_RESOURCES: {
+      const fire = stringValue(raw.fire);
+      const hire = stringValue(raw.hire);
+      return fire && hire ? commands([`fire ${words(fire)}`, `hire ${words(hire)}`]) : "";
     }
     case ModuleType.MAINTENANCE: {
       const jobs = strings(raw.jobs);

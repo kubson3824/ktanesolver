@@ -194,6 +194,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("fourthPinDigit", "What was the fourth PIN digit?"),
   ],
   [ModuleType.THE_SWAN]: [question("resetCount", "How many times was the system reset?")],
+  [ModuleType.HUMAN_RESOURCES]: [
+    question("redDescriptors", "Which descriptors were shown in red?"),
+    question("greenDescriptors", "Which descriptors were shown in green?"),
+    question("employees", "Who was an employee at the start?"),
+    question("applicants", "Who was an applicant at the start?"),
+  ],
 };
 const questionsFor = (source?: BombEntity["modules"][number]) => {
   if (!source) return [];

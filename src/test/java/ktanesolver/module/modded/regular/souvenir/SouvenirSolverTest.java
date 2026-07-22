@@ -22,6 +22,28 @@ class SouvenirSolverTest {
 	private final SouvenirSolver solver = new SouvenirSolver();
 
 	@Test
+	void returnsEveryHumanResourcesQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity humanResources = module(ModuleType.HUMAN_RESOURCES, true, Map.of(
+			"redDescriptors", List.of("INTELLECTUAL", "DEVISER", "DIRECTOR"),
+			"greenDescriptors", List.of("MANAGER", "SHOWMAN"),
+			"employees", List.of("REBECCA", "DAMIAN", "ASHLEY", "SAMUEL", "QUINN"),
+			"applicants", List.of("SILAS", "NOAH", "TIM", "DYLAN", "MIKE")
+		));
+		bomb.setModules(List.of(souvenir, humanResources));
+
+		assertThat(solve(bomb, souvenir, humanResources.getId(), "redDescriptors", List.of(), false).answer())
+			.isEqualTo("Intellectual, Deviser, Director");
+		assertThat(solve(bomb, souvenir, humanResources.getId(), "greenDescriptors", List.of(), false).answer())
+			.isEqualTo("Manager, Showman");
+		assertThat(solve(bomb, souvenir, humanResources.getId(), "employees", List.of(), false).answer())
+			.isEqualTo("Rebecca, Damian, Ashley, Samuel, Quinn");
+		assertThat(solve(bomb, souvenir, humanResources.getId(), "applicants", List.of(), false).answer())
+			.isEqualTo("Silas, Noah, Tim, Dylan, Mike");
+	}
+
+	@Test
 	void returnsEveryIdentityParadeListedAndUnlistedTraitFamily() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
