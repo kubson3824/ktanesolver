@@ -22,6 +22,29 @@ class SouvenirSolverTest {
 	private final SouvenirSolver solver = new SouvenirSolver();
 
 	@Test
+	void returnsEverySkyrimQuestionFamilyAndMatchesDisplayedDragonLanguage() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity skyrim = module(ModuleType.SKYRIM, true, Map.of(
+			"races", List.of("Nord", "Imperial", "Dunmer"), "correctRace", "Nord",
+			"weapons", List.of("Mace of Molag Bal", "Firiniel’s End", "Volendrung"), "correctWeapon", "Mace of Molag Bal",
+			"enemies", List.of("Frost Troll", "Mudcrab", "Dragon Priest"), "correctEnemy", "Frost Troll",
+			"cities", List.of("Windhelm", "Winterhold", "Solitude"), "correctCity", "Windhelm",
+			"dragonShouts", List.of("zun hal vik", "wuld nah kest", "tid klo ul"), "correctDragonShout", "zun hal vik"
+		));
+		bomb.setModules(List.of(souvenir, skyrim));
+
+		assertThat(solve(bomb, souvenir, skyrim.getId(), "races", List.of(), false).answer()).isEqualTo("Imperial, Dunmer");
+		assertThat(solve(bomb, souvenir, skyrim.getId(), "weapons", List.of(), false).answer()).isEqualTo("Firiniel’s End, Volendrung");
+		assertThat(solve(bomb, souvenir, skyrim.getId(), "enemies", List.of(), false).answer()).isEqualTo("Mudcrab, Dragon Priest");
+		assertThat(solve(bomb, souvenir, skyrim.getId(), "cities", List.of(), false).answer()).isEqualTo("Winterhold, Solitude");
+		assertThat(solve(bomb, souvenir, skyrim.getId(), "dragonShouts", List.of(), false).answer()).isEqualTo("wuld nah kest, tid klo ul");
+		assertThat(solve(bomb, souvenir, skyrim.getId(), "Which dragon shout was selectable, but not the solution, in Skyrim?",
+			List.of("fus ro dah", "wuld nah kest", "jor zah frul", "yol tor shul"), false))
+			.isEqualTo(new SouvenirOutput("wuld nah kest", 2));
+	}
+
+	@Test
 	void returnsEveryHumanResourcesQuestionFamily() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

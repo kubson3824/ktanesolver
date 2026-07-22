@@ -811,6 +811,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const hire = stringValue(raw.hire);
       return fire && hire ? commands([`fire ${words(fire)}`, `hire ${words(hire)}`]) : "";
     }
+    case ModuleType.SKYRIM: {
+      const values = [raw.race, raw.weapon, raw.enemy, raw.city, raw.dragonShout].map(stringValue);
+      return values.every((value) => value) ? command(`submit ${values.join(", ")}`) : "";
+    }
     case ModuleType.MAINTENANCE: {
       const jobs = strings(raw.jobs);
       return jobs.length ? command(jobs.join(", ")) : "";

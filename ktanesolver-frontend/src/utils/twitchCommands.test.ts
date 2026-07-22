@@ -157,13 +157,14 @@ const fixtures: Record<ModuleType, Fixture> = {
   THE_SWAN: { result: { code: "DHARMA", buttonPositions: [1, 2, 3, 4, 5, 3] }, expected: "!number execute 1 2 3 4 5 3" },
   WASTE_MANAGEMENT: { result: { stageIndex: 0, barEmpty: false, allocations: [{ recycle: 75, waste: 12 }] }, expected: "!number XIIW; !number LXXVR; !number submit" },
   HUMAN_RESOURCES: { result: { fire: "REBECCA", hire: "SILAS" }, expected: "!number fire rebecca; !number hire silas" },
+  SKYRIM: { result: { race: "Nord", weapon: "Mace of Molag Bal", enemy: "Frost Troll", city: "Rorikstead", dragonShout: "Ice Form" }, expected: "!number submit Nord, Mace of Molag Bal, Frost Troll, Rorikstead, Ice Form" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(126);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(127);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(26);
   });
 

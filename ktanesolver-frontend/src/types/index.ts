@@ -151,6 +151,7 @@ export enum ModuleType {
   THE_SWAN = "THE_SWAN",
   WASTE_MANAGEMENT = "WASTE_MANAGEMENT",
   HUMAN_RESOURCES = "HUMAN_RESOURCES",
+  SKYRIM = "SKYRIM",
 }
 
 export enum PortType {

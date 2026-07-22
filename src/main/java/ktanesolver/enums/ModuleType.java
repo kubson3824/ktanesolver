@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum ModuleType {
+	SKYRIM(false),
 	SINK(false), IDENTITY_PARADE(false), MAFIA(false), PAINTING(false), JUKEBOX(false),
 	WIRES(false), BUTTON(false), KEYPADS(false), MEMORY(false), SIMON_SAYS(false), MORSE_CODE(false), FORGET_ME_NOT(false), SOUVENIR(false), ICE_CREAM(false), THE_SCREW(false), YAHTZEE(false), X_RAY(false), BATTLESHIP(false), MINESWEEPER(false), VISUAL_IMPAIRMENT(false), WHOS_ON_FIRST(false), THIRD_BASE(false), VENTING_GAS(true), CAPACITOR_DISCHARGE(
 		true), COMPLICATED_WIRES(false), WIRE_SEQUENCES(false), PASSWORDS(false), EXTENDED_PASSWORD(false), MAZES(false), KNOBS(true), COLOR_FLASH(false), PIANO_KEYS(false), SEMAPHORE(false), PERSPECTIVE_PEGS(false), EMOJI_MATH(

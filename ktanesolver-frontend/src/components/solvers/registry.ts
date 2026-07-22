@@ -162,6 +162,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.THE_SWAN]: { load: () => import("./TheSwanSolver") },
   [ModuleType.WASTE_MANAGEMENT]: { load: () => import("./WasteManagementSolver") },
   [ModuleType.HUMAN_RESOURCES]: { load: () => import("./HumanResourcesSolver") },
+  [ModuleType.SKYRIM]: { load: () => import("./SkyrimSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },
   [ModuleType.CAPACITOR_DISCHARGE]: { load: () => import("./CapacitorDischargeSolver"), isNeedy: true },

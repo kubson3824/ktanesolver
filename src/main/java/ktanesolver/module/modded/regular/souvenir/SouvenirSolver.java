@@ -155,6 +155,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case RHYTHMS -> answerIndex(answers, source.getState().get("lastSuccessfulColor"));
 			case SEA_SHELLS -> seaShellsAnswerIndex(source.getState(), q, answers);
 			case SHAPE_SHIFT -> shapeShiftAnswerIndex(source.getState(), answers);
+			case SKYRIM -> skyrimAnswerIndex(source.getState(), q, answers);
 			case SILLY_SLOTS -> sillySlotsAnswerIndex(source.getState(), q, answers);
 			case SIMON_SAYS -> answerIndex(answers, nested(source.getState(), "input", "flashes", ordinal(q)));
 			case SIMON_SCREAMS -> simonScreamsAnswerIndex(source.getState(), q, answers);
@@ -243,6 +244,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case RHYTHMS -> state.get("lastSuccessfulColor");
 			case SEA_SHELLS -> state.get("inputHistory");
 			case SHAPE_SHIFT -> shapeShiftAnswer(state);
+			case SKYRIM -> skyrimRecordedAnswer(state, question);
 			case SILLY_SLOTS -> state.get("displayHistory");
 			case SIMON_SCREAMS -> state.get("rules".equals(question) ? "ruleHistory" : "flashHistory");
 			case SIMON_STATES -> state.get("flashHistory");
@@ -591,6 +593,28 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			}
 		}
 		return result;
+	}
+
+	private static Object skyrimRecordedAnswer(Map<String, Object> state, String question) {
+		String key = switch(question) {
+			case "races" -> "Race";
+			case "weapons" -> "Weapon";
+			case "enemies" -> "Enemy";
+			case "cities" -> "City";
+			case "dragonShouts" -> "DragonShout";
+			default -> null;
+		};
+		return key == null ? null : excluding(state.get(question), state.get("correct" + key));
+	}
+
+	private static int skyrimAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		String key = question.contains("dragon shout") ? "DragonShout" : question.contains("race") ? "Race"
+			: question.contains("weapon") ? "Weapon" : question.contains("enemy") ? "Enemy" : question.contains("city") ? "City" : null;
+		String choices = switch(key == null ? "" : key) {
+			case "Race" -> "races"; case "Weapon" -> "weapons"; case "Enemy" -> "enemies";
+			case "City" -> "cities"; case "DragonShout" -> "dragonShouts"; default -> null;
+		};
+		return choices == null ? -1 : membershipAnswerIndex(answers, state.get(choices), state.get("correct" + key), false);
 	}
 
 	private static Object mashematicsNumber(Map<String, Object> state, String question) {

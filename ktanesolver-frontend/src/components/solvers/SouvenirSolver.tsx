@@ -200,6 +200,13 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("employees", "Who was an employee at the start?"),
     question("applicants", "Who was an applicant at the start?"),
   ],
+  [ModuleType.SKYRIM]: [
+    question("races", "Which races were selectable, but not the solution?"),
+    question("weapons", "Which weapons were selectable, but not the solution?"),
+    question("enemies", "Which enemies were selectable, but not the solution?"),
+    question("cities", "Which cities were selectable, but not the solution?"),
+    question("dragonShouts", "Which dragon shouts were selectable, but not the solution?"),
+  ],
 };
 const questionsFor = (source?: BombEntity["modules"][number]) => {
   if (!source) return [];
