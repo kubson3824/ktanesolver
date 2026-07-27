@@ -291,6 +291,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const solution = stringValue(raw.solution);
       return solution ? command(`submit ${solution}`) : "";
     }
+    case ModuleType.FONT_SELECT: {
+      const actions = strings(raw.actions);
+      return actions.length > 0 && actions.every((action) => ["left", "right", "submit"].includes(action))
+        ? commands(actions)
+        : "";
+    }
     case ModuleType.WORD_SEARCH: {
       const start = stringValue(raw.start)?.toUpperCase();
       const end = stringValue(raw.end)?.toUpperCase();

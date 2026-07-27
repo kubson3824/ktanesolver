@@ -43,6 +43,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   COLORED_SWITCHES: { result: { solutionSteps: [5, 2, 4] }, expected: "!number toggle 5 2 4" },
   TWO_BITS: { result: { letters: "kt", stages: [{}] }, expected: "!number press k t query" },
   WORD_SCRAMBLE: { result: { solution: "stream" }, expected: "!number submit stream" },
+  FONT_SELECT: { result: { actions: ["right", "submit"] }, expected: "!number right; !number submit" },
   WORD_SEARCH: { result: { start: "B3", end: "E6" }, expected: "!number select B3 E6" },
   BROKEN_BUTTONS: { result: { action: "PRESS", column: 2, row: 1 }, expected: "!number press 2 1" },
   COMPLICATED_BUTTONS: { result: { pressOrder: [2, 4, 1] }, expected: "!number press 2 4 1" },
@@ -170,7 +171,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(132);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(133);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(27);
   });
 

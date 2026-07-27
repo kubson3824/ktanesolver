@@ -42,6 +42,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.COLORED_SWITCHES]: { load: () => import("./ColoredSwitchesSolver") },
   [ModuleType.TWO_BITS]: { load: () => import("./TwoBitsSolver") },
   [ModuleType.WORD_SCRAMBLE]: { load: () => import("./WordScrambleSolver") },
+  [ModuleType.FONT_SELECT]: { load: () => import("./FontSelectSolver") },
   [ModuleType.WORD_SEARCH]: { load: () => import("./WordSearchSolver") },
   [ModuleType.BROKEN_BUTTONS]: { load: () => import("./BrokenButtonsSolver") },
   [ModuleType.COMPLICATED_BUTTONS]: { load: () => import("./ComplicatedButtonsSolver") },
