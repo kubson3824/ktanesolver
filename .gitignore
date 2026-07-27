@@ -38,3 +38,11 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/.worktrees/
+/combined-graph/
+/graphify-out/
+/ktanesolver-frontend/graphify-out/
+/src/main/java/ktanesolver/graphify-out/
+/src/main/java/ktanesolver/module/graphify-out/
+/src/main/java/ktanesolver/module/modded/graphify-out/
+/src/main/java/ktanesolver/module/shared/graphify-out/
+/src/main/java/ktanesolver/module/vanilla/graphify-out/

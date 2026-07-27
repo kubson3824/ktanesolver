@@ -15,6 +15,7 @@ const conditional = new Set<ModuleType>([
   ModuleType.ENGLISH_TEST,
   ModuleType.GAME_OF_LIFE_CRUEL,
   ModuleType.KNOBS,
+  ModuleType.LEGOS,
   ModuleType.MOUSE_IN_THE_MAZE,
   ModuleType.MONSPLODE_TRADING_CARDS,
   ModuleType.PAINTING,
@@ -673,6 +674,8 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         : []);
       return command(["clear", ...coordinates, "submit"].join(" "));
     }
+    case ModuleType.LEGOS:
+      return "";
     case ModuleType.ONLY_CONNECT: {
       const position = numberValue(raw.position);
       if (position !== undefined) return command(`press ${position}`);
@@ -701,6 +704,15 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.RUBIKS_CUBE: {
       const moves = strings(raw.moves);
       return moves.length ? command(moves.join(" ")) : "";
+    }
+    case ModuleType.RUBIKS_CLOCK: {
+      const pins = strings(raw.pins).map(words);
+      const gear = stringValue(raw.gear)?.toLowerCase();
+      const hours = numberValue(raw.hours);
+      return pins.length === 2 && pins.every((pin) => /^(tl|tr|bl|br)$/.test(pin))
+        && gear && /^(tl|tr|bl|br)$/.test(gear) && hours !== undefined && Number.isInteger(hours) && hours !== 0
+        ? command([...pins, gear, String(hours), "t"].join(" "))
+        : "";
     }
     case ModuleType.FIZZ_BUZZ: {
       const actions = strings(raw.actions);
@@ -778,6 +790,23 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const pin = stringValue(raw.pin);
       return pin && /^\d{4}$/.test(pin) ? command(`submit ${pin}`) : "";
     }
+    case ModuleType.BURGLAR_ALARM: {
+      const code = stringValue(raw.code);
+      return code && /^\d{8}$/.test(code) ? commands(["activate", `submit ${code}`]) : "";
+    }
+    case ModuleType.ERROR_CODES: {
+      const fixCode = stringValue(raw.fixCode);
+      return fixCode && /^[0-9A-F]{2,7}$/.test(fixCode) ? command(`submit ${fixCode}`) : "";
+    }
+    case ModuleType.PRESS_X: {
+      const button = stringValue(raw.button);
+      const seconds = arrayValue(raw.validSeconds).map(Number);
+      if (booleanValue(raw.anyTime)) return command("press x");
+      return button && /^[XYAB]$/.test(button) && seconds.length
+        && seconds.every((second) => Number.isInteger(second) && second >= 0 && second < 60)
+        ? command(`press ${button.toLowerCase()} on ${seconds.map((second) => second.toString().padStart(2, "0")).join(" ")}`)
+        : "";
+    }
     case ModuleType.THE_SWAN: {
       const code = stringValue(raw.code);
       const positions = arrayValue(raw.buttonPositions).map(Number);
@@ -810,6 +839,17 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const fire = stringValue(raw.fire);
       const hire = stringValue(raw.hire);
       return fire && hire ? commands([`fire ${words(fire)}`, `hire ${words(hire)}`]) : "";
+    }
+    case ModuleType.EUROPEAN_TRAVEL: {
+      const type = stringValue(raw.ticketType);
+      const travelClass = stringValue(raw.travelClass);
+      const departure = stringValue(raw.departure);
+      const destination = stringValue(raw.destination);
+      const seat = stringValue(raw.seat);
+      const price = stringValue(raw.price);
+      if (!type || !travelClass || !departure || !destination || !seat || !price) return "";
+      const ticket = type === "SGL" ? "single ticket" : type === "RTN" ? "return ticket" : "";
+      return ticket ? command(`submit ${ticket};${travelClass};${departure};${destination};${seat};${price}`) : "";
     }
     case ModuleType.SKYRIM: {
       const values = [raw.race, raw.weapon, raw.enemy, raw.city, raw.dragonShout].map(stringValue);

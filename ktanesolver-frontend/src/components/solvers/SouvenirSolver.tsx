@@ -91,6 +91,14 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
   [ModuleType.LED_GRID]: [question("unlitCount", "How many LEDs were unlit?")],
+  [ModuleType.LEGOS]: [
+    question("red", "What were the dimensions of the red piece?"),
+    question("green", "What were the dimensions of the green piece?"),
+    question("blue", "What were the dimensions of the blue piece?"),
+    question("cyan", "What were the dimensions of the cyan piece?"),
+    question("magenta", "What were the dimensions of the magenta piece?"),
+    question("yellow", "What were the dimensions of the yellow piece?"),
+  ],
   [ModuleType.LISTENING]: [question("sound", "What sound played?")],
   [ModuleType.MAZES]: [question("startingPosition", "What was the starting position?")],
   [ModuleType.MONSPLODE_FIGHT]: [
@@ -193,6 +201,17 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("thirdPinDigit", "What was the third PIN digit?"),
     question("fourthPinDigit", "What was the fourth PIN digit?"),
   ],
+  [ModuleType.BURGLAR_ALARM]: [
+    question("firstDisplayedDigit", "What was the first displayed digit?"),
+    question("secondDisplayedDigit", "What was the second displayed digit?"),
+    question("thirdDisplayedDigit", "What was the third displayed digit?"),
+    question("fourthDisplayedDigit", "What was the fourth displayed digit?"),
+    question("fifthDisplayedDigit", "What was the fifth displayed digit?"),
+    question("sixthDisplayedDigit", "What was the sixth displayed digit?"),
+    question("seventhDisplayedDigit", "What was the seventh displayed digit?"),
+    question("eighthDisplayedDigit", "What was the eighth displayed digit?"),
+  ],
+  [ModuleType.ERROR_CODES]: [question("activeErrorCode", "What was the active error code?")],
   [ModuleType.THE_SWAN]: [question("resetCount", "How many times was the system reset?")],
   [ModuleType.HUMAN_RESOURCES]: [
     question("redDescriptors", "Which descriptors were shown in red?"),

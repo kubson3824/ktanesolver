@@ -1,56 +1,49 @@
 ---
 name: implement-ktane-module
-description: Implement and document a complete, Souvenir-compatible KTaNE module solver in the KTANESolver Spring Boot and React/TypeScript project from a ktane.timwi.de manual URL, then test, restart, and health-check the changes. Use when the user sends a KTaNE HTML/PDF manual link—alone or with a short request—and wants the backend and frontend implementation, or asks to add a module from the KTaNE manual repository.
+description: Implement and document a complete KTaNE module solver in the KTANESolver Spring Boot and React/TypeScript project from a ktane.timwi.de manual URL, including verified Twitch commands, conditional Souvenir support, focused tests, restart, and health checks. Use when the user supplies a KTaNE HTML/PDF manual or asks to add a module from the KTaNE manual repository.
 ---
 
 # Implement KTaNE Module
 
-Turn the supplied manual into a working end-to-end solver without requiring the user to restate this workflow.
-
-## Context budget
-
-- Start with `node <skill-dir>/scripts/collect-module-context.mjs <manual-url>`, resolving `<skill-dir>` from this `SKILL.md`. Use its compact catalog entry, visible manual text/table rows, and filtered source candidates. Fall back to direct requests only if it fails.
-- Never print the raw module catalog, full manual HTML, recursive repository tree, entire long source file, dependency classpath, or Vite chunk table. Inspect them in shell variables or temporary files and emit only matched ranges or summaries.
-- Read one comparable local solver path and targeted registry/test sections. Do not dump broad file lists or whole unrelated files.
-- Capture test/build output and print the final summary on success; print the relevant failure output only when a command fails.
-- When checking port ownership, inspect the full command line but report only port, PID, executable, and whether its resolved command belongs to this workspace.
+Build the smallest complete backend/frontend solver and leave it uncommitted.
 
 ## Workflow
 
-1. Read the repository `AGENTS.md` and inspect the current worktree. Preserve unrelated user changes.
-2. From the collector output, extract every rule, input, output, multi-stage behavior, edgework dependency, canonical `ModuleID`, source URL, Twitch status, and Souvenir status. For graphical flowcharts or ambiguous rules, inspect only the relevant ranges of the likely gameplay source file. Treat the manual as authoritative and use source only to disambiguate its encoding. Verify Twitch grammar against the module's `ProcessTwitchCommand` or the built-in `KtaneTwitchPlays` handler, recording exact verbs, argument format, indexing, sequencing, and stage limitations.
-3. Branch on the catalog's Souvenir status:
-   - If it is explicitly `NotACandidate`, record that result and skip the Souvenir manual, data, source, UI, state, and tests.
-   - Otherwise open the current [Souvenir manual](https://ktane.timwi.de/HTML/Souvenir.html), verify the display name, ID, and question summary against its [manual data](https://ktane.timwi.de/HTML/js/Modules/SouvenirData.js) and [source](https://github.com/Timwi/KtaneSouvenir), and read the handler. Record every question family and how its correct-answer set is derived, including successful versus reset attempts, stage/position parameters, transformed values, excluded choices, actual solution versus candidates, and visual/audio identity. Compare each family with local state, solution, `SouvenirSolver`, and the frontend picker. If no handler exists, add no speculative state.
-4. Trace one comparable existing module from frontend component through service and generic solve endpoint to solver and tests. Reuse current helpers and UI components.
-5. Implement the smallest complete slice:
-   - add the backend and frontend `ModuleType` values;
-   - read the module's canonical `ModuleID` from `https://ktane.timwi.de/json/raw` and verify mission import in `ktanesolver-frontend/src/services/missionService.ts`; when `@ModuleInfo.id` differs, add the canonical ID to `MODULE_TYPES` and a focused fixture to `missionService.test.ts`;
-   - create input, output, and annotated solver classes under the correct module package;
-   - use `BombEntity` helpers for serial number, ports, indicators, and batteries;
-   - validate user-controlled input and persist input/state using the existing solver helpers;
-   - when Souvenir supports the module, persist every fact it can ask before mutation or reset, including histories, the final solution, and the last successful attempt; store the canonical value Souvenir observes, or explicitly transform operator-entered values at the Souvenir boundary; add explicit `SouvenirSolver` resolution for stages, positions, subsets, exclusions, derived answers, and any case where generic recorded-fact matching is not exact;
-   - create the frontend API service and solver component;
-   - register the lazy-loaded component;
-   - add its result-based command to the shared `generateTwitchCommand` switch and classify it as `verified` or `conditional` in `TWITCH_COMMAND_SUPPORT`; generate only commands accepted by the authoritative Twitch parser, and return no command when the solver lacks enough interaction state to act safely;
-   - provide accessible controls and a clear visual result. Use inline SVG/CSS for simple module-native shapes; add no dependency for this.
-6. If Souvenir supports the module, add one frontend question option per upstream question family. Parameterized families must capture the named stage, position, wire, color, or other argument with specific options/selectors, or accept the exact question and its displayed choices; one aggregate preset is not sufficient. A direct answer must be actionable against Souvenir's displayed choices: never return a raw object, an unlabeled aggregate, all candidates when the question excludes the solution, or internal enum/glyph names when a player-facing label or image exists. Add or extend a focused Souvenir test for every family through the same direct-answer path used by the frontend, including at least one transformed, excluded, or reset-sensitive answer when applicable.
-7. Add one focused backend test covering the non-trivial algorithm and important edgework branches. Add the module to the exhaustive fixture in `src/utils/twitchCommands.test.ts`, asserting the complete generated command string from a representative solver result. For a conditional command, also assert that missing or unsafe interaction data returns an empty string. Add other frontend tests only when the component introduces behavior not already covered by the standard solver pattern.
-8. Run the focused backend test, `npm test -- --run src/services/missionService.test.ts src/utils/twitchCommands.test.ts`, and `npm run build`. Run focused Souvenir tests only when the module is Souvenir-supported or shared Souvenir code changed. Fix failures before continuing. Keep successful command output to its summary lines.
-9. Restart only the processes listening on backend port `8080` and frontend port `5173`. Confirm their command lines belong to this workspace before stopping them. Start backend with `gradlew.bat bootRun` and frontend with `npm run dev -- --host 127.0.0.1`, using hidden background windows.
-10. Wait up to 60 seconds for both ports. Request `http://127.0.0.1:8080/api/modules` and verify the new module is present; request `http://127.0.0.1:5173` and verify HTTP 200.
-11. With the healthy backend still running, run `node scripts/generate-supported-modules.mjs`. Verify `docs/supported-modules.md` contains the new module type, then run `git diff --check`. Do not edit the generated table by hand. Update another maintained GitBook page only when the module changes a documented user workflow, API contract, shared concept, or contributor rule; add no one-page-per-module documentation by default.
-12. Leave the verified changes uncommitted for the user to review.
+1. Use the repository `AGENTS.md` already in context; read it only when it was not provided. Check `git status --short` and preserve unrelated changes.
+2. Run:
+
+   ```powershell
+   node <skill-dir>/scripts/collect-module-context.mjs <manual-url>
+   ```
+
+   The command prints a compact summary and saves full manual tables and source text outside the conversation. Read only the returned file/ranges needed to resolve rules or Twitch behavior.
+3. Record the rules, inputs, outputs, stages, edgework, canonical `ModuleID`, Twitch grammar, and Souvenir status. Treat the manual as authoritative; use source only for ambiguous encoding and the exact Twitch parser.
+4. If Souvenir is `NotACandidate`, skip all Souvenir work. Otherwise read [references/souvenir.md](references/souvenir.md) completely and follow it.
+5. Inspect one comparable local solver path and only the shared registry/test sections being edited.
+6. Implement:
+   - backend/frontend `ModuleType`;
+   - input, output, annotated solver, frontend service, accessible solver component, and lazy registry entry;
+   - canonical mission mapping/test only when `@ModuleInfo.id` differs from `ModuleID`;
+   - validated input and required persisted state;
+   - a result-derived Twitch command accepted by the upstream parser, classified as `verified` or `conditional`;
+   - one focused backend test and the exhaustive Twitch fixture.
+7. Run the compact verifier:
+
+   ```powershell
+   node <skill-dir>/scripts/verify-module.mjs `
+     --backend-test <fully-qualified-test-class> `
+     --module-type <ENUM_VALUE> `
+     --module-id <canonical-module-id>
+   ```
+
+   It runs focused tests and the production build, safely restarts workspace-owned ports 8080/5173, checks both endpoints, regenerates supported-module docs, and runs `git diff --check`. On success it emits only a compact summary; on failure it emits the relevant tail.
+8. Leave changes uncommitted and report verification plus live ports.
 
 ## Guardrails
 
-- Do not add a controller or database migration: module discovery and the generic solve endpoint already cover new solvers.
-- Do not duplicate edgework fields in the module input when `BombEntity` already stores them.
-- Do not rely on generic state flattening for Souvenir questions with positional, negative-membership, last-successful-attempt, reset, visual, or audio semantics; encode and test them explicitly.
-- Do not mark a module Souvenir-compatible until each upstream handler question can be selected in the frontend and resolved from a solved local module without asking the user to remember discarded state or the solution they already entered.
-- Do not guess unreadable flowchart transitions. Resolve them from the manual SVG or original module source and preserve the manual's exact first/priority semantics.
-- Do not infer Twitch commands from the manual's solve instructions or emit prose/placeholder commands. Verify the exact command against `KtaneTwitchPlays` or `ProcessTwitchCommand`, including whether positions are zero- or one-based and whether multi-step actions require separate commands.
-- Do not leave `docs/supported-modules.md` stale after adding a registered solver, and do not hand-maintain data already produced by its generator.
-- Do not overwrite or revert unrelated worktree changes.
-- If PostgreSQL or another required external service prevents backend startup, leave the implementation and tests complete and report the precise blocker.
-- Finish with a concise report naming verification results and live ports.
+- Add no controller, migration, dependency, or duplicate bomb edgework.
+- Do not load raw catalogs, whole manuals, full source files, Java classpaths, Vite asset tables, or broad repository listings into context.
+- Do not guess graphical transitions or Twitch syntax.
+- Do not hand-edit generated supported-module documentation.
+- Add frontend tests only for behavior outside the standard solver pattern.
+- Keep Graphify and other repository-wide maintenance outside this skill.

@@ -132,6 +132,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case GAME_OF_LIFE_CRUEL -> membershipAnswerIndex(answers, source.getState().get("colorCombinations"), null, false);
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
 			case LED_GRID -> answerIndex(answers, source.getState().get("unlitCount"));
+			case LEGOS -> answerIndex(answers, legoPieceDimension(source.getState(), q));
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
 			case MONSPLODE_FIGHT -> q.contains("creature")
@@ -167,6 +168,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
 			case THE_IPHONE -> answerIndex(answers, iPhoneDigit(source.getState(), q));
+			case BURGLAR_ALARM -> answerIndex(answers, burglarAlarmDigit(source.getState(), q));
+			case ERROR_CODES -> answerIndex(answers, source.getState().get("activeErrorCode"));
 			case THE_SWAN -> answerIndex(answers, swanResetCount(source.getState()));
 			case THREE_D_MAZE -> answerIndex(answers, q.contains("markings")
 				? normalize(source.getState().get("markings")).replace(" ", "")
@@ -224,6 +227,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case HUNTING -> huntingDisplayClues(state, normalize(question));
 			case GAME_OF_LIFE_CRUEL -> state.get("colorCombinations");
 			case LED_GRID -> state.get("unlitCount");
+			case LEGOS -> legoPieceDimension(state, normalize(question));
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
 			case MAZES -> nested(state, "input", "start");
@@ -255,6 +259,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SOUVENIR -> firstHistoryType(state.get("history"));
 			case THE_BULB -> state.get("initiallyOn");
 			case THE_IPHONE -> iPhoneDigit(state, normalize(question));
+			case BURGLAR_ALARM -> burglarAlarmDigit(state, normalize(question));
+			case ERROR_CODES -> state.get("activeErrorCode");
 			case THE_SWAN -> swanResetCount(state);
 			case HUMAN_RESOURCES -> humanResourcesAnswer(state, question);
 			case THREE_D_MAZE -> "markings".equals(question)
@@ -277,6 +283,17 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			if (question.contains(direction)) return nested(state, "buttonColors", direction);
 		}
 		return null;
+	}
+
+	private static Object legoPieceDimension(Map<String, Object> state, String question) {
+		for (String color : List.of("red", "green", "blue", "cyan", "magenta", "yellow")) {
+			if (question.contains(color)) return nested(state, "pieceDimensions", color);
+		}
+		return null;
+	}
+
+	private static Object burglarAlarmDigit(Map<String, Object> state, String question) {
+		return nested(state, "moduleNumber", ordinal(normalize(question)));
 	}
 
 	private static Object morseAMazeAnswer(Map<String, Object> state, String question) {

@@ -133,6 +133,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   CHORD_QUALITIES: { result: { answerNotes: ["A", "C♯", "E"] }, expected: "!number submit A C# E" },
   CREATION: { result: { first: "WATER", second: "FIRE" }, expected: "!number combine water fire" },
   RUBIKS_CUBE: { result: { moves: ["R", "U", "R'"] }, expected: "!number R U R'" },
+  RUBIKS_CLOCK: { result: { pins: ["TR", "BL"], gear: "BR", hours: -3 }, expected: "!number tr bl br -3 t" },
   FIZZ_BUZZ: { result: { actions: ["FIZZ", "NUMBER", "FIZZBUZZ"] }, expected: "!number submit fizz number fizzbuzz" },
   THE_CLOCK: { result: { targetTime: "12:34 PM" }, expected: "!number set 12:34 pm" },
   LED_ENCRYPTION: { result: { correctLetters: ["B"] }, expected: "!number press B" },
@@ -157,6 +158,11 @@ const fixtures: Record<ModuleType, Fixture> = {
   THE_SWAN: { result: { code: "DHARMA", buttonPositions: [1, 2, 3, 4, 5, 3] }, expected: "!number execute 1 2 3 4 5 3" },
   WASTE_MANAGEMENT: { result: { stageIndex: 0, barEmpty: false, allocations: [{ recycle: 75, waste: 12 }] }, expected: "!number XIIW; !number LXXVR; !number submit" },
   HUMAN_RESOURCES: { result: { fire: "REBECCA", hire: "SILAS" }, expected: "!number fire rebecca; !number hire silas" },
+  EUROPEAN_TRAVEL: { result: { ticketType: "SGL", travelClass: "1st class", departure: "Ulm Hbf.", destination: "Bonn Hbf.", seat: "4B", price: "177.80" }, expected: "!number submit single ticket;1st class;Ulm Hbf.;Bonn Hbf.;4B;177.80" },
+  BURGLAR_ALARM: { result: { code: "42762768" }, expected: "!number activate; !number submit 42762768" },
+  ERROR_CODES: { result: { fixCode: "1011011" }, expected: "!number submit 1011011" },
+  LEGOS: { result: { cells: Array(64).fill("EMPTY"), face: "TOP", orientation: "NORTH" }, expected: "" },
+  PRESS_X: { result: { button: "B", validSeconds: [9, 18, 27, 36, 45, 54], anyTime: false }, expected: "!number press b on 09 18 27 36 45 54" },
   SKYRIM: { result: { race: "Nord", weapon: "Mace of Molag Bal", enemy: "Frost Troll", city: "Rorikstead", dragonShout: "Ice Form" }, expected: "!number submit Nord, Mace of Molag Bal, Frost Troll, Rorikstead, Ice Form" },
 };
 
@@ -164,8 +170,8 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(127);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(26);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(132);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(27);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -173,7 +179,7 @@ describe("generateTwitchCommand", () => {
       const fixture = fixtures[moduleType];
       expect(generateTwitchCommand({ moduleType, result: fixture.result })).toBe(fixture.expected);
       expect(fixture.expected).not.toContain("unknown");
-      expect(fixture.expected).not.toBe("");
+      if (TWITCH_COMMAND_SUPPORT[moduleType] === "verified") expect(fixture.expected).not.toBe("");
     });
   }
 

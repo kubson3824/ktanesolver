@@ -13,6 +13,9 @@ type SolverRegistryEntry = {
  * Backend-only modules still appear in the catalog and fall back to "Coming soon".
  */
 export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
+  [ModuleType.RUBIKS_CLOCK]: { load: () => import("./RubiksClockSolver") },
+  [ModuleType.ERROR_CODES]: { load: () => import("./ErrorCodesSolver") },
+  [ModuleType.LEGOS]: { load: () => import("./LegosSolver") },
   [ModuleType.SINK]: { load: () => import("./SinkSolver") },
   [ModuleType.IDENTITY_PARADE]: { load: () => import("./IdentityParadeSolver") },
   [ModuleType.MAFIA]: { load: () => import("./MafiaSolver") },
@@ -162,6 +165,9 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.THE_SWAN]: { load: () => import("./TheSwanSolver") },
   [ModuleType.WASTE_MANAGEMENT]: { load: () => import("./WasteManagementSolver") },
   [ModuleType.HUMAN_RESOURCES]: { load: () => import("./HumanResourcesSolver") },
+  [ModuleType.EUROPEAN_TRAVEL]: { load: () => import("./EuropeanTravelSolver") },
+  [ModuleType.BURGLAR_ALARM]: { load: () => import("./BurglarAlarmSolver") },
+  [ModuleType.PRESS_X]: { load: () => import("./PressXSolver") },
   [ModuleType.SKYRIM]: { load: () => import("./SkyrimSolver") },
   [ModuleType.KNOBS]: { load: () => import("./KnobsSolver"), isNeedy: true },
   [ModuleType.VENTING_GAS]: { load: () => import("./VentingGasSolver"), isNeedy: true },

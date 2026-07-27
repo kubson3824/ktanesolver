@@ -1065,6 +1065,37 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryBurglarAlarmDisplayedDigit() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity alarm = module(ModuleType.BURGLAR_ALARM, true,
+			Map.of("moduleNumber", List.of(1, 2, 3, 4, 5, 6, 7, 8)));
+		bomb.setModules(List.of(souvenir, alarm));
+		List<String> ordinals = List.of("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth");
+
+		for (int i = 0; i < ordinals.size(); i++) {
+			assertThat(solve(bomb, souvenir, alarm.getId(), ordinals.get(i) + "DisplayedDigit", List.of(), false))
+				.isEqualTo(new SouvenirOutput(String.valueOf(i + 1), null));
+		}
+		assertThat(solve(bomb, souvenir, alarm.getId(),
+			"What was the third displayed digit in Burglar Alarm?",
+			List.of("0", "2", "3", "5", "7", "9"), false)).isEqualTo(new SouvenirOutput("3", 3));
+	}
+
+	@Test
+	void resolvesTheErrorCodesActiveError() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity errorCodes = module(ModuleType.ERROR_CODES, true, Map.of("activeErrorCode", "3A"));
+		bomb.setModules(List.of(souvenir, errorCodes));
+
+		assertThat(solve(bomb, souvenir, errorCodes.getId(), "activeErrorCode", List.of(), false))
+			.isEqualTo(new SouvenirOutput("3A", null));
+		assertThat(solve(bomb, souvenir, errorCodes.getId(), "What was the active error code in Error Codes?",
+			List.of("0F", "21", "3A", "40", "52", "65"), false)).isEqualTo(new SouvenirOutput("3A", 3));
+	}
+
+	@Test
 	void resolvesTheSwanResetCountOnlyWhenUpstreamSouvenirAsks() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
