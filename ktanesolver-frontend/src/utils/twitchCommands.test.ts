@@ -5,6 +5,11 @@ import { generateTwitchCommand, TWITCH_COMMAND_SUPPORT } from "./twitchCommands"
 type Fixture = { result: unknown; expected: string };
 
 const fixtures: Record<ModuleType, Fixture> = {
+  COOKING: { result: { temperatureC: 200, timeMinutes: 45, ovenSetting: "FAN_WITH_GRILL", lightOn: true }, expected: "!number set temp 200; !number set time 45; !number set setting fwg; !number toggle light; !number cook" },
+  LONDON_UNDERGROUND: {
+    result: { journey: [{ line: "Hammersmith & City", station: "King's Cross St. Pancras" }, { line: "Victoria", station: "Walthamstow Central" }] },
+    expected: "!number top hammersmith King's Cross St. Pancras; !number middle victoria Walthamstow Central; !number submit",
+  },
   SINK: { result: { sequence: ["HOT", "COLD", "HOT"] }, expected: "!number hot cold hot" },
   IDENTITY_PARADE: { result: { suspect: "DYLAN", hairColor: "BLONDE", build: "SHORT", attire: "TANK_TOP" }, expected: "!number convict blonde short tank dylan" },
   MAFIA: { result: { godfather: "BRIANE" }, expected: "!number execute briane" },
@@ -16,6 +21,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   SIMON_SAYS: { result: { presses: ["RED", "BLUE"] }, expected: "!number press red blue" },
   MORSE_CODE: { result: { frequency: 573 }, expected: "!number transmit 573" },
   FORGET_ME_NOT: { result: { sequence: [5, 3, 1] }, expected: "!number press 531" },
+  FORGET_EVERYTHING: { result: { solution: "1234567890" }, expected: "!number submit 1234567890" },
   SOUVENIR: { result: { answerIndex: 3 }, expected: "!number answer 3" },
   ICE_CREAM: { result: { flavor: "COOKIES_AND_CREAM" }, expected: "!number sell cookies and cream" },
   THE_SCREW: { result: { hole: 3, buttonLabel: "A" }, expected: "!number unscrew; !number screw 3; !number press A" },
@@ -35,6 +41,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   MAZES: { result: { directions: ["UP", "LEFT", "DOWN"] }, expected: "!number move uld" },
   KNOBS: { result: { position: "RIGHT" }, expected: "!number rotate 1" },
   COLOR_FLASH: { result: { pressYes: true, position: 3 }, expected: "!number press yes 3" },
+  COLOR_DECODING: { result: { selections: [{ type: "ROW", index: 2 }, { type: "COLUMN", index: 5 }] }, expected: "!number row2 col5" },
   PIANO_KEYS: { result: { notes: ["C_SHARP", "A"] }, expected: "!number press Db A" },
   SEMAPHORE: { result: { currentIndex: 0, targetIndex: 2 }, expected: "!number move right; !number move right; !number press ok" },
   PERSPECTIVE_PEGS: { result: { pressPositions: ["Lower left", "Top"] }, expected: "!number press bl t" },
@@ -58,6 +65,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   CONNECTION_CHECK: { result: { led1: true, led2: false, led3: true, led4: false }, expected: "!number submit green red green red" },
   LETTER_KEYS: { result: { letter: "B" }, expected: "!number press B" },
   LOGIC: { result: { answers: [false, true] }, expected: "!number submit false true" },
+  LOGIC_GATES: { result: { readyToCheck: true }, expected: "!number check" },
   ASTROLOGY: { result: { omenScore: -2 }, expected: "!number press bad on 2" },
   MYSTIC_SQUARE: { result: { targetConstellation: [1, null, 3] }, expected: "!number press 1 3" },
   CRAZY_TALK: { result: { downAt: 4, upAt: 5 }, expected: "!number toggle 4 5" },
@@ -72,6 +80,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   CRYPTOGRAPHY: { result: { keyOrder: ["N", "B", "V"] }, expected: "!number press N B V" },
   CAESAR_CIPHER: { result: { solution: "KBQ" }, expected: "!number press K B Q" },
   MODERN_CIPHER: { result: { solution: "PRINTER" }, expected: "!number submit printer" },
+  PLAYFAIR_CIPHER: { result: { pressSequence: "BDAC" }, expected: "!number press b d a c" },
   TURN_THE_KEY: { result: { turnWhenSeconds: 509 }, expected: "!number turn 8:29" },
   TURN_THE_KEYS: { result: { canTurnRightKey: true, rightKeyTurned: false }, expected: "!number turn right" },
   CHESS: { result: { coordinate: "C2" }, expected: "!number press C2" },
@@ -137,8 +146,14 @@ const fixtures: Record<ModuleType, Fixture> = {
   RUBIKS_CLOCK: { result: { pins: ["TR", "BL"], gear: "BR", hours: -3 }, expected: "!number tr bl br -3 t" },
   FIZZ_BUZZ: { result: { actions: ["FIZZ", "NUMBER", "FIZZBUZZ"] }, expected: "!number submit fizz number fizzbuzz" },
   THE_CLOCK: { result: { targetTime: "12:34 PM" }, expected: "!number set 12:34 pm" },
+  THE_STOPWATCH: { result: { runtimeSeconds: 22 }, expected: "!number stop at 22" },
+  PIE: { result: { pressOrder: [2, 4, 5, 3, 1] }, expected: "!number press 2 4 5 3 1" },
+  THE_WIRE: { result: { dial1: "Q", dial2: "E", dial3: "Y", cutSecond: 3 }, expected: "!number set 1 Q 2 E 3 Y; !number cut at 3" },
   LED_ENCRYPTION: { result: { correctLetters: ["B"] }, expected: "!number press B" },
   LED_GRID: { result: { pressOrder: ["C", "D", "A", "B"] }, expected: "!number press cdab" },
+  THE_SUN: { result: { pressSequence: ["inner southeast", "outer south", "center"] }, expected: "!number press inner southeast;outer south;center" },
+  GRID_MATCHING: { result: { letter: "D", actions: ["up", "right", "clockwise"] }, expected: "!number up right clockwise set d submit" },
+  TANGRAMS: { result: { connections: [{ positivePin: 1, negativePin: 8 }, { positivePin: 2, negativePin: 1 }, { positivePin: 5, negativePin: 4 }] }, expected: "!number set 1 8; !number set 2 1; !number set 5 4" },
   BITWISE_OPERATIONS: { result: { answer: "10101010" }, expected: "!number submit 10101010" },
   FAST_MATH: { result: { answer: "05" }, expected: "!number submit 05" },
   BOOLEAN_VENN_DIAGRAM: { result: { regions: ["A", "BC", "NONE"] }, expected: "!number a bc O" },
@@ -157,6 +172,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   RADIATOR: { result: { temperature: 25, water: 34 }, expected: "!number submit 25 34" },
   THE_IPHONE: { result: { pin: "7259" }, expected: "!number submit 7259" },
   THE_SWAN: { result: { code: "DHARMA", buttonPositions: [1, 2, 3, 4, 5, 3] }, expected: "!number execute 1 2 3 4 5 3" },
+  THE_NUMBER: { result: { code: "7271", buttonPositions: [8, 5, 8, 1] }, expected: "!number press 8 5 8 1 submit" },
   WASTE_MANAGEMENT: { result: { stageIndex: 0, barEmpty: false, allocations: [{ recycle: 75, waste: 12 }] }, expected: "!number XIIW; !number LXXVR; !number submit" },
   HUMAN_RESOURCES: { result: { fire: "REBECCA", hire: "SILAS" }, expected: "!number fire rebecca; !number hire silas" },
   EUROPEAN_TRAVEL: { result: { ticketType: "SGL", travelClass: "1st class", departure: "Ulm Hbf.", destination: "Bonn Hbf.", seat: "4B", price: "177.80" }, expected: "!number submit single ticket;1st class;Ulm Hbf.;Bonn Hbf.;4B;177.80" },
@@ -171,8 +187,8 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(133);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(27);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(145);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -229,6 +245,13 @@ describe("generateTwitchCommand", () => {
 
   it("returns no Swan command without the final randomized button positions", () => {
     expect(generateTwitchCommand({ moduleType: ModuleType.THE_SWAN, result: { code: "DHARMA" } })).toBe("");
+  });
+
+  it("returns no Stopwatch command for a runtime the upstream parser cannot express", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.THE_STOPWATCH,
+      result: { runtimeSeconds: 60 },
+    })).toBe("");
   });
 
   it("returns no Waste Management command without the current empty-bar state", () => {

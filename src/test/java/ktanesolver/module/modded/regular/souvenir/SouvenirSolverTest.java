@@ -22,6 +22,40 @@ class SouvenirSolverTest {
 	private final SouvenirSolver solver = new SouvenirSolver();
 
 	@Test
+	void returnsEveryPlayfairCipherQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity playfair = module(ModuleType.PLAYFAIR_CIPHER, true,
+			Map.of("encryptedMessage", "MRXRDM", "screenColor", "Magenta"));
+		bomb.setModules(List.of(souvenir, playfair));
+
+		String[] ordinals = {"first", "second", "third", "fourth", "fifth", "sixth"};
+		for (int index = 0; index < ordinals.length; index++) {
+			assertThat(solve(bomb, souvenir, playfair.getId(), ordinals[index] + " letter", List.of(), false).answer())
+				.isEqualTo(String.valueOf("MRXRDM".charAt(index)));
+		}
+		assertThat(solve(bomb, souvenir, playfair.getId(), "screen color", List.of(), false).answer()).isEqualTo("Magenta");
+	}
+
+	@Test
+	void returnsEveryLondonUndergroundJourneyStation() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity underground = module(ModuleType.LONDON_UNDERGROUND, true, Map.of(
+			"departures", List.of("Oxford Circus", "Clapham South", "Walthamstow Central"),
+			"destinations", List.of("Clapham South", "Walthamstow Central", "Stonebridge Park")
+		));
+		bomb.setModules(List.of(souvenir, underground));
+
+		assertThat(solve(bomb, souvenir, underground.getId(), "first departure", List.of(), false).answer()).isEqualTo("Oxford Circus");
+		assertThat(solve(bomb, souvenir, underground.getId(), "first arrival", List.of(), false).answer()).isEqualTo("Clapham South");
+		assertThat(solve(bomb, souvenir, underground.getId(), "second departure", List.of(), false).answer()).isEqualTo("Clapham South");
+		assertThat(solve(bomb, souvenir, underground.getId(), "second arrival", List.of(), false).answer()).isEqualTo("Walthamstow Central");
+		assertThat(solve(bomb, souvenir, underground.getId(), "third departure", List.of(), false).answer()).isEqualTo("Walthamstow Central");
+		assertThat(solve(bomb, souvenir, underground.getId(), "third arrival", List.of(), false).answer()).isEqualTo("Stonebridge Park");
+	}
+
+	@Test
 	void returnsEverySkyrimQuestionFamilyAndMatchesDisplayedDragonLanguage() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
@@ -782,6 +816,22 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryForgetEverythingStageOneDigit() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity forgetEverything = module(ModuleType.FORGET_EVERYTHING, true, Map.of(
+			"firstStageDigits", List.of(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)));
+		bomb.setModules(List.of(souvenir, forgetEverything));
+		String[] ordinals = {"first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"};
+
+		for (int index = 0; index < ordinals.length; index++) {
+			assertThat(solve(bomb, souvenir, forgetEverything.getId(),
+				"What was the " + ordinals[index] + " displayed digit in the first stage of Forget Everything?",
+				List.of(), false)).isEqualTo(new SouvenirOutput(String.valueOf(9 - index), null));
+		}
+	}
+
+	@Test
 	void resolvesForgetMeNotSimonSaysTwoBitsAndAnotherSouvenir() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
@@ -1080,6 +1130,90 @@ class SouvenirSolverTest {
 		assertThat(solve(bomb, souvenir, alarm.getId(),
 			"What was the third displayed digit in Burglar Alarm?",
 			List.of("0", "2", "3", "5", "7", "9"), false)).isEqualTo(new SouvenirOutput("3", 3));
+	}
+
+	@Test
+	void resolvesEveryPieDisplayedDigit() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity pie = module(ModuleType.PIE, true, Map.of("displayedDigits", List.of(3, 1, 4, 1, 5)));
+		bomb.setModules(List.of(souvenir, pie));
+		List<String> ordinals = List.of("first", "second", "third", "fourth", "fifth");
+
+		for (int i = 0; i < ordinals.size(); i++) {
+			assertThat(solve(bomb, souvenir, pie.getId(), ordinals.get(i) + "DisplayedDigit", List.of(), false))
+				.isEqualTo(new SouvenirOutput(String.valueOf(List.of(3, 1, 4, 1, 5).get(i)), null));
+		}
+		assertThat(solve(bomb, souvenir, pie.getId(),
+			"What was the third digit of the displayed number in Pie?",
+			List.of("0", "2", "4", "6", "7", "9"), false)).isEqualTo(new SouvenirOutput("4", 3));
+	}
+
+	@Test
+	void resolvesEveryTheWireQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity wire = module(ModuleType.THE_WIRE, true, Map.of(
+			"dialColors", List.of("BLUE", "GREY", "RED"), "displayedNumber", 4
+		));
+		bomb.setModules(List.of(souvenir, wire));
+
+		assertThat(solve(bomb, souvenir, wire.getId(), "What was the color of the top dial in The Wire?",
+			List.of("Blue", "Green", "Grey", "Orange", "Purple", "Red"), false)).isEqualTo(new SouvenirOutput("Blue", 1));
+		assertThat(solve(bomb, souvenir, wire.getId(), "What was the color of the bottom-left dial in The Wire?",
+			List.of("Blue", "Green", "Grey", "Orange", "Purple", "Red"), false)).isEqualTo(new SouvenirOutput("Grey", 3));
+		assertThat(solve(bomb, souvenir, wire.getId(), "What was the color of the bottom-right dial in The Wire?",
+			List.of("Blue", "Green", "Grey", "Orange", "Purple", "Red"), false)).isEqualTo(new SouvenirOutput("Red", 6));
+		assertThat(solve(bomb, souvenir, wire.getId(), "What was the displayed number in The Wire?",
+			List.of("0", "2", "4", "6", "8", "9"), false)).isEqualTo(new SouvenirOutput("4", 3));
+	}
+
+	@Test
+	void resolvesEveryLogicGatesQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity logicGates = module(ModuleType.LOGIC_GATES, true, Map.of(
+			"gates", List.of("AND", "OR", "XOR", "NAND", "XOR", "XNOR", "NOR")
+		));
+		bomb.setModules(List.of(souvenir, logicGates));
+
+		assertThat(solve(bomb, souvenir, logicGates.getId(), "gateA", List.of(), false).answer()).isEqualTo("AND");
+		assertThat(solve(bomb, souvenir, logicGates.getId(), "gateB", List.of(), false).answer()).isEqualTo("OR");
+		assertThat(solve(bomb, souvenir, logicGates.getId(), "gateC", List.of(), false).answer()).isEqualTo("XOR");
+		assertThat(solve(bomb, souvenir, logicGates.getId(), "gateD", List.of(), false).answer()).isEqualTo("NAND");
+		assertThat(solve(bomb, souvenir, logicGates.getId(), "What was gate D in Logic Gates?",
+			List.of("AND", "OR", "XOR", "NAND", "NOR", "XNOR"), false)).isEqualTo(new SouvenirOutput("NAND", 4));
+	}
+
+	@Test
+	void resolvesEveryColorDecodingQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity colorDecoding = module(ModuleType.COLOR_DECODING, true, Map.of("stages", List.of(
+			Map.of("pattern", "CHECKERED", "indicatorColors", List.of("RED", "BLUE")),
+			Map.of("pattern", "HORIZONTAL", "indicatorColors", List.of("GREEN", "BLUE", "PURPLE")),
+			Map.of("pattern", "SOLID", "indicatorColors", List.of("YELLOW"))
+		)));
+		bomb.setModules(List.of(souvenir, colorDecoding));
+
+		assertThat(solve(bomb, souvenir, colorDecoding.getId(), "second indicator pattern", List.of(), false))
+			.isEqualTo(new SouvenirOutput("HORIZONTAL", null));
+		assertThat(solve(bomb, souvenir, colorDecoding.getId(), "colors appeared in first indicator", List.of(), false))
+			.isEqualTo(new SouvenirOutput("RED, BLUE", null));
+		assertThat(solve(bomb, souvenir, colorDecoding.getId(), "colors did not appear in second indicator", List.of(), false))
+			.isEqualTo(new SouvenirOutput("RED, YELLOW", null));
+		assertThat(solve(bomb, souvenir, colorDecoding.getId(),
+			"What was the second-stage indicator pattern in Color Decoding?",
+			List.of("Checkered", "Horizontal", "Vertical", "Solid"), false))
+			.isEqualTo(new SouvenirOutput("Horizontal", 2));
+		assertThat(solve(bomb, souvenir, colorDecoding.getId(),
+			"Which color appeared in the first-stage indicator pattern in Color Decoding?",
+			List.of("Red", "Green", "Yellow", "Purple"), false))
+			.isEqualTo(new SouvenirOutput("Red", 1));
+		assertThat(solve(bomb, souvenir, colorDecoding.getId(),
+			"Which color did not appear in the second-stage indicator pattern in Color Decoding?",
+			List.of("Red", "Green", "Blue", "Purple"), false))
+			.isEqualTo(new SouvenirOutput("Red", 1));
 	}
 
 	@Test

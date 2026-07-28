@@ -103,9 +103,14 @@ const startDetached = (command, cwd, name) => {
 const waitForServers = async () => {
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
-    const current = listeners();
-    if (current.some(({ port }) => port === 8080) && current.some(({ port }) => port === 5173)) {
-      return current;
+    try {
+      const [modulesResponse, frontendResponse] = await Promise.all([
+        fetch("http://127.0.0.1:8080/api/modules"),
+        fetch("http://127.0.0.1:5173"),
+      ]);
+      if (modulesResponse.ok && frontendResponse.ok) return { modulesResponse, frontendResponse };
+    } catch {
+      // Servers are still starting.
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
   }
@@ -132,15 +137,12 @@ run("frontend build", "npm.cmd run build", frontend);
 stopWorkspaceListeners();
 startDetached(".\\gradlew.bat bootRun", workspace, "backend");
 startDetached("npm.cmd run dev -- --host 127.0.0.1", frontend, "frontend");
-const activeListeners = await waitForServers();
+const { modulesResponse, frontendResponse } = await waitForServers();
+const activeListeners = listeners();
 
-const modulesResponse = await fetch("http://127.0.0.1:8080/api/modules");
-if (!modulesResponse.ok) throw new Error(`Module catalog returned HTTP ${modulesResponse.status}`);
 const modules = await modulesResponse.json();
 const catalog = modules.some((entry) => entry.type === moduleType && entry.id === moduleId);
 if (!catalog) throw new Error(`Catalog does not contain ${moduleType} with id ${moduleId}`);
-const frontendResponse = await fetch("http://127.0.0.1:5173");
-if (frontendResponse.status !== 200) throw new Error(`Frontend returned HTTP ${frontendResponse.status}`);
 
 run("supported-module docs", "node scripts/generate-supported-modules.mjs", workspace);
 if (!readFileSync(join(workspace, "docs/supported-modules.md"), "utf8").includes(moduleType)) {

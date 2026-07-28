@@ -3,11 +3,23 @@ import { PortType } from "../types";
 // Path data from the official manual appendix (https://ktane.timwi.de/HTML/Ports.html),
 // tinted with each connector's real-world color.
 export const PORTS: Record<PortType, { label: string; color: string; viewBox: string; d: string }> = {
+    [PortType.COMPOSITE_VIDEO]: {
+        label: "Composite Video",
+        color: "#EAB308",
+        viewBox: "0 0 50 50",
+        d: "M25 2a23 23 0 1 0 0 46 23 23 0 1 0 0-46Zm0 14a9 9 0 1 1 0 18 9 9 0 1 1 0-18Z",
+    },
     [PortType.DVI]: {
         label: "DVI-D",
         color: "#8B95A5",
         viewBox: "0 0 110 35",
         d: "M17.99999 11.74999h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm-59.5 17h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm-59.5-8.5h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zm8.5 0h-5.5v-5.5h5.5zM82.00001 13.5v-10m0 28v-10m17.24999-4h-12.5M106.54546 34 109 24.57143V1H1v23.57143L3.45455 34Z",
+    },
+    [PortType.HDMI]: {
+        label: "HDMI",
+        color: "#64748B",
+        viewBox: "0 0 100 40",
+        d: "M10 5h80l8 10-8 20H10L2 15Zm15 10h50v10H25Z",
     },
     [PortType.PARALLEL]: {
         label: "Parallel",

@@ -113,10 +113,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case CREATION -> answerIndex(answers, source.getState().get("firstWeather"));
 			case COORDINATES -> answerIndex(answers, source.getState().get("gridSizeClue"));
 			case COLOR_FLASH -> answerIndex(answers, nested(source.getState(), "input", "sequence", -1, "color"));
+			case COLOR_DECODING -> colorDecodingAnswerIndex(source.getState(), q, answers);
 			case ICE_CREAM -> iceCreamAnswerIndex(source.getState(), q, answers);
 			case IDENTITY_PARADE -> membershipAnswerIndex(answers, identityParadeListed(source.getState(), q), null, q.contains("not"));
 			case FORGET_ME_NOT -> answerIndex(answers, nested(source.getState(), "displayNumbers", ordinal(q)));
+			case FORGET_EVERYTHING -> answerIndex(answers, nested(source.getState(), "firstStageDigits", ordinal(q)));
 			case FAST_MATH -> answerIndex(answers, source.getState().get("lastPair"));
+			case LONDON_UNDERGROUND -> answerIndex(answers, londonUndergroundStation(source.getState(), q));
 			case MASHEMATICS -> answerIndex(answers, mashematicsNumber(source.getState(), q));
 			case FIZZ_BUZZ -> fizzBuzzAnswerIndex(source.getState(), q, answers);
 			case FLAGS -> flagsAnswerIndex(source.getState(), q, answers);
@@ -134,6 +137,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case LED_GRID -> answerIndex(answers, source.getState().get("unlitCount"));
 			case LEGOS -> answerIndex(answers, legoPieceDimension(source.getState(), q));
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
+			case LOGIC_GATES -> answerIndex(answers, logicGateAnswer(source.getState(), q));
 			case MAZES -> answerIndex(answers, nested(source.getState(), "input", "start", q.contains("column") ? "col" : "row"));
 			case MONSPLODE_FIGHT -> q.contains("creature")
 				? answerIndex(answers, nested(source.getState(), "input", "opponent"))
@@ -169,6 +173,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
 			case THE_IPHONE -> answerIndex(answers, iPhoneDigit(source.getState(), q));
 			case BURGLAR_ALARM -> answerIndex(answers, burglarAlarmDigit(source.getState(), q));
+			case PIE -> answerIndex(answers, nested(source.getState(), "displayedDigits", ordinal(q)));
+			case PLAYFAIR_CIPHER -> answerIndex(answers, playfairAnswer(source.getState(), q));
+			case THE_WIRE -> answerIndex(answers, theWireAnswer(source.getState(), q));
 			case ERROR_CODES -> answerIndex(answers, source.getState().get("activeErrorCode"));
 			case THE_SWAN -> answerIndex(answers, swanResetCount(source.getState()));
 			case THREE_D_MAZE -> answerIndex(answers, q.contains("markings")
@@ -209,11 +216,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case CREATION -> state.get("firstWeather");
 			case COORDINATES -> state.get("gridSizeClue");
 			case COLOR_FLASH -> nested(state, "input", "sequence", -1, "color");
+			case COLOR_DECODING -> colorDecodingRecordedAnswer(state, normalize(question));
 			case ICE_CREAM -> "customers".equals(question)
 				? valuesAt(state.get("stages"), "customer") : valuesAt(state.get("stages"), "offeredFlavors");
 			case IDENTITY_PARADE -> identityParadeRecordedAnswer(state, question);
 			case FORGET_ME_NOT -> state.get("displayNumbers");
+			case FORGET_EVERYTHING -> nested(state, "firstStageDigits", ordinal(normalize(question)));
 			case FAST_MATH -> state.get("lastPair");
+			case LONDON_UNDERGROUND -> londonUndergroundStation(state, normalize(question));
 			case MASHEMATICS -> mashematicsNumber(state, normalize(question));
 			case FIZZ_BUZZ -> labeledValues(state.get("displayedNumbers"), List.of("top", "middle", "bottom"));
 			case FLAGS -> switch (question) {
@@ -230,6 +240,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case LEGOS -> legoPieceDimension(state, normalize(question));
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
 			case LISTENING -> state.get("soundDescription");
+			case LOGIC_GATES -> logicGateAnswer(state, normalize(question));
 			case MAZES -> nested(state, "input", "start");
 			case MONSPLODE_FIGHT -> nested(state, "input", "creature".equals(question) ? "opponent" : "moves");
 			case MONSPLODE_TRADING_CARDS -> state.get("printVersions".equals(question)
@@ -260,6 +271,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THE_BULB -> state.get("initiallyOn");
 			case THE_IPHONE -> iPhoneDigit(state, normalize(question));
 			case BURGLAR_ALARM -> burglarAlarmDigit(state, normalize(question));
+			case PIE -> nested(state, "displayedDigits", ordinal(normalize(question)));
+			case PLAYFAIR_CIPHER -> playfairAnswer(state, normalize(question));
+			case THE_WIRE -> theWireAnswer(state, normalize(question));
 			case ERROR_CODES -> state.get("activeErrorCode");
 			case THE_SWAN -> swanResetCount(state);
 			case HUMAN_RESOURCES -> humanResourcesAnswer(state, question);
@@ -285,6 +299,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return null;
 	}
 
+	private static Object playfairAnswer(Map<String, Object> state, String question) {
+		if (question.contains("color")) return state.get("screenColor");
+		Object message = state.get("encryptedMessage");
+		int index = ordinal(question);
+		return message instanceof String text && index >= 0 && index < text.length() ? String.valueOf(text.charAt(index)) : null;
+	}
+
 	private static Object legoPieceDimension(Map<String, Object> state, String question) {
 		for (String color : List.of("red", "green", "blue", "cyan", "magenta", "yellow")) {
 			if (question.contains(color)) return nested(state, "pieceDimensions", color);
@@ -294,6 +315,20 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 
 	private static Object burglarAlarmDigit(Map<String, Object> state, String question) {
 		return nested(state, "moduleNumber", ordinal(normalize(question)));
+	}
+
+	private static Object theWireAnswer(Map<String, Object> state, String question) {
+		if (question.contains("displayed") || question.equals("displayednumber")) return state.get("displayedNumber");
+		int dial = question.contains("top") ? 0 : question.contains("bottom left") || question.contains("bottomleft") ? 1
+			: question.contains("bottom right") || question.contains("bottomright") ? 2 : -1;
+		return dial < 0 ? null : nested(state, "dialColors", dial);
+	}
+
+	private static Object logicGateAnswer(Map<String, Object> state, String question) {
+		for (int gate = 0; gate < 4; gate++) {
+			if (question.contains("gate " + (char) ('a' + gate))) return nested(state, "gates", gate);
+		}
+		return null;
 	}
 
 	private static Object morseAMazeAnswer(Map<String, Object> state, String question) {
@@ -610,6 +645,41 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			}
 		}
 		return result;
+	}
+
+	private static int colorDecodingAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		int stage = ordinal(question);
+		if (stage < 0 || stage > 2) return -1;
+		if (question.contains("pattern") && !question.contains("appear")) {
+			return answerIndex(answers, nested(state, "stages", stage, "pattern"));
+		}
+		return membershipAnswerIndex(
+			answers,
+			nested(state, "stages", stage, "indicatorColors"),
+			null,
+			question.contains("did not appear") || question.contains("didn t appear")
+		);
+	}
+
+	private static Object colorDecodingRecordedAnswer(Map<String, Object> state, String question) {
+		int stage = ordinal(question);
+		if (stage < 0 || stage > 2) return null;
+		if (question.contains("pattern") && !question.contains("appear")) {
+			return nested(state, "stages", stage, "pattern");
+		}
+		Object value = nested(state, "stages", stage, "indicatorColors");
+		if (!(value instanceof Collection<?> colors)
+			|| !(question.contains("did not appear") || question.contains("didn t appear"))) return value;
+		Set<String> present = colors.stream().map(SouvenirSolver::normalize).collect(java.util.stream.Collectors.toSet());
+		return List.of("RED", "GREEN", "BLUE", "YELLOW", "PURPLE").stream()
+			.filter(color -> !present.contains(normalize(color))).toList();
+	}
+
+	private static Object londonUndergroundStation(Map<String, Object> state, String question) {
+		int stage = ordinal(question);
+		if (stage < 0) return null;
+		String history = question.contains("depart") ? "departures" : question.contains("arriv") ? "destinations" : null;
+		return history == null ? null : nested(state, history, stage);
 	}
 
 	private static Object skyrimRecordedAnswer(Map<String, Object> state, String question) {

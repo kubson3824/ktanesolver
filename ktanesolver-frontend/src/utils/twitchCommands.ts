@@ -34,6 +34,7 @@ const conditional = new Set<ModuleType>([
   ModuleType.HUNTING,
   ModuleType.THE_IPHONE,
   ModuleType.THE_SWAN,
+  ModuleType.THE_STOPWATCH,
   ModuleType.WASTE_MANAGEMENT,
 ]);
 
@@ -118,6 +119,42 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
   const raw = asRecord(result);
 
   switch (moduleType) {
+    case ModuleType.COOKING: {
+      const temperature = numberValue(raw.temperatureC);
+      const time = numberValue(raw.timeMinutes);
+      const lightOn = booleanValue(raw.lightOn);
+      const setting = stringValue(raw.ovenSetting);
+      const aliases: Record<string, string> = {
+        BOTTOM_ELEMENT_HEAT: "beh",
+        BOTTOM_ELEMENT_HEAT_WITH_GRILL: "behwg",
+        CONVENTIONAL_HEATING: "ch",
+        FAN_OVEN: "fo",
+        GRILL: "g",
+        FAN_WITH_GRILL: "fwg",
+      };
+      if (temperature === undefined || !Number.isInteger(temperature) || temperature < 0 || temperature > 250 || temperature % 10
+        || time === undefined || !Number.isInteger(time) || time < 0 || time > 95 || time % 5
+        || lightOn === undefined || !setting || !aliases[setting]) return "";
+      return commands([
+        `set temp ${temperature}`,
+        `set time ${time}`,
+        `set setting ${aliases[setting]}`,
+        lightOn ? "toggle light" : undefined,
+        "cook",
+      ]);
+    }
+    case ModuleType.LONDON_UNDERGROUND: {
+      const journey = arrayValue(raw.journey).map(asRecord);
+      if (!journey.length || journey.length > 3) return "";
+      const positions = ["top", "middle", "bottom"];
+      const steps = journey.map((leg, index) => {
+        const line = stringValue(leg.line);
+        const station = stringValue(leg.station);
+        if (!line || !station) return undefined;
+        return `${positions[index]} ${line === "Hammersmith & City" ? "hammersmith" : words(line)} ${station}`;
+      });
+      return steps.every(Boolean) ? commands([...steps, "submit"]) : "";
+    }
     case ModuleType.IDENTITY_PARADE: {
       const hair = stringValue(raw.hairColor);
       const build = stringValue(raw.build);
@@ -163,6 +200,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.FORGET_ME_NOT: {
       const sequence = arrayValue(raw.sequence).map(String);
       return sequence.length ? command(`press ${sequence.join("")}`) : "";
+    }
+    case ModuleType.FORGET_EVERYTHING: {
+      const solution = stringValue(raw.solution);
+      return solution && /^\d{10}$/.test(solution) ? command(`submit ${solution}`) : "";
     }
     case ModuleType.SOUVENIR: {
       const answerIndex = numberValue(raw.answerIndex);
@@ -231,6 +272,18 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const position = numberValue(raw.position);
       const choice = booleanValue(raw.pressYes) ? "yes" : booleanValue(raw.pressNo) ? "no" : words(raw.action);
       return position === undefined || !choice ? "" : command(`press ${choice} ${position}`);
+    }
+    case ModuleType.COLOR_DECODING: {
+      const selections = arrayValue(raw.selections).map(asRecord);
+      if (!selections.length) return "";
+      const presses = selections.map((selection) => {
+        const type = stringValue(selection.type)?.toLowerCase();
+        const index = numberValue(selection.index);
+        return (type === "row" || type === "column") && Number.isInteger(index) && index! >= 1 && index! <= 6
+          ? `${type === "column" ? "col" : "row"}${index}`
+          : "";
+      });
+      return presses.every(Boolean) ? command(presses.join(" ")) : "";
     }
     case ModuleType.PIANO_KEYS:
     case ModuleType.CRUEL_PIANO_KEYS:
@@ -360,6 +413,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const answers = arrayValue(raw.answers);
       return answers.every((answer) => typeof answer === "boolean") && answers.length ? command(`submit ${answers.map(String).join(" ")}`) : "";
     }
+    case ModuleType.LOGIC_GATES: {
+      const ready = booleanValue(raw.readyToCheck);
+      return ready === undefined ? "" : command(ready ? "check" : "next");
+    }
     case ModuleType.ASTROLOGY: {
       const score = numberValue(raw.omenScore);
       if (score === undefined) return "";
@@ -401,6 +458,11 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.MODERN_CIPHER: {
       const solution = stringValue(raw.solution);
       return solution && /^[A-Z]{4,8}$/.test(solution) ? command(`submit ${solution.toLowerCase()}`) : "";
+    }
+    case ModuleType.PLAYFAIR_CIPHER: {
+      const presses = stringValue(raw.pressSequence);
+      return presses && /^[A-D]{4}$/.test(presses) && new Set(presses).size === 4
+        ? command(`press ${presses.toLowerCase().split("").join(" ")}`) : "";
     }
     case ModuleType.TURN_THE_KEY: {
       const seconds = numberValue(raw.turnWhenSeconds);
@@ -728,6 +790,26 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const target = stringValue(raw.targetTime);
       return target ? command(`set ${target.toLowerCase()}`) : "";
     }
+    case ModuleType.THE_STOPWATCH: {
+      const runtime = numberValue(raw.runtimeSeconds);
+      return runtime !== undefined && Number.isInteger(runtime) && runtime >= 0 && runtime <= 59
+        ? command(`stop at ${runtime}`)
+        : "";
+    }
+    case ModuleType.PIE: {
+      const order = arrayValue(raw.pressOrder).filter((position): position is number => typeof position === "number");
+      return order.length === 5 && new Set(order).size === 5 && order.every((position) => position >= 1 && position <= 5)
+        ? command(`press ${order.join(" ")}`)
+        : "";
+    }
+    case ModuleType.THE_WIRE: {
+      const dials = [stringValue(raw.dial1), stringValue(raw.dial2), stringValue(raw.dial3)];
+      const second = numberValue(raw.cutSecond);
+      return dials.every((dial) => /^[A-Z]$/.test(dial ?? "")) && second !== undefined
+        && Number.isInteger(second) && second >= 0 && second <= 9
+        ? commands([`set 1 ${dials[0]} 2 ${dials[1]} 3 ${dials[2]}`, `cut at ${second}`])
+        : "";
+    }
     case ModuleType.LED_ENCRYPTION: {
       const letter = strings(raw.correctLetters)[0] ?? stringValue(raw.letter);
       return letter ? command(`press ${letter}`) : "";
@@ -737,6 +819,38 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return buttons.length === 4 && new Set(buttons).size === 4 && buttons.every((button) => /^[A-D]$/.test(button))
         ? command(`press ${buttons.join("").toLowerCase()}`)
         : "";
+    }
+    case ModuleType.THE_SUN: {
+      const presses = strings(raw.pressSequence);
+      const valid = /^(?:(?:inner|outer) (?:north|northeast|east|southeast|south|southwest|west|northwest)|center)$/;
+      return presses.length > 0
+        && (presses.length === 8 || presses.at(-1) === "center")
+        && new Set(presses).size === presses.length
+        && presses.every((press) => valid.test(press))
+        ? command(`press ${presses.join(";")}`)
+        : "";
+    }
+    case ModuleType.GRID_MATCHING: {
+      const actions = strings(raw.actions);
+      const letter = stringValue(raw.letter);
+      const validActions = new Set(["up", "down", "left", "right", "clockwise", "counter-clockwise"]);
+      return /^[A-P]$/.test(letter ?? "") && actions.every((action) => validActions.has(action))
+        ? command([...actions, "set", (letter ?? "").toLowerCase(), "submit"].join(" "))
+        : "";
+    }
+    case ModuleType.TANGRAMS: {
+      const pairs = arrayValue(raw.connections).map(asRecord);
+      if (pairs.length !== 3) return "";
+      const steps = pairs.map((pair) => {
+        const positive = numberValue(pair.positivePin);
+        const negative = numberValue(pair.negativePin);
+        return positive !== undefined && negative !== undefined
+          && Number.isInteger(positive) && Number.isInteger(negative)
+          && positive >= 1 && positive <= 16 && negative >= 1 && negative <= 16
+          ? `set ${positive} ${negative}`
+          : undefined;
+      });
+      return steps.every(Boolean) ? commands(steps) : "";
     }
     case ModuleType.BITWISE_OPERATIONS: {
       const answer = stringValue(raw.answer);
@@ -820,6 +934,13 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         && positions.length === code.length
         && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 12)
         ? command(`execute ${positions.join(" ")}`)
+        : "";
+    }
+    case ModuleType.THE_NUMBER: {
+      const positions = arrayValue(raw.buttonPositions).map(Number);
+      return positions.length === 4
+        && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 10)
+        ? command(`press ${positions.join(" ")} submit`)
         : "";
     }
     case ModuleType.WASTE_MANAGEMENT: {
