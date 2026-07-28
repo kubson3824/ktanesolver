@@ -65,6 +65,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   CONNECTION_CHECK: { result: { led1: true, led2: false, led3: true, led4: false }, expected: "!number submit green red green red" },
   LETTER_KEYS: { result: { letter: "B" }, expected: "!number press B" },
   LOGIC: { result: { answers: [false, true] }, expected: "!number submit false true" },
+  SUPERLOGIC: { result: { values: [true, false, true] }, expected: "!number submit t f t" },
   LOGIC_GATES: { result: { readyToCheck: true }, expected: "!number check" },
   ASTROLOGY: { result: { omenScore: -2 }, expected: "!number press bad on 2" },
   MYSTIC_SQUARE: { result: { targetConstellation: [1, null, 3] }, expected: "!number press 1 3" },
@@ -152,6 +153,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   LED_ENCRYPTION: { result: { correctLetters: ["B"] }, expected: "!number press B" },
   LED_GRID: { result: { pressOrder: ["C", "D", "A", "B"] }, expected: "!number press cdab" },
   THE_SUN: { result: { pressSequence: ["inner southeast", "outer south", "center"] }, expected: "!number press inner southeast;outer south;center" },
+  THE_MOON: { result: { pressSequence: ["outer southwest", "outer northwest", "center"] }, expected: "!number press outer southwest;outer northwest;center" },
   GRID_MATCHING: { result: { letter: "D", actions: ["up", "right", "clockwise"] }, expected: "!number up right clockwise set d submit" },
   TANGRAMS: { result: { connections: [{ positivePin: 1, negativePin: 8 }, { positivePin: 2, negativePin: 1 }, { positivePin: 5, negativePin: 4 }] }, expected: "!number set 1 8; !number set 2 1; !number set 5 4" },
   BITWISE_OPERATIONS: { result: { answer: "10101010" }, expected: "!number submit 10101010" },
@@ -187,7 +189,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(145);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(147);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
   });
 

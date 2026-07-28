@@ -413,6 +413,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const answers = arrayValue(raw.answers);
       return answers.every((answer) => typeof answer === "boolean") && answers.length ? command(`submit ${answers.map(String).join(" ")}`) : "";
     }
+    case ModuleType.SUPERLOGIC: {
+      const values = arrayValue(raw.values);
+      return values.length === 3 && values.every((value) => typeof value === "boolean")
+        ? command(`submit ${values.map((value) => value ? "t" : "f").join(" ")}`)
+        : "";
+    }
     case ModuleType.LOGIC_GATES: {
       const ready = booleanValue(raw.readyToCheck);
       return ready === undefined ? "" : command(ready ? "check" : "next");
@@ -820,6 +826,7 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? command(`press ${buttons.join("").toLowerCase()}`)
         : "";
     }
+    case ModuleType.THE_MOON:
     case ModuleType.THE_SUN: {
       const presses = strings(raw.pressSequence);
       const valid = /^(?:(?:inner|outer) (?:north|northeast|east|southeast|south|southwest|west|northwest)|center)$/;

@@ -42,8 +42,8 @@ public class LogicSolver extends AbstractModuleSolver<LogicInput, LogicOutput> {
 			if (row.negated3()) s3 = !s3;
 
 			boolean result = row.leftGrouped()
-				? apply(row.connective2(), apply(row.connective1(), s1, s2), s3)
-				: apply(row.connective1(), s1, apply(row.connective2(), s2, s3));
+				? row.connective2().apply(row.connective1().apply(s1, s2), s3)
+				: row.connective1().apply(s1, row.connective2().apply(s2, s3));
 			answers.add(result);
 		}
 		storeState(module, "input", input);
@@ -82,16 +82,4 @@ public class LogicSolver extends AbstractModuleSolver<LogicInput, LogicOutput> {
 		};
 	}
 
-	private static boolean apply(LogicConnective op, boolean a, boolean b) {
-		return switch (op) {
-			case AND -> a && b;
-			case OR -> a || b;
-			case XOR -> a != b;
-			case NAND -> !(a && b);
-			case NOR -> !(a || b);
-			case XNOR -> a == b;
-			case IMPL_LEFT -> !a || b;   // false only when a true and b false
-			case IMPL_RIGHT -> a || !b;  // false only when a false and b true
-		};
-	}
 }
