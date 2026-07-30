@@ -41,6 +41,16 @@ const run = (label, command, cwd) => {
   }
 };
 
+const findCompose = () =>
+  ["docker compose", "docker-compose"].find((command) => {
+    const result = spawnSync("cmd.exe", ["/d", "/s", "/c", `${command} ps -q`], {
+      cwd: workspace,
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    return result.status === 0;
+  });
+
 const powershell = (script) => {
   const result = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
     cwd: workspace,
@@ -100,7 +110,28 @@ const startDetached = (command, cwd, name) => {
   closeSync(stderr);
 };
 
-const waitForServers = async () => {
+const localLogs = () =>
+  ["backend.err.log", "backend.out.log", "frontend.err.log", "frontend.out.log"]
+    .map((name) => {
+      try {
+        return `${name}:\n${tail(readFileSync(join(logDir, name), "utf8"), 60)}`;
+      } catch {
+        return `${name}: (no output)`;
+      }
+    })
+    .join("\n");
+
+const composeLogs = (compose) => {
+  const result = spawnSync("cmd.exe", ["/d", "/s", "/c", `${compose} logs --tail 60 backend frontend`], {
+    cwd: workspace,
+    encoding: "utf8",
+    windowsHide: true,
+    maxBuffer: 20 * 1024 * 1024,
+  });
+  return tail(`${result.stdout}\n${result.stderr}`, 120);
+};
+
+const waitForServers = async (failureLogs) => {
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
     try {
@@ -114,16 +145,7 @@ const waitForServers = async () => {
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
   }
-  const logs = ["backend.err.log", "backend.out.log", "frontend.err.log", "frontend.out.log"]
-    .map((name) => {
-      try {
-        return `${name}:\n${tail(readFileSync(join(logDir, name), "utf8"), 60)}`;
-      } catch {
-        return `${name}: (no output)`;
-      }
-    })
-    .join("\n");
-  throw new Error(`Servers did not start:\n${logs}`);
+  throw new Error(`Servers did not start:\n${failureLogs()}`);
 };
 
 run("backend test", `.\\gradlew.bat test --tests ${backendTest}`, workspace);
@@ -134,10 +156,18 @@ run(
 );
 run("frontend build", "npm.cmd run build", frontend);
 
+const compose = findCompose();
+if (compose) run("stop Compose application", `${compose} stop backend frontend`, workspace);
 stopWorkspaceListeners();
-startDetached(".\\gradlew.bat bootRun", workspace, "backend");
-startDetached("npm.cmd run dev -- --host 127.0.0.1", frontend, "frontend");
-const { modulesResponse, frontendResponse } = await waitForServers();
+if (compose) {
+  run("Compose build and restart", `${compose} up --build -d`, workspace);
+} else {
+  startDetached(".\\gradlew.bat bootRun", workspace, "backend");
+  startDetached("npm.cmd run dev -- --host 127.0.0.1", frontend, "frontend");
+}
+const { modulesResponse, frontendResponse } = await waitForServers(
+  compose ? () => composeLogs(compose) : localLogs,
+);
 const activeListeners = listeners();
 
 const modules = await modulesResponse.json();
@@ -156,6 +186,7 @@ console.log(JSON.stringify({
   moduleId,
   backend: { port: 8080, pid: listener(8080)?.pid, healthy: true },
   frontend: { port: 5173, pid: listener(5173)?.pid, status: frontendResponse.status },
+  runtime: compose ? "compose" : "local",
   catalog,
   docs: true,
 }));

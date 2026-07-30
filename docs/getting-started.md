@@ -1,6 +1,6 @@
 # Install and run
 
-Run PostgreSQL, the Spring Boot API, and the Vite frontend locally.
+Run PostgreSQL, the Spring Boot API, and the frontend with Docker or directly from source.
 
 ## Prerequisites
 
@@ -10,14 +10,35 @@ Run PostgreSQL, the Spring Boot API, and the Vite frontend locally.
 | Node.js | `20.19+` or `22.12+` |
 | Docker | Docker Desktop or Docker Engine with Compose |
 
-The Node.js ranges come from the [Vite compatibility requirements](https://vite.dev/guide/#scaffolding-your-first-vite-project).
+The Node.js ranges come from the [Vite compatibility requirements](https://vite.dev/guide/#scaffolding-your-first-vite-project). Java and Node.js are only required when running from source.
+
+## Run everything with Docker
+
+From the repository root:
+
+```bash
+docker compose up --build -d
+```
+
+Open `http://localhost:5173`. The API remains available at `http://localhost:8080`.
+
+Rebuild after code changes, or restart the existing containers without rebuilding:
+
+```bash
+docker compose up --build -d
+docker compose restart backend frontend
+```
+
+Follow the application logs with `docker compose logs -f backend frontend`.
+
+## Run from source
 
 ## 1. Start PostgreSQL
 
 From the repository root:
 
 ```bash
-docker compose up -d
+docker compose up -d ktane-solver-db
 ```
 
 The Compose file creates a PostgreSQL 16 database on `localhost:5432` with the development credentials already used by Spring Boot.
@@ -111,4 +132,3 @@ Confirm the backend is on port `8080`, check `VITE_API_BASE_URL`, and restart th
 ### A migration fails
 
 Read the first Flyway error in the backend log. Do not let Hibernate modify the schema; this project intentionally uses `spring.jpa.hibernate.ddl-auto=none`.
-

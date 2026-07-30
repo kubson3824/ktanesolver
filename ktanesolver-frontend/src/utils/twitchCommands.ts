@@ -216,6 +216,27 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const label = stringValue(raw.buttonLabel);
       return hole !== undefined && label ? commands(["unscrew", `screw ${hole}`, `press ${label}`]) : "";
     }
+    case ModuleType.THE_CUBE: {
+      const rawButtons = arrayValue(raw.buttons);
+      const buttons = rawButtons.filter((button): button is number =>
+        Number.isInteger(button) && Number(button) >= 1 && Number(button) <= 8);
+      return buttons.length === rawButtons.length && new Set(buttons).size === buttons.length
+        ? command(`execute${buttons.length ? ` ${buttons.join(" ")}` : ""}`)
+        : "";
+    }
+    case ModuleType.TAX_RETURNS: {
+      const total = numberValue(raw.totalTaxBill);
+      return total !== undefined && Number.isInteger(total) && total >= 0 && total <= 9_999_999
+        ? command(`submit ${total}`)
+        : "";
+    }
+    case ModuleType.MARBLE_TUMBLE: {
+      const timerDigits = arrayValue(raw.timerDigits);
+      return timerDigits.length > 0 && timerDigits.every((digit) =>
+        typeof digit === "number" && Number.isInteger(digit) && digit >= 0 && digit <= 9)
+        ? commands(timerDigits.map(String))
+        : "";
+    }
     case ModuleType.YAHTZEE: {
       if (raw.action === "SOLVED") return command("done");
       if (raw.action === "ROLL_ALL") return command("roll");
@@ -347,6 +368,13 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.FONT_SELECT: {
       const actions = strings(raw.actions);
       return actions.length > 0 && actions.every((action) => ["left", "right", "submit"].includes(action))
+        ? commands(actions)
+        : "";
+    }
+    case ModuleType.JEWEL_VAULT: {
+      const actions = strings(raw.actions);
+      return actions.length > 0 && actions.every((action) =>
+        action === "reset" || action === "submit" || /^turn [1-4](?: [1-3])?$/.test(action))
         ? commands(actions)
         : "";
     }
@@ -569,6 +597,18 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const weapon = stringValue(raw.weapon);
       const location = stringValue(raw.location);
       return suspect && weapon && location ? command(`it was ${words(suspect)}, with the ${words(weapon)}, in the ${words(location)}`) : "";
+    }
+    case ModuleType.DR_DOCTOR: {
+      const diagnosis = stringValue(raw.diagnosis);
+      const treatment = stringValue(raw.treatment);
+      const dose = stringValue(raw.dose);
+      const day = numberValue(raw.followUpDay);
+      const month = numberValue(raw.followUpMonth);
+      return diagnosis && treatment && dose && /^\d+m?g$/i.test(dose)
+        && Number.isInteger(day) && day! >= 1 && day! <= 31
+        && Number.isInteger(month) && month! >= 1 && month! <= 12
+        ? command(`treat ${diagnosis},${treatment},${dose},${day},${month}`)
+        : "";
     }
     case ModuleType.RESISTORS: {
       const tokens = resistorTokens(raw);
@@ -826,6 +866,13 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? command(`press ${buttons.join("").toLowerCase()}`)
         : "";
     }
+    case ModuleType.GRAFFITI_NUMBERS: {
+      const positions = arrayValue(raw.buttonPositions).map(Number);
+      return positions.length > 0 && positions.length <= 9 && new Set(positions).size === positions.length
+        && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 9)
+        ? command(`spray ${positions.join(" ")}`)
+        : "";
+    }
     case ModuleType.THE_MOON:
     case ModuleType.THE_SUN: {
       const presses = strings(raw.pressSequence);
@@ -933,6 +980,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         && seconds.every((second) => Number.isInteger(second) && second >= 0 && second < 60)
         ? command(`press ${button.toLowerCase()} on ${seconds.map((second) => second.toString().padStart(2, "0")).join(" ")}`)
         : "";
+    }
+    case ModuleType.DIGITAL_ROOT: {
+      const button = stringValue(raw.button);
+      return button && /^(YES|NO)$/.test(button) ? command(`press ${button.toLowerCase()}`) : "";
     }
     case ModuleType.THE_SWAN: {
       const code = stringValue(raw.code);

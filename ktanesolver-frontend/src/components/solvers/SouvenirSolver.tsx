@@ -160,6 +160,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("notPotentialWeapon", "Which was not a potential weapon?"),
     question("bodyLocation", "Where was the body found?"),
   ],
+  [ModuleType.DR_DOCTOR]: [
+    question("diseases", "Which diseases were listed, but not treated?"),
+    question("symptoms", "Which symptoms were listed, excluding the one still visible?"),
+  ],
   [ModuleType.MYSTIC_SQUARE]: [question("centerDigit", "What digit was initially in the center?")],
   [ModuleType.NEUTRALIZATION]: [
     question("acidColor", "What was the acid's color?"),
@@ -200,6 +204,20 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   ],
   [ModuleType.SOUVENIR]: [question("firstModule", "What was the first module asked about?")],
   [ModuleType.THE_BULB]: [question("initiallyLit", "Was the bulb initially lit?")],
+  [ModuleType.THE_CUBE]: [
+    question("first rotation", "What was the first cube rotation?"),
+    question("second rotation", "What was the second cube rotation?"),
+    question("third rotation", "What was the third cube rotation?"),
+    question("fourth rotation", "What was the fourth cube rotation?"),
+    question("fifth rotation", "What was the fifth cube rotation?"),
+    question("sixth rotation", "What was the sixth cube rotation?"),
+  ],
+  [ModuleType.JEWEL_VAULT]: [
+    question("wheel 1", "Which wheel turned as a result of turning wheel 1?"),
+    question("wheel 2", "Which wheel turned as a result of turning wheel 2?"),
+    question("wheel 3", "Which wheel turned as a result of turning wheel 3?"),
+    question("wheel 4", "Which wheel turned as a result of turning wheel 4?"),
+  ],
   [ModuleType.THREE_D_MAZE]: [
     question("markings", "What were the markings?"),
     question("cardinalDirection", "What was the cardinal direction?"),

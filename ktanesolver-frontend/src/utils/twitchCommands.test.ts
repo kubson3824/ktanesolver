@@ -25,6 +25,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   SOUVENIR: { result: { answerIndex: 3 }, expected: "!number answer 3" },
   ICE_CREAM: { result: { flavor: "COOKIES_AND_CREAM" }, expected: "!number sell cookies and cream" },
   THE_SCREW: { result: { hole: 3, buttonLabel: "A" }, expected: "!number unscrew; !number screw 3; !number press A" },
+  THE_CUBE: { result: { buttons: [1, 3, 8] }, expected: "!number execute 1 3 8" },
+  JEWEL_VAULT: { result: { actions: ["reset", "turn 1 3", "submit"] }, expected: "!number reset; !number turn 1 3; !number submit" },
   YAHTZEE: { result: { action: "ROLL_ALL", keepColors: [] }, expected: "!number roll" },
   X_RAY: { result: { button: 4 }, expected: "!number press 4" },
   BATTLESHIP: { result: { shipLocations: ["A1", "B2"] }, expected: "!number torpedo A1 B2" },
@@ -104,6 +106,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   ALPHABET: { result: { pressOrder: ["A", "B", "C"] }, expected: "!number press A B C" },
   MICROCONTROLLER: { result: { pins: [{ color: "RED" }, { color: "WHITE" }] }, expected: "!number set red; !number set white" },
   MURDER: { result: { suspect: "MISS_SCARLETT", weapon: "CANDLESTICK", location: "KITCHEN" }, expected: "!number it was miss scarlett, with the candlestick, in the kitchen" },
+  DR_DOCTOR: { result: { diagnosis: "Jaundry", treatment: "λ-3", dose: "42mg", followUpDay: 12, followUpMonth: 4 }, expected: "!number treat Jaundry,λ-3,42mg,12,4" },
+  TAX_RETURNS: { result: { totalTaxBill: 75336 }, expected: "!number submit 75336" },
   RESISTORS: { result: { requiredConnections: [{ inputPin: "A", outputPin: "C", path: "DIRECT" }] }, expected: "!number connect a c; !number submit" },
   GAMEPAD: { result: { sequence: ["A", "B", "◀", "R"] }, expected: "!number submit ab◀r" },
   TIC_TAC_TOE: { result: { action: "PRESS", number: 5 }, expected: "!number 5" },
@@ -152,6 +156,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   THE_WIRE: { result: { dial1: "Q", dial2: "E", dial3: "Y", cutSecond: 3 }, expected: "!number set 1 Q 2 E 3 Y; !number cut at 3" },
   LED_ENCRYPTION: { result: { correctLetters: ["B"] }, expected: "!number press B" },
   LED_GRID: { result: { pressOrder: ["C", "D", "A", "B"] }, expected: "!number press cdab" },
+  GRAFFITI_NUMBERS: { result: { pressNumbers: [6, 7, 9, 1], buttonPositions: [6, 5, 2, 1] }, expected: "!number spray 6 5 2 1" },
   THE_SUN: { result: { pressSequence: ["inner southeast", "outer south", "center"] }, expected: "!number press inner southeast;outer south;center" },
   THE_MOON: { result: { pressSequence: ["outer southwest", "outer northwest", "center"] }, expected: "!number press outer southwest;outer northwest;center" },
   GRID_MATCHING: { result: { letter: "D", actions: ["up", "right", "clockwise"] }, expected: "!number up right clockwise set d submit" },
@@ -182,6 +187,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   ERROR_CODES: { result: { fixCode: "1011011" }, expected: "!number submit 1011011" },
   LEGOS: { result: { cells: Array(64).fill("EMPTY"), face: "TOP", orientation: "NORTH" }, expected: "" },
   PRESS_X: { result: { button: "B", validSeconds: [9, 18, 27, 36, 45, 54], anyTime: false }, expected: "!number press b on 09 18 27 36 45 54" },
+  DIGITAL_ROOT: { result: { button: "YES", digitalRoot: 6 }, expected: "!number press yes" },
+  MARBLE_TUMBLE: { result: { timerDigits: [0, 5, 5, 9] }, expected: "!number 0; !number 5; !number 5; !number 9" },
   SKYRIM: { result: { race: "Nord", weapon: "Mace of Molag Bal", enemy: "Frost Troll", city: "Rorikstead", dragonShout: "Ice Form" }, expected: "!number submit Nord, Mace of Molag Bal, Frost Troll, Rorikstead, Ice Form" },
 };
 
@@ -189,7 +196,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(147);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(154);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
   });
 

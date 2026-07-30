@@ -148,6 +148,12 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case MORSE_A_MAZE -> answerIndex(answers, morseAMazeAnswer(source.getState(), q));
 			case MAFIA -> membershipAnswerIndex(answers, source.getState().get("players"), source.getState().get("godfather"), false);
 			case MURDER -> murderAnswerIndex(source, q, answers);
+			case DR_DOCTOR -> membershipAnswerIndex(
+				answers,
+				source.getState().get(q.contains("symptom") ? "listedSymptoms" : "listedDiseases"),
+				q.contains("symptom") ? source.getState().get("displayedSymptom") : source.getSolution().get("diagnosis"),
+				false
+			);
 			case MYSTIC_SQUARE -> answerIndex(answers, nested(source.getState(), "input", "grid", 4));
 			case NEUTRALIZATION -> answerIndex(answers, source.getState().get(q.contains("volume") ? "acidVolume" : "acidColor"));
 			case ONLY_CONNECT -> answerIndex(answers, nested(source.getState(), "hieroglyphs", onlyConnectPosition(q)));
@@ -171,6 +177,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COLORED_SWITCHES -> answerIndex(answers, switchCode(source.getState().get("initialPosition")));
 			case SOUVENIR -> otherSouvenirAnswerIndex(source.getState(), answers);
 			case THE_BULB -> answerIndex(answers, source.getState().get("initiallyOn"));
+			case THE_CUBE -> answerIndex(answers, nested(source.getState(), "rotations", ordinal(q)));
+			case JEWEL_VAULT -> answerIndex(answers, jewelVaultWheelTurn(source.getState(), q));
 			case THE_IPHONE -> answerIndex(answers, iPhoneDigit(source.getState(), q));
 			case BURGLAR_ALARM -> answerIndex(answers, burglarAlarmDigit(source.getState(), q));
 			case PIE -> answerIndex(answers, nested(source.getState(), "displayedDigits", ordinal(q)));
@@ -249,6 +257,10 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case MORSE_A_MAZE -> morseAMazeAnswer(state, normalize(question));
 			case MAFIA -> null;
 			case MURDER -> murderRecordedAnswer(source, question);
+			case DR_DOCTOR -> excluding(
+				state.get("symptoms".equals(question) ? "listedSymptoms" : "listedDiseases"),
+				"symptoms".equals(question) ? state.get("displayedSymptom") : source.getSolution().get("diagnosis")
+			);
 			case MYSTIC_SQUARE -> nested(state, "input", "grid", 4);
 			case NEUTRALIZATION -> state.get("acidVolume".equals(question) ? "acidVolume" : "acidColor");
 			case ONLY_CONNECT -> labeledValues(state.get("hieroglyphs"),
@@ -269,6 +281,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case COLORED_SWITCHES -> switchCode(state.get("initialPosition"));
 			case SOUVENIR -> firstHistoryType(state.get("history"));
 			case THE_BULB -> state.get("initiallyOn");
+			case THE_CUBE -> nested(state, "rotations", ordinal(normalize(question)));
+			case JEWEL_VAULT -> jewelVaultWheelTurn(state, normalize(question));
 			case THE_IPHONE -> iPhoneDigit(state, normalize(question));
 			case BURGLAR_ALARM -> burglarAlarmDigit(state, normalize(question));
 			case PIE -> nested(state, "displayedDigits", ordinal(normalize(question)));
@@ -295,6 +309,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static Object blindMazeColor(Map<String, Object> state, String question) {
 		for (String direction : List.of("north", "east", "south", "west")) {
 			if (question.contains(direction)) return nested(state, "buttonColors", direction);
+		}
+		return null;
+	}
+
+	private static Object jewelVaultWheelTurn(Map<String, Object> state, String question) {
+		for (int wheel = 1; wheel <= 4; wheel++) {
+			if (question.contains("wheel " + wheel)) return nested(state, "wheelTurns", wheel - 1);
 		}
 		return null;
 	}

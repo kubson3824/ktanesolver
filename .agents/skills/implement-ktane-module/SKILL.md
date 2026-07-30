@@ -36,7 +36,7 @@ Build the smallest complete backend/frontend solver and leave it uncommitted.
      --module-id <canonical-module-id>
    ```
 
-   It runs focused tests and the production build, safely restarts workspace-owned ports 8080/5173, checks both endpoints, regenerates supported-module docs, and runs `git diff --check`. On success it emits only a compact summary; on failure it emits the relevant tail.
+   It runs focused tests and the production build. When this workspace's Compose stack is available, it stops only the backend/frontend services, refuses unrelated port owners, rebuilds the images, and leaves the healthy stack running. Otherwise it falls back to workspace-owned Gradle/Vite processes. It then checks both endpoints, regenerates supported-module docs, and runs `git diff --check`. On success it emits only a compact summary; on failure it emits the relevant local or Compose log tail.
 8. Leave changes uncommitted and report verification plus live ports.
 
 ## Guardrails

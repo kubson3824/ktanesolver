@@ -42,19 +42,17 @@ KTANESolver complements the official and community manuals. The defuser still pe
 ## Quick start
 
 ```bash
-docker compose up -d
-./gradlew bootRun
+docker compose up --build -d
 ```
 
-In a second terminal:
+Open `http://localhost:5173`. To rebuild after code changes or restart the current containers:
 
 ```bash
-cd ktanesolver-frontend
-npm install
-npm run dev
+docker compose up --build -d
+docker compose restart backend frontend
 ```
 
-Open the URL printed by Vite. The backend listens on `http://localhost:8080`.
+The backend remains available at `http://localhost:8080`.
 
 {% hint style="success" %}
 If `http://localhost:8080/api/modules` returns JSON, the database, migrations, backend, and solver registry are ready.

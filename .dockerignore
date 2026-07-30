@@ -1,0 +1,10 @@
+.git
+.gradle
+.gradle-user-home
+.idea
+bin
+build
+docs
+graphify-out
+ktanesolver-frontend
+*.iml

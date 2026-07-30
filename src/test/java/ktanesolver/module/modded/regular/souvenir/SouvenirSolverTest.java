@@ -22,6 +22,69 @@ class SouvenirSolverTest {
 	private final SouvenirSolver solver = new SouvenirSolver();
 
 	@Test
+	void returnsEveryCubeRotationQuestion() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		List<String> rotations = List.of(
+			"rotate clockwise", "tip left", "tip backwards",
+			"rotate counterclockwise", "tip right", "tip forwards"
+		);
+		ModuleEntity cube = module(ModuleType.THE_CUBE, true, Map.of("rotations", rotations));
+		bomb.setModules(List.of(souvenir, cube));
+
+		String[] ordinals = {"first", "second", "third", "fourth", "fifth", "sixth"};
+		for (int index = 0; index < ordinals.length; index++) {
+			assertThat(solve(bomb, souvenir, cube.getId(), ordinals[index] + " rotation", List.of(), false).answer())
+				.isEqualTo(rotations.get(index));
+		}
+	}
+
+	@Test
+	void returnsEveryJewelVaultWheelQuestion() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		List<String> wheelTurns = List.of("3", "4", "none", "1");
+		ModuleEntity vault = module(ModuleType.JEWEL_VAULT, true, Map.of("wheelTurns", wheelTurns));
+		bomb.setModules(List.of(souvenir, vault));
+
+		for (int wheel = 1; wheel <= 4; wheel++) {
+			assertThat(solve(bomb, souvenir, vault.getId(), "wheel " + wheel, List.of(), false).answer())
+				.isEqualTo(wheelTurns.get(wheel - 1));
+		}
+		assertThat(solve(
+			bomb, souvenir, vault.getId(),
+			"Which wheel turned as a result of turning wheel 2 in The Jewel Vault?",
+			List.of("1", "2", "3", "4", "none"), false
+		)).isEqualTo(new SouvenirOutput("4", 4));
+	}
+
+	@Test
+	void returnsEveryDrDoctorQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity doctor = module(ModuleType.DR_DOCTOR, true, Map.of(
+			"listedDiseases", List.of("Alztimer’s", "Braintenance", "Color allergy"),
+			"listedSymptoms", List.of("Fever", "Chills", "Dizziness", "Cough", "Gas", "Nausea", "Sleepiness"),
+			"displayedSymptom", "Fever"
+		));
+		doctor.setSolution(new HashMap<>(Map.of("diagnosis", "Alztimer’s")));
+		bomb.setModules(List.of(souvenir, doctor));
+
+		assertThat(solve(bomb, souvenir, doctor.getId(), "diseases", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Braintenance, Color allergy", null));
+		assertThat(solve(bomb, souvenir, doctor.getId(), "symptoms", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Chills, Dizziness, Cough, Gas, Nausea, Sleepiness", null));
+		assertThat(solve(bomb, souvenir, doctor.getId(),
+			"Which of these diseases was listed on Dr. Doctor, but not the one treated?",
+			List.of("Alztimer’s", "Braintenance", "Detonession", "Emojilepsy"), false))
+			.isEqualTo(new SouvenirOutput("Braintenance", 2));
+		assertThat(solve(bomb, souvenir, doctor.getId(),
+			"Which of these symptoms was listed on Dr. Doctor?",
+			List.of("Fever", "Chills", "Cold Hands", "Numbness"), false))
+			.isEqualTo(new SouvenirOutput("Chills", 2));
+	}
+
+	@Test
 	void returnsEveryPlayfairCipherQuestionFamily() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
