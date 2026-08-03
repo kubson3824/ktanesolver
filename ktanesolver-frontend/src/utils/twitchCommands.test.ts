@@ -110,6 +110,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   ALPHABET: { result: { pressOrder: ["A", "B", "C"] }, expected: "!number press A B C" },
   MICROCONTROLLER: { result: { pins: [{ color: "RED" }, { color: "WHITE" }] }, expected: "!number set red; !number set white" },
   MURDER: { result: { suspect: "MISS_SCARLETT", weapon: "CANDLESTICK", location: "KITCHEN" }, expected: "!number it was miss scarlett, with the candlestick, in the kitchen" },
+  SUBWAYS: { result: { route: 8, time: "7 PM", stops: ["Bowling Green 4-5", "Wall St 4-5", "City Hall 4-5-6"] }, expected: "!number submit 7 pm, Bowling Green 4-5, Wall St 4-5, City Hall 4-5-6" },
   DR_DOCTOR: { result: { diagnosis: "Jaundry", treatment: "λ-3", dose: "42mg", followUpDay: 12, followUpMonth: 4 }, expected: "!number treat Jaundry,λ-3,42mg,12,4" },
   TAX_RETURNS: { result: { totalTaxBill: 75336 }, expected: "!number submit 75336" },
   RESISTORS: { result: { requiredConnections: [{ inputPin: "A", outputPin: "C", path: "DIRECT" }] }, expected: "!number connect a c; !number submit" },
@@ -206,7 +207,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(164);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(165);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
   });
 

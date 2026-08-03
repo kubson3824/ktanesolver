@@ -623,6 +623,13 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const location = stringValue(raw.location);
       return suspect && weapon && location ? command(`it was ${words(suspect)}, with the ${words(weapon)}, in the ${words(location)}`) : "";
     }
+    case ModuleType.SUBWAYS: {
+      const time = stringValue(raw.time);
+      const stops = strings(raw.stops);
+      return time && /^(?:[1-9]|1[0-2]) (?:AM|PM)$/.test(time) && stops.length === 3
+        ? command(`submit ${time.toLowerCase()}, ${stops.join(", ")}`)
+        : "";
+    }
     case ModuleType.DR_DOCTOR: {
       const diagnosis = stringValue(raw.diagnosis);
       const treatment = stringValue(raw.treatment);

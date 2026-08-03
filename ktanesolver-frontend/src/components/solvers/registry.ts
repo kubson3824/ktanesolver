@@ -121,6 +121,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.ALPHABET]: { load: () => import("./AlphabetSolver") },
   [ModuleType.MICROCONTROLLER]: { load: () => import("./MicrocontrollerSolver") },
   [ModuleType.MURDER]: { load: () => import("./MurderSolver") },
+  [ModuleType.SUBWAYS]: { load: () => import("./SubwaysSolver") },
   [ModuleType.RESISTORS]: { load: () => import("./ResistorsSolver") },
   [ModuleType.GAMEPAD]: { load: () => import("./GamepadSolver") },
   [ModuleType.TIC_TAC_TOE]: { load: () => import("./TicTacToeSolver") },
