@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "../../lib/cn";
-import { solveRubiksCube, type RubiksCubeInput, type RubiksCubeOutput } from "../../services/rubiksCubeService";
+import { getRubiksCubeMoveDisplay, solveRubiksCube, type RubiksCubeInput, type RubiksCubeOutput } from "../../services/rubiksCubeService";
 import { useRoundStore } from "../../store/useRoundStore";
 import { ModuleType, type BombEntity } from "../../types";
 import { generateTwitchCommand } from "../../utils/twitchCommands";
@@ -14,8 +14,17 @@ import {
   useSolver,
   useSolverModulePersistence,
 } from "../common";
+import { Button } from "../ui/button";
 
 const FACES = ["U", "L", "F", "D", "R", "B"] as const;
+const CUBE_NET = [
+  { face: "U", position: "col-start-2 row-start-1" },
+  { face: "L", position: "col-start-1 row-start-2" },
+  { face: "F", position: "col-start-2 row-start-2" },
+  { face: "R", position: "col-start-3 row-start-2" },
+  { face: "B", position: "col-start-4 row-start-2" },
+  { face: "D", position: "col-start-2 row-start-3" },
+] as const;
 const COLORS = ["YELLOW", "BLUE", "RED", "GREEN", "ORANGE", "WHITE"] as const;
 const COLOR_CLASSES: Record<string, string> = {
   YELLOW: "bg-yellow-400",
@@ -30,6 +39,7 @@ export default function RubiksCubeSolver({ bomb }: { bomb: BombEntity | null | u
   const [faceColors, setFaceColors] = useState<string[]>([...COLORS]);
   const [result, setResult] = useState<RubiksCubeOutput | null>(null);
   const [twitchCommand, setTwitchCommand] = useState("");
+  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const {
     isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError,
     reset: resetSolverState, currentModule, round, markModuleSolved,
@@ -40,13 +50,17 @@ export default function RubiksCubeSolver({ bomb }: { bomb: BombEntity | null | u
   const onRestoreState = useCallback((state: Partial<typeof moduleState> & { input?: Partial<RubiksCubeInput> }) => {
     const input = state.input ?? state;
     if (input.faceColors) setFaceColors(input.faceColors);
-    if (state.result !== undefined) setResult(state.result);
+    if (state.result !== undefined) {
+      setResult(state.result);
+      setCurrentMoveIndex(0);
+    }
     if (state.twitchCommand !== undefined) setTwitchCommand(state.twitchCommand);
   }, []);
 
   const onRestoreSolution = useCallback((solution: RubiksCubeOutput) => {
     if (!solution?.moves) return;
     setResult(solution);
+    setCurrentMoveIndex(0);
     setTwitchCommand(generateTwitchCommand({ moduleType: ModuleType.RUBIKS_CUBE, result: solution }));
   }, []);
 
@@ -74,6 +88,7 @@ export default function RubiksCubeSolver({ bomb }: { bomb: BombEntity | null | u
       const response = await solveRubiksCube(round.id, bomb.id, currentModule.id, input);
       const command = generateTwitchCommand({ moduleType: ModuleType.RUBIKS_CUBE, result: response.output });
       setResult(response.output);
+      setCurrentMoveIndex(0);
       setTwitchCommand(command);
       setIsSolved(true);
       markModuleSolved(bomb.id, currentModule.id);
@@ -88,9 +103,13 @@ export default function RubiksCubeSolver({ bomb }: { bomb: BombEntity | null | u
   const reset = useCallback(() => {
     setFaceColors([...COLORS]);
     setResult(null);
+    setCurrentMoveIndex(0);
     setTwitchCommand("");
     resetSolverState();
   }, [resetSolverState]);
+
+  const currentMove = result?.moves[Math.min(currentMoveIndex, result.moves.length - 1)];
+  const currentMoveDisplay = currentMove ? getRubiksCubeMoveDisplay(currentMove) : null;
 
   return (
     <SolverLayout>
@@ -120,13 +139,63 @@ export default function RubiksCubeSolver({ bomb }: { bomb: BombEntity | null | u
       <SolverControls onSolve={solve} onReset={reset} isSolveDisabled={new Set(faceColors).size !== COLORS.length} isLoading={isLoading} isSolved={isSolved} solveText="Get moves" />
       <ErrorAlert error={error} />
 
-      {result && (
-        <SolverSection title="Perform these moves" className="border-emerald-500/40">
-          <ol className="flex flex-wrap justify-center gap-2">
+      {result && result.moves.length > 0 && currentMove && currentMoveDisplay && (
+        <SolverSection
+          title="Perform these moves"
+          description={`Step ${currentMoveIndex + 1} of ${result.moves.length}: turn ${currentMoveDisplay.face} ${currentMoveDisplay.direction}, looking directly at that face.`}
+          className="border-emerald-500/40"
+        >
+          <div className="mx-auto grid w-full max-w-sm grid-cols-4 grid-rows-3 gap-2" role="img" aria-label={`Cube net with the ${currentMoveDisplay.face} face highlighted for a ${currentMoveDisplay.direction} turn`}>
+            {CUBE_NET.map(({ face, position }) => {
+              const color = faceColors[FACES.indexOf(face)];
+              const isActive = face === currentMoveDisplay.face;
+              return (
+                <div
+                  key={face}
+                  className={cn(
+                    "relative flex aspect-square items-center justify-center rounded-md border-2 border-black/30",
+                    position,
+                    COLOR_CLASSES[color],
+                    isActive ? "z-10 ring-4 ring-emerald-500 ring-offset-2 ring-offset-background" : "opacity-70",
+                  )}
+                  aria-label={`${face} face, ${color} center${isActive ? `, turn ${currentMoveDisplay.direction}` : ""}`}
+                >
+                  <span className="rounded bg-background/90 px-2 py-1 font-mono text-sm font-bold text-foreground shadow-sm">
+                    {isActive && <span className="mr-1 text-lg" aria-hidden>{currentMoveDisplay.arrow}</span>}
+                    {face}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <Button variant="secondary" size="sm" disabled={currentMoveIndex === 0} onClick={() => setCurrentMoveIndex((index) => Math.max(0, index - 1))}>
+              Previous
+            </Button>
+            <span className="text-center font-mono text-lg font-bold" aria-live="polite">
+              {currentMove.replace("'", "′")}
+            </span>
+            <Button variant="secondary" size="sm" disabled={currentMoveIndex === result.moves.length - 1} onClick={() => setCurrentMoveIndex((index) => Math.min(result.moves.length - 1, index + 1))}>
+              Next
+            </Button>
+          </div>
+
+          <ol className="mt-4 flex flex-wrap justify-center gap-2">
             {result.moves.map((move, index) => (
-              <li key={index} className="rounded-md border bg-muted/30 px-3 py-2 font-mono text-lg font-bold" aria-label={`Move ${index + 1}: ${move}`}>
-                <span className="mr-1 text-xs font-normal text-muted-foreground">{index + 1}</span>
-                {move.replace("'", "′")}
+              <li key={index}>
+                <Button
+                  type="button"
+                  variant={index === currentMoveIndex ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentMoveIndex(index)}
+                  aria-label={`Show move ${index + 1}: ${move}`}
+                  aria-current={index === currentMoveIndex ? "step" : undefined}
+                  className="font-mono"
+                >
+                  <span className="text-xs font-normal opacity-70">{index + 1}</span>
+                  {move.replace("'", "′")}
+                </Button>
               </li>
             ))}
           </ol>

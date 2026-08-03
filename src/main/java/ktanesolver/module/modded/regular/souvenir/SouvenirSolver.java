@@ -176,6 +176,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
 			case SIMON_SINGS -> answerIndex(answers, simonSingsFlash(source.getState(), q));
 			case SIMON_SENDS -> answerIndex(answers, simonSendsReceivedLetter(source.getState(), q));
+			case SIMON_SHRIEKS -> answerIndex(answers, nested(source.getState(), "flashes", ordinal(q)));
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
 			case SYMBOL_CYCLE -> answerIndex(answers, source.getState().get(q.contains("left") ? "leftCycleLength" : "rightCycleLength"));
@@ -285,6 +286,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> state.get("flashHistory");
 			case SIMON_SINGS -> simonSingsFlash(state, normalize(question));
 			case SIMON_SENDS -> simonSendsReceivedLetter(state, normalize(question));
+			case SIMON_SHRIEKS -> nested(state, "flashes", ordinal(normalize(question)));
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
 			case SYMBOL_CYCLE -> state.get("leftSymbolCount".equals(question) ? "leftCycleLength" : "rightCycleLength");

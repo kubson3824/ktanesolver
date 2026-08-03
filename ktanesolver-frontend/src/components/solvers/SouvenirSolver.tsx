@@ -37,13 +37,17 @@ const LOGICAL_BUTTONS_QUESTIONS = [
   ...LOGICAL_BUTTONS_STAGES.map((stage) =>
     question(`operator ${stage}`, `Final operator in the ${stage} stage`)),
 ];
-const SIMON_SINGS_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"];
+const SIMON_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"];
 const SIMON_SINGS_QUESTIONS = ["first", "second", "third"].flatMap((stage) =>
-  SIMON_SINGS_ORDINALS.map((position) => question(
+  SIMON_ORDINALS.map((position) => question(
     `flash ${position} ${stage}`,
     `Key color that flashed ${position} in the ${stage} stage`,
   )),
 );
+const SIMON_SHRIEKS_QUESTIONS = SIMON_ORDINALS.map((position) => question(
+  `flash ${position}`,
+  `Spaces clockwise from the arrow for the ${position} flash in the final sequence`,
+));
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.MAFIA]: [question("players", "Who was a player, but not the Godfather?")],
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
@@ -216,6 +220,7 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("green received letter", "What was the green received letter?"),
     question("blue received letter", "What was the blue received letter?"),
   ],
+  [ModuleType.SIMON_SHRIEKS]: SIMON_SHRIEKS_QUESTIONS,
   [ModuleType.SKEWED_SLOTS]: [question("originalNumber", "What were the original numbers?")],
   [ModuleType.SWITCHES]: [question("initialPosition", "What was the initial switch position?")],
   [ModuleType.SYMBOL_CYCLE]: [

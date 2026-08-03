@@ -414,6 +414,14 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const positions = arrayValue(raw.positions).map(Number).filter(Number.isFinite);
       return positions.length ? command(`press ${positions.join(" ")}`) : "";
     }
+    case ModuleType.COMPLEX_KEYPAD: {
+      const positions = arrayValue(raw.pressPositions).map(Number);
+      return positions.length === 9
+        && new Set(positions).size === 9
+        && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 9)
+        ? command(`press ${positions.join(" ")}`)
+        : "";
+    }
     case ModuleType.NUMBER_PAD: {
       const code = stringValue(raw.code);
       return code ? command(`submit ${code}`) : "";
@@ -576,6 +584,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.SIMON_SENDS: {
       const transmission = stringValue(raw.transmission);
       return transmission && /^[KBGCRMYW]+$/.test(transmission) ? command(`press ${transmission.toLowerCase()}`) : "";
+    }
+    case ModuleType.SIMON_SHRIEKS: {
+      const presses = strings(raw.presses);
+      return presses.length && presses.every((color) => /^(?:RED|YELLOW|GREEN|CYAN|BLUE|WHITE|MAGENTA)$/.test(color))
+        ? command(`press ${presses.map(words).join(" ")}`)
+        : "";
     }
     case ModuleType.MODULES_AGAINST_HUMANITY:
       return strings(raw.commands).length ? commands(strings(raw.commands)) : "";
@@ -1116,6 +1130,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const presses = numberValue(raw.pressCount);
       return presses !== undefined && Number.isInteger(presses) && presses >= 0 && presses <= 99
         ? command(`submit ${presses}`)
+        : "";
+    }
+    case ModuleType.GREEK_CALCULUS: {
+      const answer = numberValue(raw.answer);
+      return answer !== undefined && Number.isInteger(answer)
+        ? command(`submit ${answer}`)
         : "";
     }
     case ModuleType.RADIATOR: {

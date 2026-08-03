@@ -1069,6 +1069,24 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEverySimonShrieksFinalFlashThroughTheDirectAndDisplayedAnswerPaths() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		List<Integer> flashes = List.of(0, 6, 1, 4, 2, 5, 3, 0);
+		ModuleEntity simonShrieks = module(ModuleType.SIMON_SHRIEKS, true, Map.of("flashes", flashes));
+		bomb.setModules(List.of(souvenir, simonShrieks));
+
+		List<String> ordinals = List.of("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth");
+		for (int i = 0; i < ordinals.size(); i++) {
+			assertThat(solve(bomb, souvenir, simonShrieks.getId(), "flash " + ordinals.get(i), List.of(), false).answer())
+				.isEqualTo(flashes.get(i).toString());
+		}
+		assertThat(solve(bomb, souvenir, simonShrieks.getId(),
+			"How many spaces clockwise from the arrow was the fifth flash in the final sequence in Simon Shrieks?",
+			List.of("0", "1", "2", "3", "4", "5"), false)).isEqualTo(new SouvenirOutput("2", 3));
+	}
+
+	@Test
 	void resolvesTheCodeDisplayedNumber() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

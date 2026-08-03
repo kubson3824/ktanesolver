@@ -61,6 +61,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   LISTENING: { result: { code: "$ & * * #" }, expected: "!number press $ & * * #" },
   FOREIGN_EXCHANGE_RATES: { result: { keyPosition: 0 }, expected: "!number press 1" },
   ROUND_KEYPAD: { result: { positions: [8, 2, 5] }, expected: "!number press 8 2 5" },
+  COMPLEX_KEYPAD: { result: { pressPositions: [2, 3, 1, 4, 5, 6, 7, 8, 9] }, expected: "!number press 2 3 1 4 5 6 7 8 9" },
   NUMBER_PAD: { result: { code: "4236" }, expected: "!number submit 4236" },
   ORIENTATION_CUBE: { result: { rotations: ["ROTATE_CLOCKWISE", "ROTATE_LEFT"] }, expected: "!number press cw l set" },
   MORSEMATICS: { result: { letter: "F" }, expected: "!number submit ..-." },
@@ -102,6 +103,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   SIMON_SCREAMS: { result: { press: ["RED", "BLUE"] }, expected: "!number press red blue" },
   SIMON_SINGS: { result: { press: ["left A♯", "right D♯", "left G♯", "right D"] }, expected: "!number play left A# right D# left G# right D" },
   SIMON_SENDS: { result: { transmission: "WKWBWKCBBKB" }, expected: "!number press wkwbwkcbbkb" },
+  SIMON_SHRIEKS: { result: { presses: ["WHITE", "BLUE", "CYAN", "RED"] }, expected: "!number press white blue cyan red" },
   MODULES_AGAINST_HUMANITY: { result: { commands: ["press reset", "press submit"] }, expected: "!number press reset; !number press submit" },
   LAUNDRY: { result: { bobShortcut: false, washingSymbol: "WASH_80F", dryingSymbol: "TUMBLE_DRY", ironingSymbol: "IRON", specialSymbol: "BLEACH" }, expected: "!number set all 4 0 0 0; !number insert coin" },
   PROBING: { result: { redClipWire: 4, blueClipWire: 3 }, expected: "!number connect 4 3" },
@@ -180,6 +182,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   FAULTY_BACKGROUNDS: { result: { correctButton: "RIGHT", targetCount: 7 }, expected: "!number submit right 7" },
   MORTAL_KOMBAT: { result: { attacks: [{ controls: "⇦⇨A" }, { controls: "⇩⇩C" }, { controls: "⇦⇨B" }], fatality: { controls: "⇩⇩⇦C⇧B" } }, expected: "!number ⇦⇨A ⇩⇩C ⇦⇨B ⇩⇩⇦C⇧B" },
   MASHEMATICS: { result: { rawAnswer: 210, pressCount: 60 }, expected: "!number submit 60" },
+  GREEK_CALCULUS: { result: { answer: -42 }, expected: "!number submit -42" },
   RADIATOR: { result: { temperature: 25, water: 34 }, expected: "!number submit 25 34" },
   THE_IPHONE: { result: { pin: "7259" }, expected: "!number submit 7259" },
   THE_SWAN: { result: { code: "DHARMA", buttonPositions: [1, 2, 3, 4, 5, 3] }, expected: "!number execute 1 2 3 4 5 3" },
@@ -203,7 +206,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(161);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(164);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
   });
 
