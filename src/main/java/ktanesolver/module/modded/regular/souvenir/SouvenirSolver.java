@@ -134,6 +134,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case HUNTING -> membershipAnswerIndex(answers, huntingClues(source.getState(), q), null, false);
 			case GAME_OF_LIFE_CRUEL -> membershipAnswerIndex(answers, source.getState().get("colorCombinations"), null, false);
 			case LED_ENCRYPTION -> ledEncryptionAnswerIndex(source.getState(), q, answers);
+			case LOGICAL_BUTTONS -> answerIndex(answers, logicalButtonsAnswer(source.getState(), q));
+			case THE_CODE -> answerIndex(answers, source.getState().get("displayedNumber"));
+			case SYNONYMS -> answerIndex(answers, source.getState().get("displayedNumber"));
 			case LED_GRID -> answerIndex(answers, source.getState().get("unlitCount"));
 			case LEGOS -> answerIndex(answers, legoPieceDimension(source.getState(), q));
 			case LISTENING -> answerIndex(answers, source.getState().get("soundDescription"));
@@ -171,6 +174,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_SAYS -> answerIndex(answers, nested(source.getState(), "input", "flashes", ordinal(q)));
 			case SIMON_SCREAMS -> simonScreamsAnswerIndex(source.getState(), q, answers);
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
+			case SIMON_SINGS -> answerIndex(answers, simonSingsFlash(source.getState(), q));
+			case SIMON_SENDS -> answerIndex(answers, simonSendsReceivedLetter(source.getState(), q));
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
 			case SYMBOL_CYCLE -> answerIndex(answers, source.getState().get(q.contains("left") ? "leftCycleLength" : "rightCycleLength"));
@@ -247,6 +252,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case LED_GRID -> state.get("unlitCount");
 			case LEGOS -> legoPieceDimension(state, normalize(question));
 			case LED_ENCRYPTION -> ledEncryptionLetters(state);
+			case LOGICAL_BUTTONS -> logicalButtonsAnswer(state, normalize(question));
+			case THE_CODE -> state.get("displayedNumber");
+			case SYNONYMS -> state.get("displayedNumber");
 			case LISTENING -> state.get("soundDescription");
 			case LOGIC_GATES -> logicGateAnswer(state, normalize(question));
 			case MAZES -> nested(state, "input", "start");
@@ -275,6 +283,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SILLY_SLOTS -> state.get("displayHistory");
 			case SIMON_SCREAMS -> state.get("rules".equals(question) ? "ruleHistory" : "flashHistory");
 			case SIMON_STATES -> state.get("flashHistory");
+			case SIMON_SINGS -> simonSingsFlash(state, normalize(question));
+			case SIMON_SENDS -> simonSendsReceivedLetter(state, normalize(question));
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
 			case SYMBOL_CYCLE -> state.get("leftSymbolCount".equals(question) ? "leftCycleLength" : "rightCycleLength");
@@ -443,6 +453,21 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		Object total = state.get("totalStages");
 		if (!(raw instanceof List<?> stages) || !(total instanceof Number number)) return raw;
 		return stages.subList(0, Math.min(stages.size(), Math.max(0, number.intValue() - 1)));
+	}
+
+	private static Object logicalButtonsAnswer(Map<String, Object> state, String question) {
+		int stage = ordinal(question);
+		if (stage < 0) return null;
+		if (question.contains("operator")) return nested(state, "stages", stage, "operator");
+		int position = question.contains("bottom left") ? 1 : question.contains("bottom right") ? 2
+			: question.contains("top") ? 0 : -1;
+		String field = question.contains("color") ? "color" : question.contains("label") ? "label" : null;
+		return position < 0 || field == null ? null : nested(state, "stages", stage, "buttons", position, field);
+	}
+
+	private static Object simonSingsFlash(Map<String, Object> state, String question) {
+		List<Integer> values = ordinals(question);
+		return values.size() < 2 ? null : nested(state, "flashHistory", values.getLast(), values.getFirst());
 	}
 
 	private static Object twoBitsResponses(Object raw) {
@@ -900,6 +925,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			} else return null;
 		}
 		return value;
+	}
+
+	private static Object simonSendsReceivedLetter(Map<String, Object> state, String question) {
+		String color = question.contains("red") ? "red" : question.contains("green") ? "green" : question.contains("blue") ? "blue" : null;
+		return color == null ? null : nested(state, "receivedLetters", color);
 	}
 
 	private static int probingWireIndex(String question) {

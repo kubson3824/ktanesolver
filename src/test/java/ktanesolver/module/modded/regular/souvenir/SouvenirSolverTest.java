@@ -1016,6 +1016,92 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesEveryLogicalButtonsQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity logicalButtons = module(ModuleType.LOGICAL_BUTTONS, true, Map.of("stages", List.of(
+			Map.of("operator", "AND", "buttons", List.of(
+				Map.of("color", "Red", "label", "Logic"),
+				Map.of("color", "Blue", "label", "Color"),
+				Map.of("color", "Green", "label", "Label"))),
+			Map.of("operator", "NOR", "buttons", List.of(
+				Map.of("color", "White", "label", "Button"),
+				Map.of("color", "Orange", "label", "Wrong"),
+				Map.of("color", "Cyan", "label", "Boom"))),
+			Map.of("operator", "XNOR", "buttons", List.of(
+				Map.of("color", "Grey", "label", "No"),
+				Map.of("color", "Purple", "label", "Wait"),
+				Map.of("color", "Yellow", "label", "Hmmm")))
+		)));
+		bomb.setModules(List.of(souvenir, logicalButtons));
+
+		assertThat(solve(bomb, souvenir, logicalButtons.getId(), "color top first", List.of(), false).answer()).isEqualTo("Red");
+		assertThat(solve(bomb, souvenir, logicalButtons.getId(), "label bottom-left second", List.of(), false).answer()).isEqualTo("Wrong");
+		assertThat(solve(bomb, souvenir, logicalButtons.getId(), "operator third", List.of(), false).answer()).isEqualTo("XNOR");
+	}
+
+	@Test
+	void resolvesEverySimonSingsQuestionFamilyThroughTheDirectAnswerPath() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity simonSings = module(ModuleType.SIMON_SINGS, true, Map.of("flashHistory", List.of(
+			List.of("D", "C", "C♯", "D♯", "E", "G", "G♯", "B"),
+			List.of("F♯", "A", "A♯", "G♯", "D", "C", "B", "E"),
+			List.of("F", "G", "A", "G♯", "A♯", "E", "B", "C♯")
+		)));
+		bomb.setModules(List.of(souvenir, simonSings));
+
+		assertThat(solve(bomb, souvenir, simonSings.getId(), "flash eighth third", List.of(), false).answer())
+			.isEqualTo("C♯");
+	}
+
+	@Test
+	void resolvesEverySimonSendsReceivedLetterThroughTheDirectAnswerPath() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity simonSends = module(ModuleType.SIMON_SENDS, true, Map.of(
+			"receivedLetters", Map.of("red", "A", "green", "B", "blue", "C")));
+		bomb.setModules(List.of(souvenir, simonSends));
+
+		assertThat(solve(bomb, souvenir, simonSends.getId(), "red received letter", List.of(), false).answer()).isEqualTo("A");
+		assertThat(solve(bomb, souvenir, simonSends.getId(), "green received letter", List.of(), false).answer()).isEqualTo("B");
+		assertThat(solve(bomb, souvenir, simonSends.getId(), "blue received letter", List.of(), false).answer()).isEqualTo("C");
+	}
+
+	@Test
+	void resolvesTheCodeDisplayedNumber() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity theCode = module(ModuleType.THE_CODE, true, Map.of("displayedNumber", 4321));
+		bomb.setModules(List.of(souvenir, theCode));
+
+		assertThat(solve(bomb, souvenir, theCode.getId(), "displayedNumber", List.of(), false).answer())
+			.isEqualTo("4321");
+	}
+
+	@Test
+	void resolvesSynonymsDisplayedNumber() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity synonyms = module(ModuleType.SYNONYMS, true, Map.of("displayedNumber", 7));
+		bomb.setModules(List.of(souvenir, synonyms));
+
+		assertThat(solve(bomb, souvenir, synonyms.getId(), "displayedNumber", List.of("0", "3", "7", "9"), false))
+			.isEqualTo(new SouvenirOutput("7", 3));
+	}
+
+	@Test
+	void resolvesTapCodeReceivedWord() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity tapCode = module(ModuleType.TAP_CODE, true, Map.of("receivedWord", "child"));
+		bomb.setModules(List.of(souvenir, tapCode));
+
+		assertThat(solve(bomb, souvenir, tapCode.getId(), "receivedWord", List.of("Style", "Child", "Shake"), false).answer())
+			.isEqualTo("Child");
+	}
+
+	@Test
 	void resolvesFastMathLastPairAfterAReset() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());

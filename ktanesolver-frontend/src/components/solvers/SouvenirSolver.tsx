@@ -27,6 +27,23 @@ type SouvenirState = {
 
 const question = (id: string, label: string): QuestionOption => ({ id, label });
 const FLAGS_COUNTRIES_QUESTION = "Which of these country flags was shown, but not the main country flag, in Flags?";
+const LOGICAL_BUTTONS_STAGES = ["first", "second", "third"];
+const LOGICAL_BUTTONS_POSITIONS = ["top", "bottom-left", "bottom-right"];
+const LOGICAL_BUTTONS_QUESTIONS = [
+  ...LOGICAL_BUTTONS_STAGES.flatMap((stage) => LOGICAL_BUTTONS_POSITIONS.map((position) =>
+    question(`color ${position} ${stage}`, `Color of the ${position} button in the ${stage} stage`))),
+  ...LOGICAL_BUTTONS_STAGES.flatMap((stage) => LOGICAL_BUTTONS_POSITIONS.map((position) =>
+    question(`label ${position} ${stage}`, `Label of the ${position} button in the ${stage} stage`))),
+  ...LOGICAL_BUTTONS_STAGES.map((stage) =>
+    question(`operator ${stage}`, `Final operator in the ${stage} stage`)),
+];
+const SIMON_SINGS_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"];
+const SIMON_SINGS_QUESTIONS = ["first", "second", "third"].flatMap((stage) =>
+  SIMON_SINGS_ORDINALS.map((position) => question(
+    `flash ${position} ${stage}`,
+    `Key color that flashed ${position} in the ${stage} stage`,
+  )),
+);
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.MAFIA]: [question("players", "Who was a player, but not the Godfather?")],
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
@@ -125,8 +142,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("destinationCity", "What was the destination city?"),
   ],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
+  [ModuleType.THE_CODE]: [question("displayedNumber", "What was the displayed number?")],
+  [ModuleType.SYNONYMS]: [question("displayedNumber", "What was the displayed number?")],
+  [ModuleType.TAP_CODE]: [question("receivedWord", "What was the received word?")],
   [ModuleType.GAME_OF_LIFE_CRUEL]: [question("colorCombinations", "Which color combinations occurred?")],
   [ModuleType.LED_ENCRYPTION]: [question("stageLetters", "Which letters were present at each stage?")],
+  [ModuleType.LOGICAL_BUTTONS]: LOGICAL_BUTTONS_QUESTIONS,
   [ModuleType.LED_GRID]: [question("unlitCount", "How many LEDs were unlit?")],
   [ModuleType.LEGOS]: [
     question("red", "What were the dimensions of the red piece?"),
@@ -189,6 +210,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("rules", "Which rules applied in each stage?"),
   ],
   [ModuleType.SIMON_STATES]: [question("flashes", "Which colors flashed in each stage?")],
+  [ModuleType.SIMON_SINGS]: SIMON_SINGS_QUESTIONS,
+  [ModuleType.SIMON_SENDS]: [
+    question("red received letter", "What was the red received letter?"),
+    question("green received letter", "What was the green received letter?"),
+    question("blue received letter", "What was the blue received letter?"),
+  ],
   [ModuleType.SKEWED_SLOTS]: [question("originalNumber", "What were the original numbers?")],
   [ModuleType.SWITCHES]: [question("initialPosition", "What was the initial switch position?")],
   [ModuleType.SYMBOL_CYCLE]: [

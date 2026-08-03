@@ -566,6 +566,17 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const presses = strings(raw.press);
       return presses.length ? command(`press ${presses.map(words).join(" ")}`) : "";
     }
+    case ModuleType.SIMON_SINGS: {
+      const presses = strings(raw.press);
+      const key = /^(?:left|right) (?:C|C♯|D|D♯|E|F|F♯|G|G♯|A|A♯|B)$/;
+      return presses.length >= 2 && presses.length <= 6 && presses.length % 2 === 0 && presses.every((press) => key.test(press))
+        ? command(`play ${presses.map((press) => press.replaceAll("♯", "#")).join(" ")}`)
+        : "";
+    }
+    case ModuleType.SIMON_SENDS: {
+      const transmission = stringValue(raw.transmission);
+      return transmission && /^[KBGCRMYW]+$/.test(transmission) ? command(`press ${transmission.toLowerCase()}`) : "";
+    }
     case ModuleType.MODULES_AGAINST_HUMANITY:
       return strings(raw.commands).length ? commands(strings(raw.commands)) : "";
     case ModuleType.LAUNDRY: {
@@ -860,6 +871,17 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const letter = strings(raw.correctLetters)[0] ?? stringValue(raw.letter);
       return letter ? command(`press ${letter}`) : "";
     }
+    case ModuleType.LOGICAL_BUTTONS: {
+      const rawButtons = arrayValue(raw.pressButtons);
+      const buttons = rawButtons.filter((button): button is number => typeof button === "number");
+      const pressOperator = booleanValue(raw.pressOperator);
+      if (pressOperator === true) return buttons.length === 0 ? command("press operator") : "";
+      return pressOperator === false && buttons.length === rawButtons.length
+        && buttons.length >= 1 && buttons.length <= 3 && new Set(buttons).size === buttons.length
+        && buttons.every((button) => Number.isInteger(button) && button >= 1 && button <= 3)
+        ? command(`press ${buttons.join(" ")}`)
+        : "";
+    }
     case ModuleType.LED_GRID: {
       const buttons = strings(raw.pressOrder);
       return buttons.length === 4 && new Set(buttons).size === 4 && buttons.every((button) => /^[A-D]$/.test(button))
@@ -871,6 +893,14 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return positions.length > 0 && positions.length <= 9 && new Set(positions).size === positions.length
         && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 9)
         ? command(`spray ${positions.join(" ")}`)
+        : "";
+    }
+    case ModuleType.X01: {
+      const darts = strings(raw.darts);
+      const segment = /^(?:(?:IN|OUT|D|T)(?:[1-9]|1\d|20)|[SD]B)$/;
+      return darts.length >= 2 && darts.length <= 4 && new Set(darts).size === darts.length
+        && darts.every((dart) => segment.test(dart)) && /^(?:D(?:[1-9]|1\d|20)|DB)$/.test(darts.at(-1) ?? "")
+        ? command(`throw ${darts.join(" ")}`)
         : "";
     }
     case ModuleType.THE_MOON:
@@ -979,6 +1009,22 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return button && /^[XYAB]$/.test(button) && seconds.length
         && seconds.every((second) => Number.isInteger(second) && second >= 0 && second < 60)
         ? command(`press ${button.toLowerCase()} on ${seconds.map((second) => second.toString().padStart(2, "0")).join(" ")}`)
+        : "";
+    }
+    case ModuleType.THE_CODE: {
+      const code = numberValue(raw.code);
+      return code !== undefined && Number.isInteger(code) && code >= 1 && code <= 9999
+        ? command(`submit ${code}`)
+        : "";
+    }
+    case ModuleType.SYNONYMS: {
+      const targetWord = stringValue(raw.targetWord);
+      return targetWord ? command(`submit ${targetWord.toLowerCase()}`) : "";
+    }
+    case ModuleType.TAP_CODE: {
+      const taps = strings(raw.tapCode);
+      return taps.length === 5 && taps.every((pair) => /^[1-5]{2}$/.test(pair))
+        ? command(`tap ${taps.join(" ")}`)
         : "";
     }
     case ModuleType.DIGITAL_ROOT: {

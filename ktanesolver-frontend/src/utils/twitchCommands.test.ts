@@ -100,6 +100,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   THREE_D_MAZE: { result: { moves: ["FORWARD", "TURN_LEFT"] }, expected: "!number move F L" },
   SIMON_STATES: { result: { press: "RED" }, expected: "!number press red" },
   SIMON_SCREAMS: { result: { press: ["RED", "BLUE"] }, expected: "!number press red blue" },
+  SIMON_SINGS: { result: { press: ["left A♯", "right D♯", "left G♯", "right D"] }, expected: "!number play left A# right D# left G# right D" },
+  SIMON_SENDS: { result: { transmission: "WKWBWKCBBKB" }, expected: "!number press wkwbwkcbbkb" },
   MODULES_AGAINST_HUMANITY: { result: { commands: ["press reset", "press submit"] }, expected: "!number press reset; !number press submit" },
   LAUNDRY: { result: { bobShortcut: false, washingSymbol: "WASH_80F", dryingSymbol: "TUMBLE_DRY", ironingSymbol: "IRON", specialSymbol: "BLEACH" }, expected: "!number set all 4 0 0 0; !number insert coin" },
   PROBING: { result: { redClipWire: 4, blueClipWire: 3 }, expected: "!number connect 4 3" },
@@ -157,6 +159,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   LED_ENCRYPTION: { result: { correctLetters: ["B"] }, expected: "!number press B" },
   LED_GRID: { result: { pressOrder: ["C", "D", "A", "B"] }, expected: "!number press cdab" },
   GRAFFITI_NUMBERS: { result: { pressNumbers: [6, 7, 9, 1], buttonPositions: [6, 5, 2, 1] }, expected: "!number spray 6 5 2 1" },
+  X01: { result: { darts: ["SB", "IN6", "T13", "D16"] }, expected: "!number throw SB IN6 T13 D16" },
+  LOGICAL_BUTTONS: { result: { pressButtons: [2, 3, 1], pressOperator: false }, expected: "!number press 2 3 1" },
   THE_SUN: { result: { pressSequence: ["inner southeast", "outer south", "center"] }, expected: "!number press inner southeast;outer south;center" },
   THE_MOON: { result: { pressSequence: ["outer southwest", "outer northwest", "center"] }, expected: "!number press outer southwest;outer northwest;center" },
   GRID_MATCHING: { result: { letter: "D", actions: ["up", "right", "clockwise"] }, expected: "!number up right clockwise set d submit" },
@@ -187,6 +191,9 @@ const fixtures: Record<ModuleType, Fixture> = {
   ERROR_CODES: { result: { fixCode: "1011011" }, expected: "!number submit 1011011" },
   LEGOS: { result: { cells: Array(64).fill("EMPTY"), face: "TOP", orientation: "NORTH" }, expected: "" },
   PRESS_X: { result: { button: "B", validSeconds: [9, 18, 27, 36, 45, 54], anyTime: false }, expected: "!number press b on 09 18 27 36 45 54" },
+  THE_CODE: { result: { code: 144 }, expected: "!number submit 144" },
+  SYNONYMS: { result: { targetWord: "SEND" }, expected: "!number submit send" },
+  TAP_CODE: { result: { tapCode: ["21", "45", "33", "33", "54"] }, expected: "!number tap 21 45 33 33 54" },
   DIGITAL_ROOT: { result: { button: "YES", digitalRoot: 6 }, expected: "!number press yes" },
   MARBLE_TUMBLE: { result: { timerDigits: [0, 5, 5, 9] }, expected: "!number 0; !number 5; !number 5; !number 9" },
   SKYRIM: { result: { race: "Nord", weapon: "Mace of Molag Bal", enemy: "Frost Troll", city: "Rorikstead", dragonShout: "Ice Form" }, expected: "!number submit Nord, Mace of Molag Bal, Frost Troll, Rorikstead, Ice Form" },
@@ -196,7 +203,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(154);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(161);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
   });
 
@@ -214,6 +221,13 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.TWO_BITS,
       result: { letters: "gz", stages: [{}, {}, {}, {}] },
     })).toBe("!number press g z submit");
+  });
+
+  it("presses the Logical Buttons operator when no button is valid", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.LOGICAL_BUTTONS,
+      result: { pressButtons: [], pressOperator: true },
+    })).toBe("!number press operator");
   });
 
   it("does not submit an ambiguous password candidate", () => {
