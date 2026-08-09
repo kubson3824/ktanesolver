@@ -265,6 +265,140 @@ describe("SouvenirSolver", () => {
     expect(screen.queryByRole("option", { name: /Flags/ })).not.toBeInTheDocument();
   });
 
+  it("offers every Simon's Star flash position", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "PURPLE", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.SIMONS_STAR)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "flash fifth" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("PURPLE")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: "flash fifth", finalQuestion: false,
+    });
+  });
+
+  it("offers every Morse War question family", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.MORSE_WAR)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+
+    ["Code transmitted in Morse", "LEDs in the bottom row", "LEDs in the middle row", "LEDs in the top row"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers every Maze Scrambler question family", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.MAZE_SCRAMBLER)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+
+    ["Starting position", "Goal position", "Which positions were maze markings?"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers all four Alphabet Numbers stage questions", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.ALPHABET_NUMBERS)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+
+    ["Numbers in the first stage", "Numbers in the second stage", "Numbers in the third stage", "Numbers in the fourth stage"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers both Double Color stage questions", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.DOUBLE_COLOR)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+
+    ["Screen color in the first stage", "Screen color in the second stage"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers both Maritime Flags question families", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.MARITIME_FLAGS)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+
+    ["Signalled bearing", "Signalled callsign"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers and renders Pattern Cube's highlighted symbol question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "X", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.PATTERN_CUBE)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+    expect(await screen.findByRole("img", { name: "Pattern Cube symbol X" })).toBeInTheDocument();
+  });
+
+  it("offers every Know Your Way question family", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.KNOW_YOUR_WAY)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+
+    ["Arrow direction", "Green LED position"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("resolves Splitting The Loot's initially colored bag question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "E6", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.SPLITTING_THE_LOOT)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+    expect(await screen.findByText("E6")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: "initiallyColoredBag", finalQuestion: false,
+    });
+  });
+
+  it("offers every Character Shift question family", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.CHARACTER_SHIFT)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    ["Unsubmitted slider letter", "Unsubmitted slider digit"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers every Simon Samples stage argument", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.SIMON_SAMPLES)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    ["Call samples played in the first stage", "Call samples added in the second stage", "Call samples added in the third stage"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("resolves Dragon Energy's indicator color question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "Purple", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.DRAGON_ENERGY)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+    expect(await screen.findByText("Purple")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: "indicatorColor", finalQuestion: false,
+    });
+  });
+
+  it("offers and resolves both Uncolored Squares first-stage colors", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "Green", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.UNCOLORED_SQUARES)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.getByRole("option", { name: "First color in reading order in the first stage" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "firstStageColor second" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+    expect(await screen.findByText("Green")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: "firstStageColor second", finalQuestion: false,
+    });
+  });
+
+  it("offers all ten Flashing Lights LED/color questions", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.FLASHING_LIGHTS)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    ["Top LED — cyan", "Top LED — orange", "Bottom LED — cyan", "Bottom LED — orange"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("hides Calendar instances whose holiday remains visible in the target month", () => {
+    const calendarBomb = bomb(ModuleType.CALENDAR);
+    calendarBomb.modules[0].state = { souvenirEligible: false };
+    render(<SouvenirSolver bomb={calendarBomb} />);
+
+    expect(screen.queryByRole("option", { name: /Calendar/ })).not.toBeInTheDocument();
+  });
+
   it.each([
     ["departureCity", "Buenos Aires"],
     ["destinationCity", "Tarawa"],

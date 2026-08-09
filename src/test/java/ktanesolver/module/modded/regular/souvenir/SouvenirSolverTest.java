@@ -1069,6 +1069,25 @@ class SouvenirSolverTest {
 	}
 
 	@Test
+	void resolvesAllFiveSimonsStarFlashColorsThroughDirectAndDisplayedAnswers() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		List<String> flashes = List.of("RED", "BLUE", "RED", "YELLOW", "PURPLE");
+		ModuleEntity simonsStar = module(ModuleType.SIMONS_STAR, true, Map.of("flashes", flashes));
+		bomb.setModules(List.of(souvenir, simonsStar));
+
+		List<String> ordinals = List.of("first", "second", "third", "fourth", "fifth");
+		for (int index = 0; index < ordinals.size(); index++) {
+			assertThat(solve(bomb, souvenir, simonsStar.getId(), "flash " + ordinals.get(index), List.of(), false).answer())
+				.isEqualTo(flashes.get(index));
+		}
+		assertThat(solve(bomb, souvenir, simonsStar.getId(),
+			"Which color flashed fifth in Simon's Star?",
+			List.of("Red", "Yellow", "Green", "Blue", "Purple"), false))
+			.isEqualTo(new SouvenirOutput("Purple", 5));
+	}
+
+	@Test
 	void resolvesEverySimonShrieksFinalFlashThroughTheDirectAndDisplayedAnswerPaths() {
 		BombEntity bomb = new BombEntity();
 		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
@@ -1394,6 +1413,238 @@ class SouvenirSolverTest {
 			.isEqualTo(new SouvenirOutput("3A", null));
 		assertThat(solve(bomb, souvenir, errorCodes.getId(), "What was the active error code in Error Codes?",
 			List.of("0F", "21", "3A", "40", "52", "65"), false)).isEqualTo(new SouvenirOutput("3A", 3));
+	}
+
+	@Test
+	void resolvesTheUsaMazeDepartureState() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity usaMaze = module(ModuleType.USA_MAZE, true, Map.of("souvenirState", "California"));
+		bomb.setModules(List.of(souvenir, usaMaze));
+
+		assertThat(solve(bomb, souvenir, usaMaze.getId(), "departureState", List.of(), false))
+			.isEqualTo(new SouvenirOutput("California", null));
+		assertThat(solve(bomb, souvenir, usaMaze.getId(), "Which state did you depart from in USA Maze?",
+			List.of("Arizona", "California", "Nevada", "Oregon"), false))
+			.isEqualTo(new SouvenirOutput("California", 2));
+	}
+
+	@Test
+	void resolvesEveryMorseWarQuestionAndDisplayedLedSprite() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity morseWar = module(ModuleType.MORSE_WAR, true, Map.of(
+			"morseCode", "SUN", "bottomRow", "0110", "middleRow", "0101", "topRow", "0011"
+		));
+		bomb.setModules(List.of(souvenir, morseWar));
+
+		assertThat(solve(bomb, souvenir, morseWar.getId(), "transmittedCode", List.of(), false).answer()).isEqualTo("SUN");
+		assertThat(solve(bomb, souvenir, morseWar.getId(), "led bottom", List.of(), false).answer()).isEqualTo("○●●○");
+		assertThat(solve(bomb, souvenir, morseWar.getId(), "led middle", List.of(), false).answer()).isEqualTo("○●○●");
+		assertThat(solve(bomb, souvenir, morseWar.getId(), "led top", List.of(), false).answer()).isEqualTo("○○●●");
+		assertThat(solve(bomb, souvenir, morseWar.getId(), "What were the LEDs in the bottom row in Morse War?",
+			List.of("●●○○", "●○●○", "●○○●", "○●●○", "○●○●", "○○●●"), false))
+			.isEqualTo(new SouvenirOutput("○●●○", 4));
+	}
+
+	@Test
+	void resolvesEveryMazeScramblerQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity mazeScrambler = module(ModuleType.MAZE_SCRAMBLER, true, Map.of(
+			"startPosition", "top-left", "goalPosition", "bottom-right",
+			"mazeMarkings", List.of("top-middle", "bottom-left")
+		));
+		bomb.setModules(List.of(souvenir, mazeScrambler));
+
+		assertThat(solve(bomb, souvenir, mazeScrambler.getId(), "startPosition", List.of(), false).answer())
+			.isEqualTo("top-left");
+		assertThat(solve(bomb, souvenir, mazeScrambler.getId(), "goalPosition", List.of(), false).answer())
+			.isEqualTo("bottom-right");
+		assertThat(solve(bomb, souvenir, mazeScrambler.getId(), "mazeMarkings", List.of(), false).answer())
+			.isEqualTo("top-middle, bottom-left");
+		assertThat(solve(bomb, souvenir, mazeScrambler.getId(),
+			"Which of these positions was a maze marking on Maze Scrambler?",
+			List.of("top-left", "center", "bottom-left", "bottom-right"), false))
+			.isEqualTo(new SouvenirOutput("bottom-left", 3));
+	}
+
+	@Test
+	void resolvesEveryAlphabetNumbersStage() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity alphabetNumbers = module(ModuleType.ALPHABET_NUMBERS, true, Map.of(
+			"stage1Numbers", List.of(1, 2, 3, 4, 5, 6),
+			"stage2Numbers", List.of(7, 8, 9, 10, 11, 12),
+			"stage3Numbers", List.of(13, 14, 15, 16, 17, 18),
+			"stage4Numbers", List.of(27, 28, 29, 30, 31, 32)
+		));
+		bomb.setModules(List.of(souvenir, alphabetNumbers));
+
+		assertThat(solve(bomb, souvenir, alphabetNumbers.getId(), "displayedNumbers first", List.of(), false).answer())
+			.isEqualTo("1, 2, 3, 4, 5, 6");
+		assertThat(solve(bomb, souvenir, alphabetNumbers.getId(), "displayedNumbers second", List.of(), false).answer())
+			.isEqualTo("7, 8, 9, 10, 11, 12");
+		assertThat(solve(bomb, souvenir, alphabetNumbers.getId(), "displayedNumbers third", List.of(), false).answer())
+			.isEqualTo("13, 14, 15, 16, 17, 18");
+		assertThat(solve(bomb, souvenir, alphabetNumbers.getId(), "displayedNumbers fourth", List.of(), false).answer())
+			.isEqualTo("27, 28, 29, 30, 31, 32");
+		assertThat(solve(bomb, souvenir, alphabetNumbers.getId(),
+			"Which of these numbers was on one of the buttons in the fourth stage of Alphabet Numbers?",
+			List.of("4", "18", "31", "9", "14", "22"), false))
+			.isEqualTo(new SouvenirOutput("31", 3));
+	}
+
+	@Test
+	void resolvesBothSuccessfulAttemptDoubleColorStages() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity doubleColor = module(ModuleType.DOUBLE_COLOR, true, Map.of(
+			"stage1Color", "Blue", "stage2Color", "Pink"
+		));
+		bomb.setModules(List.of(souvenir, doubleColor));
+
+		assertThat(solve(bomb, souvenir, doubleColor.getId(), "screenColor first", List.of(), false).answer())
+			.isEqualTo("Blue");
+		assertThat(solve(bomb, souvenir, doubleColor.getId(), "screenColor second", List.of(), false).answer())
+			.isEqualTo("Pink");
+		assertThat(solve(bomb, souvenir, doubleColor.getId(),
+			"What was the screen color on the first stage of Double Color?",
+			List.of("Green", "Blue", "Red", "Pink"), false))
+			.isEqualTo(new SouvenirOutput("Blue", 2));
+	}
+
+	@Test
+	void resolvesBothMaritimeFlagsQuestionFamilies() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity maritimeFlags = module(ModuleType.MARITIME_FLAGS, true, Map.of(
+			"callsign", "CAPTAIN", "signalledBearing", 100
+		));
+		bomb.setModules(List.of(souvenir, maritimeFlags));
+
+		assertThat(solve(bomb, souvenir, maritimeFlags.getId(), "bearing", List.of(), false).answer()).isEqualTo("100");
+		assertThat(solve(bomb, souvenir, maritimeFlags.getId(), "callsign", List.of(), false).answer()).isEqualTo("captain");
+		assertThat(solve(bomb, souvenir, maritimeFlags.getId(), "Which callsign was signalled in Maritime Flags?",
+			List.of("admiral", "captain", "station", "weather"), false))
+			.isEqualTo(new SouvenirOutput("captain", 2));
+	}
+
+	@Test
+	void resolvesAndMatchesThePatternCubeHighlightedSprite() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity patternCube = module(ModuleType.PATTERN_CUBE, true, Map.of("highlightedSymbol", "X"));
+		bomb.setModules(List.of(souvenir, patternCube));
+
+		assertThat(solve(bomb, souvenir, patternCube.getId(), "highlightedSymbol", List.of(), false).answer()).isEqualTo("X");
+		assertThat(solve(bomb, souvenir, patternCube.getId(), "Which symbol was highlighted in Pattern Cube?",
+			List.of("A", "B", "X", "Y", "Z", "H"), false)).isEqualTo(new SouvenirOutput("X", 3));
+	}
+
+	@Test
+	void resolvesEveryKnowYourWayQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity knowYourWay = module(ModuleType.KNOW_YOUR_WAY, true,
+			Map.of("arrowDirection", "Down", "greenLed", "Left"));
+		bomb.setModules(List.of(souvenir, knowYourWay));
+
+		assertThat(solve(bomb, souvenir, knowYourWay.getId(), "arrowDirection", List.of(), false).answer()).isEqualTo("Down");
+		assertThat(solve(bomb, souvenir, knowYourWay.getId(), "greenLed", List.of(), false).answer()).isEqualTo("Left");
+		assertThat(solve(bomb, souvenir, knowYourWay.getId(), "Which way was the arrow pointing in Know Your Way?",
+			List.of("Up", "Down", "Left", "Right"), false)).isEqualTo(new SouvenirOutput("Down", 2));
+		assertThat(solve(bomb, souvenir, knowYourWay.getId(), "Which LED was green in Know Your Way?",
+			List.of("Top", "Bottom", "Right", "Left"), false)).isEqualTo(new SouvenirOutput("Left", 4));
+	}
+
+	@Test
+	void resolvesSplittingTheLootInitiallyColoredBag() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity loot = module(ModuleType.SPLITTING_THE_LOOT, true, Map.of("initiallyColoredBag", "E6"));
+		bomb.setModules(List.of(souvenir, loot));
+
+		assertThat(solve(bomb, souvenir, loot.getId(), "initiallyColoredBag", List.of(), false).answer()).isEqualTo("E6");
+		assertThat(solve(bomb, souvenir, loot.getId(), "What bag was initially colored in Splitting The Loot?",
+			List.of("A5", "E6", "19", "82", "C3", "40"), false)).isEqualTo(new SouvenirOutput("E6", 2));
+	}
+
+	@Test
+	void resolvesEveryCharacterShiftQuestionFamily() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity shift = module(ModuleType.CHARACTER_SHIFT, true,
+			Map.of("unsubmittedLetters", List.of("Y", "Z", "Q"), "unsubmittedDigits", List.of("1", "2", "3")));
+		bomb.setModules(List.of(souvenir, shift));
+
+		assertThat(solve(bomb, souvenir, shift.getId(), "unsubmittedLetters", List.of(), false).answer()).isEqualTo("Y, Z, Q");
+		assertThat(solve(bomb, souvenir, shift.getId(), "unsubmittedDigits", List.of(), false).answer()).isEqualTo("1, 2, 3");
+		assertThat(solve(bomb, souvenir, shift.getId(), "Which letter was present but not submitted on the left slider of Character Shift?",
+			List.of("A", "B", "Q", "C", "D", "E"), false)).isEqualTo(new SouvenirOutput("Q", 3));
+		assertThat(solve(bomb, souvenir, shift.getId(), "Which digit was present but not submitted on the right slider of Character Shift?",
+			List.of("0", "4", "5", "2", "7", "9"), false)).isEqualTo(new SouvenirOutput("2", 4));
+	}
+
+	@Test
+	void resolvesEverySimonSamplesCallAddition() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity samples = module(ModuleType.SIMON_SAMPLES, true,
+			Map.of("callStage1", "KKSH", "callStage2", "KOSH", "callStage3", "SHHS"));
+		bomb.setModules(List.of(souvenir, samples));
+
+		assertThat(solve(bomb, souvenir, samples.getId(), "call first", List.of(), false).answer()).isEqualTo("KKSH");
+		assertThat(solve(bomb, souvenir, samples.getId(), "call second", List.of(), false).answer()).isEqualTo("KOSH");
+		assertThat(solve(bomb, souvenir, samples.getId(), "call third", List.of(), false).answer()).isEqualTo("SHHS");
+		assertThat(solve(bomb, souvenir, samples.getId(), "What were the call samples added in the second stage of Simon Samples?",
+			List.of("KKSS", "KHSS", "KOSH", "KOSO"), false)).isEqualTo(new SouvenirOutput("KOSH", 3));
+	}
+
+	@Test
+	void resolvesDragonEnergyIndicatorColor() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity dragon = module(ModuleType.DRAGON_ENERGY, true, Map.of("indicatorColor", "Purple"));
+		bomb.setModules(List.of(souvenir, dragon));
+
+		assertThat(solve(bomb, souvenir, dragon.getId(), "indicatorColor", List.of(), false).answer()).isEqualTo("Purple");
+		assertThat(solve(bomb, souvenir, dragon.getId(), "What color was the indicator in Dragon Energy?",
+			List.of("Orange", "Cyan", "Purple"), false)).isEqualTo(new SouvenirOutput("Purple", 3));
+	}
+
+	@Test
+	void resolvesBothUncoloredSquaresFirstStageColors() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity squares = module(ModuleType.UNCOLORED_SQUARES, true,
+			Map.of("firstStageColor1", "Red", "firstStageColor2", "Green"));
+		bomb.setModules(List.of(souvenir, squares));
+
+		assertThat(solve(bomb, souvenir, squares.getId(), "firstStageColor first", List.of(), false).answer()).isEqualTo("Red");
+		assertThat(solve(bomb, souvenir, squares.getId(), "firstStageColor second", List.of(), false).answer()).isEqualTo("Green");
+		assertThat(solve(bomb, souvenir, squares.getId(),
+			"What was the second color in reading order used in the first stage of Uncolored Squares?",
+			List.of("Red", "Green", "Blue", "Yellow", "Magenta"), false)).isEqualTo(new SouvenirOutput("Green", 2));
+	}
+
+	@Test
+	void resolvesEveryFlashingLightsLedColorFrequency() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		Map<String, Object> facts = new HashMap<>();
+		String[] colors = {"Cyan", "Green", "Red", "Purple", "Orange"};
+		for (int i = 0; i < colors.length; i++) { facts.put("top" + colors[i], i); facts.put("bottom" + colors[i], 12 - i); }
+		ModuleEntity lights = module(ModuleType.FLASHING_LIGHTS, true, facts);
+		bomb.setModules(List.of(souvenir, lights));
+
+		for (int i = 0; i < colors.length; i++) {
+			String color = colors[i].toLowerCase();
+			assertThat(solve(bomb, souvenir, lights.getId(), "ledFrequency top " + color, List.of(), false).answer()).isEqualTo(Integer.toString(i));
+			assertThat(solve(bomb, souvenir, lights.getId(), "ledFrequency bottom " + color, List.of(), false).answer()).isEqualTo(Integer.toString(12 - i));
+		}
+		assertThat(solve(bomb, souvenir, lights.getId(), "How many times did the bottom LED flash purple on Flashing Lights?",
+			List.of("2", "4", "7", "9", "11", "12"), false)).isEqualTo(new SouvenirOutput("9", 4));
 	}
 
 	@Test

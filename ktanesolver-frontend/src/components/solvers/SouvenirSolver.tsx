@@ -12,6 +12,7 @@ import { XRAY_SYMBOLS, XRaySymbol } from "./XRaySolver";
 import { HUNTING_CLUES } from "../../services/huntingService";
 import { HuntingPictogram } from "./HuntingSolver";
 import { BraillePattern } from "./BrailleSolver";
+import PatternCubeSymbol, { PATTERN_CUBE_SYMBOLS } from "../common/PatternCubeSymbol";
 
 type QuestionOption = { id: string; label: string };
 type HistoryEntry = { question: string; answer: string };
@@ -48,8 +49,14 @@ const SIMON_SHRIEKS_QUESTIONS = SIMON_ORDINALS.map((position) => question(
   `flash ${position}`,
   `Spaces clockwise from the arrow for the ${position} flash in the final sequence`,
 ));
+const SIMONS_STAR_QUESTIONS = SIMON_ORDINALS.slice(0, 5).map((position) => question(
+  `flash ${position}`,
+  `Color that flashed ${position}`,
+));
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.MAFIA]: [question("players", "Who was a player, but not the Godfather?")],
+  [ModuleType.CALENDAR]: [question("holiday", "What was the holiday?")],
+  [ModuleType.USA_MAZE]: [question("departureState", "Which state did you depart from?")],
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
   [ModuleType.BIG_CIRCLE]: [question("spinDirection", "Which direction was the circle spinning?")],
   [ModuleType.MEMORY]: [
@@ -220,6 +227,55 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("green received letter", "What was the green received letter?"),
     question("blue received letter", "What was the blue received letter?"),
   ],
+  [ModuleType.SIMONS_STAR]: SIMONS_STAR_QUESTIONS,
+  [ModuleType.MORSE_WAR]: [
+    question("transmittedCode", "Code transmitted in Morse"),
+    question("led bottom", "LEDs in the bottom row"),
+    question("led middle", "LEDs in the middle row"),
+    question("led top", "LEDs in the top row"),
+  ],
+  [ModuleType.MAZE_SCRAMBLER]: [
+    question("startPosition", "Starting position"),
+    question("goalPosition", "Goal position"),
+    question("mazeMarkings", "Which positions were maze markings?"),
+  ],
+  [ModuleType.ALPHABET_NUMBERS]: [
+    question("displayedNumbers first", "Numbers in the first stage"),
+    question("displayedNumbers second", "Numbers in the second stage"),
+    question("displayedNumbers third", "Numbers in the third stage"),
+    question("displayedNumbers fourth", "Numbers in the fourth stage"),
+  ],
+  [ModuleType.DOUBLE_COLOR]: [
+    question("screenColor first", "Screen color in the first stage"),
+    question("screenColor second", "Screen color in the second stage"),
+  ],
+  [ModuleType.MARITIME_FLAGS]: [
+    question("bearing", "Signalled bearing"),
+    question("callsign", "Signalled callsign"),
+  ],
+  [ModuleType.PATTERN_CUBE]: [question("highlightedSymbol", "Highlighted symbol")],
+  [ModuleType.KNOW_YOUR_WAY]: [
+    question("arrowDirection", "Arrow direction"),
+    question("greenLed", "Green LED position"),
+  ],
+  [ModuleType.SPLITTING_THE_LOOT]: [question("initiallyColoredBag", "Initially colored bag")],
+  [ModuleType.CHARACTER_SHIFT]: [
+    question("unsubmittedLetters", "Unsubmitted slider letter"),
+    question("unsubmittedDigits", "Unsubmitted slider digit"),
+  ],
+  [ModuleType.SIMON_SAMPLES]: [
+    question("call first", "Call samples played in the first stage"),
+    question("call second", "Call samples added in the second stage"),
+    question("call third", "Call samples added in the third stage"),
+  ],
+  [ModuleType.DRAGON_ENERGY]: [question("indicatorColor", "Indicator color")],
+  [ModuleType.UNCOLORED_SQUARES]: [
+    question("firstStageColor first", "First color in reading order in the first stage"),
+    question("firstStageColor second", "Other least-common color in the first stage"),
+  ],
+  [ModuleType.FLASHING_LIGHTS]: ["top", "bottom"].flatMap((led) =>
+    ["cyan", "green", "red", "purple", "orange"].map((color) =>
+      question(`ledFrequency ${led} ${color}`, `${led[0].toUpperCase() + led.slice(1)} LED — ${color}`))),
   [ModuleType.SIMON_SHRIEKS]: SIMON_SHRIEKS_QUESTIONS,
   [ModuleType.SKEWED_SLOTS]: [question("originalNumber", "What were the original numbers?")],
   [ModuleType.SWITCHES]: [question("initialPosition", "What was the initial switch position?")],
@@ -360,7 +416,8 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
   const sources = useMemo(
     () => bomb?.modules.filter((source) => source.solved && source.id !== currentModule?.id
-      && !(source.type === ModuleType.FLAGS && source.state.unicornRule === true)) ?? [],
+      && !(source.type === ModuleType.FLAGS && source.state.unicornRule === true)
+      && !(source.type === ModuleType.CALENDAR && source.state.souvenirEligible === false)) ?? [],
     [bomb?.modules, currentModule?.id],
   );
   const selectedSource = sources.find((source) => source.id === sourceModuleId);
@@ -377,6 +434,8 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
   const braillePattern = selectedSource?.type === ModuleType.BRAILLE && result
     ? (result.answer.codePointAt(0) ?? 0) - 0x2800
     : 0;
+  const patternCubeSymbol = selectedSource?.type === ModuleType.PATTERN_CUBE && result
+    && PATTERN_CUBE_SYMBOLS.includes(result.answer) ? result.answer : "";
   const moduleState = useMemo<SouvenirState>(() => ({
     sourceModuleId, question: selectedQuestion, exactQuestion, answers, finalQuestion, result, history,
   }), [sourceModuleId, selectedQuestion, exactQuestion, answers, finalQuestion, result, history]);
@@ -547,6 +606,8 @@ export default function SouvenirSolver({ bomb }: { bomb: BombEntity | null | und
           ? <><p className="mb-3">Match any of these scanned symbols:</p><div className="flex justify-center gap-3">{xRaySymbols.map((symbol) => <XRaySymbol key={symbol} code={symbol} />)}</div></>
           : braillePattern > 0 && braillePattern <= 63
           ? <><p className="mb-3">Match this Braille pattern:</p><BraillePattern pattern={braillePattern} className="mx-auto w-fit scale-150" /><p className="mt-4">{result.answer}</p></>
+          : patternCubeSymbol
+          ? <><p className="mb-3">Match this highlighted symbol:</p><PatternCubeSymbol symbol={patternCubeSymbol} className="mx-auto h-20 w-20" /></>
           : result.answer}
       </div>
       {!isSolved && <Button type="button" className="mt-4 w-full" onClick={nextQuestion}>Next question</Button>}

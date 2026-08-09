@@ -167,6 +167,39 @@ const fixtures: Record<ModuleType, Fixture> = {
   THE_SUN: { result: { pressSequence: ["inner southeast", "outer south", "center"] }, expected: "!number press inner southeast;outer south;center" },
   THE_MOON: { result: { pressSequence: ["outer southwest", "outer northwest", "center"] }, expected: "!number press outer southwest;outer northwest;center" },
   GRID_MATCHING: { result: { letter: "D", actions: ["up", "right", "clockwise"] }, expected: "!number up right clockwise set d submit" },
+  LASERS: { result: { positions: [8, 4, 7, 5, 3, 2, 9] }, expected: "!number position 8475329" },
+  TURTLE_ROBOT: { result: { shape: "Mushroom", bugLines: [6, 11, 18] }, expected: "!number down 5; !number comment; !number down 5; !number comment; !number down 7; !number comment" },
+  GUITAR_CHORDS: { result: { stage: 1, chord: "Ab", capoPosition: 3, frets: ["3", "3", "4", "5", "5", "3"] }, expected: "!number play 3,3,4,5,5,3" },
+  CALENDAR: { result: { targetMonth: 3, targetDay: 17, pressCount: 1 }, expected: "!number mar; !number press 17" },
+  USA_MAZE: { result: { route: ["CA", "AZ", "NM", "TX"], presses: ["Circle", "Square", "Heart"] }, expected: "!number press 016" },
+  BINARY_TREE: { result: { presses: [1, 2, 3, 4, 5, 6, 7] }, expected: "!number press 1; !number press 2; !number press 3; !number press 4; !number press 5; !number press 6; !number press 7" },
+  THE_TIME_KEEPER: { result: { correctLed: 3, finalNumber: 59999 }, expected: "!number press 3 at 999:59" },
+  LIGHTSPEED: { result: { warpSpeed: 8, planet: "Gaia IV", officer: "Kim, H", encryptionCode: "3451" }, expected: "!number set warp 8; !number set planet gaia iv; !number set officer kim; !number set encryption 3451; !number engage" },
+  BLACK_HOLE: { result: { digit: 2 }, expected: "!number tap tick hold tick release" },
+  SIMONS_STAR: { result: { presses: ["Red", "Green", "Blue", "Yellow", "Purple"] }, expected: "!number press red green blue yellow purple" },
+  MORSE_WAR: { result: { presses: ["S", "U", "S", "U"] }, expected: "!number press SUSU" },
+  THE_STOCK_MARKET: { result: { companies: ["ADM"] }, expected: "!number submit A" },
+  MINESEEKER: { result: { destinationImage: "11", moves: ["R", "R", "R", "D"] }, expected: "!number rrrd submit" },
+  MAZE_SCRAMBLER: { result: { presses: ["RED", "BLUE", "GREEN", "YELLOW"] }, expected: "!number reset; !number press rbgy" },
+  THE_NUMBER_CIPHER: { result: { answer: 0, rule: "C" }, expected: "!number submit 0" },
+  ALPHABET_NUMBERS: { result: { stage: 1, presses: [1, 2, 6, 5, 4, 3] }, expected: "!number press 1 2 6 5 4 3" },
+  BRITISH_SLANG: { result: { stage: 2, pressPosition: 4, pressLabel: "Bagsy" }, expected: "!number press 4" },
+  DOUBLE_COLOR: { result: { stage: 1, digit: 0 }, expected: "!number submit at 0" },
+  MARITIME_FLAGS: { result: { finalBearing: 101, direction: "E" }, expected: "!number E" },
+  EQUATIONS: { result: { answer: "-0.166", blank: false }, expected: "!number submit -0.166" },
+  DETERMINANTS: { result: { determinant: -162 }, expected: "!number submit -162" },
+  PATTERN_CUBE: { result: { placements: [
+    { selection: 1, targetLetter: "E", rotation: "cw" }, { selection: 2, targetLetter: "D", rotation: "none" },
+    { selection: 3, targetLetter: "G", rotation: "cw" }, { selection: 4, targetLetter: "F", rotation: "cw" },
+    { selection: 5, targetLetter: "H", rotation: "ccw" },
+  ] }, expected: "!number 1 cw 1 E 2 D 3 cw 3 G 4 cw 4 F 5 ccw 5 H" },
+  KNOW_YOUR_WAY: { result: { presses: ["D", "R", "R", "U"] }, expected: "!number press DRRU" },
+  SPLITTING_THE_LOOT: { result: { colors: ["RED", "BLUE", "RED", "NORMAL", "BLUE", "NORMAL", "RED"], coloredBag: 1 }, expected: "!number set bag 3 7 red; !number set bag 2 5 blue; !number set bag 4 6 normal; !number split" },
+  CHARACTER_SHIFT: { result: { solutions: [{ letter: "X", digit: 0, shiftedLetter: "A" }] }, expected: "!number submit X0" },
+  SIMON_SAMPLES: { result: { presses: [1, 1, 2, 4] }, expected: "!number record; !number 1 1 2 4" },
+  DRAGON_ENERGY: { result: { acceptableWords: ["Energy"], safeTimerDigits: [2, 3, 4] }, expected: "!number energy 2" },
+  UNCOLORED_SQUARES: { result: { placements: [["A1", "B1", "A2"]] }, expected: "" },
+  FLASHING_LIGHTS: { result: { presses: [3, 4] }, expected: "!number press 3; !number press 4" },
   TANGRAMS: { result: { connections: [{ positivePin: 1, negativePin: 8 }, { positivePin: 2, negativePin: 1 }, { positivePin: 5, negativePin: 4 }] }, expected: "!number set 1 8; !number set 2 1; !number set 5 4" },
   BITWISE_OPERATIONS: { result: { answer: "10101010" }, expected: "!number submit 10101010" },
   FAST_MATH: { result: { answer: "05" }, expected: "!number submit 05" },
@@ -207,8 +240,9 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(165);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(193);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(1);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -225,6 +259,26 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.TWO_BITS,
       result: { letters: "gz", stages: [{}, {}, {}, {}] },
     })).toBe("!number press g z submit");
+  });
+
+  it("covers The Time Keeper's accepted LED and time widths", () => {
+    expect(generateTwitchCommand({ moduleType: ModuleType.THE_TIME_KEEPER, result: { correctLed: 1, finalNumber: 51 } }))
+      .toBe("!number press 1 at 0:51");
+    expect(generateTwitchCommand({ moduleType: ModuleType.THE_TIME_KEEPER, result: { correctLed: 2, finalNumber: 75 } }))
+      .toBe("!number press 2 at 1:15");
+    expect(generateTwitchCommand({ moduleType: ModuleType.THE_TIME_KEEPER, result: { correctLed: 3, finalNumber: 10 } }))
+      .toBe("!number press 3 at 0:20");
+  });
+
+  it("covers every default Black Hole gesture", () => {
+    const expected = [
+      "hold tick release", "tap tick tap", "tap tick hold tick release",
+      "hold tick release hold tick release", "hold tick tick release", "tap tap",
+    ];
+    [0, 1, 2, 3, 4, "C"].forEach((digit, index) => {
+      expect(generateTwitchCommand({ moduleType: ModuleType.BLACK_HOLE, result: { digit } }))
+        .toBe(`!number ${expected[index]}`);
+    });
   });
 
   it("presses the Logical Buttons operator when no button is valid", () => {

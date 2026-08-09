@@ -22,6 +22,8 @@ const uiTypes = matches(registrySource, /\[ModuleType\.([A-Z0-9_]+)\]/g);
 const frontendTypes = matches(typesSource, /^\s*([A-Z][A-Z0-9_]*)\s*=\s*"[A-Z0-9_]+"/gm);
 const conditionalBlock = twitchSource.match(/const conditional = new Set<ModuleType>\(\[([\s\S]*?)\]\);/)?.[1] ?? "";
 const conditionalTypes = matches(conditionalBlock, /ModuleType\.([A-Z0-9_]+)/g);
+const unavailableBlock = twitchSource.match(/const unavailable = new Set<ModuleType>\(\[([\s\S]*?)\]\);/)?.[1] ?? "";
+const unavailableTypes = matches(unavailableBlock, /ModuleType\.([A-Z0-9_]+)/g);
 
 const categories = [
   ["VANILLA_REGULAR", "Vanilla regular"],
@@ -55,6 +57,7 @@ const lines = [
   "| UI | A custom frontend solver is registered |",
   "| Twitch: Verified | The generator has an exact audited command fixture |",
   "| Twitch: Conditional | Extra physical or stage context is required before emitting a command |",
+  "| Twitch: Unavailable | The upstream module exposes no Twitch chat command parser |",
   "| Check first | The solve screen highlights the module for early attention |",
   "",
 ];
@@ -69,7 +72,7 @@ for (const [category, title] of categories) {
   for (const module of modules) {
     const twitch = !frontendTypes.has(module.type)
       ? "Not audited"
-      : conditionalTypes.has(module.type) ? "Conditional" : "Verified";
+      : unavailableTypes.has(module.type) ? "Unavailable" : conditionalTypes.has(module.type) ? "Conditional" : "Verified";
     lines.push(`| ${cell(module.name)} | \`${cell(module.type)}\` | ${contract(module)} | ${uiTypes.has(module.type) ? "Yes" : "No"} | ${twitch} | ${module.checkFirst ? "Yes" : "—"} |`);
   }
   lines.push("");

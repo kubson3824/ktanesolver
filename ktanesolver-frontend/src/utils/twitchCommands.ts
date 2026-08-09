@@ -5,7 +5,7 @@ export interface TwitchCommandData {
   result: unknown;
 }
 
-export type TwitchCommandSupport = "verified" | "conditional";
+export type TwitchCommandSupport = "verified" | "conditional" | "unavailable";
 
 const conditional = new Set<ModuleType>([
   ModuleType.BUTTON,
@@ -38,11 +38,13 @@ const conditional = new Set<ModuleType>([
   ModuleType.WASTE_MANAGEMENT,
 ]);
 
+const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES]);
+
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
 export const TWITCH_COMMAND_SUPPORT: Record<ModuleType, TwitchCommandSupport> = Object.fromEntries(
   Object.values(ModuleType).map((type) => [
     type,
-    conditional.has(type) ? "conditional" : "verified",
+    unavailable.has(type) ? "unavailable" : conditional.has(type) ? "conditional" : "verified",
   ]),
 ) as Record<ModuleType, TwitchCommandSupport>;
 
@@ -942,6 +944,213 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return /^[A-P]$/.test(letter ?? "") && actions.every((action) => validActions.has(action))
         ? command([...actions, "set", (letter ?? "").toLowerCase(), "submit"].join(" "))
         : "";
+    }
+    case ModuleType.LASERS: {
+      const positions = arrayValue(raw.positions).map(Number);
+      return positions.length === 7 && new Set(positions).size === 7
+        && positions.every((position) => Number.isInteger(position) && position >= 1 && position <= 9)
+        ? command(`position ${positions.join("")}`)
+        : "";
+    }
+    case ModuleType.TURTLE_ROBOT: {
+      const bugLines = arrayValue(raw.bugLines).map(Number).sort((a, b) => a - b);
+      if (bugLines.length !== 3 || new Set(bugLines).size !== 3
+        || bugLines.some((line) => !Number.isInteger(line) || line < 1 || line > 22)) return "";
+      const steps: string[] = [];
+      let currentLine = 1;
+      for (const bugLine of bugLines) {
+        if (bugLine > currentLine) steps.push(`down ${bugLine - currentLine}`);
+        steps.push("comment");
+        currentLine = bugLine;
+      }
+      return commands(steps);
+    }
+    case ModuleType.GUITAR_CHORDS: {
+      const frets = arrayValue(raw.frets).map(String);
+      return frets.length === 6 && frets.every((fret) => fret === "-" || /^(?:[0-9]|1[0-2])$/.test(fret))
+        ? command(`play ${frets.join(",")}`)
+        : "";
+    }
+    case ModuleType.CALENDAR: {
+      const targetMonth = Number(raw.targetMonth);
+      const targetDay = Number(raw.targetDay);
+      const pressCount = Number(raw.pressCount);
+      const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+      if (!Number.isInteger(targetMonth) || targetMonth < 1 || targetMonth > 12
+        || !Number.isInteger(targetDay) || targetDay < 1 || targetDay > 31
+        || ![1, 3].includes(pressCount)) return "";
+      return commands([
+        ...(targetMonth === 1 ? [] : [months[targetMonth - 1]]),
+        ...Array<string>(pressCount).fill(`press ${targetDay}`),
+      ]);
+    }
+    case ModuleType.USA_MAZE: {
+      const shapeDigits: Record<string, string> = {
+        CIRCLE: "0", SQUARE: "1", DIAMOND: "2", TRAPEZOID: "3",
+        PARALLELOGRAM: "4", TRIANGLE: "5", HEART: "6", STAR: "7",
+      };
+      const presses = arrayValue(raw.presses).map((shape) => shapeDigits[String(shape).toUpperCase()]);
+      return presses.length > 0 && presses.every(Boolean) ? command(`press ${presses.join("")}`) : "";
+    }
+    case ModuleType.BINARY_TREE: {
+      const presses = arrayValue(raw.presses).map(Number);
+      return presses.length > 0 && presses.every((press) => Number.isInteger(press) && press >= 1 && press <= 7)
+        ? commands(presses.map((press) => `press ${press}`))
+        : "";
+    }
+    case ModuleType.THE_TIME_KEEPER: {
+      const led = Number(raw.correctLed);
+      let target = Number(raw.finalNumber);
+      if (!Number.isInteger(led) || led < 1 || led > 3 || !Number.isInteger(target) || target <= 0) return "";
+      while (target <= 10) target *= 2;
+      while (target > 59999) target = Math.floor(target / 2);
+      return command(`press ${led} at ${Math.floor(target / 60)}:${String(target % 60).padStart(2, "0")}`);
+    }
+    case ModuleType.LIGHTSPEED: {
+      const warp = Number(raw.warpSpeed);
+      const planet = String(raw.planet ?? "").trim().toLowerCase().replaceAll("’", "'");
+      const officer = String(raw.officer ?? "").split(",")[0].trim().toLowerCase();
+      const encryption = String(raw.encryptionCode ?? "");
+      if (!Number.isInteger(warp) || warp < 1 || warp > 9 || !planet || !officer || !/^\d{4}$/.test(encryption)) return "";
+      return commands([
+        `set warp ${warp}`,
+        `set planet ${planet}`,
+        `set officer ${officer}`,
+        `set encryption ${encryption}`,
+        "engage",
+      ]);
+    }
+    case ModuleType.BLACK_HOLE: {
+      const gestures: Record<string, string> = {
+        "0": "hold tick release",
+        "1": "tap tick tap",
+        "2": "tap tick hold tick release",
+        "3": "hold tick release hold tick release",
+        "4": "hold tick tick release",
+        C: "tap tap",
+      };
+      const gesture = gestures[String(raw.digit)];
+      return gesture ? command(gesture) : "";
+    }
+    case ModuleType.SIMONS_STAR: {
+      const colors = arrayValue(raw.presses).map((color) => String(color).toLowerCase());
+      return colors.length > 0 && colors.length <= 5
+        && colors.every((color) => ["red", "green", "blue", "yellow", "purple"].includes(color))
+        ? command(`press ${colors.join(" ")}`)
+        : "";
+    }
+    case ModuleType.MORSE_WAR: {
+      const presses = arrayValue(raw.presses).map(String);
+      return presses.length === 4 && presses.every((press) => /^[SU]$/i.test(press))
+        ? command(`press ${presses.join("").toUpperCase()}`)
+        : "";
+    }
+    case ModuleType.THE_STOCK_MARKET: {
+      const winner = strings(raw.companies)[0];
+      const initial = winner?.charAt(0).toUpperCase();
+      return initial && /^[ACGHIMNQRSTV]$/.test(initial) ? command(`submit ${initial}`) : "";
+    }
+    case ModuleType.MINESEEKER: {
+      const moves = strings(raw.moves).map((move) => move.toUpperCase());
+      return moves.every((move) => /^[URDL]$/.test(move)) && stringValue(raw.destinationImage)
+        ? command(`${moves.join("").toLowerCase()}${moves.length ? " " : ""}submit`)
+        : "";
+    }
+    case ModuleType.MAZE_SCRAMBLER: {
+      const colorLetters: Record<string, string> = { RED: "r", BLUE: "b", GREEN: "g", YELLOW: "y" };
+      const presses = strings(raw.presses).map((press) => colorLetters[press.toUpperCase()]);
+      return presses.length && presses.every(Boolean) ? commands(["reset", `press ${presses.join("")}`]) : "";
+    }
+    case ModuleType.THE_NUMBER_CIPHER: {
+      const answer = numberValue(raw.answer);
+      return answer !== undefined && Number.isInteger(answer) && answer >= 0 && answer <= 9
+        ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.ALPHABET_NUMBERS: {
+      const presses = arrayValue(raw.presses).map(Number);
+      return presses.length === 6 && new Set(presses).size === 6
+        && presses.every((press) => Number.isInteger(press) && press >= 1 && press <= 6)
+        ? command(`press ${presses.join(" ")}`) : "";
+    }
+    case ModuleType.BRITISH_SLANG: {
+      const position = numberValue(raw.pressPosition);
+      return position !== undefined && Number.isInteger(position) && position >= 1 && position <= 4
+        ? command(`press ${position}`) : "";
+    }
+    case ModuleType.DOUBLE_COLOR: {
+      const digit = numberValue(raw.digit);
+      return digit !== undefined && Number.isInteger(digit) && digit >= 0 && digit <= 9
+        ? command(`submit at ${digit}`) : "";
+    }
+    case ModuleType.MARITIME_FLAGS: {
+      const direction = stringValue(raw.direction)?.toUpperCase();
+      return direction && ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"].includes(direction)
+        ? command(direction) : "";
+    }
+    case ModuleType.EQUATIONS: {
+      if (booleanValue(raw.blank)) return command("submit");
+      const answer = stringValue(raw.answer);
+      return answer && /^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(answer) ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.DETERMINANTS: {
+      const determinant = numberValue(raw.determinant);
+      return determinant !== undefined && Number.isInteger(determinant) && determinant >= -162 && determinant <= 162
+        ? command(`submit ${determinant}`) : "";
+    }
+    case ModuleType.PATTERN_CUBE: {
+      const placements = arrayValue(raw.placements).map(asRecord);
+      if (placements.length !== 5) return "";
+      const steps: string[] = [];
+      for (const placement of placements) {
+        const selection = numberValue(placement.selection);
+        const letter = stringValue(placement.targetLetter)?.toUpperCase();
+        const rotation = stringValue(placement.rotation)?.toLowerCase();
+        if (selection === undefined || !Number.isInteger(selection) || selection < 1 || selection > 5
+          || !letter?.match(/^[A-TV-Z]$/) || !["none", "cw", "ccw", "180"].includes(rotation ?? "")) return "";
+        if (rotation !== "none") steps.push(`${selection} ${rotation}`);
+        steps.push(`${selection} ${letter}`);
+      }
+      return command(steps.join(" "));
+    }
+    case ModuleType.KNOW_YOUR_WAY: {
+      const presses = arrayValue(raw.presses).map(String);
+      return presses.length === 4 && presses.every((press) => /^[ULDR]$/i.test(press))
+        ? command(`press ${presses.join("").toUpperCase()}`) : "";
+    }
+    case ModuleType.SPLITTING_THE_LOOT: {
+      const colors = arrayValue(raw.colors).map((color) => String(color).toUpperCase());
+      const locked = numberValue(raw.coloredBag);
+      if (colors.length !== 7 || !colors.every((color) => ["RED", "BLUE", "NORMAL"].includes(color))
+        || locked === undefined || !Number.isInteger(locked) || locked < 1 || locked > 7) return "";
+      return commands(["RED", "BLUE", "NORMAL"].map((color) => {
+        const bags = colors.flatMap((bagColor, index) => bagColor === color && index + 1 !== locked ? [index + 1] : []);
+        return bags.length ? `set bag ${bags.join(" ")} ${color.toLowerCase()}` : undefined;
+      }).concat("split"));
+    }
+    case ModuleType.CHARACTER_SHIFT: {
+      const solution = asRecord(arrayValue(raw.solutions)[0]);
+      const letter = stringValue(solution.letter)?.toUpperCase();
+      const digit = numberValue(solution.digit);
+      return letter && /^[A-Z]$/.test(letter) && digit !== undefined && Number.isInteger(digit) && digit >= 0 && digit <= 9
+        ? command(`submit ${letter}${digit}`) : "";
+    }
+    case ModuleType.SIMON_SAMPLES: {
+      const presses = arrayValue(raw.presses).map(Number);
+      return presses.length >= 4 && presses.length <= 12 && presses.every((press) => Number.isInteger(press) && press >= 1 && press <= 4)
+        ? commands(["record", presses.join(" ")]) : "";
+    }
+    case ModuleType.DRAGON_ENERGY: {
+      const word = strings(raw.acceptableWords)[0]?.toLowerCase();
+      const digit = arrayValue(raw.safeTimerDigits).map(Number)[0];
+      return word && /^[a-z]+$/.test(word) && digit !== undefined && Number.isInteger(digit) && digit >= 0 && digit <= 9
+        ? command(`${word} ${digit}`) : "";
+    }
+    case ModuleType.UNCOLORED_SQUARES:
+      return "";
+    case ModuleType.FLASHING_LIGHTS: {
+      const presses = arrayValue(raw.presses).map(Number);
+      return presses.length === 2 && presses.every((press) => Number.isInteger(press) && press >= 1 && press <= 5)
+        ? commands(presses.map((press) => `press ${press}`)) : "";
     }
     case ModuleType.TANGRAMS: {
       const pairs = arrayValue(raw.connections).map(asRecord);

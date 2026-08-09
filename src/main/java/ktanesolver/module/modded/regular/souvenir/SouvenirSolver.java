@@ -67,6 +67,9 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		if (source.getType() == ModuleType.FLAGS && Boolean.TRUE.equals(source.getState().get("unicornRule"))) {
 			return failure("Souvenir asks no question about Flags when the WHITE FLAG rule applies");
 		}
+		if (source.getType() == ModuleType.CALENDAR && Boolean.FALSE.equals(source.getState().get("souvenirEligible"))) {
+			return failure("Souvenir asks no question about Calendar when the holiday remains visible in the target month");
+		}
 		if (directAnswer) {
 			Object recorded = resolveRecordedAnswer(source, input.question().trim());
 			if (recorded == null) return failure("No recorded answer is available for this question");
@@ -104,6 +107,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		String q = normalize(question);
 		return switch (source.getType()) {
 			case BIG_CIRCLE -> answerIndex(answers, source.getState().get("spinDirection"));
+			case CALENDAR -> answerIndex(answers, source.getState().get("souvenirHoliday"));
+			case USA_MAZE -> answerIndex(answers, source.getState().get("souvenirState"));
 			case BLIND_MAZE -> answerIndex(answers, blindMazeColor(source.getState(), q));
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
 			case BRAILLE -> brailleAnswerIndex(source.getState(), q, answers);
@@ -176,6 +181,27 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> simonStatesAnswerIndex(source.getState(), q, answers);
 			case SIMON_SINGS -> answerIndex(answers, simonSingsFlash(source.getState(), q));
 			case SIMON_SENDS -> answerIndex(answers, simonSendsReceivedLetter(source.getState(), q));
+			case SIMONS_STAR -> answerIndex(answers, nested(source.getState(), "flashes", ordinal(q)));
+			case MORSE_WAR -> morseWarAnswerIndex(source.getState(), q, answers);
+			case MAZE_SCRAMBLER -> q.contains("start")
+				? answerIndex(answers, source.getState().get("startPosition"))
+				: q.contains("goal")
+					? answerIndex(answers, source.getState().get("goalPosition"))
+					: membershipAnswerIndex(answers, source.getState().get("mazeMarkings"), null, false);
+			case ALPHABET_NUMBERS -> membershipAnswerIndex(answers,
+				source.getState().get("stage" + (ordinal(q) + 1) + "Numbers"), null, false);
+			case DOUBLE_COLOR -> answerIndex(answers, source.getState().get("stage" + (ordinal(q) + 1) + "Color"));
+			case MARITIME_FLAGS -> answerIndex(answers, q.contains("bearing")
+				? source.getState().get("signalledBearing") : normalize(source.getState().get("callsign")).replace(" ", ""));
+			case PATTERN_CUBE -> answerIndex(answers, source.getState().get("highlightedSymbol"));
+			case KNOW_YOUR_WAY -> answerIndex(answers, source.getState().get(q.contains("arrow") ? "arrowDirection" : "greenLed"));
+			case SPLITTING_THE_LOOT -> answerIndex(answers, source.getState().get("initiallyColoredBag"));
+			case CHARACTER_SHIFT -> membershipAnswerIndex(answers,
+				source.getState().get(q.contains("letter") ? "unsubmittedLetters" : "unsubmittedDigits"), null, false);
+			case SIMON_SAMPLES -> answerIndex(answers, source.getState().get("callStage" + (ordinal(q) + 1)));
+			case DRAGON_ENERGY -> answerIndex(answers, source.getState().get("indicatorColor"));
+			case UNCOLORED_SQUARES -> answerIndex(answers, source.getState().get("firstStageColor" + (ordinal(q) + 1)));
+			case FLASHING_LIGHTS -> answerIndex(answers, flashingLightsCount(source.getState(), q));
 			case SIMON_SHRIEKS -> answerIndex(answers, nested(source.getState(), "flashes", ordinal(q)));
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
@@ -208,6 +234,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		Map<String, Object> state = source.getState();
 		return switch (source.getType()) {
 			case BUTTON -> state.get("stripColor");
+			case CALENDAR -> state.get("souvenirHoliday");
+			case USA_MAZE -> state.get("souvenirState");
 			case BIG_CIRCLE -> state.get("spinDirection");
 			case BLIND_MAZE -> blindMazeColor(state, normalize(question));
 			case MEMORY -> switch (question) {
@@ -286,6 +314,26 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_STATES -> state.get("flashHistory");
 			case SIMON_SINGS -> simonSingsFlash(state, normalize(question));
 			case SIMON_SENDS -> simonSendsReceivedLetter(state, normalize(question));
+			case SIMONS_STAR -> nested(state, "flashes", ordinal(normalize(question)));
+			case MORSE_WAR -> morseWarAnswer(state, normalize(question));
+			case MAZE_SCRAMBLER -> switch (question) {
+				case "startPosition" -> state.get("startPosition");
+				case "goalPosition" -> state.get("goalPosition");
+				case "mazeMarkings" -> state.get("mazeMarkings");
+				default -> null;
+			};
+			case ALPHABET_NUMBERS -> state.get("stage" + (ordinal(normalize(question)) + 1) + "Numbers");
+			case DOUBLE_COLOR -> state.get("stage" + (ordinal(normalize(question)) + 1) + "Color");
+			case MARITIME_FLAGS -> "bearing".equals(question)
+				? state.get("signalledBearing") : normalize(state.get("callsign")).replace(" ", "");
+			case PATTERN_CUBE -> state.get("highlightedSymbol");
+			case KNOW_YOUR_WAY -> state.get("arrowDirection".equals(question) ? "arrowDirection" : "greenLed");
+			case SPLITTING_THE_LOOT -> state.get("initiallyColoredBag");
+			case CHARACTER_SHIFT -> state.get("unsubmitted" + ("unsubmittedLetters".equals(question) ? "Letters" : "Digits"));
+			case SIMON_SAMPLES -> state.get("callStage" + (ordinal(normalize(question)) + 1));
+			case DRAGON_ENERGY -> state.get("indicatorColor");
+			case UNCOLORED_SQUARES -> state.get("firstStageColor" + ("firstStageColor first".equals(question) ? "1" : "2"));
+			case FLASHING_LIGHTS -> flashingLightsCount(state, normalize(question));
 			case SIMON_SHRIEKS -> nested(state, "flashes", ordinal(normalize(question)));
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
@@ -509,6 +557,29 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 				.collect(java.util.stream.Collectors.joining(nested ? " · " : ", "));
 		}
 		return String.valueOf(value).replace('_', ' ');
+	}
+
+	private static Object morseWarAnswer(Map<String, Object> state, String question) {
+		if (question.contains("code")) return state.get("morseCode");
+		for (String row : List.of("bottom", "middle", "top")) {
+			if (question.contains(row)) {
+				Object pattern = state.get(row + "Row");
+				return pattern == null ? null : String.valueOf(pattern).replace('1', '●').replace('0', '○');
+			}
+		}
+		return null;
+	}
+
+	private static int morseWarAnswerIndex(Map<String, Object> state, String question, List<String> answers) {
+		Object answer = morseWarAnswer(state, question);
+		if (answer == null || question.contains("code")) return answerIndex(answers, answer);
+		String glyphs = String.valueOf(answer);
+		String bits = glyphs.replace('●', '1').replace('○', '0');
+		for (int i = 0; i < answers.size(); i++) {
+			String candidate = answers.get(i).replaceAll("\\s", "");
+			if (candidate.equals(glyphs) || candidate.equals(bits)) return i;
+		}
+		return -1;
 	}
 
 	private static Object murderRecordedAnswer(ModuleEntity source, String question) {
@@ -1010,6 +1081,13 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		Set<String> words = new HashSet<>(List.of(normalize(value.replaceAll("([a-z])([A-Z])", "$1 $2")).split(" ")));
 		words.removeAll(IGNORED_WORDS);
 		return words;
+	}
+
+	private static Object flashingLightsCount(Map<String, Object> state, String question) {
+		String row = question.contains("bottom") ? "bottom" : "top";
+		for (String color : List.of("cyan", "green", "red", "purple", "orange"))
+			if (question.contains(color)) return state.get(row + Character.toUpperCase(color.charAt(0)) + color.substring(1));
+		return null;
 	}
 
 	private static String normalize(Object value) {
