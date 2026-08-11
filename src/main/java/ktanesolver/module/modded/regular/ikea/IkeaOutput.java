@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.ikea;import java.util.List;import ktanesolver.logic.ModuleOutput;public record IkeaOutput(List<Integer>presses,String path,List<String>buttonDirections,int storeNumber)implements ModuleOutput{}

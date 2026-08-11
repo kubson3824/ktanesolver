@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.the_crystal_maze;import java.util.List;import ktanesolver.logic.ModuleOutput;public record TheCrystalMazeOutput(String world,List<String>actions,Integer answer,List<String>targets,int crystals)implements ModuleOutput{}

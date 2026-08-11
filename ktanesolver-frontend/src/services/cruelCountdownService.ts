@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";import type{CountdownOutput}from"./countdownService";export const solveCruelCountdown=(roundId:string,bombId:string,moduleId:string,target:number,numbers:number[]):Promise<{output:CountdownOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{target,numbers});

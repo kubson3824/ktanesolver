@@ -36,9 +36,12 @@ const conditional = new Set<ModuleType>([
   ModuleType.THE_SWAN,
   ModuleType.THE_STOPWATCH,
   ModuleType.WASTE_MANAGEMENT,
+  ModuleType.NUMBER_NIMBLENESS,
+  ModuleType.NEUTRALIZATION,
+  ModuleType.FAULTY_DIGITAL_ROOT,
 ]);
 
-const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES]);
+const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
 export const TWITCH_COMMAND_SUPPORT: Record<ModuleType, TwitchCommandSupport> = Object.fromEntries(
@@ -834,7 +837,7 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const base = stringValue(raw.baseFormula);
       const drops = numberValue(raw.drops);
       if (!base || drops === undefined) return "";
-      return commands([`base ${base}`, `conc set ${drops}`, booleanValue(raw.filterOn) ? "filter" : undefined, "titrate"]);
+      return commands([base === "NH3" ? undefined : `base ${base}`, `conc set ${drops}`, booleanValue(raw.filterOn) ? "filter" : undefined, "titrate"]);
     }
     case ModuleType.WEB_DESIGN: {
       const aliases: Record<string, string> = { ACCEPT: "acc", CONSIDER: "con", REJECT: "rej" };
@@ -1267,6 +1270,42 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.INSTRUCTIONS:{const position=numberValue(raw.position);return position!==undefined&&Number.isInteger(position)&&position>=1&&position<=4?command(`press ${position}`):"";}
     case ModuleType.VALVES:{const toggles=arrayValue(raw.twitchToggles)?.map(numberValue);return toggles?.length&&toggles.length<=9&&toggles.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=3)?command(`toggle ${toggles.join(" ")}`):"";}
     case ModuleType.BLOCKBUSTERS:{const coordinate=stringValue(raw.coordinate)?.toUpperCase();return coordinate&&/^[A-E][1-5]$/.test(coordinate)?command(coordinate):"";}
+    case ModuleType.CATCHPHRASE:{const presses=arrayValue(raw.presses).map(asRecord),product=numberValue(raw.product);if(presses.length!==4||product===undefined||!Number.isInteger(product)||product<32||product>59049)return"";const steps=presses.map(press=>{const position=numberValue(press.position),digit=numberValue(press.timerDigit);return position!==undefined&&digit!==undefined&&Number.isInteger(position)&&position>=1&&position<=4&&Number.isInteger(digit)&&digit>=0&&digit<=9?`panel ${position} at ${digit}`:undefined;});return steps.every(Boolean)&&new Set(presses.map(x=>numberValue(x.position))).size===4?commands([...steps,`submit ${product}`]):"";}
+    case ModuleType.COUNTDOWN:{const operations=arrayValue(raw.operations).map(asRecord);if(!operations.length)return"";const steps=operations.map(operation=>{const left=numberValue(operation.left),right=numberValue(operation.right),operator=stringValue(operation.operator);return left!==undefined&&right!==undefined&&operator&&/^[+\-*/]$/.test(operator)?`${left} ${operator} ${right}`:undefined;});return steps.every(Boolean)?commands(["activate",...steps]):"";}
+    case ModuleType.CRUEL_COUNTDOWN:{const operations=arrayValue(raw.operations).map(asRecord);if(!operations.length)return"";const steps=operations.map(operation=>{const left=numberValue(operation.left),right=numberValue(operation.right),operator=stringValue(operation.operator);return left!==undefined&&right!==undefined&&operator&&/^[+\-*/]$/.test(operator)?`${left} ${operator} ${right}`:undefined;});return steps.every(Boolean)?commands(["activate",...steps]):"";}
+    case ModuleType.ENCRYPTED_MORSE:{const morse=stringValue(raw.responseMorse);return morse&&/^[.-]+$/.test(morse)?command(`submit ${morse}`):"";}
+    case ModuleType.THE_CRYSTAL_MAZE:return"";
+    case ModuleType.IKEA:{const presses=arrayValue(raw.presses).map(numberValue);return presses.length&&presses.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=5)?command(`press ${presses.join(" ")}`):"";}
+    case ModuleType.RETIREMENT:{const home=stringValue(raw.home);return home&&["Briar Hollow","Broadwood","Homestead","Hotham Place","Leafy Green","Lodge Park","Riverside","Riverwell","Sunnydale","Sunnyside"].includes(home)?command(home):"";}
+    case ModuleType.ONE_HUNDRED_AND_ONE_DALMATIANS:{const name=stringValue(raw.name);return name&&/^[A-Za-z. -]+$/.test(name)?command(name):"";}
+    case ModuleType.PERIODIC_TABLE:{const atomicNumber=numberValue(raw.atomicNumber);return atomicNumber!==undefined&&Number.isInteger(atomicNumber)&&atomicNumber>=1&&atomicNumber<=118?command(`submit ${atomicNumber}`):"";}
+    case ModuleType.SCHLAG_DEN_BOMB:{const contestant=arrayValue(raw.contestantGames).map(numberValue),unplayed=arrayValue(raw.unplayedGames).map(numberValue);if(!contestant.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=15)||!unplayed.every(x=>x!==undefined&&Number.isInteger(x)&&x>=12&&x<=15))return"";const steps=[`b ${Array.from({length:15},(_,i)=>i+1).join(" ")}`];if(contestant.length)steps.push(`c ${contestant.join(" ")}`);if(unplayed.length)steps.push(`u ${unplayed.join(" ")}`);steps.push("submit");return commands(steps);}
+    case ModuleType.MAHJONG:{const pair=strings(raw.pair);return pair.length===2&&pair.every(tile=>tile.length>0)?command(`${pair[0]},${pair[1]}`):"";}
+    case ModuleType.KUDOSUDOKU:return typeof raw.submission==="string"&&raw.submission.trim()?command(raw.submission):"";
+    case ModuleType.THE_RADIO:return strings(raw.commands).length?commands(strings(raw.commands)):"";
+    case ModuleType.MODULO:{const answer=numberValue(raw.answer);return answer!==undefined?command(`submit ${answer}`):"";}
+    case ModuleType.NUMBER_NIMBLENESS:{const press=numberValue(raw.press);return press!==undefined&&Number.isInteger(press)&&press>=0&&press<=9?command(`press ${press}`):"";}
+    case ModuleType.PAY_RESPECTS:return command("f");
+    case ModuleType.CHALLENGE_AND_CONTACT:{const answer=stringValue(raw.answer);return answer&&/^[A-Z]+$/i.test(answer)?command(`submit ${answer.toLowerCase()}`):"";}
+    case ModuleType.THE_TRIANGLE:{const position=stringValue(raw.position);return position&&["MID","TL","BL","BR"].includes(position)?command(`press ${position.toLowerCase()}`):"";}
+    case ModuleType.SUEET_WALL:{const coordinates=strings(raw.pressCoordinates);return coordinates.length&&coordinates.every(x=>/^[A-D][1-5]$/i.test(x))?command(`press ${coordinates.join(" ")}`):"";}
+    case ModuleType.HOT_POTATO:return raw.action==="DROP_BOMB"?"!bomb drop":"";
+    case ModuleType.CHRISTMAS_PRESENTS:{const hour=numberValue(raw.hour);return hour!==undefined&&Number.isInteger(hour)&&hour>=7&&hour<=20?command(String(hour)):"";}
+    case ModuleType.HIEROGLYPHICS:{const a=stringValue(raw.anubisPosition),h=stringValue(raw.horusPosition),d=numberValue(raw.timerDigit);return a&&h&&d!==undefined&&["LEFT","CENTER","RIGHT"].includes(a)&&["LEFT","CENTER","RIGHT"].includes(h)&&Number.isInteger(d)&&d>=1&&d<=9?command(`${a.toLowerCase()} ${h.toLowerCase()} ${d}`):"";}
+    case ModuleType.FUNCTIONS:{const answer=numberValue(raw.answer);if(answer!==undefined&&Number.isInteger(answer)&&answer>=0)return command(`submit ${answer}`);const q=arrayValue(raw.suggestedQuery),a=numberValue(q[0]),b=numberValue(q[1]);return a!==undefined&&b!==undefined&&Number.isInteger(a)&&Number.isInteger(b)&&a>0&&b>0&&a!==b?command(`query ${a}, ${b}`):"";}
+    case ModuleType.NEEDY_MRS_BOB:{const p=numberValue(raw.responsePosition);return p!==undefined&&Number.isInteger(p)&&p>=1&&p<=24?command(`send ${p}`):"";}
+    case ModuleType.SCRIPTING:{const u=arrayValue(raw.usingNecessary),v=stringValue(raw.variableType),m=stringValue(raw.methodType),a=stringValue(raw.action);const actions:Record<string,string>={HANDLE_SOLVE:"handlesolve()",HANDLE_STRIKE:"handlestrike()",SOLVE:"solve()",STRIKE:"strike()",ON_SOLVE:"onsolve()",ON_STRIKE:"onstrike()"};return u.length===3&&u.every(x=>typeof x==="boolean")&&v&&["INT","FLOAT","BOOL","CHAR"].includes(v)&&m&&["VOID","BOOL"].includes(m)&&a&&actions[a]?commands([`set using1 ${u[0]}`,`set using2 ${u[1]}`,`set using3 ${u[2]}`,`set var ${v.toLowerCase()}`,`set method ${m.toLowerCase()}`,`set action ${actions[a]}`,"run"]):"";}
+    case ModuleType.SIMON_SPINS:{if(raw.confirmedSolved===true)return"";const p=strings(raw.presses),keys:Record<string,string>={CIRCLE:"c",PENTAGON:"p",SQUARE:"s"};return p.length>0&&p.every(x=>keys[x])?command(p.map(x=>keys[x]).join(" ")):"";}
+    case ModuleType.CURSED_DOUBLE_OH:{const p=strings(raw.presses),valid=new Set(["VERT1","HORIZ1","HORIZ2","VERT2","SUBMIT"]);return p.length>0&&p.at(-1)==="SUBMIT"&&p.every(x=>valid.has(x))?command(`press ${p.map(x=>x.toLowerCase()).join(" ")}`):"";}
+    case ModuleType.TEN_BUTTON_COLOR_CODE:{const p=arrayValue(raw.presses).map(numberValue);return p.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=10)?commands([p.length?`press ${p.join(" ")}`:undefined,"submit"]):"";}
+    case ModuleType.CRACKBOX:{const tokens=strings(raw.twitchTokens);return tokens.length&&tokens.every(token=>/^(?:[udlr]|10|[1-9])$/.test(token))?commands([tokens.join(" "),"check"]):"";}
+    case ModuleType.STREET_FIGHTER:{const fighter=stringValue(raw.fighter),opponent=stringValue(raw.opponent);return fighter&&opponent?command(`select ${fighter}, ${opponent}`):"";}
+    case ModuleType.IMBALANCE:{const answer=numberValue(raw.answer);return answer!==undefined&&Number.isInteger(answer)&&answer>=0&&answer<=16129?command(`press ${answer}`):"";}
+    case ModuleType.SEQUENCES:{const formula=stringValue(raw.formula);return formula&&/^(?:n|-n|(?:-?(?:[2-9]|[1-9]\d))n)(?:[+-](?:[1-9]|[1-9]\d))?$/.test(formula)?command(`submit ${formula}`):"";}
+    case ModuleType.FAULTY_DIGITAL_ROOT:{const presses=strings(raw.presses);return presses.length===4&&presses.every(press=>press==="YES"||press==="NO")?command(`press ${presses.map(press=>press.toLowerCase()).join(" ")}`):"";}
+    case ModuleType.THREE_LEDS:{const toggles=arrayValue(raw.togglePositions).map(numberValue);return toggles.every(position=>position!==undefined&&Number.isInteger(position)&&position>=1&&position<=3)?commands([toggles.length?`toggle ${toggles.join(" ")}`:undefined,"submit"]):"";}
+    case ModuleType.SIMPLETON:return raw.action==="PUSH"?command("push"):"";
+    case ModuleType.THE_NEUTRAL_BUTTON:return raw.action==="BLINK"?command("blink"):"";
     case ModuleType.TANGRAMS: {
       const pairs = arrayValue(raw.connections).map(asRecord);
       if (pairs.length !== 3) return "";

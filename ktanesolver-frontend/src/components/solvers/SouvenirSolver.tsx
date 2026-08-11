@@ -53,6 +53,13 @@ const SIMONS_STAR_QUESTIONS = SIMON_ORDINALS.slice(0, 5).map((position) => quest
   `flash ${position}`,
   `Color that flashed ${position}`,
 ));
+const TEN_BUTTON_ORDINALS = [...SIMON_ORDINALS, "ninth", "tenth"];
+const TEN_BUTTON_COLOR_CODE_QUESTIONS = ["first", "second"].flatMap(stage =>
+  TEN_BUTTON_ORDINALS.map(position => question(
+    `color ${position} ${stage}`,
+    `Initial color of the ${position} button — ${stage} stage`,
+  )),
+);
 const HORRIBLE_MEMORY_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth"];
 const HORRIBLE_MEMORY_COLORS = ["blue", "green", "red", "orange", "purple", "pink"];
 const HORRIBLE_MEMORY_QUESTIONS = HORRIBLE_MEMORY_ORDINALS.slice(0, 4).flatMap((stage) => [
@@ -97,6 +104,22 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.DIVIDED_SQUARES]: [question("pressedColor", "What color was shown while pressing the correct square?")],
   [ModuleType.VALVES]: [question("initialState", "What was the initial valve state?")],
   [ModuleType.BLOCKBUSTERS]: [question("firstLetters", "Which letter was in the leftmost column at the start?")],
+  [ModuleType.CATCHPHRASE]: ["top-left","top-right","bottom-left","bottom-right"].map(position=>question(`color ${position}`,`What was the color of the ${position} panel?`)),
+  [ModuleType.ENCRYPTED_MORSE]: [question("key","What was the received key?")],
+  [ModuleType.RETIREMENT]: [question("houses", "Which house was offered, but not chosen?")],
+  [ModuleType.SCHLAG_DEN_BOMB]: [question("contestantName", "What was the contestant’s name?"), question("contestantScore", "What was the contestant’s score?"), question("bombScore", "What was the bomb’s score?")],
+  [ModuleType.MAHJONG]: [question("countingTile", "Which tile was shown in the bottom-left?")],
+  [ModuleType.KUDOSUDOKU]: [question("prefilled", "Which square was pre-filled?"), question("not prefilled", "Which square was not pre-filled?")],
+  [ModuleType.CHALLENGE_AND_CONTACT]: ["first", "second", "third"].map(ordinal => question(`letter ${ordinal}`, `What was the ${ordinal} displayed letter?`)),
+  [ModuleType.FUNCTIONS]: [
+    question("first query last digit", "What was the last digit of the first query result?"),
+    question("left number", "What number was left of the displayed letter?"),
+    question("letter", "What letter was displayed?"),
+    question("right number", "What number was right of the displayed letter?"),
+  ],
+  [ModuleType.CURSED_DOUBLE_OH]: [question("initialFirstDigit", "What was the first digit of the initially displayed number?")],
+  [ModuleType.TEN_BUTTON_COLOR_CODE]: TEN_BUTTON_COLOR_CODE_QUESTIONS,
+  [ModuleType.THREE_LEDS]: [question("initialState", "What was the initial state of the LEDs?")],
   [ModuleType.MEMORY]: [
     question("displays", "What was displayed in each stage?"),
     question("positions", "What positions were pressed?"),

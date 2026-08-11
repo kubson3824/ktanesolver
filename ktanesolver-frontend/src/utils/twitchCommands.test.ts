@@ -234,6 +234,42 @@ const fixtures: Record<ModuleType, Fixture> = {
   INSTRUCTIONS: { result: { position:3 }, expected: "!number press 3" },
   VALVES: { result: { twitchToggles:[1,3] }, expected: "!number toggle 1 3" },
   BLOCKBUSTERS: { result: { coordinate:"B5" }, expected: "!number B5" },
+  CATCHPHRASE: { result: { presses:[{position:1,timerDigit:7},{position:2,timerDigit:6},{position:4,timerDigit:9},{position:3,timerDigit:1}],product:720 }, expected: "!number panel 1 at 7; !number panel 2 at 6; !number panel 4 at 9; !number panel 3 at 1; !number submit 720" },
+  COUNTDOWN: { result: { operations:[{left:25,operator:"*",right:4,result:100},{left:100,operator:"+",right:75,result:175}] }, expected: "!number activate; !number 25 * 4; !number 100 + 75" },
+  CRUEL_COUNTDOWN: { result: { operations:[{left:90,operator:"+",right:70,result:160}] }, expected: "!number activate; !number 90 + 70" },
+  ENCRYPTED_MORSE: { result: { responseMorse:".--..-.....-...-.---" }, expected: "!number submit .--..-.....-...-.---" },
+  THE_CRYSTAL_MAZE: { result: {}, expected: "" },
+  IKEA: { result: { presses:[4,4,2,2,4,2,2,3,3,3,2,3] }, expected: "!number press 4 4 2 2 4 2 2 3 3 3 2 3" },
+  RETIREMENT: { result: { home:"Hotham Place" }, expected: "!number Hotham Place" },
+  ONE_HUNDRED_AND_ONE_DALMATIANS: { result: { name:"Roly Poly" }, expected: "!number Roly Poly" },
+  PERIODIC_TABLE: { result: { atomicNumber:69 }, expected: "!number submit 69" },
+  SCHLAG_DEN_BOMB: { result: { contestantGames:[2,5,9],unplayedGames:[13,14,15] }, expected: "!number b 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; !number c 2 5 9; !number u 13 14 15; !number submit" },
+  MAHJONG: { result: { pair:["Bamboo 2","Char 5"] }, expected: "!number Bamboo 2,Char 5" },
+  KUDOSUDOKU: { result: { submission:"Kick" }, expected: "!number Kick" },
+  THE_RADIO: { result: { commands:["reset","channel down 16","switch","transmit at 07"] }, expected: "!number reset; !number channel down 16; !number switch; !number transmit at 07" },
+  MODULO: { result: { answer:9 }, expected: "!number submit 9" },
+  NUMBER_NIMBLENESS: { result: { press:4 }, expected: "!number press 4" },
+  PAY_RESPECTS: { result: { action:"PRESS_F" }, expected: "!number f" },
+  CHALLENGE_AND_CONTACT: { result: { answer:"KEYPAD" }, expected: "!number submit keypad" },
+  THE_TRIANGLE: { result: { position:"BL", color:"RED" }, expected: "!number press bl" },
+  SUEET_WALL: { result: { pressCoordinates:["A1","D5"] }, expected: "!number press A1 D5" },
+  HOT_POTATO: { result: { action:"DROP_BOMB" }, expected: "!bomb drop" },
+  CHRISTMAS_PRESENTS: { result: { hour:19 }, expected: "!number 19" },
+  HIEROGLYPHICS: { result: { anubisPosition:"LEFT",horusPosition:"CENTER",timerDigit:4 }, expected: "!number left center 4" },
+  FUNCTIONS: { result: { answer:12345 }, expected: "!number submit 12345" },
+  NEEDY_MRS_BOB: { result: { responsePosition:17 }, expected: "!number send 17" },
+  SCRIPTING: { result: { usingNecessary:[false,true,false],variableType:"FLOAT",methodType:"BOOL",action:"HANDLE_SOLVE" }, expected: "!number set using1 false; !number set using2 true; !number set using3 false; !number set var float; !number set method bool; !number set action handlesolve(); !number run" },
+  SIMON_SPINS: { result: { presses:["CIRCLE","PENTAGON","SQUARE"],confirmedSolved:false }, expected: "!number c p s" },
+  CURSED_DOUBLE_OH: { result: { presses:["VERT1","HORIZ2","VERT2","SUBMIT"] }, expected: "!number press vert1 horiz2 vert2 submit" },
+  TEN_BUTTON_COLOR_CODE: { result: { presses:[1,4,4,10] }, expected: "!number press 1 4 4 10; !number submit" },
+  CRACKBOX: { result: { twitchTokens:["r","2","d","l","10"] }, expected: "!number r 2 d l 10; !number check" },
+  STREET_FIGHTER: { result: { fighter:"Chun Li",opponent:"M. Bison" }, expected: "!number select Chun Li, M. Bison" },
+  IMBALANCE: { result: { answer:50 }, expected: "!number press 50" },
+  SEQUENCES: { result: { formula:"21n+33" }, expected: "!number submit 21n+33" },
+  FAULTY_DIGITAL_ROOT: { result: { presses:["NO","YES","NO","YES"] }, expected: "!number press no yes no yes" },
+  THREE_LEDS: { result: { togglePositions:[1,2,3] }, expected: "!number toggle 1 2 3; !number submit" },
+  SIMPLETON: { result: { action:"PUSH" }, expected: "!number push" },
+  THE_NEUTRAL_BUTTON: { result: { action:"BLINK" }, expected: "!number blink" },
   TANGRAMS: { result: { connections: [{ positivePin: 1, negativePin: 8 }, { positivePin: 2, negativePin: 1 }, { positivePin: 5, negativePin: 4 }] }, expected: "!number set 1 8; !number set 2 1; !number set 5 4" },
   BITWISE_OPERATIONS: { result: { answer: "10101010" }, expected: "!number submit 10101010" },
   FAST_MATH: { result: { answer: "05" }, expected: "!number submit 05" },
@@ -274,9 +310,9 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(227);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(1);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(259);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(31);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(2);
   });
 
   for (const moduleType of Object.values(ModuleType)) {
@@ -293,6 +329,11 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.TWO_BITS,
       result: { letters: "gz", stages: [{}, {}, {}, {}] },
     })).toBe("!number press g z submit");
+  });
+
+  it("omits Neutralization's rejected no-op base command for the default NH3 selection", () => {
+    expect(generateTwitchCommand({ moduleType: ModuleType.NEUTRALIZATION, result: { baseFormula: "NH3", drops: 4, filterOn: false } }))
+      .toBe("!number conc set 4; !number titrate");
   });
 
   it("covers The Time Keeper's accepted LED and time widths", () => {
@@ -403,5 +444,12 @@ describe("generateTwitchCommand", () => {
       moduleType: ModuleType.PLUMBING,
       result: { rotations: [], submit: true },
     })).toBe("!number submit");
+  });
+
+  it("generates a verified Functions query command before identification", () => {
+    expect(generateTwitchCommand({
+      moduleType: ModuleType.FUNCTIONS,
+      result: { answer: null, suggestedQuery: [1, 1234] },
+    })).toBe("!number query 1, 1234");
   });
 });

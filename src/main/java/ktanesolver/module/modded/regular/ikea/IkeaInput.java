@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.ikea;import java.util.List;import ktanesolver.logic.ModuleInput;public record IkeaInput(List<Button>buttons)implements ModuleInput{public record Button(String label,Color color){}public enum Color{BLUE,YELLOW}}

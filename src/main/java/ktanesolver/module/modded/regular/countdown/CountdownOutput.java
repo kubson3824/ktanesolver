@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.countdown;import java.util.List;import ktanesolver.logic.ModuleOutput;public record CountdownOutput(List<Operation>operations,String expression,int target)implements ModuleOutput{public record Operation(int left,String operator,int right,int result){}}

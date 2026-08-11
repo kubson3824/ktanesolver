@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface ModuloOutput{answer:number}export const solveModulo=(roundId:string,bombId:string,moduleId:string,number:number,modulo:number):Promise<{output:ModuloOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{number,modulo});

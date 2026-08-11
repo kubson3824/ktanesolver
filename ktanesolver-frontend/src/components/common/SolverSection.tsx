@@ -5,7 +5,7 @@ interface SolverSectionProps {
   title?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   contentClassName?: string;
   /** Render without the surrounding Card chrome (useful for nesting). */

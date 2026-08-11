@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.catchphrase;import java.util.List;import ktanesolver.logic.ModuleOutput;public record CatchphraseOutput(List<Press>presses,int product,int timingRow)implements ModuleOutput{public record Press(int position,int timerDigit){}}

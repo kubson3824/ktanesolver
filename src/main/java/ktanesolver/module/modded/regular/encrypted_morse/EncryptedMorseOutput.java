@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.encrypted_morse;import ktanesolver.logic.ModuleOutput;public record EncryptedMorseOutput(String response,String responseMorse,String intermediateMessage,String decryptedMessage,String sequenceB,boolean swapped)implements ModuleOutput{}

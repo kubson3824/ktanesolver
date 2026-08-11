@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.catchphrase;import java.util.List;import ktanesolver.logic.ModuleInput;public record CatchphraseInput(List<String>panelColors,List<Integer>numbers)implements ModuleInput{}

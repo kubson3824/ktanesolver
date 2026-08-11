@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.encrypted_morse;import ktanesolver.logic.ModuleInput;public record EncryptedMorseInput(String binarySequence,String receivedMessage,String receivedKey)implements ModuleInput{}
