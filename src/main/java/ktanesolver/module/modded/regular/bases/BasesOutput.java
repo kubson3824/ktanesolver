@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.bases;import ktanesolver.logic.ModuleOutput;public record BasesOutput(String answer,int firstBase,int secondBase,int answerBase,int firstDecimal,int secondDecimal)implements ModuleOutput{}

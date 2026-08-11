@@ -200,6 +200,40 @@ const fixtures: Record<ModuleType, Fixture> = {
   DRAGON_ENERGY: { result: { acceptableWords: ["Energy"], safeTimerDigits: [2, 3, 4] }, expected: "!number energy 2" },
   UNCOLORED_SQUARES: { result: { placements: [["A1", "B1", "A2"]] }, expected: "" },
   FLASHING_LIGHTS: { result: { presses: [3, 4] }, expected: "!number press 3; !number press 4" },
+  THREE_D_TUNNELS: { result: { actions: ["U", "R", "D", "SUBMIT"] }, expected: "!number move u r d; !number submit" },
+  SYNCHRONIZATION: { result: { steps: [{ firstPosition: 1, firstState: "ON", secondPosition: 5, secondState: "ON" }, { firstPosition: 2, firstState: "OFF", secondPosition: 4, secondState: "OFF" }, { firstPosition: 3, firstState: "ON", secondPosition: 1, secondState: "ON" }, { firstPosition: 2, firstState: "OFF", secondPosition: 1, secondState: "OFF" }], timerDigit: 8 }, expected: "!number 1 on 5 on; !number 2 off 4 off; !number 3 on 1 on; !number 2 off 1 off; !number 8" },
+  THE_SWITCH: { result: { timerDigit: 5 }, expected: "!number flip 5" },
+  REVERSE_MORSE: { result: { firstTransmission: [".-", "br", "-...", "br", "-.-.", "br", "-..", "br", ".", "br", "..-.", "br", "tx"], secondTransmission: ["--.", "br", "....", "br", "..", "br", ".---", "br", "-.-", "br", ".-..", "br", "tx"], currentStage: 1 }, expected: "!number .- br -... br -.-. br -.. br . br ..-. br tx --. br .... br .. br .--- br -.- br .-.. br tx" },
+  MANOMETERS: { result: { stage: 2, topPressure: 6, bottomLeftPressure: 8, bottomRightPressure: 7, useValve: true }, expected: "!number t 6 bl 8 br 7; !number valve" },
+  SHIKAKU: { result: { presses: Array.from({ length: 36 }, (_, index) => `${String.fromCharCode(65 + index % 6)}${Math.floor(index / 6) + 1}`) }, expected: `!number press ${Array.from({ length: 36 }, (_, index) => `${String.fromCharCode(97 + index % 6)}${Math.floor(index / 6) + 1}`).join(" ")}` },
+  WIRE_SPAGHETTI: { result: { aliases: ["p", "dr", "lg", "p"] }, expected: "!number cut p dr lg p" },
+  MODULE_HOMEWORK: { result: { button: 3 }, expected: "!number start; !number press 3" },
+  TENNIS: { result: { actions: ["LR", "S11", "S12", "R", "S", "S"] }, expected: "!number lr s11 s12 r s s" },
+  BENEDICT_CUMBERBATCH: { result: { leftSuffix: "bee", rightSuffix: "d'captain" }, expected: "!number submit bee d'captain" },
+  BOGGLE: { result: { plays: [{ cells: ["A1", "B2", "C3"] }, { cells: ["D4", "C4", "B3"] }] }, expected: "!number press a1 b2 c3; !number press d4 c4 b3" },
+  HORRIBLE_MEMORY: { result: { position: 6, label: 2, color: "orange" }, expected: "!number position 6" },
+  SIGNALS: { result: { clicks: ["s2", "s2", "s2", "s3", "s3", "s3"] }, expected: "!number s2 s2 s2 s3 s3 s3; !number submit" },
+  BOOLEAN_MAZE: { result: { action: "STUCK", from: [0, 0], to: [0, 0] }, expected: "!number press stuck" },
+  SONIC_KNUCKLES: { result: { object: "hero", ringSecond: 5, hitsRequired: 3, firstHitParity: "even", finalHitParity: "odd" }, expected: "!number press hero at 05; !number even 2; !number odd 1" },
+  QUINTUPLES: { result: { answer: "08341" }, expected: "!number submit 08341" },
+  THE_SPHERE: { result: { actions: [{type:"tap",value:4},{type:"hold",value:7}] }, expected: "!number tap 4; hold 7" },
+  COFFEEBUCKS: { result: { customerName:"Alex",selectedDrink:"Twix Frappuccino",quirkCommand:"gluten" }, expected: "!number name Alex 0; !number gluten; !number submit Twix Frappuccino" },
+  COLORFUL_MADNESS: { result: { presses:[1,4,8,12,16,20] }, expected: "!number press 1 4 8 12 16 20" },
+  BASES: { result: { answer:"482" }, expected: "!number 482" },
+  LIONS_SHARE: { result: { portions:[{lion:"Simba",percentage:60},{lion:"Nala",percentage:40}] }, expected: "!number set Simba 60, set Nala 40, submit" },
+  SNOOKER: { result: { actions:["red","black","cue","red","pink","cue"] }, expected: "!number red black cue red pink cue" },
+  BLACKJACK: { result: { actions:["hit","hit","stand"] }, expected: "!number hit; !number hit; !number stand" },
+  PARTY_TIME: { result: { actions:["die 1 12 13","space 6 17","roll start"] }, expected: "!number die 1 12 13; !number space 6 17; !number roll start" },
+  ACCUMULATION: { result: { currentAnswer:447 }, expected: "!number submit 447" },
+  THE_PLUNGER_BUTTON: { result: { pressDigit:5,releaseDigit:3 }, expected: "!number hold on 5, release on 3" },
+  THE_DIGIT: { result: { answer:6 }, expected: "!number submit 6" },
+  THE_JACK_O_LANTERN: { result: { press:"trick" }, expected: "!number trick" },
+  T_WORDS: { result: { positions:[2,4,1,3] }, expected: "!number press 2413" },
+  DIVIDED_SQUARES: { result: { action:"submit",square:"B3" }, expected: "!number submit b3" },
+  CONNECTION_DEVICE: { result: { commands:["boot","open discord","set 5CARDE","send 07"] }, expected: "!number boot; !number open discord; !number set 5CARDE; !number send 07" },
+  INSTRUCTIONS: { result: { position:3 }, expected: "!number press 3" },
+  VALVES: { result: { twitchToggles:[1,3] }, expected: "!number toggle 1 3" },
+  BLOCKBUSTERS: { result: { coordinate:"B5" }, expected: "!number B5" },
   TANGRAMS: { result: { connections: [{ positivePin: 1, negativePin: 8 }, { positivePin: 2, negativePin: 1 }, { positivePin: 5, negativePin: 4 }] }, expected: "!number set 1 8; !number set 2 1; !number set 5 4" },
   BITWISE_OPERATIONS: { result: { answer: "10101010" }, expected: "!number submit 10101010" },
   FAST_MATH: { result: { answer: "05" }, expected: "!number submit 05" },
@@ -240,7 +274,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(193);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(227);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(28);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(1);
   });

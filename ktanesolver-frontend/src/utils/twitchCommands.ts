@@ -1152,6 +1152,121 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return presses.length === 2 && presses.every((press) => Number.isInteger(press) && press >= 1 && press <= 5)
         ? commands(presses.map((press) => `press ${press}`)) : "";
     }
+    case ModuleType.THREE_D_TUNNELS: {
+      const actions = strings(raw.actions);
+      if (!actions.length || actions.some((action) => !["U", "D", "L", "R", "SUBMIT"].includes(action))) return "";
+      const moves = actions.filter((action) => action !== "SUBMIT");
+      return commands([moves.length ? `move ${moves.join(" ").toLowerCase()}` : undefined, actions.includes("SUBMIT") ? "submit" : undefined]);
+    }
+    case ModuleType.SYNCHRONIZATION: {
+      const steps = arrayValue(raw.steps).map(asRecord);
+      const timerDigit = numberValue(raw.timerDigit);
+      if (steps.length !== 4 || timerDigit === undefined || !Number.isInteger(timerDigit) || timerDigit < 1 || timerDigit > 9) return "";
+      const pairs = steps.map((step) => {
+        const first = numberValue(step.firstPosition), second = numberValue(step.secondPosition);
+        const firstState = stringValue(step.firstState)?.toLowerCase(), secondState = stringValue(step.secondState)?.toLowerCase();
+        return first !== undefined && second !== undefined && first >= 1 && first <= 9 && second >= 1 && second <= 9
+          && ["on", "off"].includes(firstState ?? "") && ["on", "off"].includes(secondState ?? "")
+          ? `${first} ${firstState} ${second} ${secondState}` : undefined;
+      });
+      return pairs.every(Boolean) ? commands([...pairs, String(timerDigit)]) : "";
+    }
+    case ModuleType.THE_SWITCH: {
+      const digit = numberValue(raw.timerDigit);
+      return digit !== undefined && Number.isInteger(digit) && digit >= 0 && digit <= 9 ? command(`flip ${digit}`) : "";
+    }
+    case ModuleType.REVERSE_MORSE: {
+      const first = strings(raw.firstTransmission), second = strings(raw.secondTransmission);
+      const valid = (tokens: string[]) => tokens.length === 13 && tokens.every((token, index) =>
+        index === 12 ? token === "tx" : index % 2 === 1 ? token === "br" : /^[.-]{1,5}$/.test(token));
+      const stage = numberValue(raw.currentStage);
+      if (!valid(first) || !valid(second) || (stage !== 1 && stage !== 2)) return "";
+      return command((stage === 2 ? second : [...first, ...second]).join(" "));
+    }
+    case ModuleType.MANOMETERS: {
+      const stage = numberValue(raw.stage), target = numberValue(raw.targetPressure);
+      if (stage === 1) return target !== undefined && Number.isInteger(target) && target >= 10 && target <= 35 ? command(`submit ${target}`) : "";
+      const top = numberValue(raw.topPressure), bottomLeft = numberValue(raw.bottomLeftPressure), bottomRight = numberValue(raw.bottomRightPressure);
+      if (stage !== 2 || [top, bottomLeft, bottomRight].some((pressure) => pressure === undefined || !Number.isInteger(pressure) || pressure < 0 || pressure > 10)) return "";
+      return commands([`t ${top} bl ${bottomLeft} br ${bottomRight}`, raw.useValve === true ? "valve" : undefined]);
+    }
+    case ModuleType.SHIKAKU: {
+      const presses = strings(raw.presses);
+      return presses.length >= 36 && presses.every((cell) => /^[A-F][1-6]$/.test(cell)) ? command(`press ${presses.join(" ").toLowerCase()}`) : "";
+    }
+    case ModuleType.WIRE_SPAGHETTI: {
+      const aliases = strings(raw.aliases);
+      return aliases.length && aliases.every((alias) => /^(?:p|l|dr|w|g|o|b|y|lr|k|dg|i|a|r|lg)$/.test(alias)) ? command(`cut ${aliases.join(" ")}`) : "";
+    }
+    case ModuleType.MODULE_HOMEWORK: {
+      const button = numberValue(raw.button);
+      return button !== undefined && Number.isInteger(button) && button >= 1 && button <= 4 ? commands(["start", `press ${button}`]) : "";
+    }
+    case ModuleType.TENNIS: {
+      const actions = strings(raw.actions).map((action) => action.toLowerCase());
+      return actions.length && actions.every((action) => /^(?:p[12]|r|lr|s1|s2|s|s[1-5][12])$/.test(action)) ? command(actions.join(" ")) : "";
+    }
+    case ModuleType.BENEDICT_CUMBERBATCH: {
+      const left = stringValue(raw.leftSuffix)?.toLowerCase(), right = stringValue(raw.rightSuffix)?.toLowerCase();
+      return left && right && /^[a-z']+$/.test(left) && /^[a-z']+$/.test(right) ? command(`submit ${left} ${right}`) : "";
+    }
+    case ModuleType.BOGGLE: {
+      const plays = arrayValue(raw.plays).map(asRecord);
+      const bodies = plays.map((play) => {
+        const cells = strings(play.cells).map((cell) => cell.toLowerCase());
+        return cells.length >= 3 && cells.every((cell) => /^[a-d][1-4]$/.test(cell)) ? `press ${cells.join(" ")}` : undefined;
+      });
+      return bodies.length && bodies.every(Boolean) ? commands(bodies) : "";
+    }
+    case ModuleType.HORRIBLE_MEMORY: {
+      const position = numberValue(raw.position);
+      return position !== undefined && Number.isInteger(position) && position >= 1 && position <= 6 ? command(`position ${position}`) : "";
+    }
+    case ModuleType.SIGNALS: {
+      const clicks = strings(raw.clicks).map((click) => click.toLowerCase());
+      return clicks.every((click) => /^s[123]$/.test(click)) ? commands([clicks.length ? clicks.join(" ") : undefined, "submit"]) : "";
+    }
+    case ModuleType.BOOLEAN_MAZE: {
+      const action = stringValue(raw.action)?.toLowerCase();
+      return action && /^(?:u|d|l|r|stuck|reset)$/.test(action) ? command(`press ${action}`) : "";
+    }
+    case ModuleType.SONIC_KNUCKLES: {
+      const object = stringValue(raw.object)?.toLowerCase(), second = numberValue(raw.ringSecond), hits = numberValue(raw.hitsRequired), first = stringValue(raw.firstHitParity)?.toLowerCase(), last = stringValue(raw.finalHitParity)?.toLowerCase();
+      if (!object || !/^(?:hero|badnik|monitor)$/.test(object) || second === undefined || hits === undefined || !Number.isInteger(second) || second < 0 || second > 19 || !Number.isInteger(hits) || hits < 1 || hits > 10 || !/^(?:even|odd)$/.test(first ?? "") || !/^(?:even|odd)$/.test(last ?? "")) return "";
+      return commands([`press ${object} at ${String(second).padStart(2,"0")}`, hits > 1 ? `${first} ${hits-1}` : undefined, `${last} 1`]);
+    }
+    case ModuleType.QUINTUPLES: {
+      const answer = stringValue(raw.answer);
+      return answer && /^\d{5}$/.test(answer) ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.THE_SPHERE: {
+      const actions = arrayValue(raw.actions).map(asRecord);
+      const parts = actions.map(action => { const type=stringValue(action.type)?.toLowerCase(),value=numberValue(action.value); return value!==undefined&&Number.isInteger(value)&&((type==="tap"&&value>=0&&value<=9)||(type==="hold"&&value>=1&&value<=10))?`${type} ${value}`:undefined; });
+      return parts.length&&parts.every(Boolean)?command(parts.join("; ")):"";
+    }
+    case ModuleType.COFFEEBUCKS: {
+      const name=stringValue(raw.customerName),drink=stringValue(raw.selectedDrink),quirk=stringValue(raw.quirkCommand)?.toLowerCase();
+      if(!name||!/^\S+$/.test(name)||!drink||!drink.trim()||(quirk&&!/^(?:milk|cream|gluten|sprinkles)$/.test(quirk)))return "";
+      return commands([`name ${name} 0`,quirk,`submit ${drink}`]);
+    }
+    case ModuleType.COLORFUL_MADNESS: {
+      const presses=arrayValue(raw.presses).map(numberValue);return presses.length===6&&presses.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=20)?command(`press ${presses.join(" ")}`):"";
+    }
+    case ModuleType.BASES:{const answer=stringValue(raw.answer);return answer&&/^[0-9]+$/.test(answer)?command(answer):"";}
+    case ModuleType.LIONS_SHARE:{const portions=arrayValue(raw.portions).map(asRecord);if(portions.length<2||portions.length>8)return"";const sets=portions.map(p=>{const lion=stringValue(p.lion),percentage=numberValue(p.percentage);return lion&&/^\w+$/.test(lion)&&percentage!==undefined&&Number.isInteger(percentage)&&percentage>=0&&percentage<=100?`set ${lion} ${percentage}`:undefined;});return sets.every(Boolean)?command(`${sets.join(", ")}, submit`):"";}
+    case ModuleType.SNOOKER:{const actions=strings(raw.actions).map(x=>x.toLowerCase());return actions.length&&actions.every(x=>/^(?:red|yellow|green|brown|blue|pink|black|cue)$/.test(x))?command(actions.join(" ")):"";}
+    case ModuleType.BLACKJACK:{const actions=strings(raw.actions).map(x=>x.toLowerCase());return actions.length&&actions.every(x=>/^(?:bet (?:1|10|100|250)|hit|stand|check)$/.test(x))?commands(actions):"";}
+    case ModuleType.PARTY_TIME:{const actions=strings(raw.actions).map(x=>x.toLowerCase());return actions.length&&actions.at(-1)==="roll start"&&actions.every(x=>x==="roll start"||/^(?:die|space) (?:[1-9]|1[0-8])(?: (?:[1-9]|1[0-8]))*$/.test(x))?commands(actions):"";}
+    case ModuleType.ACCUMULATION:{const answer=numberValue(raw.currentAnswer);return answer!==undefined&&Number.isInteger(answer)&&answer>=0&&answer<=999?command(`submit ${answer}`):"";}
+    case ModuleType.THE_PLUNGER_BUTTON:{const press=numberValue(raw.pressDigit),release=numberValue(raw.releaseDigit);return press!==undefined&&release!==undefined&&Number.isInteger(press)&&Number.isInteger(release)&&press>=0&&press<=9&&release>=0&&release<=9?command(`hold on ${press}, release on ${release}`):"";}
+    case ModuleType.THE_DIGIT:{const answer=numberValue(raw.answer);return answer!==undefined&&Number.isInteger(answer)&&answer>=0&&answer<=9?command(`submit ${answer}`):"";}
+    case ModuleType.THE_JACK_O_LANTERN:{const press=stringValue(raw.press)?.toLowerCase();return press==="trick"||press==="treat"?command(press):"";}
+    case ModuleType.T_WORDS:{const positions=arrayValue(raw.positions)?.map(numberValue);return positions?.length===4&&positions.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=4)&&new Set(positions).size===4?command(`press ${positions.join("")}`):"";}
+    case ModuleType.DIVIDED_SQUARES:{const action=stringValue(raw.action)?.toLowerCase(),square=stringValue(raw.square)?.toLowerCase();return(action==="examine"||action==="submit")&&square&&/^[a-m](?:[1-9]|1[0-3])$/.test(square)?command(`${action} ${square}`):"";}
+    case ModuleType.CONNECTION_DEVICE:return strings(raw.commands).length===4?commands(strings(raw.commands)):"";
+    case ModuleType.INSTRUCTIONS:{const position=numberValue(raw.position);return position!==undefined&&Number.isInteger(position)&&position>=1&&position<=4?command(`press ${position}`):"";}
+    case ModuleType.VALVES:{const toggles=arrayValue(raw.twitchToggles)?.map(numberValue);return toggles?.length&&toggles.length<=9&&toggles.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=3)?command(`toggle ${toggles.join(" ")}`):"";}
+    case ModuleType.BLOCKBUSTERS:{const coordinate=stringValue(raw.coordinate)?.toUpperCase();return coordinate&&/^[A-E][1-5]$/.test(coordinate)?command(coordinate):"";}
     case ModuleType.TANGRAMS: {
       const pairs = arrayValue(raw.connections).map(asRecord);
       if (pairs.length !== 3) return "";

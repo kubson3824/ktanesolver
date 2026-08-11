@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface TheDigitOutput{answer:number;steps:number[]}export const solveTheDigit=(roundId:string,bombId:string,moduleId:string):Promise<{output:TheDigitOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{});

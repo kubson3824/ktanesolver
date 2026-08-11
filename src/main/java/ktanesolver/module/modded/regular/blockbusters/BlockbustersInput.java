@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.blockbusters;import java.util.List;import ktanesolver.logic.ModuleInput;public record BlockbustersInput(List<String>columns,List<String>path)implements ModuleInput{}

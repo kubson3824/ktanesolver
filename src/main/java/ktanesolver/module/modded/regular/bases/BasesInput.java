@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.bases;import ktanesolver.logic.ModuleInput;public record BasesInput(String first,String second,Operator operator)implements ModuleInput{public enum Operator{ADD,SUBTRACT,MULTIPLY,DIVIDE}}

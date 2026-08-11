@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.instructions;import ktanesolver.logic.ModuleOutput;public record InstructionsOutput(int position,String color,String label,int rule,int screen1Value,int screen3Value)implements ModuleOutput{}

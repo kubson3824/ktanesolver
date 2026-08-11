@@ -1,0 +1,20 @@
+import { useCallback, useMemo, useState } from "react";
+import { solveWireSpaghetti, WIRE_SPAGHETTI_COLORS, type WireSpaghettiOutput } from "../../services/wireSpaghettiService";
+import { useRoundStore } from "../../store/useRoundStore";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay, useSolver, useSolverModulePersistence } from "../common";
+
+const EXAMPLE = "PURPLE\nDARK RED\nWHITE\nPURPLE";
+const normalize = (value: string) => value.trim().replaceAll("_", " ").toUpperCase();
+
+export default function WireSpaghettiSolver({ bomb }: { bomb: BombEntity | null | undefined }) {
+  const [wireText, setWireText] = useState(EXAMPLE); const [result, setResult] = useState<WireSpaghettiOutput | null>(null); const [twitchCommand, setTwitchCommand] = useState("");
+  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
+  const updateModuleAfterSolve = useRoundStore((state) => state.updateModuleAfterSolve);
+  const state = useMemo(() => ({ wireText, result, twitchCommand }), [wireText, result, twitchCommand]);
+  useSolverModulePersistence<typeof state, WireSpaghettiOutput>({ state, onRestoreState: useCallback((saved) => { if (saved.wireText) setWireText(saved.wireText); if (saved.result) setResult(saved.result); if (saved.twitchCommand) setTwitchCommand(saved.twitchCommand); }, []), onRestoreSolution: useCallback((solution: WireSpaghettiOutput) => { setResult(solution); setTwitchCommand(generateTwitchCommand({ moduleType: ModuleType.WIRE_SPAGHETTI, result: solution })); }, []), currentModule, setIsSolved });
+  const solve = async () => { if (!round?.id || !bomb?.id || !currentModule?.id) return setError("Missing required information"); clearError(); setIsLoading(true); try { const wires = wireText.split(/\r?\n/).map(normalize).filter(Boolean); if (wires.some((wire) => !(WIRE_SPAGHETTI_COLORS as readonly string[]).includes(wire))) throw new Error("Use one manual color per line"); const response = await solveWireSpaghetti(round.id, bomb.id, currentModule.id, wires); const command = generateTwitchCommand({ moduleType: ModuleType.WIRE_SPAGHETTI, result: response.output }); setResult(response.output); setTwitchCommand(command); setIsSolved(response.solved); if (response.solved) markModuleSolved(bomb.id, currentModule.id); updateModuleAfterSolve(bomb.id, currentModule.id, { wireText, result: response.output, twitchCommand: command }, response.output, response.solved); } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to solve Wire Spaghetti"); } finally { setIsLoading(false); } };
+  const reset = () => { setWireText(""); setResult(null); setTwitchCommand(""); resetSolverState(); };
+  return <SolverLayout><SolverSection title="Active wires" description="Enter every remaining wire, one color per line. Repeated colors are allowed."><textarea aria-label="Wire Spaghetti wires" rows={12} value={wireText} onChange={(event) => { setWireText(event.target.value); setResult(null); setTwitchCommand(""); clearError(); }} disabled={isLoading || isSolved} placeholder={EXAMPLE} className="w-full rounded-md border border-input bg-background p-3 font-mono" /></SolverSection><SolverControls onSolve={solve} onReset={reset} isLoading={isLoading} isSolved={isSolved} solveText="Order wires"/><ErrorAlert error={error}/>{result && <SolverSection title="Cut order" className="border-emerald-500/40"><ol className="list-decimal space-y-1 pl-6">{result.colors.map((color, index) => <li key={`${color}-${index}`}>{color}</li>)}</ol></SolverSection>}{twitchCommand && <TwitchCommandDisplay command={twitchCommand}/>}<SolverInstructions>Use the exact manual names: {WIRE_SPAGHETTI_COLORS.join(", ")}. After a strike, remove the wire that was already cut and solve the remaining list again.</SolverInstructions></SolverLayout>;
+}

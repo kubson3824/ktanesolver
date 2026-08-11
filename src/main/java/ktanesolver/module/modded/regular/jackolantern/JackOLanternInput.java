@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.jackolantern;import ktanesolver.logic.ModuleInput;public record JackOLanternInput(int eyePattern,int mouthPattern,boolean nosePresent)implements ModuleInput{}

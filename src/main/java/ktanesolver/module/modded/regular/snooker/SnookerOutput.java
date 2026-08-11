@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.snooker;import java.util.List;import ktanesolver.logic.ModuleOutput;public record SnookerOutput(List<List<String>>breaks,List<String>actions)implements ModuleOutput{}

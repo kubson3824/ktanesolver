@@ -1,0 +1,13 @@
+package ktanesolver.module.modded.regular.benedictcumberbatch;
+import static org.assertj.core.api.Assertions.assertThat;
+import java.util.HashMap;import java.util.List;import java.util.Set;
+import org.junit.jupiter.api.Test;
+import ktanesolver.entity.BombEntity;import ktanesolver.entity.ModuleEntity;import ktanesolver.enums.ModuleType;import ktanesolver.enums.PortType;import ktanesolver.logic.SolveFailure;import ktanesolver.logic.SolveSuccess;
+class BenedictCumberbatchSolverTest{
+	private final BenedictCumberbatchSolver solver=new BenedictCumberbatchSolver();
+	@Test void appliesSourceRulesInOrderIncludingEmptyPortAndHolderRules(){BenedictCumberbatchOutput out=solve(bomb("ABC123"),new BenedictCumberbatchInput("Bene","Bene","Cumber","Cumber"));assertThat(out.leftIndex()).isEqualTo(7);assertThat(out.rightIndex()).isZero();assertThat(out.leftSuffix()).isEqualTo("ton");assertThat(out.rightSuffix()).isEqualTo("batch");}
+	@Test void appliesIndicatorsDuplicatePortsSolvedModulesAndMultipliers(){BombEntity b=bomb("A1B23D");b.setAaBatteryCount(4);b.setIndicators(new HashMap<>(java.util.Map.of("FRK",true,"FRQ",true,"NSA",false,"MSA",false)));b.replacePortPlates(List.of(Set.of(PortType.STEREO_RCA,PortType.RJ45),Set.of(PortType.STEREO_RCA,PortType.PARALLEL,PortType.SERIAL)));for(int i=0;i<4;i++){ModuleEntity m=new ModuleEntity();m.setSolved(i<3);b.getModules().add(m);}BenedictCumberbatchOutput out=solve(b,new BenedictCumberbatchInput("Bene","Bene","Cumber","Cumber"));assertThat(out.leftIndex()).isEqualTo(3);assertThat(out.rightIndex()).isEqualTo(1);assertThat(out.forename()).isEqualTo("Benedink");assertThat(out.surname()).isEqualTo("Cumberthatch");}
+	@Test void specialPrefixesForceZeroButUseTheObservedSuffixList(){BenedictCumberbatchOutput out=solve(bomb("A1B23D"),new BenedictCumberbatchInput("Broccoli","Bomba","Lingerie","Call"));assertThat(out.leftIndex()).isZero();assertThat(out.rightIndex()).isZero();assertThat(out.leftSuffix()).isEqualTo("boom");assertThat(out.rightSuffix()).isEqualTo("dispatch");}
+	@Test void rejectsAMismatchedNormalPrefixAndList(){assertThat(solver.solve(null,bomb("ABC123"),module(),new BenedictCumberbatchInput("Bene","Burger","Cumber","Cumber"))).isInstanceOf(SolveFailure.class);}
+	private BenedictCumberbatchOutput solve(BombEntity b,BenedictCumberbatchInput i){return((SolveSuccess<BenedictCumberbatchOutput>)solver.solve(null,b,module(),i)).output();}private static BombEntity bomb(String serial){BombEntity b=new BombEntity();b.setSerialNumber(serial);b.setIndicators(new HashMap<>());return b;}private static ModuleEntity module(){ModuleEntity m=new ModuleEntity();m.setType(ModuleType.BENEDICT_CUMBERBATCH);m.setState(new HashMap<>());m.setSolution(new HashMap<>());return m;}
+}

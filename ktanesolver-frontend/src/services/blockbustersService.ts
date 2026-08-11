@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface BlockbustersOutput{coordinate:string;letter:string;nextPath:string[];legalLetters:string[]}export const solveBlockbusters=(roundId:string,bombId:string,moduleId:string,columns:string[],path:string[]):Promise<{output:BlockbustersOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{columns,path});

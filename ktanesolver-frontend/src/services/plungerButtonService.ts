@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface PlungerButtonOutput{solvedModules:number;pressDigit:number;releaseDigit:number}export const solvePlungerButton=(roundId:string,bombId:string,moduleId:string):Promise<{output:PlungerButtonOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{});

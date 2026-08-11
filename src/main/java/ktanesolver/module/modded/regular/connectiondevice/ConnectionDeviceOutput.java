@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.connectiondevice;import java.util.List;import ktanesolver.logic.ModuleOutput;public record ConnectionDeviceOutput(String app,String requiredToken,String code,int timerDigitSum,String timerSecond,List<String>commands)implements ModuleOutput{}

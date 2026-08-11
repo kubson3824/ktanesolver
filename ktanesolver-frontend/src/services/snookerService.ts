@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface SnookerOutput{breaks:string[][];actions:string[]}export const solveSnooker=(roundId:string,bombId:string,moduleId:string,redCount:number,targetBreaks:number[]):Promise<{output:SnookerOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{redCount,targetBreaks});

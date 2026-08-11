@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.blockbusters;import java.util.List;import ktanesolver.logic.ModuleOutput;public record BlockbustersOutput(String coordinate,String letter,List<String>nextPath,List<String>legalLetters)implements ModuleOutput{}

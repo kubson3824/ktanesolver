@@ -70,6 +70,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		if (source.getType() == ModuleType.CALENDAR && Boolean.FALSE.equals(source.getState().get("souvenirEligible"))) {
 			return failure("Souvenir asks no question about Calendar when the holiday remains visible in the target month");
 		}
+		if(source.getType()==ModuleType.DIVIDED_SQUARES&&Boolean.FALSE.equals(source.getState().get("dividedSquaresSouvenirEligible")))return failure("Souvenir asks no question when Divided Squares is solvable at any solve count");
 		if (directAnswer) {
 			Object recorded = resolveRecordedAnswer(source, input.question().trim());
 			if (recorded == null) return failure("No recorded answer is available for this question");
@@ -107,6 +108,21 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		String q = normalize(question);
 		return switch (source.getType()) {
 			case BIG_CIRCLE -> answerIndex(answers, source.getState().get("spinDirection"));
+			case BOGGLE -> membershipAnswerIndex(answers, source.getState().get("visibleLetters"), null, false);
+			case HORRIBLE_MEMORY -> answerIndex(answers, horribleMemoryAnswer(source.getState(), q));
+			case SONIC_KNUCKLES -> answerIndex(answers, source.getState().get(q.contains("badnik") ? "badnik" : "monitor"));
+			case QUINTUPLES -> answerIndex(answers, quintuplesAnswer(source.getState(), q));
+			case THE_SPHERE -> answerIndex(answers, nested(source.getState(), "sphereColors", ordinal(q)));
+			case COFFEEBUCKS -> answerIndex(answers, source.getState().get(coffeebucksKey(q)));
+			case LIONS_SHARE -> q.contains("year") ? answerIndex(answers, source.getState().get("lionsShareYear")) : membershipAnswerIndex(answers, source.getState().get("lionsShareRemovedLions"), null, false);
+			case SNOOKER -> answerIndex(answers, source.getState().get("snookerReds"));
+			case ACCUMULATION -> answerIndex(answers, q.contains("border")
+				? source.getState().get("accumulationBorderColor")
+				: nested(source.getState(), "accumulationBackgroundColors", ordinal(q)));
+			case T_WORDS -> membershipAnswerIndex(answers, source.getState().get("tWordsWords"), null, false);
+			case DIVIDED_SQUARES -> answerIndex(answers,source.getState().get("dividedSquaresColorB"));
+			case VALVES -> valvesAnswerIndex(source.getState(),answers);
+			case BLOCKBUSTERS -> membershipAnswerIndex(answers,source.getState().get("blockbustersInitialLetters"),null,false);
 			case CALENDAR -> answerIndex(answers, source.getState().get("souvenirHoliday"));
 			case USA_MAZE -> answerIndex(answers, source.getState().get("souvenirState"));
 			case BLIND_MAZE -> answerIndex(answers, blindMazeColor(source.getState(), q));
@@ -202,6 +218,10 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case DRAGON_ENERGY -> answerIndex(answers, source.getState().get("indicatorColor"));
 			case UNCOLORED_SQUARES -> answerIndex(answers, source.getState().get("firstStageColor" + (ordinal(q) + 1)));
 			case FLASHING_LIGHTS -> answerIndex(answers, flashingLightsCount(source.getState(), q));
+			case THREE_D_TUNNELS -> answerIndex(answers, source.getState().get("target" + (ordinal(q) + 1)));
+			case SYNCHRONIZATION -> answerIndex(answers, source.getState().get(q.contains("fastest") ? "fastestLight" : "centerSpeed"));
+			case THE_SWITCH -> answerIndex(answers, source.getState().get("stage" + (ordinal(q) + 1) + (q.contains("top") ? "Top" : "Bottom")));
+			case REVERSE_MORSE -> answerIndex(answers, reverseMorseAnswer(source.getState(), q));
 			case SIMON_SHRIEKS -> answerIndex(answers, nested(source.getState(), "flashes", ordinal(q)));
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
@@ -234,6 +254,21 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		Map<String, Object> state = source.getState();
 		return switch (source.getType()) {
 			case BUTTON -> state.get("stripColor");
+			case BOGGLE -> state.get("visibleLetters");
+			case HORRIBLE_MEMORY -> horribleMemoryAnswer(state, normalize(question));
+			case SONIC_KNUCKLES -> state.get(normalize(question).contains("badnik") ? "badnik" : "monitor");
+			case QUINTUPLES -> quintuplesAnswer(state, normalize(question));
+			case THE_SPHERE -> nested(state, "sphereColors", ordinal(normalize(question)));
+			case COFFEEBUCKS -> state.get(coffeebucksKey(normalize(question)));
+			case LIONS_SHARE -> normalize(question).contains("year") ? state.get("lionsShareYear") : state.get("lionsShareRemovedLions");
+			case SNOOKER -> state.get("snookerReds");
+			case ACCUMULATION -> normalize(question).contains("border")
+				? state.get("accumulationBorderColor")
+				: nested(state, "accumulationBackgroundColors", ordinal(normalize(question)));
+			case T_WORDS -> state.get("tWordsWords");
+			case DIVIDED_SQUARES -> state.get("dividedSquaresColorB");
+			case VALVES -> valvesAnswer(state);
+			case BLOCKBUSTERS -> state.get("blockbustersInitialLetters");
 			case CALENDAR -> state.get("souvenirHoliday");
 			case USA_MAZE -> state.get("souvenirState");
 			case BIG_CIRCLE -> state.get("spinDirection");
@@ -334,6 +369,10 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case DRAGON_ENERGY -> state.get("indicatorColor");
 			case UNCOLORED_SQUARES -> state.get("firstStageColor" + ("firstStageColor first".equals(question) ? "1" : "2"));
 			case FLASHING_LIGHTS -> flashingLightsCount(state, normalize(question));
+			case THREE_D_TUNNELS -> state.get("target" + (ordinal(normalize(question)) + 1));
+			case SYNCHRONIZATION -> state.get("fastestLight".equals(question) ? "fastestLight" : "centerSpeed");
+			case THE_SWITCH -> state.get("stage" + (ordinal(normalize(question)) + 1) + (normalize(question).contains("top") ? "Top" : "Bottom"));
+			case REVERSE_MORSE -> reverseMorseAnswer(state, normalize(question));
 			case SIMON_SHRIEKS -> nested(state, "flashes", ordinal(normalize(question)));
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
@@ -580,6 +619,19 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			if (candidate.equals(glyphs) || candidate.equals(bits)) return i;
 		}
 		return -1;
+	}
+
+	private static Object valvesAnswer(Map<String,Object>state){Object raw=state.get("valvesInitialState");return raw==null?null:String.valueOf(raw).replace('1','●').replace('0','○');}
+	private static int valvesAnswerIndex(Map<String,Object>state,List<String>answers){Object answer=valvesAnswer(state);if(answer==null)return-1;String glyphs=String.valueOf(answer),bits=glyphs.replace('●','1').replace('○','0');for(int i=0;i<answers.size();i++){String candidate=answers.get(i).replaceAll("\\s","");if(candidate.equals(glyphs)||candidate.equals(bits))return i;}return-1;}
+
+	private static Object reverseMorseAnswer(Map<String, Object> state, String question) {
+		List<Integer> positions = ordinals(question);
+		if (positions.size() < 2) return null;
+		int position = positions.getFirst();
+		int message = positions.getLast();
+		if (position < 0 || position > 5 || message < 0 || message > 1) return null;
+		return nested(state, "message" + (message + 1) + "Observations", position,
+			question.contains("color") ? "color" : "symbol");
 	}
 
 	private static Object murderRecordedAnswer(ModuleEntity source, String question) {
@@ -1028,6 +1080,24 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return -1;
 	}
 
+	private static Object quintuplesAnswer(Map<String, Object> state, String question) {
+		if (question.contains("how many numbers were")) {
+			for (String color : List.of("red", "blue", "orange", "green", "pink"))
+				if (question.contains(color)) return nested(state, "quintuplesColorCounts", color);
+			return null;
+		}
+		List<Integer> positions = ordinals(question);
+		if (positions.size() < 2 || positions.get(0) > 4 || positions.get(1) > 4) return null;
+		return nested(state, question.contains("what color") ? "quintuplesColors" : "quintuplesNumbers", positions.get(1) * 5 + positions.get(0));
+	}
+
+	private static String coffeebucksKey(String question) {
+		if (question.contains("sugar")) return "coffeebucksSugar";
+		if (question.contains("time")) return "coffeebucksTime";
+		if (question.contains("stress")) return "coffeebucksStress";
+		return "coffeebucksSize";
+	}
+
 	private static int onlyConnectPosition(String question) {
 		String[] positions = {"top left", "top middle", "top right", "bottom left", "bottom middle", "bottom right"};
 		for (int i = 0; i < positions.length; i++) if (question.contains(positions[i])) return i;
@@ -1094,6 +1164,41 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		if (value instanceof Collection<?> collection) value = collection.stream().map(String::valueOf).toList();
 		return String.valueOf(value).replaceAll("([a-z])([A-Z])", "$1 $2")
 			.replaceAll("[^\\p{L}\\p{N}]+", " ").trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Object horribleMemoryAnswer(Map<String, Object> state, String question) {
+		Object rawStages = state.get("stages");
+		if (!(rawStages instanceof List<?> stages)) return null;
+		List<Integer> ordinalValues = ordinals(question);
+		int stageIndex = ordinalValues.isEmpty() ? -1 : ordinalValues.getLast();
+		if (stageIndex < 0 || stageIndex >= 4 || stageIndex >= stages.size() || !(stages.get(stageIndex) instanceof Map<?, ?> stage)) return null;
+		if (question.contains("number was displayed")) return stage.get("display");
+		Object rawButtons = stage.get("buttons");
+		if (!(rawButtons instanceof List<?> buttons) || buttons.size() != 6) return null;
+		int position = ordinalValues.size() >= 2 ? ordinalValues.getFirst() : -1;
+		Matcher labelMatch = Pattern.compile("(?:labeled|labelled) ([1-6])").matcher(question);
+		int label = labelMatch.find() ? Integer.parseInt(labelMatch.group(1)) : -1;
+		String color = List.of("blue", "green", "red", "orange", "purple", "pink").stream().filter(question::contains).findFirst().orElse(null);
+		if (question.contains("color of the button in") && position >= 0) return ((Map<String, Object>) buttons.get(position)).get("color");
+		if (question.contains("color of the button labeled") && label > 0) return buttonValue(buttons, "label", label, "color");
+		if (question.contains("label of the button in") && position >= 0) return ((Map<String, Object>) buttons.get(position)).get("label");
+		if (question.contains("label of the") && color != null) return buttonValue(buttons, "color", color, "label");
+		if (question.contains("position of the") && color != null) return ordinalName(buttonIndex(buttons, "color", color));
+		if (question.contains("position of the button labeled") && label > 0) return ordinalName(buttonIndex(buttons, "label", label));
+		return null;
+	}
+
+	@SuppressWarnings("unchecked") private static Object buttonValue(List<?> buttons, String searchKey, Object search, String resultKey) {
+		int index = buttonIndex(buttons, searchKey, search);
+		return index < 0 ? null : ((Map<String, Object>) buttons.get(index)).get(resultKey);
+	}
+	@SuppressWarnings("unchecked") private static int buttonIndex(List<?> buttons, String key, Object value) {
+		for (int i = 0; i < buttons.size(); i++) if (normalize(((Map<String, Object>) buttons.get(i)).get(key)).equals(normalize(value))) return i;
+		return -1;
+	}
+	private static String ordinalName(int index) {
+		return index >= 0 && index < 6 ? List.of("first", "second", "third", "fourth", "fifth", "sixth").get(index) : null;
 	}
 
 	private static String answerLabel(String value) {

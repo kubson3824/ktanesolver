@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.jackolantern;import ktanesolver.logic.ModuleOutput;public record JackOLanternOutput(String press,boolean conditionMatched,int solvedModules)implements ModuleOutput{}

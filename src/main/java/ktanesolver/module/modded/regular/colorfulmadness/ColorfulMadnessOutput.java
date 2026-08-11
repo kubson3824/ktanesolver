@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.colorfulmadness;import java.util.List;import ktanesolver.logic.ModuleOutput;public record ColorfulMadnessOutput(List<Integer>presses,List<Integer>mainPositions)implements ModuleOutput{}

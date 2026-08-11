@@ -53,12 +53,50 @@ const SIMONS_STAR_QUESTIONS = SIMON_ORDINALS.slice(0, 5).map((position) => quest
   `flash ${position}`,
   `Color that flashed ${position}`,
 ));
+const HORRIBLE_MEMORY_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth"];
+const HORRIBLE_MEMORY_COLORS = ["blue", "green", "red", "orange", "purple", "pink"];
+const HORRIBLE_MEMORY_QUESTIONS = HORRIBLE_MEMORY_ORDINALS.slice(0, 4).flatMap((stage) => [
+  ...HORRIBLE_MEMORY_ORDINALS.flatMap((position) => [
+    question(`What was the color of the button in the ${position} position in the ${stage} stage of Horrible Memory?`, `Color at ${position} position — ${stage} stage`),
+    question(`What was the label of the button in the ${position} position in the ${stage} stage of Horrible Memory?`, `Label at ${position} position — ${stage} stage`),
+  ]),
+  ...HORRIBLE_MEMORY_ORDINALS.flatMap((label) => [
+    question(`What was the color of the button labeled ${HORRIBLE_MEMORY_ORDINALS.indexOf(label) + 1} in the ${stage} stage of Horrible Memory?`, `Color of label ${HORRIBLE_MEMORY_ORDINALS.indexOf(label) + 1} — ${stage} stage`),
+    question(`What was the position of the button labeled ${HORRIBLE_MEMORY_ORDINALS.indexOf(label) + 1} in the ${stage} stage of Horrible Memory?`, `Position of label ${HORRIBLE_MEMORY_ORDINALS.indexOf(label) + 1} — ${stage} stage`),
+  ]),
+  ...HORRIBLE_MEMORY_COLORS.flatMap((color) => [
+    question(`What was the label of the ${color} button in the ${stage} stage of Horrible Memory?`, `Label of ${color} — ${stage} stage`),
+    question(`What was the position of the ${color} button in the ${stage} stage of Horrible Memory?`, `Position of ${color} — ${stage} stage`),
+  ]),
+  question(`What number was displayed in the ${stage} stage of Horrible Memory?`, `Displayed number — ${stage} stage`),
+]);
+const QUINTUPLES_ORDINALS = ["first", "second", "third", "fourth", "fifth"];
+const QUINTUPLES_QUESTIONS = [
+  ...QUINTUPLES_ORDINALS.flatMap((slot) => QUINTUPLES_ORDINALS.flatMap((digit) => [
+    question(`What was the ${digit} digit in the ${slot} slot in Quintuples?`, `${digit} digit — ${slot} slot`),
+    question(`What color was the ${digit} digit in the ${slot} slot in Quintuples?`, `Color of ${digit} digit — ${slot} slot`),
+  ])),
+  ...["red", "blue", "orange", "green", "pink"].map(color => question(`How many numbers were ${color} in Quintuples?`, `Number of ${color} flashes`)),
+];
 const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.MAFIA]: [question("players", "Who was a player, but not the Godfather?")],
   [ModuleType.CALENDAR]: [question("holiday", "What was the holiday?")],
   [ModuleType.USA_MAZE]: [question("departureState", "Which state did you depart from?")],
   [ModuleType.BUTTON]: [question("stripColor", "What color did the light glow?")],
   [ModuleType.BIG_CIRCLE]: [question("spinDirection", "Which direction was the circle spinning?")],
+  [ModuleType.BOGGLE]: [question("visibleLetters", "Which letters were initially visible?")],
+  [ModuleType.HORRIBLE_MEMORY]: HORRIBLE_MEMORY_QUESTIONS,
+  [ModuleType.SONIC_KNUCKLES]: [question("badnik", "Which badnik was shown?"), question("monitor", "Which monitor was shown?")],
+  [ModuleType.QUINTUPLES]: QUINTUPLES_QUESTIONS,
+  [ModuleType.THE_SPHERE]: ["first", "second", "third", "fourth", "fifth"].map(position => question(`What was the ${position} flashed color in The Sphere?`, `${position} flashed color`)),
+  [ModuleType.COFFEEBUCKS]: [question("sugar", "Last customer’s preferred sugar content"), question("time", "Last customer’s preferred time of day"), question("stress", "Last customer’s preferred stress level"), question("size", "Last customer’s preferred size")],
+  [ModuleType.LIONS_SHARE]: [question("year", "Which year was displayed?"), question("removedLions", "Which lion was present but removed?")],
+  [ModuleType.SNOOKER]: [question("reds", "How many red balls were there at the start?")],
+  [ModuleType.ACCUMULATION]: [question("borderColor", "What was the border color?"), ...["first","second","third","fourth","fifth"].map(stage=>question(`background ${stage}`,`Background color in the ${stage} stage`))],
+  [ModuleType.T_WORDS]: [question("words", "Which word was present?")],
+  [ModuleType.DIVIDED_SQUARES]: [question("pressedColor", "What color was shown while pressing the correct square?")],
+  [ModuleType.VALVES]: [question("initialState", "What was the initial valve state?")],
+  [ModuleType.BLOCKBUSTERS]: [question("firstLetters", "Which letter was in the leftmost column at the start?")],
   [ModuleType.MEMORY]: [
     question("displays", "What was displayed in each stage?"),
     question("positions", "What positions were pressed?"),
@@ -276,6 +314,22 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.FLASHING_LIGHTS]: ["top", "bottom"].flatMap((led) =>
     ["cyan", "green", "red", "purple", "orange"].map((color) =>
       question(`ledFrequency ${led} ${color}`, `${led[0].toUpperCase() + led.slice(1)} LED — ${color}`))),
+  [ModuleType.THREE_D_TUNNELS]: [
+    question("targetNode first", "First goal node"),
+    question("targetNode second", "Second goal node"),
+    question("targetNode third", "Third goal node"),
+  ],
+  [ModuleType.SYNCHRONIZATION]: [
+    question("fastestLight", "Initial fastest-light position"),
+    question("centerSpeed", "Initial center-light speed"),
+  ],
+  [ModuleType.THE_SWITCH]: ["first", "second"].flatMap((flip) => ["top", "bottom"].map((led) =>
+    question(`ledColor ${led} ${flip}`, `${led[0].toUpperCase() + led.slice(1)} LED on the ${flip} flip`))),
+  [ModuleType.REVERSE_MORSE]: ["first", "second"].flatMap((message) =>
+    ["first", "second", "third", "fourth", "fifth", "sixth"].flatMap((position) => [
+      question(`symbol ${position} ${message}`, `${position[0].toUpperCase() + position.slice(1)} symbol in the ${message} message`),
+      question(`color ${position} ${message}`, `Color of the ${position} symbol in the ${message} message`),
+    ])),
   [ModuleType.SIMON_SHRIEKS]: SIMON_SHRIEKS_QUESTIONS,
   [ModuleType.SKEWED_SLOTS]: [question("originalNumber", "What were the original numbers?")],
   [ModuleType.SWITCHES]: [question("initialPosition", "What was the initial switch position?")],

@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.valves;import java.util.List;import ktanesolver.logic.ModuleOutput;public record ValvesOutput(String targetCombination,String finalCombination,List<Integer>presses,List<Integer>twitchToggles,boolean zeroSumOverride)implements ModuleOutput{}

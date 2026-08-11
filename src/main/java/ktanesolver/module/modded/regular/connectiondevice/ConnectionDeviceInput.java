@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.connectiondevice;import ktanesolver.logic.ModuleInput;public record ConnectionDeviceInput(String deviceSerial,String letterKeys,String digitKeys,BatterySet batterySet)implements ModuleInput{public enum BatterySet{DBT,ABT,THREE_BT,FOUR_BT,NAN}}

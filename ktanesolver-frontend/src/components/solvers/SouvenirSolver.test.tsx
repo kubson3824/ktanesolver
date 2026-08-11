@@ -391,6 +391,36 @@ describe("SouvenirSolver", () => {
       .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
   });
 
+  it("offers all three 3D Tunnels goal nodes", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.THREE_D_TUNNELS)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    ["First goal node", "Second goal node", "Third goal node"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers both Synchronization questions", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.SYNCHRONIZATION)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    ["Initial fastest-light position", "Initial center-light speed"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers all four The Switch LED/flip questions", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.THE_SWITCH)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    ["Top LED on the first flip", "Bottom LED on the first flip", "Top LED on the second flip", "Bottom LED on the second flip"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
+  it("offers every Reverse Morse message, position, symbol, and color question", () => {
+    render(<SouvenirSolver bomb={bomb(ModuleType.REVERSE_MORSE)} />);
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect(screen.getAllByRole("option")).toHaveLength(27);
+    ["First symbol in the first message", "Color of the sixth symbol in the first message",
+      "First symbol in the second message", "Color of the sixth symbol in the second message"]
+      .forEach((label) => expect(screen.getByRole("option", { name: label })).toBeInTheDocument());
+  });
+
   it("hides Calendar instances whose holiday remains visible in the target month", () => {
     const calendarBomb = bomb(ModuleType.CALENDAR);
     calendarBomb.modules[0].state = { souvenirEligible: false };
@@ -428,6 +458,35 @@ describe("SouvenirSolver", () => {
       sourceModuleId: "source-1",
       question: "spinDirection",
       finalQuestion: false,
+    });
+  });
+
+  it("auto-selects Boggle's initially-visible-letter question", async () => {
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "I, N, C, R", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.BOGGLE)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("I, N, C, R")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: "visibleLetters", finalQuestion: false,
+    });
+  });
+
+  it("offers and submits every parameterized Horrible Memory question", async () => {
+    const exact = "What was the color of the button in the sixth position in the fourth stage of Horrible Memory?";
+    vi.mocked(solveSouvenir).mockResolvedValue({ output: { answer: "pink", answerIndex: null }, solved: false });
+    render(<SouvenirSolver bomb={bomb(ModuleType.HORRIBLE_MEMORY)} />);
+
+    fireEvent.change(screen.getByLabelText("Source module"), { target: { value: "source-1" } });
+    expect((screen.getByLabelText("Question") as HTMLSelectElement).options).toHaveLength(149);
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: exact } });
+    fireEvent.click(screen.getByRole("button", { name: "Show recorded answer" }));
+
+    expect(await screen.findByText("pink")).toBeInTheDocument();
+    expect(solveSouvenir).toHaveBeenCalledWith("round-1", "bomb-1", "souvenir-1", {
+      sourceModuleId: "source-1", question: exact, finalQuestion: false,
     });
   });
 

@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.valves;import java.util.List;import ktanesolver.logic.ModuleInput;public record ValvesInput(Material material,List<Boolean>blackValves)implements ModuleInput{public enum Material{BRASS,SILVER}}
