@@ -84,6 +84,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   SYMBOLIC_COORDINATES: { result: { coordinate: "Z9" }, expected: "!number submit Z9" },
   POETRY: { result: { correctWords: ["clarity", "energy"] }, expected: "!number press clarity" },
   SONIC_THE_HEDGEHOG: { result: { button: "RBt" }, expected: "!number press RBt" },
+  ALGEBRA: { result: { stage: 2, equation: "b=(z-y)/2", answer: "-1.25" }, expected: "!number submit -1.25" },
   SAFETY_SAFE: { result: { dialTurns: [1, 2, 3, 4, 5, 6] }, expected: "!number submit 1 2 3 4 5 6" },
   CRYPTOGRAPHY: { result: { keyOrder: ["N", "B", "V"] }, expected: "!number press N B V" },
   CAESAR_CIPHER: { result: { solution: "KBQ" }, expected: "!number press K B Q" },
@@ -315,7 +316,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(263);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(264);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(32);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(2);
   });
@@ -455,6 +456,8 @@ describe("generateTwitchCommand", () => {
     [ModuleType.SONIC_THE_HEDGEHOG, { button: "start" }],
     [ModuleType.TIMEZONE, { submission: "355" }],
     [ModuleType.SYMBOLIC_COORDINATES, { coordinate: "AA" }],
+    [ModuleType.ALGEBRA, { answer: "1..2" }],
+    [ModuleType.ALGEBRA, { answer: "123456789012" }],
     [ModuleType.VENTING_GAS, { answer: "maybe" }],
     [ModuleType.WORD_SEARCH, { start: "A1", end: "G7" }],
   ])("withholds %s when its manual Twitch data is unsafe", (moduleType, result) => {

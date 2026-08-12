@@ -352,6 +352,12 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const button = stringValue(raw.button);
       return button && ["RBt", "In", "EL", "Rg"].includes(button) ? command(`press ${button}`) : "";
     }
+    case ModuleType.ALGEBRA: {
+      const answer = stringValue(raw.answer);
+      return answer && answer.length <= 11 && /^-?\d+(?:\.\d+)?$/.test(answer)
+        ? command(`submit ${answer}`)
+        : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

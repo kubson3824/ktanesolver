@@ -241,6 +241,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("extraLifeSound", "Which sound played on the Extra Life screen?"),
     question("ringsSound", "Which sound played on the Rings screen?"),
   ],
+  [ModuleType.ALGEBRA]: [
+    question("firstEquation", "What was the first equation?"),
+    question("secondEquation", "What was the second equation?"),
+  ],
   [ModuleType.GAMEPAD]: [question("display", "What were the numbers on the display?")],
   [ModuleType.THE_CODE]: [question("displayedNumber", "What was the displayed number?")],
   [ModuleType.SYNONYMS]: [question("displayedNumber", "What was the displayed number?")],

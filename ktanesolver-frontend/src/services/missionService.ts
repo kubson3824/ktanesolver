@@ -82,6 +82,7 @@ const MODULE_TYPES: Record<string, string> = {
     PolyhedralMazeModule: "POLYHEDRAL_MAZE",
     symbolicCoordinates: "SYMBOLIC_COORDINATES",
     poetry: "POETRY",
+    algebra: "ALGEBRA",
     CryptModule: "CRYPTOGRAPHY",
     DoubleOhModule: "DOUBLE_OH",
     "Emoji Math": "EMOJI_MATH",
