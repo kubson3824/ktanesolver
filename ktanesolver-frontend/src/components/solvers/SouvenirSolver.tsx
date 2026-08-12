@@ -129,6 +129,12 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   ],
   [ModuleType.SIMON_SAYS]: [question("finalSequence", "Which colors flashed in the final sequence?")],
   [ModuleType.WIRE_SEQUENCES]: [question("colorCounts", "How many wires of each color were there?")],
+  [ModuleType.BUTTON_SEQUENCE]: [
+    question("redButtonCount", "How many red buttons were there?"),
+    question("blueButtonCount", "How many blue buttons were there?"),
+    question("yellowButtonCount", "How many yellow buttons were there?"),
+    question("whiteButtonCount", "How many white buttons were there?"),
+  ],
   [ModuleType.WHOS_ON_FIRST]: [question("displays", "What were the display words?")],
   [ModuleType.THIRD_BASE]: [
     question("firstDisplay", "What was the display word in the first stage?"),
@@ -494,9 +500,15 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
 const questionsFor = (source?: BombEntity["modules"][number]) => {
   if (!source) return [];
   const questions = QUESTIONS[source.type as ModuleType] ?? [];
-  return source.type === ModuleType.VISUAL_IMPAIRMENT && Array.isArray(source.state.desiredColors)
-    ? questions.slice(0, source.state.desiredColors.length)
-    : questions;
+  if (source.type === ModuleType.VISUAL_IMPAIRMENT && Array.isArray(source.state.desiredColors)) {
+    return questions.slice(0, source.state.desiredColors.length);
+  }
+  const counts = source?.type === ModuleType.BUTTON_SEQUENCE ? source.state.colorOccurrences : null;
+  if (!counts || typeof counts !== "object") return questions;
+  return questions.filter((option) => {
+    const color = option.id.replace("ButtonCount", "").toUpperCase();
+    return Number((counts as Record<string, unknown>)[color]) > 0;
+  });
 };
 const humanize = (type: string) => type.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 

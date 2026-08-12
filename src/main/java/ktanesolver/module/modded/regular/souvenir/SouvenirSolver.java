@@ -137,6 +137,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case CALENDAR -> answerIndex(answers, source.getState().get("souvenirHoliday"));
 			case USA_MAZE -> answerIndex(answers, source.getState().get("souvenirState"));
 			case BLIND_MAZE -> answerIndex(answers, blindMazeColor(source.getState(), q));
+			case BUTTON_SEQUENCE -> answerIndex(answers, buttonSequenceColorCount(source.getState(), q));
 			case BITMAPS -> answerIndex(answers, bitmapAnswer(source.getState(), q));
 			case BRAILLE -> brailleAnswerIndex(source.getState(), q, answers);
 			case CHEAP_CHECKOUT -> cheapCheckoutAnswerIndex(source.getState(), q, answers);
@@ -295,6 +296,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THREE_LEDS -> threeLedsAnswer(state);
 			case CALENDAR -> state.get("souvenirHoliday");
 			case USA_MAZE -> state.get("souvenirState");
+			case BUTTON_SEQUENCE -> buttonSequenceColorCount(state, question);
 			case BIG_CIRCLE -> state.get("spinDirection");
 			case BLIND_MAZE -> blindMazeColor(state, normalize(question));
 			case MEMORY -> switch (question) {
@@ -1088,6 +1090,12 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		int quadrant = question.contains("top right") ? 1 : question.contains("bottom left") ? 2 : question.contains("bottom right") ? 3 : 0;
 		Object value = counts.get(quadrant);
 		return question.contains("black") && value instanceof Number number ? 16 - number.intValue() : value;
+	}
+
+	private static Object buttonSequenceColorCount(Map<String, Object> state, String question) {
+		String normalized = normalize(question);
+		String color = List.of("red", "blue", "yellow", "white").stream().filter(normalized::contains).findFirst().orElse(null);
+		return color == null ? null : nested(state, "colorOccurrences", color.toUpperCase(Locale.ROOT));
 	}
 
 	private static Object nested(Map<String, Object> map, Object... path) {
