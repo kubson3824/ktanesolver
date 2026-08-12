@@ -42,9 +42,12 @@ const conditional = new Set<ModuleType>([
   ModuleType.FAULTY_DIGITAL_ROOT,
   ModuleType.FACTORY_MAZE,
   ModuleType.HOGWARTS,
+  ModuleType.KRAZY_TALK,
+  ModuleType.COOKIE_JARS,
+  ModuleType.QUESTION_MARK,
 ]);
 
-const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE,ModuleType.THE_HANGOVER]);
+const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE,ModuleType.THE_HANGOVER,ModuleType.NUMBERS,ModuleType.ALCHEMY,ModuleType.SIMONS_STAGES]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
 export const TWITCH_COMMAND_SUPPORT: Record<ModuleType, TwitchCommandSupport> = Object.fromEntries(
@@ -1611,6 +1614,55 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.DISCOLORED_SQUARES: {
       const presses = strings(raw.presses);
       return presses.length && presses.every((value) => /^[A-D][1-4]$/.test(value)) ? command(`press ${presses.join(" ")}`) : "";
+    }
+    case ModuleType.KRAZY_TALK:
+    case ModuleType.COOKIE_JARS:
+    case ModuleType.FREE_PARKING:
+    case ModuleType.VARICOLORED_SQUARES:
+    case ModuleType.DECOLORED_SQUARES:
+    case ModuleType.FLAVOR_TEXT:
+    case ModuleType.WESTEROS: {
+      const value = stringValue(raw.twitchCommand);
+      return value ? command(value) : "";
+    }
+    case ModuleType.NUMBERS:
+    case ModuleType.ALCHEMY:
+    case ModuleType.SIMONS_STAGES:
+      return "";
+    case ModuleType.ZONI: {
+      const digit = numberValue(raw.digit);
+      return digit !== undefined && digit >= 0 && digit <= 9 ? command(`press ${digit}`) : "";
+    }
+    case ModuleType.MAD_MEMORY: {
+      const positions = arrayValue(raw.pressPositions).map(numberValue);
+      return positions.length && positions.every((value) => value !== undefined && value >= 1 && value <= 4) ? command(`position ${positions.join("")}`) : "";
+    }
+    case ModuleType.UNRELATED_ANAGRAMS: {
+      const sequence = stringValue(raw.pressSequence);
+      return sequence && /^[A-Z]{8,9}$/.test(sequence) ? command(`press ${sequence}`) : "";
+    }
+    case ModuleType.BARTENDING:
+    case ModuleType.SHAPES_AND_BOMBS: {
+      const sequence = strings(raw.twitchCommands);
+      return sequence.length ? commands(sequence) : "";
+    }
+    case ModuleType.QUESTION_MARK:
+      return arrayValue(raw.holdSymbols).length ? command("hold") : "";
+    case ModuleType.FLAVOR_TEXT_EX: {
+      const labels = strings(raw.pressLabels);
+      return labels.length === 4 ? command(`label ${labels.join("")}`) : "";
+    }
+    case ModuleType.HOMOPHONES: {
+      const numbers = arrayValue(raw.numbers).map(numberValue), positions = arrayValue(raw.pressPositions).map(numberValue);
+      return numbers.length === 4 && positions.length === 4 ? commands([`set all ${numbers.join(" ")}`, `press ${positions.join("")}`]) : "";
+    }
+    case ModuleType.DETONATO: {
+      const value = stringValue(raw.twitchCommand);
+      return value ? command(value) : "";
+    }
+    case ModuleType.SYNC_125_3: {
+      const value = stringValue(raw.base4);
+      return value && /^[0-3]{1,2}$/.test(value) ? command(`submit ${value}`) : "";
     }
   }
 }

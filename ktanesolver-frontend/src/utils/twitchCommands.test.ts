@@ -323,15 +323,35 @@ const fixtures: Record<ModuleType, Fixture> = {
   SIMON_SPEAKS: { result: { commands: ["tl", "tm", "tr", "ml", "mm"] }, expected: "!number tl tm tr ml mm" },
   DISCOLORED_SQUARES: { result: { presses: ["A1", "D4"] }, expected: "!number press A1 D4" },
   SKINNY_WIRES: { result: { coordinate: "B3" }, expected: "!number cut B3" },
+  KRAZY_TALK: { result: { twitchCommand: "hold 1 on 4" }, expected: "!number hold 1 on 4" },
+  NUMBERS: { result: {}, expected: "" },
+  ALCHEMY: { result: {}, expected: "" },
+  COOKIE_JARS: { result: { twitchCommand: "eat" }, expected: "!number eat" },
+  FREE_PARKING: { result: { twitchCommand: "pay $123" }, expected: "!number pay $123" },
+  SIMONS_STAGES: { result: {}, expected: "" },
+  VARICOLORED_SQUARES: { result: { twitchCommand: "A1 B2" }, expected: "!number A1 B2" },
+  ZONI: { result: { digit: 6 }, expected: "!number press 6" },
+  MAD_MEMORY: { result: { pressPositions: [1, 4] }, expected: "!number position 14" },
+  UNRELATED_ANAGRAMS: { result: { pressSequence: "UNRELATED" }, expected: "!number press UNRELATED" },
+  BARTENDING: { result: { twitchCommands: ["slot 1", "bottled Rum", "serve"] }, expected: "!number slot 1; !number bottled Rum; !number serve" },
+  QUESTION_MARK: { result: { holdSymbols: [2] }, expected: "!number hold" },
+  DECOLORED_SQUARES: { result: { twitchCommand: "C3" }, expected: "!number C3" },
+  FLAVOR_TEXT: { result: { twitchCommand: "yes" }, expected: "!number yes" },
+  FLAVOR_TEXT_EX: { result: { pressLabels: ["1", "9", "4", "0"] }, expected: "!number label 1940" },
+  SHAPES_AND_BOMBS: { result: { twitchCommands: ["press A1 B2", "submit"] }, expected: "!number press A1 B2; !number submit" },
+  HOMOPHONES: { result: { numbers: [0, 3, 4, 3], pressPositions: [1, 2, 3, 4] }, expected: "!number set all 0 3 4 3; !number press 1234" },
+  DETONATO: { result: { twitchCommand: "press A" }, expected: "!number press A" },
+  SYNC_125_3: { result: { base4: "32" }, expected: "!number submit 32" },
+  WESTEROS: { result: { twitchCommand: "submit Stark Arya Stark WinterisComing Winterfell" }, expected: "!number submit Stark Arya Stark WinterisComing Winterfell" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(274);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(34);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(3);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(288);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(37);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(6);
   });
 
   for (const moduleType of Object.values(ModuleType)) {

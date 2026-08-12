@@ -1,0 +1,1 @@
+import{ModuleType,type BombEntity}from"../../types";import R from"./RequestedModuleSolver";export default({bomb}:{bomb:BombEntity|null|undefined})=><R bomb={bomb}moduleType={ModuleType.ZONI}name="Zoni"example={{decodedWord:"angel"}}instructions="Decode the custom-font word into English first, then enter it. Repeat for all three stages."/>;

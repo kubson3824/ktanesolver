@@ -1,0 +1,12 @@
+package ktanesolver.module.modded.regular.unrelatedanagrams;
+
+import java.util.*;import org.springframework.stereotype.Service;import ktanesolver.annotation.ModuleInfo;import ktanesolver.dto.ModuleCatalogDto;import ktanesolver.entity.*;import ktanesolver.enums.*;import ktanesolver.logic.*;
+
+@Service @ModuleInfo(type=ModuleType.UNRELATED_ANAGRAMS,id="unrelatedAnagrams",name="Unrelated Anagrams",category=ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,description="Determine and transform the eight-letter sequence from the bomb edgework and timer.",tags={"anagrams","edgework","timer"})
+public class UnrelatedAnagramsSolver extends AbstractModuleSolver<UnrelatedAnagramsSolver.Input,UnrelatedAnagramsSolver.Output>{
+ public record Input(int initialTimeSeconds,int remainingTimeSeconds)implements ModuleInput{} public record Output(String baseWord,String pressSequence)implements ModuleOutput{}
+ @Override protected SolveResult<Output> doSolve(RoundEntity r,BombEntity b,ModuleEntity m,Input in){if(in==null||in.initialTimeSeconds()<0||in.remainingTimeSeconds()<0)return failure("Enter non-negative initial and remaining times");long lit=b.getIndicators().values().stream().filter(Boolean.TRUE::equals).count(),unlit=b.getIndicators().size()-lit,solved=b.getModules().stream().filter(ModuleEntity::isSolved).count();String serial=b.getSerialNumber().toUpperCase();long chars=serial.chars().filter(c->"UNRELATED".indexOf(c)>=0).count();if(b.isIndicatorUnlit("BOB")&&chars>=2)return success(new Output("UNRELATED","UNRELATED"));String w;if(lit>=3)w="UNDERTALE";else if(unlit>=3)w="DELTARUNE";else if(solved==8)w="NUDEALERT";else if(b.getModules().size()<6)w="ANTDUELER";else if(in.remainingTimeSeconds()<=60||b.getModules().stream().filter(x->x.getType().isNeedy()).count()>1)w="ULTRANEED";else if(in.initialTimeSeconds()>=600)w="ELDERAUNT";else if(jacks(b)>=3)w="NUTLEADER";else if(serial.indexOf('D')>=0||serial.indexOf('E')>=0)w="NEUTRALED";else w="UNRELATED";
+  int shift=b.getAaBatteryCount()-b.getDBatteryCount();String x=rotate(w,shift);int ports=b.getPortPlates().stream().mapToInt(p->p.getPorts().size()).sum();if((ports&1)==1)x=new StringBuilder(x).reverse().toString();return success(new Output(w,x));}
+ private static int jacks(BombEntity b){return (b.hasPort(PortType.PS2)?1:0)+(b.hasPort(PortType.STEREO_RCA)?2:0)+(b.hasPort(PortType.COMPOSITE_VIDEO)?1:0);}
+ private static String rotate(String s,int n){if(s.isEmpty())return s;int k=Math.floorMod(n,s.length());return s.substring(s.length()-k)+s.substring(0,s.length()-k);}
+}

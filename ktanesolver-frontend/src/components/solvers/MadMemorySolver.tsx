@@ -1,0 +1,1 @@
+import{ModuleType,type BombEntity}from"../../types";import R from"./RequestedModuleSolver";export default({bomb}:{bomb:BombEntity|null|undefined})=><R bomb={bomb}moduleType={ModuleType.MAD_MEMORY}name="Mad Memory"example={{display:"ONE",labels:[4,1,3,2]}}instructions="Enter the exact display and labels from left to right at each stage. The prior stages are remembered."/>;

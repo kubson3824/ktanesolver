@@ -522,6 +522,19 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("cities", "Which cities were selectable, but not the solution?"),
     question("dragonShouts", "Which dragon shouts were selectable, but not the solution?"),
   ],
+  [ModuleType.NUMBERS]: [question("displayed number", "What two-digit number was displayed?")],
+  [ModuleType.FREE_PARKING]: [question("token", "Which token was shown?")],
+  [ModuleType.VARICOLORED_SQUARES]: [question("initial color", "What color was initially pressed?")],
+  [ModuleType.ZONI]: ["first", "second", "third"].map(stage => question(`${stage} word`, `Decoded word in the ${stage} stage`)),
+  [ModuleType.MAD_MEMORY]: ["first", "second", "third", "fourth"].map(stage => question(`${stage} display`, `Display in the ${stage} stage`)),
+  [ModuleType.BARTENDING]: ["first", "second", "third", "fourth", "fifth"].map(position => question(`${position} ingredient`, `Ingredient in the ${position} position`)),
+  [ModuleType.QUESTION_MARK]: [question("flashed symbols", "Which symbol was one of the flashed symbols?")],
+  [ModuleType.DECOLORED_SQUARES]: [question("starting column color", "Color defining the starting column"), question("starting row color", "Color defining the starting row")],
+  [ModuleType.FLAVOR_TEXT_EX]: ["first", "second", "third"].map(stage => question(`${stage} module`, `Source module in the ${stage} stage`)),
+  [ModuleType.SHAPES_AND_BOMBS]: [question("initial letter", "What was the initial letter?")],
+  [ModuleType.HOMOPHONES]: ["first", "second", "third", "fourth"].map(stage => question(`${stage} phrase`, `Displayed phrase in the ${stage} stage`)),
+  [ModuleType.DETONATO]: ["first", "second", "third", "fourth", "fifth", "sixth"].map(stage => question(`${stage} word`, `Displayed word in the ${stage} stage`)),
+  [ModuleType.SYNC_125_3]: ["first", "second", "third", "fourth"].map(stage => question(`${stage} display`, `Displayed CMP word in the ${stage} stage`)),
 };
 const questionsFor = (source?: BombEntity["modules"][number]) => {
   if (!source) return [];

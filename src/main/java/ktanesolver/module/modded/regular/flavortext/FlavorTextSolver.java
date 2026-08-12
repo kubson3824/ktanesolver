@@ -1,0 +1,11 @@
+package ktanesolver.module.modded.regular.flavortext;
+
+import java.io.*;import java.util.*;import org.springframework.stereotype.Service;import com.fasterxml.jackson.core.type.TypeReference;import ktanesolver.annotation.ModuleInfo;import ktanesolver.dto.ModuleCatalogDto;import ktanesolver.entity.*;import ktanesolver.enums.ModuleType;import ktanesolver.logic.*;import ktanesolver.registry.ModuleSolverRegistry;import ktanesolver.utils.Json;
+
+@Service @ModuleInfo(type=ModuleType.FLAVOR_TEXT,id="FlavorText",name="Flavor Text",category=ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,description="Answer whether the module described by the displayed flavor text is present on the bomb.",tags={"flavor text","module lookup"})
+public class FlavorTextSolver extends AbstractModuleSolver<FlavorTextSolver.Input,FlavorTextSolver.Output>{
+ public record Input(String flavorText)implements ModuleInput{} public record Output(boolean present,List<String> matchingModules,String twitchCommand)implements ModuleOutput{} private record Entry(String name,long steam_id,String module_id,String text){}
+ private static final List<Entry>ENTRIES=load();
+ @Override protected SolveResult<Output> doSolve(RoundEntity r,BombEntity b,ModuleEntity m,Input in){if(in==null||in.flavorText()==null||in.flavorText().isBlank())return failure("Enter the exact displayed flavor text");List<Entry>matches=ENTRIES.stream().filter(x->x.text().equals(in.flavorText().trim())).toList();if(matches.isEmpty())return failure("Flavor text was not found in the official table");Set<String>ids=new HashSet<>(),names=new HashSet<>();matches.forEach(x->{ids.add(x.module_id());names.add(x.name());});List<String>present=new ArrayList<>();for(ModuleEntity module:b.getModules()){ModuleCatalogDto info=ModuleSolverRegistry.catalogInfo(module.getType());if(info!=null&&(ids.contains(info.id())||names.contains(info.name())))present.add(info.name());}boolean yes=!present.isEmpty();return success(new Output(yes,present,yes?"yes":"no"));}
+ private static List<Entry>load(){try(InputStream in=FlavorTextSolver.class.getResourceAsStream("/ktane/flavortext.json")){if(in==null)throw new IllegalStateException("Missing flavortext.json");return Json.mapper().readValue(in,new TypeReference<>(){});}catch(IOException e){throw new ExceptionInInitializerError(e);}}
+}

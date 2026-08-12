@@ -1,0 +1,1 @@
+import{ModuleType,type BombEntity}from"../../types";import R from"./RequestedModuleSolver";export default({bomb}:{bomb:BombEntity|null|undefined})=><R bomb={bomb}moduleType={ModuleType.NUMBERS}name="Numbers"example={{leftDigit:1,rightDigit:2}}instructions="Enter the two displayed digits from left to right. This module has no upstream Twitch Plays input parser."/>;

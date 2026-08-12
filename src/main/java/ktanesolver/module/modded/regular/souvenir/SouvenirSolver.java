@@ -270,6 +270,19 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case REGULAR_CRAZY_TALK -> answerIndex(answers, source.getState().get(q.contains("embellishment") || q.contains("modifier") ? "regularCrazyTalkModifier" : "regularCrazyTalkDigit"));
 			case SIMON_SPEAKS -> answerIndex(answers, nested(source.getState(), "simonSpeaksSouvenir", ordinal(q)));
 			case DISCOLORED_SQUARES -> answerIndex(answers, discoloredPosition(source.getState(), q));
+			case NUMBERS -> answerIndex(answers, source.getState().get("numbersDisplay"));
+			case FREE_PARKING -> answerIndex(answers, source.getState().get("freeParkingToken"));
+			case VARICOLORED_SQUARES -> answerIndex(answers, source.getState().get("varicoloredInitialColor"));
+			case ZONI -> answerIndex(answers, nested(source.getState(), "zoniWords", ordinal(q)));
+			case MAD_MEMORY -> answerIndex(answers, nested(source.getState(), "madMemoryDisplays", ordinal(q)));
+			case BARTENDING -> answerIndex(answers, nested(source.getState(), "bartendingIngredients", ordinal(q)));
+			case QUESTION_MARK -> membershipAnswerIndex(answers, source.getState().get("questionMarkSymbols"), null, false);
+			case DECOLORED_SQUARES -> answerIndex(answers, source.getState().get(q.contains("column") ? "decoloredColumnColor" : "decoloredRowColor"));
+			case FLAVOR_TEXT_EX -> answerIndex(answers, nested(source.getState(), "flavorTextExModules", ordinal(q)));
+			case SHAPES_AND_BOMBS -> answerIndex(answers, source.getState().get("shapesAndBombsInitialLetter"));
+			case HOMOPHONES -> answerIndex(answers, nested(source.getState(), "homophonesPhrases", ordinal(q)));
+			case DETONATO -> answerIndex(answers, nested(source.getState(), "detonatoWords", ordinal(q)));
+			case SYNC_125_3 -> answerIndex(answers, nested(source.getState(), "sync1253Displays", ordinal(q)));
 			default -> null;
 		};
 	}
@@ -445,6 +458,19 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case SIMON_SPEAKS -> nested(state, "simonSpeaksSouvenir", ordinal(normalize(question)));
 			case DISCOLORED_SQUARES -> discoloredPosition(state, normalize(question));
 			case TEXT_FIELD -> state.get("displayedLetter");
+			case NUMBERS -> state.get("numbersDisplay");
+			case FREE_PARKING -> state.get("freeParkingToken");
+			case VARICOLORED_SQUARES -> state.get("varicoloredInitialColor");
+			case ZONI -> nested(state, "zoniWords", ordinal(normalize(question)));
+			case MAD_MEMORY -> nested(state, "madMemoryDisplays", ordinal(normalize(question)));
+			case BARTENDING -> nested(state, "bartendingIngredients", ordinal(normalize(question)));
+			case QUESTION_MARK -> state.get("questionMarkSymbols");
+			case DECOLORED_SQUARES -> state.get(normalize(question).contains("column") ? "decoloredColumnColor" : "decoloredRowColor");
+			case FLAVOR_TEXT_EX -> nested(state, "flavorTextExModules", ordinal(normalize(question)));
+			case SHAPES_AND_BOMBS -> state.get("shapesAndBombsInitialLetter");
+			case HOMOPHONES -> nested(state, "homophonesPhrases", ordinal(normalize(question)));
+			case DETONATO -> nested(state, "detonatoWords", ordinal(normalize(question)));
+			case SYNC_125_3 -> nested(state, "sync1253Displays", ordinal(normalize(question)));
 			default -> "recordedFacts".equals(question)
 				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);
 		};
