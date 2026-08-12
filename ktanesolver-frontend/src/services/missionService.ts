@@ -81,6 +81,7 @@ const MODULE_TYPES: Record<string, string> = {
     timezone: "TIMEZONE",
     PolyhedralMazeModule: "POLYHEDRAL_MAZE",
     symbolicCoordinates: "SYMBOLIC_COORDINATES",
+    poetry: "POETRY",
     CryptModule: "CRYPTOGRAPHY",
     DoubleOhModule: "DOUBLE_OH",
     "Emoji Math": "EMOJI_MATH",

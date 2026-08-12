@@ -92,6 +92,7 @@ export const solverRegistry: Partial<Record<string, SolverRegistryEntry>> = {
   [ModuleType.TIMEZONE]: { load: () => import("./TimezoneSolver") },
   [ModuleType.POLYHEDRAL_MAZE]: { load: () => import("./PolyhedralMazeSolver") },
   [ModuleType.SYMBOLIC_COORDINATES]: { load: () => import("./SymbolicCoordinatesSolver") },
+  [ModuleType.POETRY]: { load: () => import("./PoetrySolver") },
   [ModuleType.SAFETY_SAFE]: { load: () => import("./SafetySafeSolver") },
   [ModuleType.CRYPTOGRAPHY]: { load: () => import("./CryptographySolver") },
   [ModuleType.CAESAR_CIPHER]: { load: () => import("./CaesarCipherSolver") },

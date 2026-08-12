@@ -337,6 +337,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const coordinate = stringValue(raw.coordinate)?.toUpperCase();
       return coordinate && /^[A-Z*][0-9*]$/.test(coordinate) ? command(`submit ${coordinate}`) : "";
     }
+    case ModuleType.POETRY: {
+      const word = strings(raw.correctWords)[0]?.trim().toLowerCase();
+      return word && /^[a-z]+$/.test(word) ? command(`press ${word}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);

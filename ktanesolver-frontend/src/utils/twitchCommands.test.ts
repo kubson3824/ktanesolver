@@ -81,6 +81,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   TIMEZONE: { result: { submission: "0355" }, expected: "!number submit 0355" },
   POLYHEDRAL_MAZE: { result: { firstClockHour: 10, relativeDirections: [2, 2, 1, 1] }, expected: "!number move 10 2 2 1 1" },
   SYMBOLIC_COORDINATES: { result: { coordinate: "Z9" }, expected: "!number submit Z9" },
+  POETRY: { result: { correctWords: ["clarity", "energy"] }, expected: "!number press clarity" },
   SAFETY_SAFE: { result: { dialTurns: [1, 2, 3, 4, 5, 6] }, expected: "!number submit 1 2 3 4 5 6" },
   CRYPTOGRAPHY: { result: { keyOrder: ["N", "B", "V"] }, expected: "!number press N B V" },
   CAESAR_CIPHER: { result: { solution: "KBQ" }, expected: "!number press K B Q" },
@@ -312,7 +313,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(261);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(262);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(31);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(2);
   });
@@ -433,6 +434,7 @@ describe("generateTwitchCommand", () => {
     [ModuleType.PLUMBING, { rotations: ["G1"], submit: true }],
     [ModuleType.POLYHEDRAL_MAZE, { relativeDirections: [2, 2, 1, 1] }],
     [ModuleType.PAINTING, { repaints: [{ label: "", to: "RED" }] }],
+    [ModuleType.POETRY, { correctWords: [] }],
     [ModuleType.SEMAPHORE, { currentIndex: 0, targetIndex: -1 }],
     [ModuleType.TIMEZONE, { submission: "355" }],
     [ModuleType.SYMBOLIC_COORDINATES, { coordinate: "AA" }],
