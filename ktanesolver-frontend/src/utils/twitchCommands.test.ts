@@ -234,6 +234,7 @@ const fixtures: Record<ModuleType, Fixture> = {
   THE_DIGIT: { result: { answer:6 }, expected: "!number submit 6" },
   THE_JACK_O_LANTERN: { result: { press:"trick" }, expected: "!number trick" },
   T_WORDS: { result: { positions:[2,4,1,3] }, expected: "!number press 2413" },
+  FESTIVE_JUKEBOX: { result: { positions:[2,3,1] }, expected: "!number press 231" },
   DIVIDED_SQUARES: { result: { action:"submit",square:"B3" }, expected: "!number submit b3" },
   CONNECTION_DEVICE: { result: { commands:["boot","open discord","set 5CARDE","send 07"] }, expected: "!number boot; !number open discord; !number set 5CARDE; !number send 07" },
   INSTRUCTIONS: { result: { position:3 }, expected: "!number press 3" },
@@ -312,15 +313,25 @@ const fixtures: Record<ModuleType, Fixture> = {
   DIGITAL_ROOT: { result: { button: "YES", digitalRoot: 6 }, expected: "!number press yes" },
   MARBLE_TUMBLE: { result: { timerDigits: [0, 5, 5, 9] }, expected: "!number 0; !number 5; !number 5; !number 9" },
   SKYRIM: { result: { race: "Nord", weapon: "Mace of Molag Bal", enemy: "Frost Troll", city: "Rorikstead", dragonShout: "Ice Form" }, expected: "!number submit Nord, Mace of Molag Bal, Frost Troll, Rorikstead, Ice Form" },
+  THE_HANGOVER: { result: { recipe: ["Kale", "Lard"] }, expected: "" },
+  BINARY_PUZZLE: { result: { solution: "001011110100010110101001011001100110" }, expected: "!number solve 001011110100010110101001011001100110" },
+  FACTORY_MAZE: { result: { actions: ["left", "right", "unlock"] }, expected: "!number press left; !number press right; !number unlock" },
+  BROKEN_GUITAR_CHORDS: { result: { positions: ["x", "3", "2", "0", "1", "0"] }, expected: "!number play x 3 2 0 1 0" },
+  DOMINOES: { result: { order: [2, 3, 1, 4] }, expected: "!number 2314" },
+  HOGWARTS: { result: { selections: [{ module: "Wires", house: "Gryffindor", points: 4 }], winningHouses: ["Gryffindor"] }, expected: "!number find Wires; !number gryffindor" },
+  REGULAR_CRAZY_TALK: { result: { hold: 2, release: 4 }, expected: "!number toggle 2 4" },
+  SIMON_SPEAKS: { result: { commands: ["tl", "tm", "tr", "ml", "mm"] }, expected: "!number tl tm tr ml mm" },
+  DISCOLORED_SQUARES: { result: { presses: ["A1", "D4"] }, expected: "!number press A1 D4" },
+  SKINNY_WIRES: { result: { coordinate: "B3" }, expected: "!number cut B3" },
 };
 
 describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(266);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(32);
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(2);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(274);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(34);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(3);
   });
 
   for (const moduleType of Object.values(ModuleType)) {

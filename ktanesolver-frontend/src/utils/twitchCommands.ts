@@ -40,9 +40,11 @@ const conditional = new Set<ModuleType>([
   ModuleType.NUMBER_NIMBLENESS,
   ModuleType.NEUTRALIZATION,
   ModuleType.FAULTY_DIGITAL_ROOT,
+  ModuleType.FACTORY_MAZE,
+  ModuleType.HOGWARTS,
 ]);
 
-const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE]);
+const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE,ModuleType.THE_HANGOVER]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
 export const TWITCH_COMMAND_SUPPORT: Record<ModuleType, TwitchCommandSupport> = Object.fromEntries(
@@ -1290,6 +1292,7 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.THE_DIGIT:{const answer=numberValue(raw.answer);return answer!==undefined&&Number.isInteger(answer)&&answer>=0&&answer<=9?command(`submit ${answer}`):"";}
     case ModuleType.THE_JACK_O_LANTERN:{const press=stringValue(raw.press)?.toLowerCase();return press==="trick"||press==="treat"?command(press):"";}
     case ModuleType.T_WORDS:{const positions=arrayValue(raw.positions)?.map(numberValue);return positions?.length===4&&positions.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=4)&&new Set(positions).size===4?command(`press ${positions.join("")}`):"";}
+    case ModuleType.FESTIVE_JUKEBOX:{const positions=arrayValue(raw.positions).map(numberValue);return positions.length===3&&positions.every(x=>x!==undefined&&Number.isInteger(x)&&x>=1&&x<=3)&&new Set(positions).size===3?command(`press ${positions.join("")}`):"";}
     case ModuleType.DIVIDED_SQUARES:{const action=stringValue(raw.action)?.toLowerCase(),square=stringValue(raw.square)?.toLowerCase();return(action==="examine"||action==="submit")&&square&&/^[a-m](?:[1-9]|1[0-3])$/.test(square)?command(`${action} ${square}`):"";}
     case ModuleType.CONNECTION_DEVICE:return strings(raw.commands).length===4?commands(strings(raw.commands)):"";
     case ModuleType.INSTRUCTIONS:{const position=numberValue(raw.position);return position!==undefined&&Number.isInteger(position)&&position>=1&&position<=4?command(`press ${position}`):"";}
@@ -1567,6 +1570,47 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       return sequence.length === 3 && sequence.every((knob) => knob === "HOT" || knob === "COLD")
         ? command(sequence.map(words).join(" "))
         : "";
+    }
+    case ModuleType.SKINNY_WIRES: {
+      const coordinate = stringValue(raw.coordinate)?.toUpperCase();
+      return coordinate && /^[A-C][1-3]$/.test(coordinate) ? command(`cut ${coordinate}`) : "";
+    }
+    case ModuleType.THE_HANGOVER:
+      return "";
+    case ModuleType.BINARY_PUZZLE: {
+      const solution = stringValue(raw.solution);
+      return solution && /^[01]{36}$/.test(solution) ? command(`solve ${solution}`) : "";
+    }
+    case ModuleType.FACTORY_MAZE: {
+      const actions = strings(raw.actions);
+      return actions.length && actions.every((action) => action === "left" || action === "right" || action === "unlock")
+        ? commands(actions.map((action) => action === "unlock" ? "unlock" : `press ${action}`)) : "";
+    }
+    case ModuleType.BROKEN_GUITAR_CHORDS: {
+      const positions = strings(raw.positions);
+      return positions.length === 6 && positions.every((value) => value === "x" || /^(?:[0-9]|1[0-3])$/.test(value)) ? command(`play ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.DOMINOES: {
+      const order = arrayValue(raw.order).map(numberValue);
+      return order.length === 4 && order.every((value) => value !== undefined && value >= 1 && value <= 4) ? command(order.join("")) : "";
+    }
+    case ModuleType.HOGWARTS: {
+      const selections = arrayValue(raw.selections).map(asRecord);
+      const winners = strings(raw.winningHouses);
+      if (!winners.length) return "";
+      return commands([...selections.filter((entry) => stringValue(entry.module) && entry.module !== "(no module)").map((entry) => `find ${stringValue(entry.module)}`), winners[0].toLowerCase()]);
+    }
+    case ModuleType.REGULAR_CRAZY_TALK: {
+      const hold = numberValue(raw.hold), release = numberValue(raw.release);
+      return hold !== undefined && release !== undefined && Number.isInteger(hold) && Number.isInteger(release) && hold >= 0 && hold <= 9 && release >= 0 && release <= 9 ? command(`toggle ${hold} ${release}`) : "";
+    }
+    case ModuleType.SIMON_SPEAKS: {
+      const sequence = strings(raw.commands);
+      return sequence.length === 5 && sequence.every((value) => /^(?:tl|tm|tr|ml|mm|mr|bl|bm|br)$/.test(value)) ? command(sequence.join(" ")) : "";
+    }
+    case ModuleType.DISCOLORED_SQUARES: {
+      const presses = strings(raw.presses);
+      return presses.length && presses.every((value) => /^[A-D][1-4]$/.test(value)) ? command(`press ${presses.join(" ")}`) : "";
     }
   }
 }

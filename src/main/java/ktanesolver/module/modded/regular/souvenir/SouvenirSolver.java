@@ -265,6 +265,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case X_RAY -> membershipAnswerIndex(answers, source.getState().get("scannedSymbols"), null, false);
 			case YAHTZEE -> yahtzeeAnswerIndex(source.getState(), answers);
 			case VISUAL_IMPAIRMENT -> answerIndex(answers, nested(source.getState(), "desiredColors", ordinal(q)));
+			case FACTORY_MAZE -> answerIndex(answers, source.getState().get("factoryMazeStartRoom"));
+			case BROKEN_GUITAR_CHORDS -> answerIndex(answers, source.getState().get(q.contains("string") ? "brokenGuitarBrokenString" : "brokenGuitarChord"));
+			case REGULAR_CRAZY_TALK -> answerIndex(answers, source.getState().get(q.contains("embellishment") || q.contains("modifier") ? "regularCrazyTalkModifier" : "regularCrazyTalkDigit"));
+			case SIMON_SPEAKS -> answerIndex(answers, nested(source.getState(), "simonSpeaksSouvenir", ordinal(q)));
+			case DISCOLORED_SQUARES -> answerIndex(answers, discoloredPosition(source.getState(), q));
 			default -> null;
 		};
 	}
@@ -434,6 +439,11 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case X_RAY -> state.get("scannedSymbols");
 			case YAHTZEE -> state.get("initialRollCategory");
 			case VISUAL_IMPAIRMENT -> nested(state, "desiredColors", ordinal(normalize(question)));
+			case FACTORY_MAZE -> state.get("factoryMazeStartRoom");
+			case BROKEN_GUITAR_CHORDS -> state.get(normalize(question).contains("string") ? "brokenGuitarBrokenString" : "brokenGuitarChord");
+			case REGULAR_CRAZY_TALK -> state.get(normalize(question).contains("embellishment") || normalize(question).contains("modifier") ? "regularCrazyTalkModifier" : "regularCrazyTalkDigit");
+			case SIMON_SPEAKS -> nested(state, "simonSpeaksSouvenir", ordinal(normalize(question)));
+			case DISCOLORED_SQUARES -> discoloredPosition(state, normalize(question));
 			case TEXT_FIELD -> state.get("displayedLetter");
 			default -> "recordedFacts".equals(question)
 				? (state.isEmpty() ? source.getSolution() : state) : resolveRecordedFact(source, question);
@@ -987,6 +997,20 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			: question.contains("extra life") ? 2
 			: question.contains("rings") ? 3 : -1;
 		return screen < 0 ? null : nested(state, "sounds", screen);
+	}
+
+	private static Object discoloredPosition(Map<String, Object> state, String question) {
+		Object remembered = state.get("discoloredRemembered");
+		if (!(remembered instanceof Collection<?> entries)) return null;
+		for (Object entry : entries) {
+			String fact = String.valueOf(entry);
+			int separator = fact.indexOf(':');
+			if (separator > 0 && Pattern.compile("\\b" + Pattern.quote(normalize(fact.substring(0, separator))) + "\\b")
+				.matcher(normalize(question)).find()) {
+				return fact.substring(separator + 1);
+			}
+		}
+		return null;
 	}
 
 	private static Object labyrinthAnswer(Map<String, Object> state, String question) {

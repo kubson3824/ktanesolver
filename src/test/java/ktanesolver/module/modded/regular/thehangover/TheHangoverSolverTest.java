@@ -1,0 +1,3 @@
+package ktanesolver.module.modded.regular.thehangover;
+import static org.assertj.core.api.Assertions.assertThat;import org.junit.jupiter.api.Test;import ktanesolver.entity.*;import ktanesolver.logic.SolveSuccess;
+class TheHangoverSolverTest{@Test void stopsBeforeFirstRepeatedSquare(){var r=new TheHangoverSolver().solve(new RoundEntity(),new BombEntity(),new ModuleEntity(),new TheHangoverInput("red wine",false,"stove",false,"none","uber"));var o=((SolveSuccess<TheHangoverOutput>)r).output();assertThat(o.recipe()).containsExactly("Family-pack of Oreos","Entire can of Red Bull","Bacon crisps").doesNotHaveDuplicates();}}

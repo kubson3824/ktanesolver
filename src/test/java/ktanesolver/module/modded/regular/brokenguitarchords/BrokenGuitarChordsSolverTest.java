@@ -1,0 +1,3 @@
+package ktanesolver.module.modded.regular.brokenguitarchords;
+import static org.assertj.core.api.Assertions.assertThat;import org.junit.jupiter.api.Test;import ktanesolver.entity.*;import ktanesolver.logic.SolveSuccess;
+class BrokenGuitarChordsSolverTest{@Test void voicesChordAndPersistsSouvenirFacts(){var m=new ModuleEntity();var r=new BrokenGuitarChordsSolver().solve(new RoundEntity(),new BombEntity(),m,new BrokenGuitarChordsInput("C",1));var o=((SolveSuccess<BrokenGuitarChordsOutput>)r).output();assertThat(o.positions()).hasSize(6);assertThat(o.positions().get(0)).isEqualTo("x");assertThat(o.notes()).containsExactly("C","E","G");assertThat(m.getState()).containsEntry("brokenGuitarChord","C").containsEntry("brokenGuitarBrokenString",1);}}

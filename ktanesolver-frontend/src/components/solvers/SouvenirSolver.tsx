@@ -436,6 +436,24 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
     question("second desired color", "What was the desired color in the second stage?"),
     question("third desired color", "What was the desired color in the third stage?"),
   ],
+  [ModuleType.FACTORY_MAZE]: [question("start room", "What room did the maze start in?")],
+  [ModuleType.BROKEN_GUITAR_CHORDS]: [
+    question("displayed chord", "What chord was displayed?"),
+    question("broken string", "Which string was broken?"),
+  ],
+  [ModuleType.REGULAR_CRAZY_TALK]: [
+    question("correct digit", "What digit was displayed by the correct phrase?"),
+    question("embellishment", "What embellishment surrounded the correct phrase?"),
+  ],
+  [ModuleType.SIMON_SPEAKS]: [
+    question("first flash", "Where was the first flashed bubble?"),
+    question("second flash", "What shape was in the second flashed bubble?"),
+    question("third flash", "What language was in the third flashed bubble?"),
+    question("fourth flash", "What word was in the fourth flashed bubble?"),
+    question("fifth flash", "What color was in the fifth flashed bubble?"),
+  ],
+  [ModuleType.DISCOLORED_SQUARES]: ["Blue", "Green", "Magenta", "Red", "Yellow"].map(color =>
+    question(`remembered ${color}`, `Where was the remembered ${color} square?`)),
   [ModuleType.IDENTITY_PARADE]: [
     question("hairColorsWas", "Which hair colors were listed?"),
     question("hairColorsWasNot", "Which hair colors were not listed?"),
@@ -510,6 +528,11 @@ const questionsFor = (source?: BombEntity["modules"][number]) => {
   const questions = QUESTIONS[source.type as ModuleType] ?? [];
   if (source.type === ModuleType.VISUAL_IMPAIRMENT && Array.isArray(source.state.desiredColors)) {
     return questions.slice(0, source.state.desiredColors.length);
+  }
+  const discoloredRemembered = source.state.discoloredRemembered;
+  if (source.type === ModuleType.DISCOLORED_SQUARES && Array.isArray(discoloredRemembered)) {
+    return questions.filter((option) => discoloredRemembered.some((fact: unknown) =>
+      typeof fact === "string" && option.id.toLowerCase().endsWith(fact.split(":")[0].toLowerCase())));
   }
   const counts = source?.type === ModuleType.BUTTON_SEQUENCE ? source.state.colorOccurrences : null;
   if (!counts || typeof counts !== "object") return questions;
