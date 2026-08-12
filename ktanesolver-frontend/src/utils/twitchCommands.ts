@@ -333,6 +333,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         || rest.some((direction) => typeof direction !== "number" || !Number.isInteger(direction) || direction < 1 || direction > 12)) return "";
       return command(`move ${[first, ...rest].join(" ")}`);
     }
+    case ModuleType.SYMBOLIC_COORDINATES: {
+      const coordinate = stringValue(raw.coordinate)?.toUpperCase();
+      return coordinate && /^[A-Z*][0-9*]$/.test(coordinate) ? command(`submit ${coordinate}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);
