@@ -235,6 +235,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THE_SWITCH -> answerIndex(answers, source.getState().get("stage" + (ordinal(q) + 1) + (q.contains("top") ? "Top" : "Bottom")));
 			case REVERSE_MORSE -> answerIndex(answers, reverseMorseAnswer(source.getState(), q));
 			case SIMON_SHRIEKS -> answerIndex(answers, nested(source.getState(), "flashes", ordinal(q)));
+			case SONIC_THE_HEDGEHOG -> answerIndex(answers, sonicTheHedgehogAnswer(source.getState(), q));
 			case SKEWED_SLOTS -> answerIndex(answers, source.getState().get("originalNumber"));
 			case SWITCHES -> switchesAnswerIndex(source.getState(), answers);
 			case SYMBOL_CYCLE -> answerIndex(answers, source.getState().get(q.contains("left") ? "leftCycleLength" : "rightCycleLength"));
@@ -398,6 +399,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case THE_SWITCH -> state.get("stage" + (ordinal(normalize(question)) + 1) + (normalize(question).contains("top") ? "Top" : "Bottom"));
 			case REVERSE_MORSE -> reverseMorseAnswer(state, normalize(question));
 			case SIMON_SHRIEKS -> nested(state, "flashes", ordinal(normalize(question)));
+			case SONIC_THE_HEDGEHOG -> sonicTheHedgehogAnswer(state, normalize(question));
 			case SKEWED_SLOTS -> state.get("originalNumber");
 			case SWITCHES -> switchCode(state.get("currentSwitches"));
 			case SYMBOL_CYCLE -> state.get("leftSymbolCount".equals(question) ? "leftCycleLength" : "rightCycleLength");
@@ -964,6 +966,18 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		int stage = ordinal(q);
 		int position = q.contains("left") ? 0 : q.contains("middle") ? 1 : q.contains("right") ? 2 : -1;
 		return stage >= 0 && stage < 3 && position >= 0 ? nested(state, "stageSymbols", stage, position) : null;
+	}
+
+	private static Object sonicTheHedgehogAnswer(Map<String, Object> state, String question) {
+		if (question.contains("picture")) {
+			int stage = ordinal(question);
+			return stage < 0 ? null : nested(state, "pictures", stage);
+		}
+		int screen = question.contains("running boots") ? 0
+			: question.contains("invincibility") ? 1
+			: question.contains("extra life") ? 2
+			: question.contains("rings") ? 3 : -1;
+		return screen < 0 ? null : nested(state, "sounds", screen);
 	}
 
 	private static int chordQualitiesAnswerIndex(Map<String, Object> state, List<String> answers) {

@@ -1896,6 +1896,40 @@ class SouvenirSolverTest {
 
 	@Test void resolvesAllFunctionsFacts(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of());ModuleEntity source=module(ModuleType.FUNCTIONS,true,Map.of("functionsFirstQueryLastDigit",7L,"functionsLeftNumber",123,"functionsLetter","Q","functionsRightNumber",456));bomb.setModules(List.of(souvenir,source));assertThat(solve(bomb,souvenir,source.getId(),"first query last digit",List.of(),false).answer()).isEqualTo("7");assertThat(solve(bomb,souvenir,source.getId(),"What number was to the left of the displayed letter in Functions?",List.of("12","123","234","345","456","567"),false).answerIndex()).isEqualTo(2);assertThat(solve(bomb,souvenir,source.getId(),"What letter was displayed in Functions?",List.of("A","F","K","Q","V","Z"),false).answerIndex()).isEqualTo(4);assertThat(solve(bomb,souvenir,source.getId(),"What number was to the right of the displayed letter in Functions?",List.of("123","234","345","456","567","678"),false).answerIndex()).isEqualTo(4);}
 
+	@Test
+	void resolvesEverySonicPictureAndMonitorSound() {
+		BombEntity bomb = new BombEntity();
+		ModuleEntity souvenir = module(ModuleType.SOUVENIR, false, Map.of());
+		ModuleEntity sonic = module(ModuleType.SONIC_THE_HEDGEHOG, true, Map.of(
+			"sounds", List.of("Boss", "Breathe", "Emerald", "Spring"),
+			"pictures", List.of("Buzz Bomber", "Falling Sonic", "Red Spring")
+		));
+		bomb.setModules(List.of(souvenir, sonic));
+
+		assertThat(solve(bomb, souvenir, sonic.getId(), "firstPicture", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Buzz Bomber", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "secondPicture", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Falling Sonic", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "thirdPicture", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Red Spring", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "runningBootsSound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Boss", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "invincibilitySound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Breathe", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "extraLifeSound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Emerald", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(), "ringsSound", List.of(), false))
+			.isEqualTo(new SouvenirOutput("Spring", null));
+		assertThat(solve(bomb, souvenir, sonic.getId(),
+			"What was the third picture on Sonic the Hedgehog?",
+			List.of("Blue Lamppost", "Red Lamppost", "Red Spring", "Switch"), false))
+			.isEqualTo(new SouvenirOutput("Red Spring", 3));
+		assertThat(solve(bomb, souvenir, sonic.getId(),
+			"Which sound was played by the Extra Life screen on Sonic the Hedgehog?",
+			List.of("Boss", "Breathe", "Emerald", "Spring"), false))
+			.isEqualTo(new SouvenirOutput("Emerald", 3));
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

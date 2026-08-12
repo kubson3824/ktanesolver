@@ -341,6 +341,10 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
       const word = strings(raw.correctWords)[0]?.trim().toLowerCase();
       return word && /^[a-z]+$/.test(word) ? command(`press ${word}`) : "";
     }
+    case ModuleType.SONIC_THE_HEDGEHOG: {
+      const button = stringValue(raw.button);
+      return button && ["RBt", "In", "EL", "Rg"].includes(button) ? command(`press ${button}`) : "";
+    }
     case ModuleType.SEMAPHORE: {
       const current = numberValue(raw.currentIndex);
       const target = numberValue(raw.targetIndex);
