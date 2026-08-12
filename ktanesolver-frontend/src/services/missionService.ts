@@ -127,6 +127,7 @@ const MODULE_TYPES: Record<string, string> = {
     spwizPerspectivePegs: "PERSPECTIVE_PEGS",
     PianoKeys: "PIANO_KEYS",
     PointOfOrderModule: "POINT_OF_ORDER",
+    Poker: "POKER",
     MazeV2: "PLUMBING",
     Probing: "PROBING",
     resistors: "RESISTORS",
