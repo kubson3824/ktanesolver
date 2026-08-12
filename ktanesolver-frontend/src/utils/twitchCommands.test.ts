@@ -256,6 +256,8 @@ const fixtures: Record<ModuleType, Fixture> = {
   NUMBER_NIMBLENESS: { result: { press:4 }, expected: "!number press 4" },
   PAY_RESPECTS: { result: { action:"PRESS_F" }, expected: "!number f" },
   CHALLENGE_AND_CONTACT: { result: { answer:"KEYPAD" }, expected: "!number submit keypad" },
+  THE_LABYRINTH: { result: { steps:[{directions:["UP","LEFT"]},{directions:["RIGHT","DOWN"]}] }, expected: "!number move ulrd" },
+  SPINNING_BUTTONS: { result: { pressOrder:[{color:"PURPLE"},{color:"ORANGE"},{color:"RED"},{color:"BLUE"}] }, expected: "!number press purple orange red blue" },
   THE_TRIANGLE: { result: { position:"BL", color:"RED" }, expected: "!number press bl" },
   SUEET_WALL: { result: { pressCoordinates:["A1","D5"] }, expected: "!number press A1 D5" },
   HOT_POTATO: { result: { action:"DROP_BOMB" }, expected: "!bomb drop" },
@@ -316,7 +318,7 @@ describe("generateTwitchCommand", () => {
   it("has an audited fixture and support status for every module", () => {
     expect(Object.keys(fixtures).sort()).toEqual(Object.values(ModuleType).sort());
     expect(Object.keys(TWITCH_COMMAND_SUPPORT).sort()).toEqual(Object.values(ModuleType).sort());
-    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(264);
+    expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "verified")).toHaveLength(266);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "conditional")).toHaveLength(32);
     expect(Object.values(TWITCH_COMMAND_SUPPORT).filter((status) => status === "unavailable")).toHaveLength(2);
   });

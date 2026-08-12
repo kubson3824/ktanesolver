@@ -113,6 +113,10 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.MAHJONG]: [question("countingTile", "Which tile was shown in the bottom-left?")],
   [ModuleType.KUDOSUDOKU]: [question("prefilled", "Which square was pre-filled?"), question("not prefilled", "Which square was not pre-filled?")],
   [ModuleType.CHALLENGE_AND_CONTACT]: ["first", "second", "third"].map(ordinal => question(`letter ${ordinal}`, `What was the ${ordinal} displayed letter?`)),
+  [ModuleType.THE_LABYRINTH]: [
+    ...["1 (Red)", "2 (Orange)", "3 (Yellow)", "4 (Green)", "5 (Blue)"].map((layer, index) => question(`portal locations layer ${index + 1}`, `Portal locations in layer ${layer}`)),
+    ...Array.from({ length: 42 }, (_, index) => `${String.fromCharCode(65 + index % 6)}${Math.floor(index / 6) + 1}`).filter(coordinate => coordinate !== "F1").map(coordinate => question(`portal layers ${coordinate}`, `Layer(s) containing portal ${coordinate}`)),
+  ],
   [ModuleType.FUNCTIONS]: [
     question("first query last digit", "What was the last digit of the first query result?"),
     question("left number", "What number was left of the displayed letter?"),

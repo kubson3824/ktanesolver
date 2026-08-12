@@ -105,6 +105,8 @@ public enum ModuleType {
 	NUMBER_NIMBLENESS(false),
 	PAY_RESPECTS(true),
 	CHALLENGE_AND_CONTACT(false),
+	THE_LABYRINTH(false),
+	SPINNING_BUTTONS(false),
 	THE_TRIANGLE(false),
 	SUEET_WALL(false),
 	HOT_POTATO(true),

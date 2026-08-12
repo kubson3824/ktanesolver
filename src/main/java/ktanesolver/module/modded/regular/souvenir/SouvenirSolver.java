@@ -37,6 +37,9 @@ import ktanesolver.utils.Json;
 )
 public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, SouvenirOutput> {
 	private static final Pattern ORDINAL = Pattern.compile("\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\\d+(?:st|nd|rd|th))\\b");
+	private static final Pattern LABYRINTH_LAYER = Pattern.compile("\\blayer\\s+([1-5])\\b");
+	private static final Pattern LABYRINTH_COORDINATE = Pattern.compile("\\b([a-f][1-7])\\b");
+	private static final List<String> LABYRINTH_LAYERS = List.of("1 (Red)", "2 (Orange)", "3 (Yellow)", "4 (Green)", "5 (Blue)");
 	private static final Set<String> IGNORED_WORDS = Set.of(
 		"a", "an", "and", "in", "of", "on", "the", "these", "this", "to", "was", "were", "what", "which"
 	);
@@ -131,6 +134,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case MAHJONG -> answerIndex(answers,source.getState().get("mahjongCountingTile"));
 			case KUDOSUDOKU -> membershipAnswerIndex(answers,kudosudokuSquares(source.getState(),q),null,false);
 			case CHALLENGE_AND_CONTACT -> answerIndex(answers,nested(source.getState(),"challengeAndContactDisplayedLetters",ordinal(q)));
+			case THE_LABYRINTH -> membershipAnswerIndex(answers, labyrinthAnswer(source.getState(), q), null, false);
 			case FUNCTIONS -> answerIndex(answers,functionsAnswer(source.getState(),q));
 			case CURSED_DOUBLE_OH -> answerIndex(answers,source.getState().get("cursedDoubleOhInitialFirstDigit"));
 			case TEN_BUTTON_COLOR_CODE -> answerIndex(answers,tenButtonColorCodeAnswer(source.getState(),q));
@@ -292,6 +296,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case MAHJONG -> state.get("mahjongCountingTile");
 			case KUDOSUDOKU -> kudosudokuSquares(state,normalize(question));
 			case CHALLENGE_AND_CONTACT -> nested(state,"challengeAndContactDisplayedLetters",ordinal(normalize(question)));
+			case THE_LABYRINTH -> labyrinthAnswer(state, question);
 			case FUNCTIONS -> functionsAnswer(state,normalize(question));
 			case CURSED_DOUBLE_OH -> state.get("cursedDoubleOhInitialFirstDigit");
 			case TEN_BUTTON_COLOR_CODE -> tenButtonColorCodeAnswer(state,normalize(question));
@@ -982,6 +987,23 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			: question.contains("extra life") ? 2
 			: question.contains("rings") ? 3 : -1;
 		return screen < 0 ? null : nested(state, "sounds", screen);
+	}
+
+	private static Object labyrinthAnswer(Map<String, Object> state, String question) {
+		String normalized = normalize(question);
+		Matcher layer = LABYRINTH_LAYER.matcher(normalized);
+		if (layer.find()) return nested(state, "labyrinthPortals", Integer.parseInt(layer.group(1)) - 1);
+		Matcher coordinate = LABYRINTH_COORDINATE.matcher(normalized);
+		if (!coordinate.find()) return null;
+		String target = coordinate.group(1).toUpperCase(Locale.ROOT);
+		List<String> layers = new ArrayList<>();
+		for (int index = 0; index < LABYRINTH_LAYERS.size(); index++) {
+			Object portals = nested(state, "labyrinthPortals", index);
+			if (portals instanceof Collection<?> collection && collection.stream().map(String::valueOf).anyMatch(target::equalsIgnoreCase)) {
+				layers.add(LABYRINTH_LAYERS.get(index));
+			}
+		}
+		return layers.isEmpty() ? null : layers;
 	}
 
 	private static Object algebraEquation(Map<String, Object> state, String question) {

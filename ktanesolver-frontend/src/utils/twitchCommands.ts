@@ -1312,6 +1312,8 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.NUMBER_NIMBLENESS:{const press=numberValue(raw.press);return press!==undefined&&Number.isInteger(press)&&press>=0&&press<=9?command(`press ${press}`):"";}
     case ModuleType.PAY_RESPECTS:return command("f");
     case ModuleType.CHALLENGE_AND_CONTACT:{const answer=stringValue(raw.answer);return answer&&/^[A-Z]+$/i.test(answer)?command(`submit ${answer.toLowerCase()}`):"";}
+    case ModuleType.THE_LABYRINTH:{const steps=arrayValue(raw.steps).map(asRecord),directions=steps.flatMap(step=>strings(step.directions));const keys:Record<string,string>={UP:"u",LEFT:"l",RIGHT:"r",DOWN:"d"};return directions.length&&directions.every(direction=>keys[direction])?command(`move ${directions.map(direction=>keys[direction]).join("")}`):"";}
+    case ModuleType.SPINNING_BUTTONS:{const presses=arrayValue(raw.pressOrder).map(asRecord),colors=presses.map(press=>stringValue(press.color)?.toLowerCase()),valid=new Set(["red","purple","orange","grey","green","blue"]);return colors.length===4&&colors.every(color=>color&&valid.has(color))&&new Set(colors).size===4?command(`press ${colors.join(" ")}`):"";}
     case ModuleType.THE_TRIANGLE:{const position=stringValue(raw.position);return position&&["MID","TL","BL","BR"].includes(position)?command(`press ${position.toLowerCase()}`):"";}
     case ModuleType.SUEET_WALL:{const coordinates=strings(raw.pressCoordinates);return coordinates.length&&coordinates.every(x=>/^[A-D][1-5]$/i.test(x))?command(`press ${coordinates.join(" ")}`):"";}
     case ModuleType.HOT_POTATO:return raw.action==="DROP_BOMB"?"!bomb drop":"";
