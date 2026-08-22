@@ -1,0 +1,4 @@
+import {solveModule} from "../lib/api";
+export const QUIZ_BUZZ_CATEGORIES=["Bases","Cheap Checkout","Connection Check","Cryptography","Fast Math","FizzBuzz","Laundry","LED Encryption","Lightspeed","Marble Tumble","Monsplode, Fight!","Morse Code","Question Mark","Spinning Buttons","Splitting the Loot","Street Fighter","Tax Returns","Web Design","Wire Sequence"];
+export interface QuizBuzzOutput{stageNumber:number;stageType:"NUMBER"|"FIZZ"|"BUZZ"|"FIZZ_BUZZ";answer:string;fizzPosition:number;buzzPosition:number;completedStages:number}
+export const solveQuizBuzz=(roundId:string,bombId:string,moduleId:string,stageNumber:number,fizzCategory:string,buzzCategory:string,resetPositions:boolean):Promise<{output:QuizBuzzOutput;solved:boolean}> => solveModule(roundId,bombId,moduleId,{stageNumber,fizzCategory,buzzCategory,resetPositions});

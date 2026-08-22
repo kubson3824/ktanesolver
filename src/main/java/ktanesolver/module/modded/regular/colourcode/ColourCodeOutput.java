@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.colourcode;import java.util.List;import ktanesolver.logic.ModuleOutput;public record ColourCodeOutput(List<Integer>digits,List<String>colors,List<String>sequence,String entryCommand,String submitCommand,boolean specialSubmitTiming)implements ModuleOutput{}

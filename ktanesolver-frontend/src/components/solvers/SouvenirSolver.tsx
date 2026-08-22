@@ -126,6 +126,112 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
   [ModuleType.CURSED_DOUBLE_OH]: [question("initialFirstDigit", "What was the first digit of the initially displayed number?")],
   [ModuleType.TEN_BUTTON_COLOR_CODE]: TEN_BUTTON_COLOR_CODE_QUESTIONS,
   [ModuleType.THREE_LEDS]: [question("initialState", "What was the initial state of the LEDs?")],
+  [ModuleType.LED_MATH]: [
+    question("lights LED A", "What color was LED A?"),
+    question("lights LED B", "What color was LED B?"),
+    question("lights operator", "What color was the operator LED?"),
+  ],
+  [ModuleType.SIMON_SOUNDS]: ["first", "second", "third", "fourth", "fifth"].map(stage => question(`sample ${stage}`, `Which sample button sounded in the ${stage} stage?`)),
+  [ModuleType.SIMON_SCRAMBLES]: ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"].map(position => question(`flash ${position}`, `What color flashed ${position}?`)),
+  [ModuleType.UNFAIR_CIPHER]: ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth"].map(position => question(`letter ${position}`, `What was the ${position} letter of the encrypted message?`)),
+  [ModuleType.GADGETRON_VENDOR]: [question("current weapon", "What was your current weapon?"), question("weapon for sale", "What was the weapon up for sale?")],
+  [ModuleType.THE_HEXABUTTON]: [question("solid color", "What was the solid color when held?"), question("flickering color", "What was the flickering color when held?"), question("Morse letter", "What Morse Code letter was transmitted?")],
+  [ModuleType.ELDER_FUTHARK]: ["first", "second", "third"].map(position => question(`rune ${position}`, `What was the ${position} rune shown?`)),
+  [ModuleType.MODULE_MAZE]: [question("starting icon", "What was the starting icon?")],
+  [ModuleType.TASHA_SQUEALS]: ["first", "second", "third", "fourth", "fifth"].map(position => question(`flashed color ${position}`, `What was the ${position} flashed color?`)),
+  [ModuleType.FORGET_THIS]: [],
+  [ModuleType.BURGER_ALARM]: [
+    ...["first", "second", "third", "fourth", "fifth", "sixth", "seventh"].map(position => question(`digit ${position}`, `What was the ${position} displayed digit?`)),
+    ...["first", "second", "third", "fourth", "fifth"].map(position => question(`order ${position}`, `What was the ${position} order number?`)),
+  ],
+  [ModuleType.GROCERY_STORE]: [question("first item", "What was the first item shown?")],
+  [ModuleType.SUBSCRIBE_TO_PEWDIEPIE]: [
+    question("pewdiepie subscribers", "How many subscribers did PewDiePie have?"),
+    question("t-series subscribers", "How many subscribers did T-Series have?"),
+  ],
+  [ModuleType.LOMBAX_CUBES]: ["first", "second"].map(position => question(`letter ${position}`, `What was the ${position} button letter?`)),
+  [ModuleType.QUIZ_BUZZ]: [question("starting number", "What was the starting number?")],
+  [ModuleType.WAVETAPPING]: ["first", "second"].map(stage => question(`color ${stage}`, `What was the color in the ${stage} stage?`)),
+  [ModuleType.THE_HYPERCUBE]: ["first", "second", "third", "fourth", "fifth"].map(position => question(`rotation ${position}`, `What was the ${position} rotation?`)),
+  [ModuleType.THE_ULTRACUBE]: ["first", "second", "third", "fourth", "fifth"].map(position => question(`rotation ${position}`, `What was the ${position} rotation?`)),
+  [ModuleType.COLORED_KEYS]: [
+    question("displayed word", "What was the displayed word?"),
+    question("displayed word color", "What was the displayed word’s color?"),
+    ...["top-left", "top-right", "bottom-left", "bottom-right"].flatMap(position => [
+      question(`letter ${position}`, `What letter was on the ${position} key?`),
+      question(`color ${position}`, `What was the color of the ${position} key?`),
+    ]),
+  ],
+  [ModuleType.PLANETS]: [question("planet shown", "What was the planet shown?"), ...["first", "second", "third", "fourth", "fifth"].map(position => question(`strip ${position}`, `What was the color of the ${position} strip?`))],
+  [ModuleType.DIGIT_STRING]: [question("initial number", "What was the initial number?")],
+  [ModuleType.HIDDEN_COLORS]: [question("main LED color", "What was the color of the main LED?")],
+  [ModuleType.GRYPHONS]: [question("name", "What was the gryphon’s name?"), question("age", "What was the gryphon’s age?")],
+  [ModuleType.MORSE_BUTTONS]: [
+    ...["first", "second", "third", "fourth", "fifth", "sixth"].map(position => question(`character ${position}`, `What character was flashed by the ${position} button?`)),
+    ...["first", "second", "third", "fourth", "fifth", "sixth"].map(position => question(`color ${position}`, `What color was flashed by the ${position} button?`)),
+  ],
+  [ModuleType.TRANSMITTED_MORSE]: [question("message first", "What was the first received message?"), question("message second", "What was the second received message?")],
+  [ModuleType.GREEN_ARROWS]: [question("last number", "What was the last number displayed?")],
+  [ModuleType.RED_ARROWS]: [question("starting number", "What was the starting number?")],
+  [ModuleType.YELLOW_ARROWS]: [question("starting row", "What was the starting row letter?")],
+  [ModuleType.BLUE_ARROWS]: [question("initial characters", "What were the initial characters?")],
+  [ModuleType.ORANGE_ARROWS]: ["first", "second", "third"].flatMap(stage => ["first", "second", "third"].map(arrow => question(`stage ${stage} arrow ${arrow}`, `What was the ${arrow} arrow shown in the ${stage} stage?`))),
+  [ModuleType.FIND_THE_DATE]: ["first", "second", "third"].flatMap(stage => [
+    question(`month ${stage}`, `What was the month displayed in the ${stage} stage?`),
+    question(`day ${stage}`, `What was the day displayed in the ${stage} stage?`),
+    question(`year ${stage}`, `What was the year displayed in the ${stage} stage?`),
+  ]),
+  [ModuleType.PURPLE_ARROWS]: [question("target word", "What was the target word?")],
+  [ModuleType.ARITHMELOGIC]: [question("submit symbol", "What was the symbol on the submit button?")],
+  [ModuleType.MAZEMATICS]: [question("initial value", "What was the initial value?"), question("goal value", "What was the goal value?")],
+  [ModuleType.SIMON_STOPS]: ["first", "second", "third", "fourth"].map(position => question(position, `Which color flashed ${position} in the output sequence?`)),
+  [ModuleType.ORDERED_KEYS]: ["first", "second", "third"].flatMap(stage => ["first", "second", "third", "fourth", "fifth", "sixth"].flatMap(key => [
+    question(`stage ${stage} key ${key} background`, `What was the background color of the ${key} key in the ${stage} stage?`),
+    question(`stage ${stage} key ${key} label`, `What was the label of the ${key} key in the ${stage} stage?`),
+    question(`stage ${stage} key ${key} label color`, `What was the label color of the ${key} key in the ${stage} stage?`),
+  ])),
+  [ModuleType.BORDERED_KEYS]: ["first", "second", "third", "fourth", "fifth", "sixth"].flatMap(key => [
+    question(`${key} key border color`, `What was this key's border color when the ${key} key was pressed?`),
+    question(`${key} key displayed digit`, `What digit was displayed when the ${key} key was pressed?`),
+    question(`${key} key key color`, `What was the ${key} key's color when it was pressed?`),
+    question(`${key} key label`, `What was the ${key} key's label when it was pressed?`),
+    question(`${key} key label color`, `What was the ${key} key's label color when it was pressed?`),
+  ]),
+  [ModuleType.REORDERED_KEYS]: ["first", "second"].flatMap(stage => ["first", "second", "third", "fourth", "fifth", "sixth"].flatMap(key => [
+    question(`stage ${stage} key ${key} background`, `What was the initial background color of the ${key} key in the ${stage} stage?`),
+    question(`stage ${stage} key ${key} label`, `What was the initial label of the ${key} key in the ${stage} stage?`),
+    question(`stage ${stage} key ${key} label color`, `What was the initial label color of the ${key} key in the ${stage} stage?`),
+  ])),
+  [ModuleType.EQUATIONS_X]: [question("displayed symbol", "What was the displayed symbol?")],
+  [ModuleType.THE_NECRONOMICON]: [question("present chapter", "Which chapter number was present?")],
+  [ModuleType.UNORDERED_KEYS]: ["first", "second"].flatMap(stage => ["first", "second", "third", "fourth", "fifth", "sixth"].flatMap(key => [
+    question(`stage ${stage} key ${key} background`, `What was the initial background color of the ${key} active key in the ${stage} stage?`),
+    question(`stage ${stage} key ${key} label`, `What was the initial label of the ${key} active key in the ${stage} stage?`),
+    question(`stage ${stage} key ${key} label color`, `What was the initial label color of the ${key} active key in the ${stage} stage?`),
+  ])),
+  [ModuleType.THE_MATRIX]: [question("first access code name", "What was the first unscrambled access-code name?"), question("second access code name", "What was the second unscrambled access-code name?")],
+  [ModuleType.BAMBOOZLING_BUTTON]: ["first", "second"].flatMap(stage => [
+    question(`stage ${stage} button color`, `What color was the button in the ${stage} stage?`),
+    ...["first", "third", "fourth", "fifth"].map(display => question(`stage ${stage} display ${display}`, `What was the ${display} display in the ${stage} stage?`)),
+    ...["fourth", "fifth"].map(display => question(`stage ${stage} display ${display} color`, `What was the color of the ${display} display in the ${stage} stage?`)),
+    question(`stage ${stage} top label`, `What was the top label on the button in the ${stage} stage?`),
+    question(`stage ${stage} bottom label`, `What was the bottom label on the button in the ${stage} stage?`),
+  ]),
+  [ModuleType.VEXILLOLOGY]: ["first", "second", "third"].map(position => question(`${position} flagpole color`, `What was the ${position} flagpole color?`)),
+  [ModuleType.MAZE_3]: [question("starting face color", "What was the color of the starting face?")],
+  [ModuleType.MISORDERED_KEYS]: [
+    ...["first", "second", "third", "fourth", "fifth", "sixth"].flatMap(key => [
+      question(`${key} key background`, `What was the background color of the ${key} key?`),
+      question(`${key} key label`, `What was the label of the ${key} key?`),
+      question(`${key} key label color`, `What was the label color of the ${key} key?`),
+    ]),
+    question("position of k", "What was the position of K?"),
+  ],
+  [ModuleType.ENCRYPTED_EQUATIONS]: ["first", "second", "third"].map(operand => question(`${operand} operand shape`, `What was the main shape of the ${operand} operand?`)),
+  [ModuleType.SIMON_STORES]: ["first", "second", "third", "fourth", "fifth"].flatMap(position => [
+    question(`${position} flashed color`, `Which color flashed ${position}?`),
+    question(`${position} flashing colors`, `Which color was among the colors that flashed ${position}?`),
+  ]),
   [ModuleType.MEMORY]: [
     question("displays", "What was displayed in each stage?"),
     question("positions", "What positions were pressed?"),
@@ -538,6 +644,17 @@ const QUESTIONS: Partial<Record<ModuleType, QuestionOption[]>> = {
 };
 const questionsFor = (source?: BombEntity["modules"][number]) => {
   if (!source) return [];
+  if (source.type === ModuleType.FORGET_THIS && Array.isArray(source.state.forgetThisDigits)) {
+    return source.state.forgetThisDigits.flatMap((_, index) => {
+      const number = index + 1;
+      const suffix = number % 100 >= 11 && number % 100 <= 13 ? "th" : number % 10 === 1 ? "st" : number % 10 === 2 ? "nd" : number % 10 === 3 ? "rd" : "th";
+      const ordinal = `${number}${suffix}`;
+      return [
+        question(`digit ${ordinal}`, `Digit displayed in the ${ordinal} stage`),
+        question(`color ${ordinal}`, `LED color in the ${ordinal} stage`),
+      ];
+    });
+  }
   const questions = QUESTIONS[source.type as ModuleType] ?? [];
   if (source.type === ModuleType.VISUAL_IMPAIRMENT && Array.isArray(source.state.desiredColors)) {
     return questions.slice(0, source.state.desiredColors.length);

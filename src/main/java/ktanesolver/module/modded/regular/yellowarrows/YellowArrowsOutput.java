@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.yellowarrows;import ktanesolver.logic.ModuleOutput;public record YellowArrowsOutput(String direction,String ruleRow,int pressNumber,boolean finalPress)implements ModuleOutput{}

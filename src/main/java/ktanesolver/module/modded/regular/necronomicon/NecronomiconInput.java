@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.necronomicon;import java.util.List;import ktanesolver.logic.ModuleInput;public record NecronomiconInput(String origin,String worshippedGod,String referenceType,List<Integer>chapters)implements ModuleInput{}

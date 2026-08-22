@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.colourcode;import ktanesolver.logic.ModuleInput;public record ColourCodeInput(String backgroundColor,int currentMonth,int currentHour)implements ModuleInput{}

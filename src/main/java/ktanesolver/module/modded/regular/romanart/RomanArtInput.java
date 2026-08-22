@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.romanart;import java.util.List;import ktanesolver.logic.ModuleInput;public record RomanArtInput(List<Integer>artPieceIndices,int brokenNumeralValue,boolean censoredMode)implements ModuleInput{}

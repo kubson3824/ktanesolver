@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.romanart;import java.util.List;import ktanesolver.logic.ModuleOutput;public record RomanArtOutput(String stepOneNumber,int stepTwoNumber,String stepThreeNumeral,List<Integer>pressOrder,String command)implements ModuleOutput{}

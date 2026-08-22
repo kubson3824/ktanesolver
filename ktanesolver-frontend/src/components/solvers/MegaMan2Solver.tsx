@@ -1,0 +1,12 @@
+import { useState } from "react";
+import { MEGA_MAN_2_MASTERS, solveMegaMan2, type MegaMan2Output } from "../../services/megaMan2Service";
+import type { BombEntity } from "../../types";
+import { ErrorAlert,SolverControls,SolverInstructions,SolverLayout,SolverSection,TwitchCommandDisplay,useSolver } from "../common";
+
+export default function MegaMan2Solver({bomb}:{bomb:BombEntity|null|undefined}){
+  const [master,setMaster]=useState(MEGA_MAN_2_MASTERS[0]),[weapon,setWeapon]=useState(MEGA_MAN_2_MASTERS[1]),[minutes,setMinutes]=useState(30),[result,setResult]=useState<MegaMan2Output|null>(null);
+  const {isLoading,error,isSolved,setIsLoading,setError,setIsSolved,clearError,reset:resetSolver,currentModule,round,markModuleSolved}=useSolver();
+  const solve=async()=>{if(!round?.id||!bomb?.id||!currentModule?.id)return setError("Missing required information");clearError();setIsLoading(true);try{const r=await solveMegaMan2(round.id,bomb.id,currentModule.id,master,weapon,minutes);setResult(r.output);setIsSolved(r.solved);if(r.solved)markModuleSolved(bomb.id,currentModule.id);}catch(e){setError(e instanceof Error?e.message:"Failed to solve Mega Man 2")}finally{setIsLoading(false)}};
+  const reset=()=>{setMaster(MEGA_MAN_2_MASTERS[0]);setWeapon(MEGA_MAN_2_MASTERS[1]);setMinutes(30);setResult(null);resetSolver()};
+  return <SolverLayout><SolverSection title="Module display"><div className="grid gap-3 sm:grid-cols-3"><label>Robot master<select value={master} onChange={e=>setMaster(e.target.value)} className="mt-1 h-11 w-full rounded border bg-background px-2">{MEGA_MAN_2_MASTERS.map(x=><option key={x}>{x}</option>)}</select></label><label>Weapon owner<select value={weapon} onChange={e=>setWeapon(e.target.value)} className="mt-1 h-11 w-full rounded border bg-background px-2">{MEGA_MAN_2_MASTERS.map(x=><option key={x}>{x}</option>)}</select></label><label>Starting minutes<input type="number" min={1} value={minutes} onChange={e=>setMinutes(Number(e.target.value))} className="mt-1 h-11 w-full rounded border bg-background px-2"/></label></div></SolverSection><SolverControls onSolve={solve} onReset={reset} isLoading={isLoading} isSolved={isSolved}/><ErrorAlert error={error}/>{result&&<SolverSection title="Password"><p>E-Tanks: {result.eTanks}</p><p className="font-mono text-lg">{result.password.join(" ")}</p></SolverSection>}{result&&<TwitchCommandDisplay command={`press ${result.password.join(" ").toLowerCase()}`}/>}<SolverInstructions>Press all nine password points in any order.</SolverInstructions></SolverLayout>;
+}

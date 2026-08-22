@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface YellowArrowsOutput{direction:string;ruleRow:string;pressNumber:number;finalPress:boolean}export const solveYellowArrows=(roundId:string,bombId:string,moduleId:string,startingRow:string,resetSequence:boolean):Promise<{output:YellowArrowsOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{startingRow,resetSequence});

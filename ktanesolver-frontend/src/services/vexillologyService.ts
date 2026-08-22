@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface VexillologyOutput{flagColors:string[];country:string|null;submitDigit:string;commands:string[]}export const solveVexillology=(roundId:string,bombId:string,moduleId:string,flagType:string,flagpoleColors:string[]):Promise<{output:VexillologyOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{flagType,flagpoleColors});

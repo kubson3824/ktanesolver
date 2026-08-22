@@ -1,0 +1,2 @@
+package ktanesolver.module.modded.regular.fourcardmonte;import java.util.List;import ktanesolver.logic.ModuleInput;
+public record FourCardMonteInput(List<String> cards,List<String> coinColors,List<Integer> finalOrder,int initialSeconds,int dealSeconds,int localHour,int localDay,String cardNumber,boolean hasRoyalFlushModule,boolean hasPoker,boolean hasModulo,boolean hasBritishSlang,boolean hasFlipTheCoin,boolean hasBlackjack)implements ModuleInput{}

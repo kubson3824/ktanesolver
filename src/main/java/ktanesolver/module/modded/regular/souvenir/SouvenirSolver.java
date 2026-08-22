@@ -36,7 +36,7 @@ import ktanesolver.utils.Json;
 	tags = {"memory", "questions", "boss", "modded"}
 )
 public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, SouvenirOutput> {
-	private static final Pattern ORDINAL = Pattern.compile("\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\\d+(?:st|nd|rd|th))\\b");
+	private static final Pattern ORDINAL = Pattern.compile("\\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\\d+(?:st|nd|rd|th))\\b");
 	private static final Pattern LABYRINTH_LAYER = Pattern.compile("\\blayer\\s+([1-5])\\b");
 	private static final Pattern LABYRINTH_COORDINATE = Pattern.compile("\\b([a-f][1-7])\\b");
 	private static final List<String> LABYRINTH_LAYERS = List.of("1 (Red)", "2 (Orange)", "3 (Yellow)", "4 (Green)", "5 (Blue)");
@@ -139,6 +139,54 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case CURSED_DOUBLE_OH -> answerIndex(answers,source.getState().get("cursedDoubleOhInitialFirstDigit"));
 			case TEN_BUTTON_COLOR_CODE -> answerIndex(answers,tenButtonColorCodeAnswer(source.getState(),q));
 			case THREE_LEDS -> threeLedsAnswerIndex(source.getState(), answers);
+			case LED_MATH -> answerIndex(answers, ledMathAnswer(source.getState(), q));
+			case SIMON_SOUNDS -> answerIndex(answers, nested(source.getState(), "simonSoundsSamples", ordinal(q)));
+			case SIMON_SCRAMBLES -> answerIndex(answers, nested(source.getState(), "simonScramblesSequence", ordinal(q)));
+			case UNFAIR_CIPHER -> answerIndex(answers, unfairCipherLetter(source.getState(), q));
+			case GADGETRON_VENDOR -> answerIndex(answers, source.getState().get(q.contains("sale") ? "gadgetronWeaponForSale" : "gadgetronCurrentWeapon"));
+			case THE_HEXABUTTON -> answerIndex(answers, source.getState().get(q.contains("letter") || q.contains("morse") ? "hexabuttonMorseLetter" : "hexabuttonLightColor"));
+			case ELDER_FUTHARK -> answerIndex(answers, nested(source.getState(), "elderFutharkRunes", ordinal(q)));
+			case MODULE_MAZE -> answerIndex(answers, source.getState().get("moduleMazeStartingIcon"));
+			case TASHA_SQUEALS -> answerIndex(answers, nested(source.getState(), "tashaSquealsFlashes", ordinal(q)));
+			case FORGET_THIS -> answerIndex(answers, nested(source.getState(), q.contains("color") ? "forgetThisColors" : "forgetThisDigits", ordinal(q)));
+			case BURGER_ALARM -> answerIndex(answers, nested(source.getState(), q.contains("order") ? "burgerAlarmOrders" : "burgerAlarmDigits", ordinal(q)));
+			case GROCERY_STORE -> answerIndex(answers, source.getState().get("groceryStoreFirstItem"));
+			case SUBSCRIBE_TO_PEWDIEPIE -> answerIndex(answers, source.getState().get(q.contains("pewdiepie") ? "subscribePewdiepieStartingPewdiepie" : "subscribePewdiepieStartingTSeries"));
+			case LOMBAX_CUBES -> answerIndex(answers, nested(source.getState(), "lombaxCubesButtonLetters", ordinal(q)));
+			case QUIZ_BUZZ -> answerIndex(answers, source.getState().get("quizBuzzStartingNumber"));
+			case WAVETAPPING -> answerIndex(answers, nested(source.getState(), "wavetappingStageColors", ordinal(q)));
+			case THE_HYPERCUBE -> answerIndex(answers, nested(source.getState(), "hypercubeRotations", ordinal(q)));
+			case THE_ULTRACUBE -> answerIndex(answers, nested(source.getState(), "ultracubeRotations", ordinal(q)));
+			case COLORED_KEYS -> answerIndex(answers, coloredKeysAnswer(source.getState(), q));
+			case PLANETS -> answerIndex(answers, q.contains("planet") ? source.getState().get("planetsPlanet") : nested(source.getState(), "planetsStripColors", ordinal(q)));
+			case DIGIT_STRING -> answerIndex(answers, source.getState().get("digitStringInitialNumber"));
+			case HIDDEN_COLORS -> answerIndex(answers, source.getState().get("hiddenColorsLedColor"));
+			case GRYPHONS -> answerIndex(answers, source.getState().get(q.contains("age") ? "gryphonsAge" : "gryphonsName"));
+			case MORSE_BUTTONS -> answerIndex(answers, nested(source.getState(), q.contains("color") ? "morseButtonsColors" : "morseButtonsCharacters", ordinal(q)));
+			case TRANSMITTED_MORSE -> answerIndex(answers, nested(source.getState(), "transmittedMorseMessages", ordinal(q)));
+			case GREEN_ARROWS -> answerIndex(answers, source.getState().get("greenArrowsLastNumber"));
+			case RED_ARROWS -> answerIndex(answers, source.getState().get("redArrowsStartingNumber"));
+			case YELLOW_ARROWS -> answerIndex(answers, source.getState().get("yellowArrowsStartingRow"));
+			case BLUE_ARROWS -> answerIndex(answers, source.getState().get("blueArrowsInitialCharacters"));
+			case ORANGE_ARROWS -> answerIndex(answers, orangeArrowsAnswer(source.getState(), q));
+			case FIND_THE_DATE -> answerIndex(answers, nested(source.getState(), "findTheDateDates", ordinal(q), q.contains("month") ? "month" : q.contains("year") ? "year" : "day"));
+			case PURPLE_ARROWS -> answerIndex(answers, source.getState().get("purpleArrowsTargetWord"));
+			case ARITHMELOGIC -> answerIndex(answers, arithmelogicSymbol(source.getState().get("arithmelogicSubmitSymbol")));
+			case MAZEMATICS -> answerIndex(answers, source.getState().get(q.contains("goal") ? "mazematicsGoalValue" : "mazematicsInitialValue"));
+			case SIMON_STOPS -> answerIndex(answers, nested(source.getState(), "simonStopsFlashedColors", ordinal(q)));
+			case ORDERED_KEYS -> answerIndex(answers, keysAnswer(source.getState(), q, "orderedKeys"));
+			case BORDERED_KEYS -> answerIndex(answers, borderedKeysAnswer(source.getState(), q));
+			case REORDERED_KEYS -> answerIndex(answers, keysAnswer(source.getState(), q, "reorderedKeys"));
+			case EQUATIONS_X -> answerIndex(answers, source.getState().get("equationsXSymbol"));
+			case THE_NECRONOMICON -> answerIndex(answers, source.getState().get("necronomiconChapters"));
+			case UNORDERED_KEYS -> answerIndex(answers, unorderedKeysAnswer(source.getState(), q));
+			case THE_MATRIX -> answerIndex(answers, nested(source.getState(), "matrixAccessCodeNames", ordinal(q)));
+			case BAMBOOZLING_BUTTON -> answerIndex(answers, bamboozlingButtonAnswer(source.getState(), q));
+			case VEXILLOLOGY -> answerIndex(answers, vexillologyAnswer(source.getState(), q));
+			case MAZE_3 -> answerIndex(answers, source.getState().get("maze3StartingFace"));
+			case MISORDERED_KEYS -> answerIndex(answers, misorderedKeysAnswer(source.getState(), q));
+			case ENCRYPTED_EQUATIONS -> answerIndex(answers, encryptedEquationsAnswer(source.getState(), q));
+			case SIMON_STORES -> answerIndex(answers, simonStoresAnswer(source.getState(), q));
 			case CALENDAR -> answerIndex(answers, source.getState().get("souvenirHoliday"));
 			case USA_MAZE -> answerIndex(answers, source.getState().get("souvenirState"));
 			case BLIND_MAZE -> answerIndex(answers, blindMazeColor(source.getState(), q));
@@ -319,6 +367,54 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case CURSED_DOUBLE_OH -> state.get("cursedDoubleOhInitialFirstDigit");
 			case TEN_BUTTON_COLOR_CODE -> tenButtonColorCodeAnswer(state,normalize(question));
 			case THREE_LEDS -> threeLedsAnswer(state);
+			case LED_MATH -> ledMathAnswer(state, normalize(question));
+			case SIMON_SOUNDS -> nested(state, "simonSoundsSamples", ordinal(normalize(question)));
+			case SIMON_SCRAMBLES -> nested(state, "simonScramblesSequence", ordinal(normalize(question)));
+			case UNFAIR_CIPHER -> unfairCipherLetter(state, normalize(question));
+			case GADGETRON_VENDOR -> state.get(question.contains("sale") ? "gadgetronWeaponForSale" : "gadgetronCurrentWeapon");
+			case THE_HEXABUTTON -> state.get(question.contains("letter") || question.contains("morse") ? "hexabuttonMorseLetter" : "hexabuttonLightColor");
+			case ELDER_FUTHARK -> nested(state, "elderFutharkRunes", ordinal(normalize(question)));
+			case MODULE_MAZE -> state.get("moduleMazeStartingIcon");
+			case TASHA_SQUEALS -> nested(state, "tashaSquealsFlashes", ordinal(normalize(question)));
+			case FORGET_THIS -> nested(state, normalize(question).contains("color") ? "forgetThisColors" : "forgetThisDigits", ordinal(normalize(question)));
+			case BURGER_ALARM -> nested(state, normalize(question).contains("order") ? "burgerAlarmOrders" : "burgerAlarmDigits", ordinal(normalize(question)));
+			case GROCERY_STORE -> state.get("groceryStoreFirstItem");
+			case SUBSCRIBE_TO_PEWDIEPIE -> state.get(normalize(question).contains("pewdiepie") ? "subscribePewdiepieStartingPewdiepie" : "subscribePewdiepieStartingTSeries");
+			case LOMBAX_CUBES -> nested(state, "lombaxCubesButtonLetters", ordinal(normalize(question)));
+			case QUIZ_BUZZ -> state.get("quizBuzzStartingNumber");
+			case WAVETAPPING -> nested(state, "wavetappingStageColors", ordinal(normalize(question)));
+			case THE_HYPERCUBE -> nested(state, "hypercubeRotations", ordinal(normalize(question)));
+			case THE_ULTRACUBE -> nested(state, "ultracubeRotations", ordinal(normalize(question)));
+			case COLORED_KEYS -> coloredKeysAnswer(state, normalize(question));
+			case PLANETS -> normalize(question).contains("planet") ? state.get("planetsPlanet") : nested(state, "planetsStripColors", ordinal(normalize(question)));
+			case DIGIT_STRING -> state.get("digitStringInitialNumber");
+			case HIDDEN_COLORS -> state.get("hiddenColorsLedColor");
+			case GRYPHONS -> state.get(normalize(question).contains("age") ? "gryphonsAge" : "gryphonsName");
+			case MORSE_BUTTONS -> nested(state, normalize(question).contains("color") ? "morseButtonsColors" : "morseButtonsCharacters", ordinal(normalize(question)));
+			case TRANSMITTED_MORSE -> nested(state, "transmittedMorseMessages", ordinal(normalize(question)));
+			case GREEN_ARROWS -> state.get("greenArrowsLastNumber");
+			case RED_ARROWS -> state.get("redArrowsStartingNumber");
+			case YELLOW_ARROWS -> state.get("yellowArrowsStartingRow");
+			case BLUE_ARROWS -> state.get("blueArrowsInitialCharacters");
+			case ORANGE_ARROWS -> orangeArrowsAnswer(state, normalize(question));
+			case FIND_THE_DATE -> nested(state, "findTheDateDates", ordinal(normalize(question)), normalize(question).contains("month") ? "month" : normalize(question).contains("year") ? "year" : "day");
+			case PURPLE_ARROWS -> state.get("purpleArrowsTargetWord");
+			case ARITHMELOGIC -> arithmelogicSymbol(state.get("arithmelogicSubmitSymbol"));
+			case MAZEMATICS -> state.get(normalize(question).contains("goal") ? "mazematicsGoalValue" : "mazematicsInitialValue");
+			case SIMON_STOPS -> nested(state, "simonStopsFlashedColors", ordinal(normalize(question)));
+			case ORDERED_KEYS -> keysAnswer(state, normalize(question), "orderedKeys");
+			case BORDERED_KEYS -> borderedKeysAnswer(state, normalize(question));
+			case REORDERED_KEYS -> keysAnswer(state, normalize(question), "reorderedKeys");
+			case EQUATIONS_X -> state.get("equationsXSymbol");
+			case THE_NECRONOMICON -> state.get("necronomiconChapters");
+			case UNORDERED_KEYS -> unorderedKeysAnswer(state, normalize(question));
+			case THE_MATRIX -> nested(state, "matrixAccessCodeNames", ordinal(normalize(question)));
+			case BAMBOOZLING_BUTTON -> bamboozlingButtonAnswer(state, normalize(question));
+			case VEXILLOLOGY -> vexillologyAnswer(state, normalize(question));
+			case MAZE_3 -> state.get("maze3StartingFace");
+			case MISORDERED_KEYS -> misorderedKeysAnswer(state, normalize(question));
+			case ENCRYPTED_EQUATIONS -> encryptedEquationsAnswer(state, normalize(question));
+			case SIMON_STORES -> simonStoresAnswer(state, normalize(question));
 			case CALENDAR -> state.get("souvenirHoliday");
 			case USA_MAZE -> state.get("souvenirState");
 			case BUTTON_SEQUENCE -> buttonSequenceColorCount(state, question);
@@ -681,6 +777,78 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	}
 
 	private static Object catchphraseColor(Map<String,Object>state,String question){int index=question.contains("top left")?0:question.contains("top right")?1:question.contains("bottom left")?2:question.contains("bottom right")?3:-1;return index<0?null:nested(state,"catchphrasePanelColors",index);}
+	private static Object coloredKeysAnswer(Map<String,Object>state,String question){if(question.contains("display")&&question.contains("color"))return state.get("coloredKeysDisplayColor");if(question.contains("display"))return state.get("coloredKeysDisplayWord");int index=question.contains("top-left")||question.contains("top left")?0:question.contains("top-right")||question.contains("top right")?1:question.contains("bottom-left")||question.contains("bottom left")?2:3;return nested(state,question.contains("letter")?"coloredKeysLetters":"coloredKeysColors",index);}
+	private static Object orangeArrowsAnswer(Map<String,Object>state,String question){List<Integer>values=ordinals(question);return values.size()<2?null:nested(state,"orangeArrowsSequences",values.get(0),values.get(1));}
+	private static Object arithmelogicSymbol(Object value){return value instanceof Number number&&number.intValue()>=1&&number.intValue()<=ktanesolver.module.modded.regular.arithmelogic.ArithmelogicSolver.SYMBOLS.size()?ktanesolver.module.modded.regular.arithmelogic.ArithmelogicSolver.SYMBOLS.get(number.intValue()-1):null;}
+	private static Object keysAnswer(Map<String,Object>state,String question,String prefix){List<Integer>values=ordinals(question);if(values.size()<2)return null;String field=question.contains("label color")?"labelColor":question.contains("background")||question.contains("key color")?"keyColor":"label";return nested(state,prefix+"Stage"+(values.get(0)+1),values.get(1),field);}
+
+	private static Object borderedKeysAnswer(Map<String, Object> state, String question) {
+		int position = ordinal(question);
+		String field = question.contains("border") ? "borderColor"
+			: question.contains("display") || question.contains("digit") ? "display"
+			: question.contains("label color") ? "labelColor"
+			: question.contains("key color") || question.contains("background") ? "keyColor" : "label";
+		return nested(state, "borderedKeysPressedKeys", position, field);
+	}
+
+	private static Object unorderedKeysAnswer(Map<String, Object> state, String question) {
+		List<Integer> values = ordinals(question);
+		if (values.size() < 2) return null;
+		String root = "unorderedKeysStage" + (values.get(0) + 1);
+		if (!Boolean.TRUE.equals(nested(state, root, values.get(1), "active"))) return null;
+		String field = question.contains("label color") ? "labelColor" : question.contains("background") || question.contains("key color") ? "keyColor" : "label";
+		return nested(state, root, values.get(1), field);
+	}
+
+	private static Object misorderedKeysAnswer(Map<String, Object> state, String question) {
+		if (question.contains("position") && question.contains(" k")) return state.get("misorderedKeysK");
+		int position = ordinal(question);
+		String field = question.contains("label color") ? "labelColor" : question.contains("background") || question.contains("key color") ? "keyColor" : "label";
+		return nested(state, "misorderedKeysKeys", position, field);
+	}
+
+	private static Object encryptedEquationsAnswer(Map<String, Object> state, String question) {
+		Object value = nested(state, "encryptedEquationsShapes", ordinal(question));
+		return value instanceof Number number && number.intValue() >= 0 ? number : null;
+	}
+
+	private static Object simonStoresAnswer(Map<String, Object> state, String question) {
+		Object value = nested(state, "simonStoresFlashes", ordinal(question));
+		if (!(value instanceof String colors) || colors.isBlank()) return null;
+		List<String> names = colors.chars().mapToObj(code -> switch (code) {
+			case 'R' -> "Red"; case 'G' -> "Green"; case 'B' -> "Blue"; case 'C' -> "Cyan"; case 'M' -> "Magenta"; case 'Y' -> "Yellow";
+			default -> "";
+		}).filter(name -> !name.isEmpty()).toList();
+		return names.size() == 1 ? names.getFirst() : names;
+	}
+
+	private static Object vexillologyAnswer(Map<String, Object> state, String question) {
+		String type = normalize(state.get("vexillologyFlagType"));
+		String first = normalize(state.get("vexillologyFirstAnswerColor"));
+		if ("vertical".equals(type) && "orange".equals(first)) return null;
+		int position = ordinal(question);
+		if (position == 2 && type.startsWith("nordic") && "green".equals(first)) return null;
+		return nested(state, "vexillologyFlagpoleColors", position);
+	}
+
+	private static Object bamboozlingButtonAnswer(Map<String, Object> state, String question) {
+		String q = normalize(question);
+		int stage = ordinal(q);
+		if (stage < 0 || stage > 1) return null;
+		String root = "bamboozlingButtonStage" + (stage + 1);
+		String special = String.valueOf(nested(state, root, "specialCase"));
+		if (q.contains("button color")) return "NONE".equals(special) ? nested(state, root, "buttonColor") : null;
+		if (q.contains("label")) {
+			if (!"NONE".equals(special)) return null;
+			return nested(state, root, q.contains("top") ? "topLabel" : q.contains("bottom") ? "bottomLabel" : "");
+		}
+		if (!q.contains("display")) return null;
+		int display = lastOrdinal(q) + 1;
+		if (display != 1 && display != 3 && display != 4 && display != 5) return null;
+		if (("TOP".equals(special) && display != 4) || ("BOTTOM".equals(special) && display != 5)) return null;
+		if (!"NONE".equals(special) && !"TOP".equals(special) && !"BOTTOM".equals(special)) return null;
+		return nested(state, root, "display" + display + (q.contains("color") ? "Color" : ""));
+	}
 	private static Object schlagAnswer(Map<String,Object>state,String question){return question.contains("name")?state.get("schlagContestantName"):question.contains("contestant")?state.get("schlagContestantScore"):question.contains("bomb")?state.get("schlagBombScore"):null;}
 	private static Object kudosudokuSquares(Map<String,Object>state,String question){Object raw=state.get("kudosudokuPrefilledCoordinates");if(!(raw instanceof Collection<?>filled))return null;if(!question.contains("not"))return filled;Set<String>present=filled.stream().map(String::valueOf).collect(java.util.stream.Collectors.toSet());List<String>missing=new ArrayList<>();for(char row='1';row<='4';row++)for(char column='A';column<='D';column++){String coordinate=""+column+row;if(!present.contains(coordinate))missing.add(coordinate);}return missing;}
 
@@ -700,6 +868,7 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 	private static int valvesAnswerIndex(Map<String,Object>state,List<String>answers){Object answer=valvesAnswer(state);if(answer==null)return-1;String glyphs=String.valueOf(answer),bits=glyphs.replace('●','1').replace('○','0');for(int i=0;i<answers.size();i++){String candidate=answers.get(i).replaceAll("\\s","");if(candidate.equals(glyphs)||candidate.equals(bits))return i;}return-1;}
 	private static Object threeLedsAnswer(Map<String,Object>state){Object raw=state.get("threeLedsInitialState");if(raw==null)return null;String bits=String.valueOf(raw).replaceAll("[^01]","");if(bits.length()!=3)return null;return (bits.charAt(0)=='1'?"●":"○")+" / "+(bits.charAt(1)=='1'?"●":"○")+" "+(bits.charAt(2)=='1'?"●":"○");}
 	private static int threeLedsAnswerIndex(Map<String,Object>state,List<String>answers){Object answer=threeLedsAnswer(state);if(answer==null)return-1;String expected=String.valueOf(answer).replace('●','1').replace('○','0').replaceAll("[^01]","");for(int i=0;i<answers.size();i++){String candidate=answers.get(i).replace('●','1').replace('○','0').replaceAll("[^01]","");if(candidate.equals(expected))return i;}return-1;}
+	private static Object ledMathAnswer(Map<String,Object>state,String question){int index=question.contains("led a")?0:question.contains("led b")?1:question.contains("operator")?2:-1;return index<0?null:nested(state,"ledMathColors",index);}
 
 	private static Object reverseMorseAnswer(Map<String, Object> state, String question) {
 		List<Integer> positions = ordinals(question);
@@ -1206,6 +1375,14 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 		return value;
 	}
 
+	private static Object unfairCipherLetter(Map<String, Object> state, String question) {
+		Object raw = state.get("unfairCipherEncryptedMessage");
+		int index = ordinal(normalize(question));
+		return raw instanceof String message && index >= 0 && index < message.length()
+			? String.valueOf(message.charAt(index))
+			: null;
+	}
+
 	private static Object simonSendsReceivedLetter(Map<String, Object> state, String question) {
 		String color = question.contains("red") ? "red" : question.contains("green") ? "green" : question.contains("blue") ? "blue" : null;
 		return color == null ? null : nested(state, "receivedLetters", color);
@@ -1301,6 +1478,8 @@ public class SouvenirSolver extends AbstractModuleSolver<SouvenirInput, Souvenir
 			case "eighth" -> 7;
 			case "ninth" -> 8;
 			case "tenth" -> 9;
+			case "eleventh" -> 10;
+			case "twelfth" -> 11;
 			default -> Integer.parseInt(match.group(1).replaceAll("\\D", "")) - 1;
 		});
 		return values;

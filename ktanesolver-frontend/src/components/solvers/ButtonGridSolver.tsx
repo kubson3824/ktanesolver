@@ -1,0 +1,13 @@
+import { useState } from "react";
+import { solveButtonGrid, type ButtonGridColor, type ButtonGridOutput } from "../../services/buttonGridService";
+import { ModuleType, type BombEntity } from "../../types";
+import { generateTwitchCommand } from "../../utils/twitchCommands";
+import { ErrorAlert, SolverControls, SolverLayout, SolverSection, TwitchCommandDisplay, useSolver } from "../common";
+const colors: ButtonGridColor[] = ["RED", "BLUE", "YELLOW", "GREEN"];
+const initial = Array.from({ length: 20 }, (_, i) => colors[i % 4]);
+export default function ButtonGridSolver({ bomb }: { bomb: BombEntity | null | undefined }) {
+  const [grid, setGrid] = useState<ButtonGridColor[]>(initial), [result, setResult] = useState<ButtonGridOutput | null>(null), [command, setCommand] = useState("");
+  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, currentModule, round, markModuleSolved } = useSolver();
+  const solve = async () => { if (!round?.id || !bomb?.id || !currentModule?.id) return setError("Missing required information"); setIsLoading(true); clearError(); try { const response = await solveButtonGrid(round.id, bomb.id, currentModule.id, { colors: grid }); setResult(response.output); setCommand(generateTwitchCommand({ moduleType: ModuleType.BUTTON_GRID, result: response.output })); setIsSolved(response.solved); if (response.solved) markModuleSolved(bomb.id, currentModule.id); } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to solve Button Grid"); } finally { setIsLoading(false); } };
+  return <SolverLayout><SolverSection title="Button colors (reading order)"><div className="grid grid-cols-5 gap-2">{grid.map((color, i) => <label key={i} className="text-center text-xs">{i + 1}<select value={color} onChange={(e) => setGrid(grid.map((x, j) => j === i ? e.target.value as ButtonGridColor : x))} className="mt-1 block h-10 w-full rounded-md border bg-background px-1 text-xs"><option value="RED">R</option><option value="BLUE">B</option><option value="YELLOW">Y</option><option value="GREEN">G</option></select></label>)}</div></SolverSection><SolverControls onSolve={solve} onReset={() => { setResult(null); setCommand(""); setIsSolved(false); }} isLoading={isLoading} isSolved={isSolved} /><ErrorAlert error={error} />{result && <SolverSection title={result.instantSolve ? "Instant solve" : "Press all five stages"}><p className="text-lg font-semibold">{result.positions.join(" ")}</p>{!result.instantSolve && result.stageOrders.map((order, i) => <p key={i} className="text-sm">Stage {i + 1}: {order.join(" → ")}</p>)}</SolverSection>}{command && <TwitchCommandDisplay command={command} />}</SolverLayout>;
+}

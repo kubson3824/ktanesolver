@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface OrangeArrowsOutput{stage:number;pressSequence:string[];command:string}export const solveOrangeArrows=(roundId:string,bombId:string,moduleId:string,stage:number,displayedSequence:string[]):Promise<{output:OrangeArrowsOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{stage,displayedSequence});

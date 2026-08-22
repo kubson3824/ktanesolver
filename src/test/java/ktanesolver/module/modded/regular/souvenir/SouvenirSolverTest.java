@@ -1976,6 +1976,125 @@ class SouvenirSolverTest {
 
 	@Test void resolvesEveryRememberedDiscoloredSquaresPosition(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.DISCOLORED_SQUARES,true,Map.of("discoloredRemembered",List.of("Blue:A1","Magenta:C2","Red:D3","Yellow:B4")));bomb.setModules(List.of(souvenir,source));for(String fact:List.of("Blue:A1","Magenta:C2","Red:D3","Yellow:B4")){String[]parts=fact.split(":");assertThat(solve(bomb,souvenir,source.getId(),"remembered "+parts[0],List.of(),false).answer()).isEqualTo(parts[1]);assertThat(solve(bomb,souvenir,source.getId(),"Where was the remembered "+parts[0]+" square in Discolored Squares?",List.of("A1","B2","C2","D3","B4","D4"),false).answer()).isEqualTo(parts[1]);}}
 
+	@Test void resolvesEveryLedMathColorQuestion(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.LED_MATH,true,Map.of("ledMathColors",List.of("Red","Blue","Yellow")));bomb.setModules(List.of(souvenir,source));List<String>questions=List.of("lights LED A","lights LED B","lights operator"),exact=List.of("What color was LED A in LED Math?","What color was LED B in LED Math?","What color was the operator LED in LED Math?"),expected=List.of("Red","Blue","Yellow"),answers=List.of("Red","Blue","Green","Yellow");for(int i=0;i<3;i++){assertThat(solve(bomb,souvenir,source.getId(),questions.get(i),List.of(),false).answer()).isEqualTo(expected.get(i));assertThat(solve(bomb,souvenir,source.getId(),exact.get(i),answers,false).answer()).isEqualTo(expected.get(i));}}
+
+	@Test void resolvesEverySimonSoundsStage(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.SIMON_SOUNDS,true,Map.of("simonSoundsSamples",List.of("red","blue","yellow","green","red")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third","fourth","fifth"),expected=List.of("red","blue","yellow","green","red"),answers=List.of("red","blue","yellow","green");for(int i=0;i<5;i++){assertThat(solve(bomb,souvenir,source.getId(),"sample "+ordinals.get(i),List.of(),false).answer()).isEqualTo(expected.get(i));assertThat(solve(bomb,souvenir,source.getId(),"Which sample button sounded "+ordinals.get(i)+" in the final sequence in Simon Sounds?",answers,false).answer()).isEqualTo(expected.get(i));}}
+
+	@Test void resolvesEverySimonScramblesFlash(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.SIMON_SCRAMBLES,true,Map.of("simonScramblesSequence",List.of("Blue","Yellow","Red","Green","Blue","Yellow","Red","Green","Blue","Yellow")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth"),expected=List.of("Blue","Yellow","Red","Green","Blue","Yellow","Red","Green","Blue","Yellow"),answers=List.of("Red","Green","Blue","Yellow");for(int i=0;i<10;i++){assertThat(solve(bomb,souvenir,source.getId(),"flash "+ordinals.get(i),List.of(),false).answer()).isEqualTo(expected.get(i));assertThat(solve(bomb,souvenir,source.getId(),"What color flashed "+ordinals.get(i)+" in Simon Scrambles?",answers,false).answer()).isEqualTo(expected.get(i));}}
+
+	@Test void resolvesEveryUnfairCipherLetter(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.UNFAIR_CIPHER,true,Map.of("unfairCipherEncryptedMessage","ABCDEFGHIJKL"));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third","fourth","fifth","sixth","seventh","eighth","ninth","tenth","eleventh","twelfth");for(int i=0;i<12;i++){String expected=String.valueOf((char)('A'+i));assertThat(solve(bomb,souvenir,source.getId(),"letter "+ordinals.get(i),List.of(),false).answer()).isEqualTo(expected);assertThat(solve(bomb,souvenir,source.getId(),"What was the "+ordinals.get(i)+" letter of the encrypted message in Unfair Cipher?",List.of(expected,"X","Y","Z"),false).answer()).isEqualTo(expected);}}
+
+	@Test void resolvesBothGadgetronVendorWeapons(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.GADGETRON_VENDOR,true,Map.of("gadgetronCurrentWeapon","Suck Cannon","gadgetronWeaponForSale","Blaster"));bomb.setModules(List.of(souvenir,source));assertThat(solve(bomb,souvenir,source.getId(),"current weapon",List.of(),false).answer()).isEqualTo("Suck Cannon");assertThat(solve(bomb,souvenir,source.getId(),"What was the weapon up for sale in Gadgetron Vendor?",List.of("Blaster","Taunter"),false).answer()).isEqualTo("Blaster");}
+
+	@Test void resolvesBothHexabuttonQuestionFamilies(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),color=module(ModuleType.THE_HEXABUTTON,true,Map.of("hexabuttonLightType","FLICKERING","hexabuttonLightColor","Magenta")),letter=module(ModuleType.THE_HEXABUTTON,true,Map.of("hexabuttonMorseLetter","Q"));bomb.setModules(List.of(souvenir,color,letter));assertThat(solve(bomb,souvenir,color.getId(),"flickering color",List.of(),false).answer()).isEqualTo("Magenta");assertThat(solve(bomb,souvenir,letter.getId(),"What Morse Code letter was transmitted by The Hexabutton?",List.of("Q","R"),false).answer()).isEqualTo("Q");}
+
+	@Test void resolvesEveryElderFutharkRunePosition(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.ELDER_FUTHARK,true,Map.of("elderFutharkRunes",List.of("Ansuz","Fehu","Isa")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third"),expected=List.of("Ansuz","Fehu","Isa"),answers=List.of("Ansuz","Berkana","Fehu","Isa","Raido","Uruz");for(int i=0;i<3;i++){assertThat(solve(bomb,souvenir,source.getId(),"rune "+ordinals.get(i),List.of(),false).answer()).isEqualTo(expected.get(i));assertThat(solve(bomb,souvenir,source.getId(),"What was the "+ordinals.get(i)+" rune shown on Elder Futhark?",answers,false).answer()).isEqualTo(expected.get(i));}}
+
+	@Test void resolvesTheModuleMazeStartingIcon(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.MODULE_MAZE,true,Map.of("moduleMazeStartingIcon","Wire Sequence"));bomb.setModules(List.of(souvenir,source));assertThat(solve(bomb,souvenir,source.getId(),"starting icon",List.of(),false).answer()).isEqualTo("Wire Sequence");assertThat(solve(bomb,souvenir,source.getId(),"Which of the following was the starting icon for Module Maze?",List.of("Wires","Maze","Wire Sequence","Memory","Souvenir","Module Maze"),false).answer()).isEqualTo("Wire Sequence");}
+
+	@Test void resolvesEveryTashaSquealsFlash(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.TASHA_SQUEALS,true,Map.of("tashaSquealsFlashes",List.of("Pink","Green","Yellow","Blue","Pink")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third","fourth","fifth"),expected=List.of("Pink","Green","Yellow","Blue","Pink"),answers=List.of("Pink","Green","Yellow","Blue");for(int i=0;i<5;i++){assertThat(solve(bomb,souvenir,source.getId(),"flashed color "+ordinals.get(i),List.of(),false).answer()).isEqualTo(expected.get(i));assertThat(solve(bomb,souvenir,source.getId(),"What was the "+ordinals.get(i)+" flashed color in Tasha Squeals?",answers,false).answer()).isEqualTo(expected.get(i));}}
+
+	@Test void resolvesEveryForgetThisStageDigitAndColor(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.FORGET_THIS,true,Map.of("forgetThisDigits",List.of("A","5","9","4","7","2"),"forgetThisColors",List.of("Cyan","Cyan","Magenta","Yellow","Black","White")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("1st","2nd","3rd","4th","5th","6th"),digits=List.of("A","5","9","4","7","2"),colors=List.of("Cyan","Cyan","Magenta","Yellow","Black","White");for(int i=0;i<6;i++){assertThat(solve(bomb,souvenir,source.getId(),"digit "+ordinals.get(i),List.of(),false).answer()).isEqualTo(digits.get(i));assertThat(solve(bomb,souvenir,source.getId(),"color "+ordinals.get(i),List.of(),false).answer()).isEqualTo(colors.get(i));assertThat(solve(bomb,souvenir,source.getId(),"What was the digit displayed in the "+ordinals.get(i)+" stage of Forget This?",List.of("2","4","5","7","9","A"),false).answer()).isEqualTo(digits.get(i));assertThat(solve(bomb,souvenir,source.getId(),"What color was the LED in the "+ordinals.get(i)+" stage of Forget This?",List.of("Cyan","Magenta","Yellow","Black","White","Green"),false).answer()).isEqualTo(colors.get(i));}}
+
+	@Test void resolvesEveryBurgerAlarmDigitAndOrder(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.BURGER_ALARM,true,Map.of("burgerAlarmDigits",List.of(0,0,0,1,0,3,6),"burgerAlarmOrders",List.of("00","12","34","56","78")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third","fourth","fifth","sixth","seventh"),digits=List.of("0","0","0","1","0","3","6"),orders=List.of("00","12","34","56","78");for(int i=0;i<7;i++){assertThat(solve(bomb,souvenir,source.getId(),"digit "+ordinals.get(i),List.of(),false).answer()).isEqualTo(digits.get(i));if(i<5)assertThat(solve(bomb,souvenir,source.getId(),"order "+ordinals.get(i),List.of(),false).answer()).isEqualTo(orders.get(i));}assertThat(solve(bomb,souvenir,source.getId(),"What was the fourth displayed digit in Burger Alarm?",List.of("0","1","2","3","4","5"),false).answer()).isEqualTo("1");assertThat(solve(bomb,souvenir,source.getId(),"What was the third order number in Burger Alarm?",List.of("00","12","34","56","78","99"),false).answer()).isEqualTo("34");}
+
+	@Test void resolvesTheGroceryStoreFirstItem(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.GROCERY_STORE,true,Map.of("groceryStoreFirstItem","Detergent"));bomb.setModules(List.of(souvenir,source));assertThat(solve(bomb,souvenir,source.getId(),"first item",List.of(),false).answer()).isEqualTo("Detergent");assertThat(solve(bomb,souvenir,source.getId(),"What was the first item shown in Grocery Store?",List.of("Cheese","Coffee","Detergent","Flour","Pepper","Steak"),false).answer()).isEqualTo("Detergent");}
+
+	@Test void resolvesBothSubscribeToPewdiepieStartingCounts(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.SUBSCRIBE_TO_PEWDIEPIE,true,Map.of("subscribePewdiepieStartingPewdiepie",76543210,"subscribePewdiepieStartingTSeries",65432109));bomb.setModules(List.of(souvenir,source));assertThat(solve(bomb,souvenir,source.getId(),"pewdiepie subscribers",List.of(),false).answer()).isEqualTo("76543210");assertThat(solve(bomb,souvenir,source.getId(),"How many subscribers did T-Series have?",List.of("65432109","76543210"),false).answer()).isEqualTo("65432109");}
+	@Test void resolvesEverySimonStopsSouvenirColor(){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(ModuleType.SIMON_STOPS,true,Map.of("simonStopsFlashedColors",List.of("Red","Orange","Yellow","Green","Blue")));bomb.setModules(List.of(souvenir,source));List<String>ordinals=List.of("first","second","third","fourth"),colors=List.of("Red","Orange","Yellow","Green");for(int i=0;i<4;i++)assertThat(solve(bomb,souvenir,source.getId(),ordinals.get(i),List.of(),false).answer()).isEqualTo(colors.get(i));}
+
+	@Test void resolvesEveryNewSupportedModuleFamily(){
+		Map<ModuleType,Map<String,Object>> states=new HashMap<>();
+		states.put(ModuleType.LOMBAX_CUBES,Map.of("lombaxCubesButtonLetters",List.of("R","C")));
+		states.put(ModuleType.QUIZ_BUZZ,Map.of("quizBuzzStartingNumber",42));
+		states.put(ModuleType.WAVETAPPING,Map.of("wavetappingStageColors",List.of("Red","Blue")));
+		states.put(ModuleType.THE_HYPERCUBE,Map.of("hypercubeRotations",List.of("XY","XZ","XW","YZ","YW")));
+		states.put(ModuleType.THE_ULTRACUBE,Map.of("ultracubeRotations",List.of("XY","XV","YV","ZV","WV")));
+		states.put(ModuleType.COLORED_KEYS,Map.of("coloredKeysDisplayWord","RED","coloredKeysDisplayColor","Blue","coloredKeysLetters",List.of("A","B","C","D"),"coloredKeysColors",List.of("Red","Green","Blue","Yellow")));
+		states.put(ModuleType.PLANETS,Map.of("planetsPlanet","Mars","planetsStripColors",List.of("Red","Green","Blue","Yellow","White")));
+		states.put(ModuleType.DIGIT_STRING,Map.of("digitStringInitialNumber","12345678"));
+		states.put(ModuleType.HIDDEN_COLORS,Map.of("hiddenColorsLedColor","Cyan"));
+		states.put(ModuleType.GRYPHONS,Map.of("gryphonsName","Gabe","gryphonsAge",23));
+		states.put(ModuleType.MORSE_BUTTONS,Map.of("morseButtonsCharacters",List.of("A","B","C","1","2","3"),"morseButtonsColors",List.of("red","blue","green","yellow","orange","purple")));
+		states.put(ModuleType.TRANSMITTED_MORSE,Map.of("transmittedMorseMessages",List.of("ENERGY","LONG")));
+		states.put(ModuleType.GREEN_ARROWS,Map.of("greenArrowsLastNumber","07"));
+		states.put(ModuleType.RED_ARROWS,Map.of("redArrowsStartingNumber",6));
+		states.put(ModuleType.YELLOW_ARROWS,Map.of("yellowArrowsStartingRow","D"));
+		states.put(ModuleType.BLUE_ARROWS,Map.of("blueArrowsInitialCharacters","CA"));
+		states.put(ModuleType.ORANGE_ARROWS,Map.of("orangeArrowsSequences",List.of(List.of("up","right","down"),List.of("left","up","right"),List.of("down","left","up"))));
+		states.put(ModuleType.FIND_THE_DATE,Map.of("findTheDateDates",List.of(Map.of("day",25,"month","December","year","1862"),Map.of("day",27,"month","June","year","2491"),Map.of("day",1,"month","January","year","000"))));
+		states.put(ModuleType.PURPLE_ARROWS,Map.of("purpleArrowsTargetWord","THESIS"));
+		states.put(ModuleType.ARITHMELOGIC,Map.of("arithmelogicSubmitSymbol",3));
+		states.put(ModuleType.MAZEMATICS,Map.of("mazematicsInitialValue",12,"mazematicsGoalValue",34));
+		Map<ModuleType,List<List<String>>> facts=Map.ofEntries(
+			Map.entry(ModuleType.LOMBAX_CUBES,List.of(List.of("letter first","R"),List.of("letter second","C"))),
+			Map.entry(ModuleType.QUIZ_BUZZ,List.of(List.of("starting number","42"))),
+			Map.entry(ModuleType.WAVETAPPING,List.of(List.of("color first","Red"),List.of("color second","Blue"))),
+			Map.entry(ModuleType.THE_HYPERCUBE,List.of(List.of("rotation first","XY"),List.of("rotation fifth","YW"))),
+			Map.entry(ModuleType.THE_ULTRACUBE,List.of(List.of("rotation first","XY"),List.of("rotation fifth","WV"))),
+			Map.entry(ModuleType.COLORED_KEYS,List.of(List.of("displayed word","RED"),List.of("displayed word color","Blue"),List.of("letter top-left","A"),List.of("color bottom-right","Yellow"))),
+			Map.entry(ModuleType.PLANETS,List.of(List.of("planet shown","Mars"),List.of("strip first","Red"),List.of("strip fifth","White"))),
+			Map.entry(ModuleType.DIGIT_STRING,List.of(List.of("initial number","12345678"))),Map.entry(ModuleType.HIDDEN_COLORS,List.of(List.of("main LED color","Cyan"))),
+			Map.entry(ModuleType.GRYPHONS,List.of(List.of("name","Gabe"),List.of("age","23"))),Map.entry(ModuleType.MORSE_BUTTONS,List.of(List.of("character fourth","1"),List.of("color sixth","purple"))),
+			Map.entry(ModuleType.TRANSMITTED_MORSE,List.of(List.of("message first","ENERGY"),List.of("message second","LONG"))),Map.entry(ModuleType.GREEN_ARROWS,List.of(List.of("last number","07"))),
+			Map.entry(ModuleType.RED_ARROWS,List.of(List.of("starting number","6"))),Map.entry(ModuleType.YELLOW_ARROWS,List.of(List.of("starting row","D"))),Map.entry(ModuleType.BLUE_ARROWS,List.of(List.of("initial characters","CA"))),
+			Map.entry(ModuleType.ORANGE_ARROWS,List.of(List.of("stage first arrow first","up"),List.of("stage second arrow third","right"),List.of("stage third arrow second","left"))),
+			Map.entry(ModuleType.FIND_THE_DATE,List.of(List.of("month first","December"),List.of("day second","27"),List.of("year third","000"))),Map.entry(ModuleType.PURPLE_ARROWS,List.of(List.of("target word","THESIS"))),
+			Map.entry(ModuleType.ARITHMELOGIC,List.of(List.of("submit symbol","★"))),Map.entry(ModuleType.MAZEMATICS,List.of(List.of("initial value","12"),List.of("goal value","34")))
+		);
+		for(var entry:facts.entrySet()){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(entry.getKey(),true,states.get(entry.getKey()));bomb.setModules(List.of(souvenir,source));for(List<String>fact:entry.getValue())assertThat(solve(bomb,souvenir,source.getId(),fact.get(0),List.of(),false).answer()).isEqualTo(fact.get(1));}
+	}
+
+	@Test void resolvesEveryLateSupportedModuleFamily(){
+		Map<ModuleType,Map<String,Object>> states=Map.ofEntries(
+			Map.entry(ModuleType.EQUATIONS_X,Map.of("equationsXSymbol","τ")),
+			Map.entry(ModuleType.THE_NECRONOMICON,Map.of("necronomiconChapters",List.of(2,3,4,5,6,7,8))),
+			Map.entry(ModuleType.THE_MATRIX,Map.of("matrixAccessCodeNames",List.of("Smith","Neo"))),
+			Map.entry(ModuleType.MAZE_3,Map.of("maze3StartingFace","Magenta")),
+			Map.entry(ModuleType.ENCRYPTED_EQUATIONS,Map.of("encryptedEquationsShapes",List.of(4,-1,18))),
+			Map.entry(ModuleType.SIMON_STORES,Map.of("simonStoresFlashes",List.of("R","GB","CMY","RGBC","RGBCMY")))
+		);
+		Map<ModuleType,List<List<String>>> facts=Map.of(
+			ModuleType.EQUATIONS_X,List.of(List.of("displayed symbol","τ")),
+			ModuleType.THE_MATRIX,List.of(List.of("first access code name","Smith"),List.of("second access code name","Neo")),
+			ModuleType.MAZE_3,List.of(List.of("starting face color","Magenta")),
+			ModuleType.ENCRYPTED_EQUATIONS,List.of(List.of("first operand shape","4"),List.of("third operand shape","18")),
+			ModuleType.SIMON_STORES,List.of(List.of("first flashed color","Red"),List.of("third flashing colors","Cyan, Magenta, Yellow"))
+		);
+		for(var entry:facts.entrySet()){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(entry.getKey(),true,states.get(entry.getKey()));bomb.setModules(List.of(souvenir,source));for(List<String>fact:entry.getValue())assertThat(solve(bomb,souvenir,source.getId(),fact.get(0),List.of(),false).answer()).isEqualTo(fact.get(1));}
+		BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),necronomicon=module(ModuleType.THE_NECRONOMICON,true,states.get(ModuleType.THE_NECRONOMICON));bomb.setModules(List.of(souvenir,necronomicon));assertThat(solve(bomb,souvenir,necronomicon.getId(),"Which chapter number was present?",List.of("1","3","9","10"),false)).isEqualTo(new SouvenirOutput("3",2));
+		ModuleEntity simon=module(ModuleType.SIMON_STORES,true,states.get(ModuleType.SIMON_STORES));bomb.setModules(List.of(souvenir,simon));assertThat(solve(bomb,souvenir,simon.getId(),"Which color was among the colors that flashed second?",List.of("White","Blue","Green","Red"),false)).isEqualTo(new SouvenirOutput("Green",3));
+		ModuleEntity encrypted=module(ModuleType.ENCRYPTED_EQUATIONS,true,states.get(ModuleType.ENCRYPTED_EQUATIONS));bomb.setModules(List.of(souvenir,encrypted));assertThat(solver.solve(new RoundEntity(),bomb,souvenir,new SouvenirInput(encrypted.getId(),"second operand shape",List.of(),false))).isInstanceOf(SolveFailure.class);
+	}
+
+	@Test void resolvesAllLateKeyFamiliesAndSkipsInactiveUnorderedKeys(){
+		List<Map<String,Object>> keys=List.of(
+			Map.of("active",true,"keyColor","Red","labelColor","Blue","label",1),Map.of("active",false,"keyColor","Green","labelColor","Yellow","label",2),
+			Map.of("active",true,"keyColor","Blue","labelColor","Red","label",3),Map.of("active",true,"keyColor","Yellow","labelColor","Green","label",4),
+			Map.of("active",true,"keyColor","Magenta","labelColor","Cyan","label",5),Map.of("active",true,"keyColor","White","labelColor","Black","label",6));
+		Map<ModuleType,Map<String,Object>> states=Map.of(
+			ModuleType.ORDERED_KEYS,Map.of("orderedKeysStage1",keys,"orderedKeysStage2",keys,"orderedKeysStage3",keys),
+			ModuleType.REORDERED_KEYS,Map.of("reorderedKeysStage1",keys,"reorderedKeysStage2",keys),
+			ModuleType.UNORDERED_KEYS,Map.of("unorderedKeysStage1",keys,"unorderedKeysStage2",keys),
+			ModuleType.MISORDERED_KEYS,Map.of("misorderedKeysKeys",keys,"misorderedKeysK",4));
+		Map<ModuleType,List<List<String>>> facts=Map.of(
+			ModuleType.ORDERED_KEYS,List.of(List.of("stage first key first background","Red"),List.of("stage third key sixth label color","Black")),
+			ModuleType.REORDERED_KEYS,List.of(List.of("stage second key third label","3")),
+			ModuleType.UNORDERED_KEYS,List.of(List.of("stage first key first key color","Red"),List.of("stage second key sixth label","6")),
+			ModuleType.MISORDERED_KEYS,List.of(List.of("third key label color","Red"),List.of("position of k","4")));
+		for(var entry:facts.entrySet()){BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),source=module(entry.getKey(),true,states.get(entry.getKey()));bomb.setModules(List.of(souvenir,source));for(List<String>fact:entry.getValue())assertThat(solve(bomb,souvenir,source.getId(),fact.get(0),List.of(),false).answer()).isEqualTo(fact.get(1));}
+		BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of()),unordered=module(ModuleType.UNORDERED_KEYS,true,states.get(ModuleType.UNORDERED_KEYS));bomb.setModules(List.of(souvenir,unordered));assertThat(solver.solve(new RoundEntity(),bomb,souvenir,new SouvenirInput(unordered.getId(),"stage first key second label",List.of(),false))).isInstanceOf(SolveFailure.class);
+	}
+
+	@Test void appliesVexillologyAndBamboozlingQuestionSuppression(){
+		BombEntity bomb=new BombEntity();ModuleEntity souvenir=module(ModuleType.SOUVENIR,false,Map.of());
+		ModuleEntity vex=module(ModuleType.VEXILLOLOGY,true,Map.of("vexillologyFlagpoleColors",List.of("red","blue","green"),"vexillologyFlagType","horizontal","vexillologyFirstAnswerColor","blue"));bomb.setModules(List.of(souvenir,vex));assertThat(solve(bomb,souvenir,vex.getId(),"third flagpole color",List.of(),false).answer()).isEqualTo("green");
+		ModuleEntity excludedVex=module(ModuleType.VEXILLOLOGY,true,Map.of("vexillologyFlagpoleColors",List.of("red","blue","green"),"vexillologyFlagType","vertical","vexillologyFirstAnswerColor","orange"));bomb.setModules(List.of(souvenir,excludedVex));assertThat(solver.solve(new RoundEntity(),bomb,souvenir,new SouvenirInput(excludedVex.getId(),"first flagpole color",List.of(),false))).isInstanceOf(SolveFailure.class);
+		Map<String,Object> none=Map.ofEntries(Map.entry("buttonColor","Red"),Map.entry("display1","ONE"),Map.entry("display3","THREE"),Map.entry("display4","FOUR"),Map.entry("display5","FIVE"),Map.entry("display4Color","Blue"),Map.entry("display5Color","Green"),Map.entry("topLabel","TOP"),Map.entry("bottomLabel","BOTTOM"),Map.entry("specialCase","NONE"));
+		Map<String,Object> top=Map.ofEntries(Map.entry("buttonColor","Yellow"),Map.entry("display1","A"),Map.entry("display3","B"),Map.entry("display4","ONLY"),Map.entry("display5","NO"),Map.entry("display4Color","Purple"),Map.entry("display5Color","White"),Map.entry("topLabel","X"),Map.entry("bottomLabel","Y"),Map.entry("specialCase","TOP"));
+		ModuleEntity button=module(ModuleType.BAMBOOZLING_BUTTON,true,Map.of("bamboozlingButtonStage1",none,"bamboozlingButtonStage2",top));bomb.setModules(List.of(souvenir,button));assertThat(solve(bomb,souvenir,button.getId(),"stage first button color",List.of(),false).answer()).isEqualTo("Red");assertThat(solve(bomb,souvenir,button.getId(),"stage first display fifth color",List.of(),false).answer()).isEqualTo("Green");assertThat(solve(bomb,souvenir,button.getId(),"stage second display fourth",List.of(),false).answer()).isEqualTo("ONLY");assertThat(solver.solve(new RoundEntity(),bomb,souvenir,new SouvenirInput(button.getId(),"stage second button color",List.of(),false))).isInstanceOf(SolveFailure.class);assertThat(solver.solve(new RoundEntity(),bomb,souvenir,new SouvenirInput(button.getId(),"stage second display fifth",List.of(),false))).isInstanceOf(SolveFailure.class);
+	}
+
 	@SuppressWarnings("unchecked")
 	private SouvenirOutput solve(BombEntity bomb, ModuleEntity souvenir, UUID sourceId, String question, List<String> answers, boolean last) {
 		return ((SolveSuccess<SouvenirOutput>) solver.solve(

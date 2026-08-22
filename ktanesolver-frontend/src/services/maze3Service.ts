@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface Maze3Output{startingFace:string;targetFaces:string[];commands:string[];endingNode:number;endingOrientation:number}export const solveMaze3=(r:string,b:string,m:string,startingNode:number,orientationDegrees:number):Promise<{output:Maze3Output;solved:boolean}>=>solveModule(r,b,m,{startingNode,orientationDegrees});

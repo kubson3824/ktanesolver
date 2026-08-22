@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.oddoneout;import java.util.List;import ktanesolver.logic.ModuleOutput;public record OddOneOutOutput(int stage,List<Integer>history,Integer finalPosition,String command)implements ModuleOutput{}

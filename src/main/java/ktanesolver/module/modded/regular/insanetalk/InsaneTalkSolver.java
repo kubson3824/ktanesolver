@@ -1,0 +1,138 @@
+package ktanesolver.module.modded.regular.insanetalk;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import ktanesolver.annotation.ModuleInfo;
+import ktanesolver.dto.ModuleCatalogDto;
+import ktanesolver.entity.BombEntity;
+import ktanesolver.entity.ModuleEntity;
+import ktanesolver.entity.RoundEntity;
+import ktanesolver.enums.ModuleType;
+import ktanesolver.logic.AbstractModuleSolver;
+import ktanesolver.logic.SolveResult;
+
+@Service
+@ModuleInfo(type = ModuleType.INSANE_TALK, id = "insanetalk", name = "Insane Talk",
+	category = ModuleCatalogDto.ModuleCategory.MODDED_REGULAR,
+	description = "Look up the displayed phrase and press the four digit labels in the source-defined order.",
+	tags = {"phrases", "numbers", "buttons", "lookup"})
+public class InsaneTalkSolver extends AbstractModuleSolver<InsaneTalkInput, InsaneTalkOutput> {
+	private static final Map<String, String> CODES = codes();
+	@Override protected SolveResult<InsaneTalkOutput> doSolve(RoundEntity round, BombEntity bomb, ModuleEntity module, InsaneTalkInput input) {
+		if (input == null || input.phrase() == null || input.buttonLabels() == null || input.buttonLabels().size() != 4
+			|| input.buttonLabels().stream().anyMatch(n -> n == null || n < 0 || n > 9) || new LinkedHashSet<>(input.buttonLabels()).size() != 4)
+			return failure("Enter the displayed phrase and four distinct digit labels");
+		String phrase = input.phrase().trim(); boolean quoted = phrase.length() >= 2 && phrase.startsWith("\"") && phrase.endsWith("\"");
+		if (quoted) phrase = phrase.substring(1, phrase.length() - 1);
+		String code = CODES.get(normalize(phrase)); if (code == null) return failure("The phrase was not found in the Insane Talk source table");
+		if (quoted) code = new StringBuilder(code).reverse().toString();
+		LinkedHashSet<Integer> presses = new LinkedHashSet<>();
+		for (char digit : code.toCharArray()) { int value = digit - '0'; if (input.buttonLabels().contains(value)) presses.add(value); }
+		presses.addAll(input.buttonLabels());
+		return success(new InsaneTalkOutput(List.copyOf(presses), code, quoted));
+	}
+	private static String normalize(String value) { return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT); }
+	private static Map<String, String> codes() {
+		String data = """
+231987654	Exactly what it says.
+123094587	Exactly what it says
+987061234	Sample text.
+430928341	Remove this text before releasing this module.
+109852349	[Phrase from Regular Crazy Talk]
+978012543	Phrase from regular crazy talk literal phrase.
+123409876	Literally blank, really.
+564738201	Exactly all the stating.
+98342761	Exactly what it states.
+382907654	Quote The states exactly.
+91276354	Exactly all the states.
+658321049	This module solved itself.
+123456789	A sequence of numbers.
+420938716	Beer
+294601387	NullReferenceException: Object reference not set to an instance of an object.
+591402736	An exception occurred! Press any button to solve!
+279650134	The screen is blank.
+134870968	Insane Talk failed to connect to the Internet. Press any button to solve.
+746781300	Color your own keys.
+987186281	Flavor Text EX failed to connect to the Internet. Press any button to solve..
+656119370	It was a Double Oh strike, don't worry
+792335959	Why is Flavor Text EX saying random nonsense?
+649046676	I need a log for that.
+958817028	417 962 442 029 131 113 084 601 180 505 664 251 307 951 412 794 282 495 815 796 076 567 968 763 079 143 525 925 225 588 502 904 EIGHT!
+640258678	This was a fake strike, don't worry
+476360422	The display says- Exactly what it says!
+737620944	Insane talk is quote IT SAYS.
+865295648	If there is more than 1 charcoal on the bomb, and the button says “Trigger”, press the button.
+393737093	Just use the optimized manual.
+828269187	Just use the optimised manual.
+982536708	The answer is obvious.
+974901396	Just use the goodsheet.
+718744965	Exactly each says.
+106767862	Just use the cheat sheet.
+755840467	Why is Flavor Text EX saying hogwash?
+590566230	What is this module?
+562793078	Is this Crazy Talk?
+14825637	It says: Exactly each says
+862704513	The flavor text has failed.
+140297563	Error
+671029354	Error.
+160248739	This sentence was removed
+870915243	Failed to reference ‘string.text’. Press any number once to solve
+901628516	Just use the original manual
+634072311	Souvenir failed to reference ‘fldCalls’.Abandoning Simon Samples
+16296423	[Phrase from Crazy Talk]
+719235604	ERROR!
+16297842	Invalid error code: error NaN
+15928372	Exact the says say, exact
+731610842	InvalidOperationException: Operation is not valid due to the current state of the object.
+416476445	Exactly what it scrambles
+673486979	Some sort of exception, is this a phrase or bug?
+708141090	404: The error not found.
+415846705	Simon Sends
+532798278	Array error: module inactive.
+897253782	Array error, module inactive.
+2382746	The bomb detonated.
+207367878	We need more experts or we can’t play.
+272778144	What the dang heck?
+691087308	#$***
+69	TotallyLegitException: Something happened.
+713219050	OutOfMemoryException: Insufficient memory to continue the execution of the program.
+827581009	StackOverflowException: Operation caused a stack overflow.
+129472743	At CreateRomanNumeral (wrong)
+605707499	417 962 442 029 131 113 084 601 180 505 664 251 307 951 432 794 282 495 815 796 076 567 968 763 079 143 525 925 225 508 502 904 EIGHT!
+878038256	$*##&
+261876203	Welcome to http:/worm.com!
+109467332	I am stupid. The display actually is “Blank”
+38514222	Severe error with Flavor Talk EX. Submit 0000.
+342018444	Dis is one half. Press any key to continue.
+105594260	Therye.
+357020719	Challenge and Contact aborted execution of the bomb. Error
+985392357	This is one half. Press any key to continue.
+501548427	buttonStates = new[] {false, false, false, false};
+742872479	buttonStates = new[] {false, false, true, false};
+960652470	buttonStates = old[] {false, false, false, false};
+317392420	A literal blue screen of death
+410346883	Welcome to the Insane Talk Integrated Browser™
+183838820	Welcome to the Insane Talk Integrated Browser™ Clear history?
+493828993	Cleared.
+563489922	There a literal venn diagram what the heck?
+900712354	(Weird code)
+508164932	All compiler errors must be fixed before you can enter test mode!
+235780238	Fricken’ Explanation letters man!
+927503754	Detonate? Y/N
+246573444	All compiler errors must be fixed before you can initiate your module!
+357925780	Line error: No target for exec
+747395400	647395400
+563777777	Error 200: Exception error 200
+""";
+		Map<String, String> result = new LinkedHashMap<>();
+		for (String line : data.strip().split("\\R")) { int separator = line.indexOf('\t'); result.put(normalize(line.substring(separator + 1)), line.substring(0, separator)); }
+		return Map.copyOf(result);
+	}
+}

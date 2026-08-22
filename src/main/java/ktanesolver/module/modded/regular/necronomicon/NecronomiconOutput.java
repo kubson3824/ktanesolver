@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.necronomicon;import java.util.List;import ktanesolver.logic.ModuleOutput;public record NecronomiconOutput(int chapter,int page,List<Integer>validChapters,List<Integer>priority,String command)implements ModuleOutput{}

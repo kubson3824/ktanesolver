@@ -1,0 +1,1 @@
+import{solveModule}from"../lib/api";export interface OddOneOutOutput{stage:number;history:number[];finalPosition:number|null;command:string}export const solveOddOneOut=(roundId:string,bombId:string,moduleId:string,oddPosition:number):Promise<{output:OddOneOutOutput;solved:boolean}>=>solveModule(roundId,bombId,moduleId,{oddPosition});

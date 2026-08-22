@@ -1,0 +1,11 @@
+import { useState } from "react";
+import { solveDigitString, type DigitStringOutput } from "../../services/digitStringService";
+import type { BombEntity } from "../../types";
+import { ErrorAlert, SolverControls, SolverInstructions, SolverLayout, SolverSection, TwitchCommandDisplay, useSolver } from "../common";
+
+export default function DigitStringSolver({ bomb }: { bomb: BombEntity | null | undefined }) {
+  const [display, setDisplay] = useState(""), [result, setResult] = useState<DigitStringOutput | null>(null);
+  const { isLoading, error, isSolved, setIsLoading, setError, setIsSolved, clearError, reset: resetSolverState, currentModule, round, markModuleSolved } = useSolver();
+  const solve = async () => { if (!round?.id || !bomb?.id || !currentModule?.id) return setError("Missing required information"); clearError(); setIsLoading(true); try { const response = await solveDigitString(round.id, bomb.id, currentModule.id, display); setResult(response.output); setIsSolved(response.solved); if (response.solved) markModuleSolved(bomb.id, currentModule.id); } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to solve Digit String"); } finally { setIsLoading(false); } };
+  return <SolverLayout><SolverSection title="Display"><label>Eight-digit number<input aria-label="Displayed number" inputMode="numeric" maxLength={8} value={display} onChange={event => { setDisplay(event.target.value.replace(/\D/g, "")); setResult(null); clearError(); }} className="mt-1 h-11 w-full rounded border bg-background px-2 font-mono text-xl tracking-widest" /></label></SolverSection><SolverControls onSolve={solve} onReset={() => { setDisplay(""); setResult(null); resetSolverState(); }} isLoading={isLoading} isSolved={isSolved} /><ErrorAlert error={error} />{result && <SolverSection title={`Enter ${result.answer}`} className="border-emerald-500/40"><p>{result.expression} = {result.answer}</p><p className="text-sm text-muted-foreground">Serial position {result.serialPosition}; rule {result.rule}</p></SolverSection>}{result && <TwitchCommandDisplay command={`!number submit ${result.answer}`} />}<SolverInstructions>The verified upstream parser accepts “submit”, “s”, “answer”, or “a” followed by the answer.</SolverInstructions></SolverLayout>;
+}

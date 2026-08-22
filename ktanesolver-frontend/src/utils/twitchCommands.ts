@@ -45,9 +45,16 @@ const conditional = new Set<ModuleType>([
   ModuleType.KRAZY_TALK,
   ModuleType.COOKIE_JARS,
   ModuleType.QUESTION_MARK,
+  ModuleType.LED_MATH,
+  ModuleType.THE_HEXABUTTON,
+  ModuleType.THE_STARE,
+  ModuleType.THE_TROLL,
+  ModuleType.COLOUR_CODE,
+  ModuleType.VEXILLOLOGY,
+  ModuleType.FOUR_CARD_MONTE,
 ]);
 
-const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE,ModuleType.THE_HANGOVER,ModuleType.NUMBERS,ModuleType.ALCHEMY,ModuleType.SIMONS_STAGES]);
+const unavailable = new Set<ModuleType>([ModuleType.UNCOLORED_SQUARES,ModuleType.THE_CRYSTAL_MAZE,ModuleType.THE_HANGOVER,ModuleType.NUMBERS,ModuleType.ALCHEMY,ModuleType.SIMONS_STAGES,ModuleType.GADGETRON_VENDOR,ModuleType.LOMBAX_CUBES,ModuleType.HIDDEN_COLORS,ModuleType.SEVEN_WIRES,ModuleType.THE_MATRIX,ModuleType.BABA_IS_WHO]);
 
 /** Exhaustive audit status; the test suite asserts that every ModuleType is present. */
 export const TWITCH_COMMAND_SUPPORT: Record<ModuleType, TwitchCommandSupport> = Object.fromEntries(
@@ -1574,6 +1581,332 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
         ? command(sequence.map(words).join(" "))
         : "";
     }
+    case ModuleType.LED_MATH: {
+      const answer = numberValue(raw.answer);
+      return answer !== undefined && Number.isInteger(answer) ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.PIGPEN_ROTATIONS: {
+      const answer = stringValue(raw.answer);
+      return answer && /^[A-Z]{12}$/.test(answer) ? command(answer) : "";
+    }
+    case ModuleType.SIMON_SOUNDS: {
+      const presses = strings(raw.presses).map(color => color[0]?.toUpperCase());
+      return presses.length && presses.every(color => color && "RBYG".includes(color)) ? command(`input ${presses.join(" ")}`) : "";
+    }
+    case ModuleType.HARMONY_SEQUENCE: {
+      const positions = arrayValue(raw.pressPositions).map(Number);
+      return positions.length === 4 && new Set(positions).size === 4 && positions.every(value => Number.isInteger(value) && value >= 1 && value <= 4) ? command(`sound ${positions.join("")}`) : "";
+    }
+    case ModuleType.SIMON_SCRAMBLES: {
+      const presses = strings(raw.presses).map(color => color[0]?.toUpperCase());
+      return presses.length === 10 && presses.every(color => color && "BYRG".includes(color)) ? command(presses.join("")) : "";
+    }
+    case ModuleType.UNFAIR_CIPHER: {
+      const bodies = arrayValue(raw.actions).map(asRecord).map(action => {
+        const button = stringValue(action.button)?.toLowerCase();
+        const seconds = strings(action.timerSeconds);
+        return button && ["red", "green", "blue", "inner", "outer"].includes(button)
+          ? `${button}${seconds.length ? ` ${seconds.join(" ")}` : ""}`
+          : undefined;
+      });
+      return bodies.length > 0 && bodies.every(Boolean) ? commands(bodies) : "";
+    }
+    case ModuleType.MELODY_SEQUENCER: {
+      const bodies: Array<string | undefined> = [];
+      for (const move of arrayValue(raw.moves).map(asRecord)) {
+        const from = numberValue(move.fromSlot), to = numberValue(move.toSlot);
+        if (!from || !to || from < 1 || from > 8 || to < 1 || to > 8) return "";
+        bodies.push(`slot ${from}`, `move to ${to}`);
+      }
+      for (const recording of arrayValue(raw.recordings).map(asRecord)) {
+        const slot = numberValue(recording.slot), notes = strings(recording.notes);
+        if (!slot || slot < 1 || slot > 8 || notes.length !== 8) return "";
+        bodies.push(`slot ${slot}`, `record ${notes.join(" ")}`);
+      }
+      return bodies.length > 0 ? commands(bodies) : "";
+    }
+    case ModuleType.COLORFUL_INSANITY: {
+      const coordinates = strings(raw.pressCoordinates);
+      return coordinates.length > 0 && coordinates.every(value => /^[A-G][1-5]$/.test(value)) ? command(`press ${coordinates.join(" ")}`) : "";
+    }
+    case ModuleType.LEFT_AND_RIGHT: {
+      const sequence = strings(raw.pressSequence).map(side => side === "LEFT" ? "L" : side === "RIGHT" ? "R" : "");
+      return sequence.length > 0 && sequence.every(Boolean) ? command(sequence.join("")) : "";
+    }
+    case ModuleType.PASSPORT_CONTROL: {
+      const decision = stringValue(raw.decision);
+      return decision === "APPROVE" ? command("accept") : decision === "DENY" ? command("reject") : "";
+    }
+    case ModuleType.THE_HEXABUTTON: {
+      const action = stringValue(raw.action), target = stringValue(raw.suggestedTime);
+      if (action === "HOLD") return command("hold");
+      if (action === "TAP" && target) return command(`tap ${target}`);
+      if (action === "RELEASE" && target) return command(`release ${target}`);
+      return "";
+    }
+    case ModuleType.GENETIC_SEQUENCE: {
+      const positions = arrayValue(raw.pressPositions).map(Number);
+      return positions.length === 12 && positions.every(value => Number.isInteger(value) && value >= 1 && value <= 4)
+        ? command(`${positions.join("")}O`) : "";
+    }
+    case ModuleType.MICRO_MODULES: {
+      const bodies = strings(raw.twitchCommands);
+      return bodies.length === 5 ? commands(bodies) : "";
+    }
+    case ModuleType.ELDER_FUTHARK: {
+      const runes = strings(raw.pressSequence);
+      return runes.length > 0 ? commands(["activate", `submit ${runes.join(", ")}`]) : "";
+    }
+    case ModuleType.MODULE_MAZE: {
+      const route = stringValue(raw.route)?.toUpperCase();
+      return route && /^[URDL]+$/.test(route) ? commands(["toggle", route, "toggle"]) : "";
+    }
+    case ModuleType.TASHA_SQUEALS: {
+      const presses = strings(raw.pressColors).map(color => color.toLowerCase());
+      return presses.length === 5 && presses.every(color => ["pink", "green", "yellow", "blue"].includes(color))
+        ? commands(presses.map((_, stage) => `press ${presses.slice(0, stage + 1).join(" ")}`)) : "";
+    }
+    case ModuleType.FORGET_THIS: {
+      const answer = stringValue(raw.answer)?.toUpperCase();
+      return answer && /^[0-9A-Z]$/.test(answer) ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.DIGITAL_CIPHER: {
+      const sequence = stringValue(raw.pressSequence)?.toUpperCase();
+      return sequence && /^[A-I]{15}$/.test(sequence) ? command(`press ${sequence}`) : "";
+    }
+    case ModuleType.BURGER_ALARM: {
+      const ingredients = strings(raw.pressSequence).map(value => value.toLowerCase());
+      const valid = ["mayo","bun","tomato","cheese","lettuce","onions","pickles","mustard","ketchup","meat"];
+      return ingredients.length === 7 && ingredients.every(value => valid.includes(value))
+        ? commands(["order", `press ${ingredients.join(" ")}`, "submit"]) : "";
+    }
+    case ModuleType.GROCERY_STORE: {
+      const action = stringValue(raw.action);
+      return action === "ADD" ? command("add") : action === "PAY" ? command("pay") : "";
+    }
+    case ModuleType.SUBSCRIBE_TO_PEWDIEPIE: {
+      const submission = stringValue(raw.submission);
+      return submission && /^\d{5}$/.test(submission) ? command(`submit ${submission}`) : "";
+    }
+    case ModuleType.CRYPTIC_PASSWORD: {
+      const answer = stringValue(raw.answer)?.toUpperCase();
+      return answer && /^[A-Z]{6}$/.test(answer) ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.LOMBAX_CUBES:
+    case ModuleType.HIDDEN_COLORS:
+      return "";
+    case ModuleType.MEGA_MAN_2: {
+      const password = strings(raw.password);
+      return password.length === 9 && password.every(value => /^[A-E][1-5]$/.test(value)) ? command(`press ${password.join(" ")}`) : "";
+    }
+    case ModuleType.PURGATORY: {
+      const destination = stringValue(raw.destination)?.toLowerCase(), timing = stringValue(raw.timing), count = numberValue(raw.clickCount);
+      if (!destination || !["heaven","hell","either"].includes(destination) || count === undefined || count < 1) return "";
+      const side = destination === "either" ? "heaven" : destination;
+      return timing === "ON_TWO" ? command(`press ${side} on 2`) : command(`press ${side}${count > 1 ? ` ${count}` : ""}`);
+    }
+    case ModuleType.THE_STARE: {
+      const time = stringValue(raw.exampleTime);
+      return booleanValue(raw.toggleNeeded) ? command(time ? `toggle ${time}` : "toggle") : command("toggle");
+    }
+    case ModuleType.GRAPHIC_MEMORY: {
+      const position = stringValue(raw.pressedPosition)?.toLowerCase();
+      return position && /^(?:tl|tr|bl|br|top left|top right|bottom left|bottom right)$/.test(position) ? command(`press ${position}`) : "";
+    }
+    case ModuleType.QUIZ_BUZZ: {
+      const answer = stringValue(raw.answer);
+      return answer && /^\d{1,8}$/.test(answer) ? command(`te ${answer}`) : "";
+    }
+    case ModuleType.WAVETAPPING: {
+      const pixels = stringValue(raw.pressCommand);
+      return pixels && /^press(?: [A-I][1-9])+$/.test(pixels) ? commands([pixels, "submit"]) : "";
+    }
+    case ModuleType.THE_HYPERCUBE: {
+      const vertex = stringValue(raw.vertex)?.toLowerCase();
+      return vertex && /^(?:zig|zag)[ -](?:top|bottom)[ -](?:front|back)[ -](?:left|right)$/.test(vertex) ? command(vertex) : "";
+    }
+    case ModuleType.THE_ULTRACUBE: {
+      const vertex = stringValue(raw.vertex)?.toLowerCase();
+      return vertex && /^(?:ping|pong)[ -](?:zig|zag)[ -](?:top|bottom)[ -](?:front|back)[ -](?:left|right)$/.test(vertex) ? command(vertex) : "";
+    }
+    case ModuleType.STACK_EM: {
+      const groups = arrayValue(raw.stacks).flatMap((value, slot) => {
+        const counts = new Map<string, number>();
+        strings(value).forEach(color => counts.set(words(color), (counts.get(words(color)) ?? 0) + 1));
+        return [...counts].map(([color, count]) => `${color} ${slot + 1} ${count}`);
+      });
+      return groups.length ? command(groups.join(", ")) : "";
+    }
+    case ModuleType.COLORED_KEYS: {
+      const position = numberValue(raw.keyPosition);
+      return position !== undefined && position >= 1 && position <= 4 ? command(String(position)) : "";
+    }
+    case ModuleType.THE_TROLL:
+      return command(stringValue(raw.prepCommand));
+    case ModuleType.PLANETS: {
+      const code = stringValue(raw.code);
+      return code && /^\d{6}$/.test(code) ? command(`press ${code} space`) : "";
+    }
+    case ModuleType.DIGIT_STRING: {
+      const answer = numberValue(raw.answer);
+      return answer !== undefined && Number.isInteger(answer) ? command(`submit ${answer}`) : "";
+    }
+    case ModuleType.THE_TRIANGLE_BUTTON: {
+      const action = stringValue(raw.action), target = numberValue(raw.targetDigit);
+      if (target === undefined || !Number.isInteger(target) || target < 1 || target > 9) return "";
+      return action === "TAP" ? command(`tap ${target}`) : action === "HOLD" ? command(`hold ${target}`) : action === "RELEASE" ? command(`release ${target}`) : "";
+    }
+    case ModuleType.GRYPHONS: {
+      const values = [raw.birdType, raw.catType, raw.accessory].map(stringValue);
+      return values.every(Boolean) ? command(`submit ${values.map(words).join(" ")}`) : "";
+    }
+    case ModuleType.MORSE_BUTTONS: {
+      const positions = arrayValue(raw.pressPositions).map(Number);
+      return positions.length > 0 && positions.every(value => Number.isInteger(value) && value >= 1 && value <= 6) ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.DAYLIGHT_DIRECTIONS: {
+      const direction = stringValue(raw.turnDirection), turns = numberValue(raw.turnCount);
+      if (turns === undefined || !Number.isInteger(turns) || turns < 0 || turns > 4) return "";
+      const rotate = turns ? `${direction === "CLOCKWISE" ? "cw" : direction === "COUNTERCLOCKWISE" ? "ccw" : ""} ${turns}`.trim() : undefined;
+      return direction === "CLOCKWISE" || direction === "COUNTERCLOCKWISE" ? commands([rotate, "submit"]) : "";
+    }
+    case ModuleType.MODULUS_MANIPULATION: {
+      const submission = stringValue(raw.submission), minutes = numberValue(raw.minutesRemaining);
+      return submission && /^\d{3}$/.test(submission) && minutes !== undefined && Number.isInteger(minutes) && minutes >= 0 ? command(`${submission} ${minutes}`) : "";
+    }
+    case ModuleType.THE_BLOCK: {
+      const presses = strings(raw.presses).map(words);
+      return presses.length > 0 && presses.every(value => value === "block" || /^[1-6]$/.test(value)) ? command(`press ${presses.join(" ")}`) : "";
+    }
+    case ModuleType.TRANSMITTED_MORSE: {
+      const entries = arrayValue(raw.entries).map(asRecord);
+      if (!entries.length || entries.some(entry => { const slider=numberValue(entry.slider), position=numberValue(entry.position); return slider===undefined||position===undefined||slider<1||slider>3||position<1||position>20; })) return "";
+      return command(entries.map(entry => `${numberValue(entry.slider)} ${numberValue(entry.position)}`).join(";"));
+    }
+    case ModuleType.A_MISTAKE: {
+      const value = stringValue(raw.twitchCommand);
+      return value && /^touch(?: \d{1,2})?$/.test(value) ? command(value) : "";
+    }
+    case ModuleType.GREEN_ARROWS: {
+      const direction = stringValue(raw.direction)?.toLowerCase();
+      return direction && /^(?:up|right|down|left)$/.test(direction) ? command(direction) : "";
+    }
+    case ModuleType.RED_ARROWS:
+    case ModuleType.ORANGE_ARROWS:
+      return command(stringValue(raw.command));
+    case ModuleType.YELLOW_ARROWS: {
+      const direction = stringValue(raw.direction)?.toLowerCase();
+      return direction && /^(?:up|right|down|left)$/.test(direction) ? command(direction) : "";
+    }
+    case ModuleType.STICKY_NOTES: {
+      const position = numberValue(raw.notePosition);
+      return position !== undefined && position >= 1 && position <= 10 ? command(`select ${position}`) : "";
+    }
+    case ModuleType.FIND_THE_DATE: {
+      const weekday = stringValue(raw.weekday)?.toLowerCase();
+      return weekday && /^(?:saturday|sunday|monday|tuesday|wednesday|thursday|friday)$/.test(weekday) ? command(`submit ${weekday}`) : "";
+    }
+    case ModuleType.BLUE_ARROWS:
+      return command(stringValue(raw.command));
+    case ModuleType.BRUSH_STROKES:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.HYPERACTIVE_NUMBERS:
+      return command(stringValue(raw.command));
+    case ModuleType.BUTTON_GRID: {
+      const positions = arrayValue(raw.positions).map(Number);
+      return (positions.length === 4 || positions.length === 20) && positions.every(value => Number.isInteger(value) && value >= 1 && value <= 20) && new Set(positions).size === positions.length
+        ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.PURPLE_ARROWS: {
+      const action = stringValue(raw.action)?.toLowerCase();
+      return action && (action === "submit" || /^[udlr]+$/.test(action)) ? command(action) : "";
+    }
+    case ModuleType.ARITHMELOGIC:
+    case ModuleType.MAZEMATICS:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.INSANE_TALK: {
+      const labels = arrayValue(raw.pressLabels).map(Number);
+      return labels.length === 4 && labels.every(value => Number.isInteger(value) && value >= 0 && value <= 9) && new Set(labels).size === 4 ? command(`label ${labels.join(" ")}`) : "";
+    }
+    case ModuleType.FORGET_THEM_ALL:
+      return command(stringValue(raw.command));
+    case ModuleType.RISKY_WIRES: {
+      const cuts = arrayValue(raw.cutPositions).map(Number);
+      if (!cuts.every(value => Number.isInteger(value) && value >= 1 && value <= 8) || new Set(cuts).size !== cuts.length) return "";
+      return command(cuts.length ? `cut ${cuts.join(" ")} submit` : "submit");
+    }
+    case ModuleType.SIMON_STOPS: {
+      const initials: Record<string, string> = { RED: "r", ORANGE: "o", YELLOW: "y", GREEN: "g", BLUE: "b", VIOLET: "v" };
+      const presses = strings(raw.pressColors);
+      return presses.length && presses.every(value => initials[value]) ? command(presses.map(value => initials[value]).join("")) : "";
+    }
+    case ModuleType.ORDERED_KEYS:
+    case ModuleType.REORDERED_KEYS:
+      return command(stringValue(raw.command));
+    case ModuleType.BORDERED_KEYS:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.SEVEN_WIRES:
+      return "";
+    case ModuleType.SEVEN_DEADLY_SINS: {
+      const positions = arrayValue(raw.pressPositions).map(Number);
+      return positions.length === 7 && positions.every(value => Number.isInteger(value) && value >= 1 && value <= 7)
+        && new Set(positions).size === 7 ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.THE_GIANTS_DRINK:
+      return command(stringValue(raw.command));
+    case ModuleType.COLOUR_CODE:
+      return command(stringValue(raw.entryCommand));
+    case ModuleType.EQUATIONS_X:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.UNORDERED_KEYS:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.THE_NECRONOMICON:
+      return command(stringValue(raw.command));
+    case ModuleType.FAULTY_SINK: {
+      const value = stringValue(raw.twitchCommand);
+      return value && /^(?:cold|hot|pipe|basin|faucet)(?: (?:cold|hot|pipe|basin|faucet))*$/.test(value) ? command(value) : "";
+    }
+    case ModuleType.THE_MATRIX:
+      return "";
+    case ModuleType.BAMBOOZLING_BUTTON: {
+      const actions = strings(raw.twitchCommands);
+      return actions.length && actions.every(action => /^(?:press (?:[0-5]\d|\d)|dtap \d)$/.test(action)) ? commands(actions) : "";
+    }
+    case ModuleType.VEXILLOLOGY: {
+      const actions = strings(raw.commands);
+      return actions.length && actions.every(action => /^(?:fill [1-3] (?:red|orange|yellow|green|blue|aqua|white|black)|submit on [0-9])$/.test(action)) ? commands(actions) : "";
+    }
+    case ModuleType.FOUR_CARD_MONTE: {
+      const actions = strings(raw.commands);
+      return actions.length && actions.every(action => /^(?:deal|coin [1-4]|card [1-4]|send (?:\d{1,3})(?:\.\d{1,2})?)$/.test(action)) ? commands(actions) : "";
+    }
+    case ModuleType.ODD_ONE_OUT:
+      return command(stringValue(raw.command));
+    case ModuleType.BABA_IS_WHO:
+      return "";
+    case ModuleType.MAZE_3: {
+      const actions = strings(raw.commands);
+      return actions.length && actions.every(action => action === "enter" || /^[urdl]+$/.test(action)) ? commands(actions) : "";
+    }
+    case ModuleType.MISORDERED_KEYS:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.ENCRYPTED_EQUATIONS:
+      return command(stringValue(raw.twitchCommand));
+    case ModuleType.ROMAN_ART:
+      return command(stringValue(raw.command));
+    case ModuleType.STAINED_GLASS: {
+      const positions = strings(raw.smashPositions);
+      const valid = /^(?:11|2[12]|3[1-3]|4[1-4]|5[1-5]|6[1-4]|7[1-3]|8[12]|91)$/;
+      return positions.length && positions.every(position => valid.test(position)) && new Set(positions).size === positions.length ? command(`press ${positions.join(" ")}`) : "";
+    }
+    case ModuleType.THE_DEALMAKER: {
+      const action = stringValue(raw.action)?.toLowerCase();
+      return action === "deal" || action === "nodeal" ? command(action) : "";
+    }
+    case ModuleType.SIMON_STORES: {
+      const value = stringValue(raw.twitchCommand);
+      return value && /^[AWKRMGBCY, ]+$/.test(value) ? command(value) : "";
+    }
     case ModuleType.SKINNY_WIRES: {
       const coordinate = stringValue(raw.coordinate)?.toUpperCase();
       return coordinate && /^[A-C][1-3]$/.test(coordinate) ? command(`cut ${coordinate}`) : "";
@@ -1628,6 +1961,7 @@ export function generateTwitchCommand({ moduleType, result }: TwitchCommandData)
     case ModuleType.NUMBERS:
     case ModuleType.ALCHEMY:
     case ModuleType.SIMONS_STAGES:
+    case ModuleType.GADGETRON_VENDOR:
       return "";
     case ModuleType.ZONI: {
       const digit = numberValue(raw.digit);

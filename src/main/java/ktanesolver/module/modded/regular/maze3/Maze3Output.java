@@ -1,0 +1,1 @@
+package ktanesolver.module.modded.regular.maze3;import java.util.List;import ktanesolver.logic.ModuleOutput;public record Maze3Output(String startingFace,List<String>targetFaces,List<String>commands,int endingNode,int endingOrientation)implements ModuleOutput{}
